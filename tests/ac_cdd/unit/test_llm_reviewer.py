@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from ac_cdd_core.services.llm_reviewer import LLMReviewer
+
+from services.llm_reviewer import LLMReviewer
 
 
 @pytest.fixture
@@ -17,7 +18,7 @@ async def test_review_code_success(reviewer: LLMReviewer) -> None:
     instruction = "Review this code."
     model = "test-model"
 
-    from ac_cdd_core.domain_models import AuditorReport
+    from domain_models import AuditorReport
 
     valid_json = AuditorReport(
         is_passed=True, summary="Refactored code", issues=[]

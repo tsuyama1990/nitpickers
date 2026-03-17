@@ -3,7 +3,8 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.jules_client import JulesClient, JulesTimeoutError
+
+from services.jules_client import JulesClient, JulesTimeoutError
 
 
 @pytest.fixture

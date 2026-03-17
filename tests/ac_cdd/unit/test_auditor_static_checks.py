@@ -2,9 +2,10 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.auditor_usecase import AuditorUseCase
-from ac_cdd_core.state import CycleState
+
+from enums import FlowStatus
+from services.auditor_usecase import AuditorUseCase
+from state import CycleState
 
 
 @pytest.mark.asyncio
@@ -48,7 +49,7 @@ async def test_auditor_node_includes_static_errors() -> None:
     state = CycleState(cycle_id="99", pr_url="http://pr", feature_branch="feat/1")
 
     with (
-        patch("ac_cdd_core.services.auditor_usecase.settings") as mock_settings,
+        patch("services.auditor_usecase.settings") as mock_settings,
         patch.object(usecase, "_read_files", new_callable=AsyncMock) as mock_read,
     ):
         mock_settings.get_context_files.return_value = []

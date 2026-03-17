@@ -2,7 +2,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.project import ProjectManager
+
+from services.project import ProjectManager
 
 
 @pytest.mark.asyncio
@@ -32,22 +33,22 @@ async def test_initialize_project_robustness(tmp_path: Path) -> None:
 
     # Mocking Path.cwd is critical because the code uses it to access .github and .gitignore
     with (
-        patch("ac_cdd_core.services.project.settings", mock_settings),
-        patch("ac_cdd_core.services.project_setup.template_manager.settings", mock_settings),
+        patch("services.project.settings", mock_settings),
+        patch("services.project_setup.template_manager.settings", mock_settings),
         patch(
-            "ac_cdd_core.services.project_setup.dependency_manager.GitManager",
+            "services.project_setup.dependency_manager.GitManager",
             return_value=mock_git_instance,
         ),
         patch(
-            "ac_cdd_core.services.project_setup.dependency_manager.ProcessRunner",
+            "services.project_setup.dependency_manager.ProcessRunner",
             return_value=mock_runner_instance,
         ),
         patch("pathlib.Path.cwd", return_value=tmp_path),
         patch(
-            "ac_cdd_core.services.project_setup.dependency_manager.Path.cwd", return_value=tmp_path
+            "services.project_setup.dependency_manager.Path.cwd", return_value=tmp_path
         ),
         patch(
-            "ac_cdd_core.services.project_setup.template_manager.Path.cwd", return_value=tmp_path
+            "services.project_setup.template_manager.Path.cwd", return_value=tmp_path
         ),
     ):
         # Setup mock template files since template_manager copies them

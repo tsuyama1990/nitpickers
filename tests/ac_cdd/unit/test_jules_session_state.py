@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.jules_client import JulesClient
+
+from services.jules_client import JulesClient
 
 
 class TestSessionStateValidation:

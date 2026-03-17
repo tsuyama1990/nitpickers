@@ -1,11 +1,12 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ac_cdd_core.enums import FlowStatus, WorkPhase
-from ac_cdd_core.graph_nodes import CycleNodes
-from ac_cdd_core.sandbox import SandboxRunner
-from ac_cdd_core.services.jules_client import JulesClient
-from ac_cdd_core.state import CycleState
+
+from enums import FlowStatus, WorkPhase
+from graph_nodes import CycleNodes
+from sandbox import SandboxRunner
+from services.jules_client import JulesClient
+from state import CycleState
 
 
 class TestPhaseTransition:

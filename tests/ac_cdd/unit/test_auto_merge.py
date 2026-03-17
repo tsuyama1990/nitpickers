@@ -3,15 +3,16 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import ProjectManifest
-from ac_cdd_core.services.workflow import WorkflowService
+
+from domain_models import ProjectManifest
+from services.workflow import WorkflowService
 
 
 @pytest.fixture
 def workflow() -> WorkflowService:
     with (
-        patch("ac_cdd_core.services.workflow.ServiceContainer"),
-        patch("ac_cdd_core.services.workflow.GraphBuilder"),
+        patch("services.workflow.ServiceContainer"),
+        patch("services.workflow.GraphBuilder"),
     ):
         return WorkflowService()
 
@@ -26,9 +27,9 @@ async def test_finalize_creates_final_pr(workflow: WorkflowService) -> None:
     )
 
     with (
-        patch("ac_cdd_core.services.workflow.StateManager") as mock_sm_cls,
-        patch("ac_cdd_core.services.workflow.GitManager") as mock_git_cls,
-        patch("ac_cdd_core.services.workflow.ensure_api_key"),
+        patch("services.workflow.StateManager") as mock_sm_cls,
+        patch("services.workflow.GitManager") as mock_git_cls,
+        patch("services.workflow.ensure_api_key"),
     ):
         mock_sm_cls.return_value.load_manifest.return_value = manifest
 
@@ -54,8 +55,8 @@ async def test_finalize_exits_when_no_session(workflow: WorkflowService) -> None
     import sys
 
     with (
-        patch("ac_cdd_core.services.workflow.StateManager") as mock_sm_cls,
-        patch("ac_cdd_core.services.workflow.ensure_api_key"),
+        patch("services.workflow.StateManager") as mock_sm_cls,
+        patch("services.workflow.ensure_api_key"),
         patch.object(sys, "exit") as mock_exit,
     ):
         mock_sm_cls.return_value.load_manifest.return_value = None
@@ -79,9 +80,9 @@ async def test_finalize_merge_failure_is_handled(workflow: WorkflowService) -> N
     )
 
     with (
-        patch("ac_cdd_core.services.workflow.StateManager") as mock_sm_cls,
-        patch("ac_cdd_core.services.workflow.GitManager") as mock_git_cls,
-        patch("ac_cdd_core.services.workflow.ensure_api_key"),
+        patch("services.workflow.StateManager") as mock_sm_cls,
+        patch("services.workflow.GitManager") as mock_git_cls,
+        patch("services.workflow.ensure_api_key"),
         patch.object(sys, "exit") as mock_exit,
     ):
         mock_sm_cls.return_value.load_manifest.return_value = manifest

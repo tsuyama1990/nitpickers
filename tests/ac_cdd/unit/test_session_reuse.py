@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import AuditResult
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.coder_usecase import CoderUseCase
-from ac_cdd_core.state import CycleState
+
+from domain_models import AuditResult
+from enums import FlowStatus
+from services.coder_usecase import CoderUseCase
+from state import CycleState
 
 
 class TestSessionReuse:
@@ -41,11 +42,11 @@ class TestSessionReuse:
 
         usecase = CoderUseCase(mock_jules)
 
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager:
+        with patch("services.coder_usecase.StateManager") as MockManager:
             instance = MockManager.return_value
             instance.get_cycle.return_value = mock_manifest
 
-            with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+            with patch("services.coder_usecase.settings") as mock_settings:
 
                 def mock_get_template(name: str) -> MagicMock:
                     m = MagicMock()
@@ -99,11 +100,11 @@ class TestSessionReuse:
 
         usecase = CoderUseCase(mock_jules)
 
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager:
+        with patch("services.coder_usecase.StateManager") as MockManager:
             instance = MockManager.return_value
             instance.get_cycle.return_value = mock_manifest
 
-            with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+            with patch("services.coder_usecase.settings") as mock_settings:
 
                 def mock_get_template(name: str) -> MagicMock:
                     m = MagicMock()
@@ -147,11 +148,11 @@ class TestSessionReuse:
 
         usecase = CoderUseCase(mock_jules)
 
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager:
+        with patch("services.coder_usecase.StateManager") as MockManager:
             instance = MockManager.return_value
             instance.get_cycle.return_value = mock_manifest
 
-            with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+            with patch("services.coder_usecase.settings") as mock_settings:
 
                 def mock_get_template(name: str) -> MagicMock:
                     m = MagicMock()

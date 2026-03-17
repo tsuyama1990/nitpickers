@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import CycleManifest
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.coder_usecase import CoderUseCase
-from ac_cdd_core.state import CycleState
+
+from domain_models import CycleManifest
+from enums import FlowStatus
+from services.coder_usecase import CoderUseCase
+from state import CycleState
 
 
 @pytest.mark.asyncio
@@ -20,12 +21,12 @@ class TestCoderCriticFlow:
 
     @pytest.fixture
     def mock_sm(self) -> MagicMock:
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as mock:
+        with patch("services.coder_usecase.StateManager") as mock:
             yield mock.return_value
 
     @pytest.fixture
     def mock_settings(self) -> MagicMock:
-        with patch("ac_cdd_core.services.coder_usecase.settings") as mock:
+        with patch("services.coder_usecase.settings") as mock:
             mock.get_template.return_value.read_text.return_value = "Instruction {{cycle_id}}"
             mock.get_target_files.return_value = []
             mock.get_context_files.return_value = []

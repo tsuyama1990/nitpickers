@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.git_ops import GitManager
+
+from services.git_ops import GitManager
 
 
 @pytest.mark.asyncio
@@ -10,7 +11,7 @@ class TestGitStatePersistence:
     def git_manager(self) -> GitManager:
         return GitManager()
 
-    @patch("ac_cdd_core.process_runner.ProcessRunner.run_command")
+    @patch("process_runner.ProcessRunner.run_command")
     async def test_ensure_state_branch_exists(
         self, mock_run: AsyncMock, git_manager: GitManager
     ) -> None:
@@ -24,7 +25,7 @@ class TestGitStatePersistence:
         args, _ = mock_run.call_args_list[0]  # First call should be rev-parse or fetch
         # Given the updated logic might fetch first, we check that rev-parse eventually succeeds
 
-    @patch("ac_cdd_core.process_runner.ProcessRunner.run_command")
+    @patch("process_runner.ProcessRunner.run_command")
     async def test_read_state_file(self, mock_run: AsyncMock, git_manager: GitManager) -> None:
         expected_content = '{"key": "value"}'
         mock_run.return_value = (expected_content, "", 0)
@@ -36,8 +37,8 @@ class TestGitStatePersistence:
         assert "show" in args[0]
         assert "ac-cdd/state:test.json" in args[0]
 
-    @patch("ac_cdd_core.services.git.state.tempfile.TemporaryDirectory")
-    @patch("ac_cdd_core.process_runner.ProcessRunner.run_command")
+    @patch("services.git.state.tempfile.TemporaryDirectory")
+    @patch("process_runner.ProcessRunner.run_command")
     @patch("pathlib.Path.write_text")  # Mock writing file
     async def test_save_state_file(
         self,

@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock
 
 import pytest
-from ac_cdd_core.domain_models import AuditResult
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.graph_nodes import CycleNodes
-from ac_cdd_core.state import CycleState
+
+from domain_models import AuditResult
+from enums import FlowStatus
+from graph_nodes import CycleNodes
+from state import CycleState
 
 
 @pytest.mark.asyncio
@@ -20,9 +21,9 @@ async def test_committee_logic_flow() -> None:
 
     # We need to patch where settings is used.
     # graph_nodes.py does `from .config import settings` at top level.
-    # So we must patch ac_cdd_core.graph_nodes.settings
+    # So we must patch graph_nodes.settings
     with pytest.MonkeyPatch.context() as m:
-        m.setattr("ac_cdd_core.services.committee_usecase.settings", mock_settings)
+        m.setattr("services.committee_usecase.settings", mock_settings)
 
         nodes = CycleNodes(sandbox, jules)
 
@@ -110,7 +111,7 @@ async def test_committee_pipeline_handover() -> None:
     jules = MagicMock()
 
     with pytest.MonkeyPatch.context() as m:
-        m.setattr("ac_cdd_core.services.committee_usecase.settings", mock_settings)
+        m.setattr("services.committee_usecase.settings", mock_settings)
         nodes = CycleNodes(sandbox, jules)
 
         # Scenario 1: Auditor 1 (Rev 1/Limit) → Reject → Handover to Auditor 2

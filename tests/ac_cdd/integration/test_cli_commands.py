@@ -2,9 +2,10 @@ from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.cli import app
-from ac_cdd_core.domain_models import CycleManifest, ProjectManifest
 from typer.testing import CliRunner
+
+from cli import app
+from domain_models import CycleManifest, ProjectManifest
 
 runner = CliRunner()
 
@@ -12,11 +13,11 @@ runner = CliRunner()
 @pytest.fixture
 def mock_dependencies() -> Iterator[None]:
     with (
-        patch("ac_cdd_core.cli.utils.check_api_key", return_value=True),
+        patch("cli.utils.check_api_key", return_value=True),
         patch("shutil.which", return_value="/usr/bin/git"),
-        patch("ac_cdd_core.cli.ProjectManager") as mock_pm_cls,
-        patch("ac_cdd_core.cli.StateManager"),
-        patch("ac_cdd_core.cli.WorkflowService"),
+        patch("cli.ProjectManager") as mock_pm_cls,
+        patch("cli.StateManager"),
+        patch("cli.WorkflowService"),
     ):
         mock_pm_cls.return_value.initialize_project = AsyncMock()
         yield
@@ -24,7 +25,7 @@ def mock_dependencies() -> Iterator[None]:
 
 def test_init_command(mock_dependencies: None) -> None:
     # init calls SessionManager().load_manifest() and possibly git.ensure_state_branch
-    with patch("ac_cdd_core.cli.StateManager") as mock_sm_cls:
+    with patch("cli.StateManager") as mock_sm_cls:
         mock_mgr = mock_sm_cls.return_value
         # load_manifest is async, but init runs asyncio.run(_init_state())
         mock_mgr.load_manifest = MagicMock(return_value=None)
@@ -42,7 +43,7 @@ def test_init_command(mock_dependencies: None) -> None:
 def test_gen_cycles_command(mock_dependencies: None) -> None:
     mock_workflow = MagicMock()
     mock_workflow.run_gen_cycles = AsyncMock()
-    with patch("ac_cdd_core.cli.WorkflowService", return_value=mock_workflow):
+    with patch("cli.WorkflowService", return_value=mock_workflow):
         result = runner.invoke(app, ["gen-cycles", "--cycles", "3"])
         assert result.exit_code == 0
         mock_workflow.run_gen_cycles.assert_awaited_once_with(3, None, False)
@@ -51,7 +52,7 @@ def test_gen_cycles_command(mock_dependencies: None) -> None:
 def test_run_cycle_command(mock_dependencies: None) -> None:
     mock_workflow = MagicMock()
     mock_workflow.run_cycle = AsyncMock()
-    with patch("ac_cdd_core.cli.WorkflowService", return_value=mock_workflow):
+    with patch("cli.WorkflowService", return_value=mock_workflow):
         result = runner.invoke(app, ["run-cycle", "--id", "01"])
         assert result.exit_code == 0
         mock_workflow.run_cycle.assert_awaited_once_with(
@@ -62,14 +63,14 @@ def test_run_cycle_command(mock_dependencies: None) -> None:
 def test_finalize_session_command(mock_dependencies: None) -> None:
     mock_workflow = MagicMock()
     mock_workflow.finalize_session = AsyncMock()
-    with patch("ac_cdd_core.cli.WorkflowService", return_value=mock_workflow):
+    with patch("cli.WorkflowService", return_value=mock_workflow):
         result = runner.invoke(app, ["finalize-session"])
         assert result.exit_code == 0
         mock_workflow.finalize_session.assert_awaited_once_with(None)
 
 
 def test_list_actions_no_session(mock_dependencies: None) -> None:
-    with patch("ac_cdd_core.cli.StateManager") as mock_sm_cls:
+    with patch("cli.StateManager") as mock_sm_cls:
         mock_mgr = mock_sm_cls.return_value
         mock_mgr.load_manifest = MagicMock(return_value=None)
 
@@ -79,7 +80,7 @@ def test_list_actions_no_session(mock_dependencies: None) -> None:
 
 
 def test_list_actions_active_session(mock_dependencies: None) -> None:
-    with patch("ac_cdd_core.cli.StateManager") as mock_sm_cls:
+    with patch("cli.StateManager") as mock_sm_cls:
         mock_mgr = mock_sm_cls.return_value
         manifest = ProjectManifest(
             project_session_id="p1",

@@ -1,10 +1,11 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import CycleManifest
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.coder_usecase import CoderUseCase
-from ac_cdd_core.state import CycleState
+
+from domain_models import CycleManifest
+from enums import FlowStatus
+from services.coder_usecase import CoderUseCase
+from state import CycleState
 
 
 @pytest.mark.asyncio
@@ -16,7 +17,7 @@ class TestResumeLogic:
         jules.run_session = AsyncMock()
         return jules
 
-    @patch("ac_cdd_core.services.coder_usecase.StateManager")
+    @patch("services.coder_usecase.StateManager")
     async def test_hot_resume_active(self, mock_sm_cls: MagicMock, mock_jules: MagicMock) -> None:
         """Test that CoderUseCase resumes if session ID exists in manifest."""
         mock_mgr = mock_sm_cls.return_value
@@ -28,7 +29,7 @@ class TestResumeLogic:
         usecase = CoderUseCase(mock_jules)
         state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
 
-        with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+        with patch("services.coder_usecase.settings") as mock_settings:
             mock_settings.get_template.return_value.read_text.return_value = "Instruction"
             mock_settings.get_target_files.return_value = []
             mock_settings.get_context_files.return_value = []
@@ -39,7 +40,7 @@ class TestResumeLogic:
         assert result["status"] == FlowStatus.READY_FOR_AUDIT
         assert result["pr_url"] == "http://pr"
 
-    @patch("ac_cdd_core.services.coder_usecase.StateManager")
+    @patch("services.coder_usecase.StateManager")
     async def test_fallback_to_new_session_and_persist(
         self, mock_sm_cls: MagicMock, mock_jules: MagicMock
     ) -> None:
@@ -58,7 +59,7 @@ class TestResumeLogic:
         usecase = CoderUseCase(mock_jules)
         state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
 
-        with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+        with patch("services.coder_usecase.settings") as mock_settings:
             mock_settings.get_template.return_value.read_text.return_value = "Instruction"
             mock_settings.get_target_files.return_value = []
             mock_settings.get_context_files.return_value = []

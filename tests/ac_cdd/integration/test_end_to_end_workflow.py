@@ -1,8 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import ProjectManifest
-from ac_cdd_core.services.workflow import WorkflowService
+
+from domain_models import ProjectManifest
+from services.workflow import WorkflowService
 
 
 @pytest.mark.asyncio
@@ -11,13 +12,13 @@ class TestEndToEndWorkflow:
     def workflow(self) -> WorkflowService:
         # We need to ensure we patch dependencies that WorkflowService initializes
         with (
-            patch("ac_cdd_core.services.workflow.ServiceContainer"),
-            patch("ac_cdd_core.services.workflow.GraphBuilder"),
+            patch("services.workflow.ServiceContainer"),
+            patch("services.workflow.GraphBuilder"),
         ):
             return WorkflowService()
 
-    @patch("ac_cdd_core.services.workflow.StateManager")
-    @patch("ac_cdd_core.services.workflow.ensure_api_key")
+    @patch("services.workflow.StateManager")
+    @patch("services.workflow.ensure_api_key")
     async def test_full_gen_cycles_workflow(
         self,
         mock_auth: MagicMock,
@@ -54,8 +55,8 @@ class TestEndToEndWorkflow:
         mock_mgr.save_manifest.assert_called()
         workflow.builder.cleanup.assert_awaited()
 
-    @patch("ac_cdd_core.services.workflow.StateManager")
-    @patch("ac_cdd_core.services.workflow.ensure_api_key")
+    @patch("services.workflow.StateManager")
+    @patch("services.workflow.ensure_api_key")
     async def test_full_run_cycle_workflow(
         self, mock_auth: MagicMock, mock_sm_cls: MagicMock, workflow: WorkflowService
     ) -> None:
@@ -85,7 +86,7 @@ class TestEndToEndWorkflow:
         mock_mgr.update_cycle_state.assert_called_with("01", status="completed")
         workflow.builder.cleanup.assert_awaited()
 
-    @patch("ac_cdd_core.services.workflow.StateManager")
+    @patch("services.workflow.StateManager")
     async def test_session_persistence_across_commands(
         self, mock_sm_cls: MagicMock, workflow: WorkflowService
     ) -> None:
@@ -94,7 +95,7 @@ class TestEndToEndWorkflow:
         # Prevent shutil.copy2 from trying to copy the MagicMock
         mock_mgr.STATE_FILE.exists.return_value = False
 
-        with patch("ac_cdd_core.services.workflow.GitManager") as mock_git_cls:
+        with patch("services.workflow.GitManager") as mock_git_cls:
             mock_git_cls.return_value.create_final_pr = AsyncMock(return_value="http://pr")
             mock_git_cls.return_value.checkout_branch = AsyncMock()
             mock_git_cls.return_value.pull_changes = AsyncMock()

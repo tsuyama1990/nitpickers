@@ -2,10 +2,11 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.coder_usecase import CoderUseCase
-from ac_cdd_core.services.jules_client import JulesSessionError
-from ac_cdd_core.state import CycleState
+
+from enums import FlowStatus
+from services.coder_usecase import CoderUseCase
+from services.jules_client import JulesSessionError
+from state import CycleState
 
 
 class TestSessionRestart:
@@ -60,12 +61,12 @@ class TestSessionRestart:
             if "jules_session_id" in kwargs:
                 mock_manifest.jules_session_id = kwargs["jules_session_id"]
 
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager:
+        with patch("services.coder_usecase.StateManager") as MockManager:
             instance = MockManager.return_value
             instance.get_cycle.return_value = mock_manifest
             instance.update_cycle_state.side_effect = track_updates
 
-            with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+            with patch("services.coder_usecase.settings") as mock_settings:
                 mock_settings.get_template.return_value.read_text.return_value = "Instruction"
                 mock_settings.get_target_files.return_value = []
                 mock_settings.get_context_files.return_value = []
@@ -73,11 +74,11 @@ class TestSessionRestart:
 
         assert result["status"] == FlowStatus.CODER_RETRY
 
-        with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager2:
+        with patch("services.coder_usecase.StateManager") as MockManager2:
             instance2 = MockManager2.return_value
             instance2.get_cycle.return_value = mock_manifest
 
-            with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings2:
+            with patch("services.coder_usecase.settings") as mock_settings2:
                 mock_settings2.get_template.return_value.read_text.return_value = "Instruction"
                 mock_settings2.get_target_files.return_value = []
                 mock_settings2.get_context_files.return_value = []
@@ -109,7 +110,7 @@ class TestSessionRestart:
         usecase = CoderUseCase(mock_jules)
 
         async def run_once() -> dict[str, Any]:
-            with patch("ac_cdd_core.services.coder_usecase.StateManager") as MockManager:
+            with patch("services.coder_usecase.StateManager") as MockManager:
                 instance = MockManager.return_value
                 instance.get_cycle.return_value = mock_manifest
 
@@ -119,7 +120,7 @@ class TestSessionRestart:
 
                 instance.update_cycle_state.side_effect = track_updates
 
-                with patch("ac_cdd_core.services.coder_usecase.settings") as mock_settings:
+                with patch("services.coder_usecase.settings") as mock_settings:
                     mock_settings.get_template.return_value.read_text.return_value = "Instruction"
                     mock_settings.get_target_files.return_value = []
                     mock_settings.get_context_files.return_value = []

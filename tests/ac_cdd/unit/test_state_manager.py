@@ -4,9 +4,10 @@ import json
 from pathlib import Path
 
 import pytest
-from ac_cdd_core.domain_models import CycleManifest, ProjectManifest
-from ac_cdd_core.session_manager import SessionValidationError
-from ac_cdd_core.state_manager import StateManager
+
+from domain_models import CycleManifest, ProjectManifest
+from session_manager import SessionValidationError
+from state_manager import StateManager
 
 
 class TestStateManager:
