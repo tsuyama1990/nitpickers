@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,7 +11,7 @@ from ac_cdd_core.state import CycleState
 @pytest.mark.asyncio
 class TestCoderCriticFlow:
     @pytest.fixture
-    def mock_jules(self) -> Any:  # type: ignore  # type: ignore
+    def mock_jules(self) -> Any:
         jules = MagicMock()
         jules.wait_for_completion = AsyncMock(return_value={"status": "success", "pr_url": "http://pr"})
         jules.run_session = AsyncMock(return_value={"status": "success", "pr_url": "http://pr", "session_name": "sessions/123"})
@@ -19,12 +20,12 @@ class TestCoderCriticFlow:
         return jules
 
     @pytest.fixture
-    def mock_sm(self) -> Any:  # type: ignore  # type: ignore
+    def mock_sm(self) -> Any:
         with patch("ac_cdd_core.services.coder_usecase.StateManager") as mock:
             yield mock.return_value
 
     @pytest.fixture
-    def mock_settings(self) -> Any:  # type: ignore  # type: ignore
+    def mock_settings(self) -> Any:
         with patch("ac_cdd_core.services.coder_usecase.settings") as mock:
             mock.get_template.return_value.read_text.return_value = "Instruction {{cycle_id}}"
             mock.get_target_files.return_value = []

@@ -1,5 +1,4 @@
 from typing import Any
-
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -12,7 +11,7 @@ from ac_cdd_core.state import CycleState
 
 
 @pytest.fixture
-def mock_jules_client() -> Any:  # type: ignore
+def mock_jules_client() -> Any:
     client = AsyncMock(spec=JulesClient)
     client._get_session_url.return_value = "http://mock.session.url"
     return client

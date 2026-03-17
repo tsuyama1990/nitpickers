@@ -8,7 +8,6 @@ from ac_cdd_core.domain_models import (
 )
 from ac_cdd_core.utils import logger
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIModel
 
 
