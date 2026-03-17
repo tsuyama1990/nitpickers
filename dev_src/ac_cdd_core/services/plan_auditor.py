@@ -13,7 +13,7 @@ def _create_model(model_str: str) -> str | Any:
         # Extract the model name (remove "openrouter/" prefix)
         model_name = model_str.replace("openrouter/", "", 1)
         # Use OpenAIModel with openrouter provider
-        return OpenAIModel(model_name, provider="openrouter")
+        return OpenAIModel(model_name, base_url='https://openrouter.ai/api/v1')
     # Otherwise, return the model string as-is for pydantic-ai to infer
     return model_str
 
@@ -25,7 +25,7 @@ class PlanAuditor:
 
     def __init__(self, agent: Agent[Any, PlanAuditResult] | None = None) -> None:
         self.agent = agent or Agent(
-            model=_create_model(settings.agents.auditor_model),
+            model=_create_model(settings.agents.auditor_model),  # type: ignore
             result_type=PlanAuditResult,
             system_prompt=(
                 "You are an expert Software Architect and QA Auditor. "
@@ -116,4 +116,4 @@ class PlanAuditor:
             )
         else:
             # pydantic-ai v1.32.0+ uses .data for structured result
-            return result.data  # type: ignore
+            return result.data

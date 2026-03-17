@@ -1,7 +1,8 @@
 import pytest
 from ac_cdd_core.domain_models import ArchitectCriticResponse
 
-def test_architect_critic_response_schema():
+
+def test_architect_critic_response_schema() -> None:
     # Test valid passing schema
     valid_pass = ArchitectCriticResponse(is_passed=True, feedback=[])
     assert valid_pass.is_passed is True
@@ -13,5 +14,5 @@ def test_architect_critic_response_schema():
     assert len(valid_fail.feedback) == 2
 
     # Verify extra fields are forbidden
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='1 validation error for ArchitectCriticResponse'):
         ArchitectCriticResponse(is_passed=True, feedback=[], unknown_field="invalid")

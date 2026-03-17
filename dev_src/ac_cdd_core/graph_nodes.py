@@ -2,15 +2,14 @@ import asyncio
 import os
 from datetime import UTC, datetime
 from typing import Any
-import json
 
-from rich.console import Console
 from pydantic_ai import Agent
+from rich.console import Console
 
+from .agents import get_model
 from .config import settings
 from .domain_models import ArchitectCriticResponse
 from .enums import FlowStatus
-from .agents import get_model
 from .interfaces import IGraphNodes
 from .sandbox import SandboxRunner
 from .services.audit_orchestrator import AuditOrchestrator
@@ -109,10 +108,10 @@ class CycleNodes(IGraphNodes):
         # Pull generated specs
         spec_content = ""
         docs_dir = settings.paths.documents_dir
-        for root, dirs, files in os.walk(docs_dir):
+        for root, _dirs, files in os.walk(docs_dir):
             for file in files:
                 if file.endswith(".md"):
-                    with open(os.path.join(root, file), 'r') as f:
+                    with open(os.path.join(root, file)) as f:  # noqa: ASYNC230, PTH123, PTH118
                         spec_content += f"\n--- {file} ---\n{f.read()}\n"
 
         prompt = f"{critic_instruction}\n\nReview the following generated documents:\n{spec_content}"
@@ -161,36 +160,35 @@ class CycleNodes(IGraphNodes):
                 "current_phase": "architect_done",
                 "critic_feedback": []
             }
-        else:
-            console.print("[bold red]Architecture Failed Critic Validation! Routing back to Architect.[/bold red]")
-            for flaw in response.feedback:
-                console.print(f"  - [red]{flaw}[/red]")
+        console.print("[bold red]Architecture Failed Critic Validation! Routing back to Architect.[/bold red]")
+        for flaw in response.feedback:
+            console.print(f"  - [red]{flaw}[/red]")
 
-            # Send feedback back to Jules Session
-            if session_name:
-                try:
-                    session_url = self.jules._get_session_url(session_name)
-                    feedback_str = "CRITIC FEEDBACK - FIX THESE ISSUES:\n" + "\n".join([f"- {f}" for f in response.feedback])
-                    await self.jules._send_message(session_url, feedback_str)
+        # Send feedback back to Jules Session
+        if session_name:
+            try:
+                session_url = self.jules._get_session_url(session_name)
+                feedback_str = "CRITIC FEEDBACK - FIX THESE ISSUES:\n" + "\n".join([f"- {f}" for f in response.feedback])
+                await self.jules._send_message(session_url, feedback_str)
 
-                    console.print("[dim]Waiting for Architect Agent to finish review and push fixes...[/dim]")
-                    await asyncio.sleep(10)
-                    wait_result = await self.jules.wait_for_completion(session_name)
-                    if wait_result.get("pr_url"):
-                        return {
-                            "status": FlowStatus.CRITIC_REJECTED.value,
-                            "critic_feedback": response.feedback,
-                            "is_architecture_locked": False,
-                            "pr_url": wait_result["pr_url"]
-                        }
-                except Exception as e:
-                    console.print(f"[yellow]Failed to push feedback to Jules Session: {e}[/yellow]")
+                console.print("[dim]Waiting for Architect Agent to finish review and push fixes...[/dim]")
+                await asyncio.sleep(10)
+                wait_result = await self.jules.wait_for_completion(session_name)
+                if wait_result.get("pr_url"):
+                    return {
+                        "status": FlowStatus.CRITIC_REJECTED.value,
+                        "critic_feedback": response.feedback,
+                        "is_architecture_locked": False,
+                        "pr_url": wait_result["pr_url"]
+                    }
+            except Exception as e:
+                console.print(f"[yellow]Failed to push feedback to Jules Session: {e}[/yellow]")
 
-            return {
-                "status": FlowStatus.CRITIC_REJECTED.value,
-                "critic_feedback": response.feedback,
-                "is_architecture_locked": False
-            }
+        return {
+            "status": FlowStatus.CRITIC_REJECTED.value,
+            "critic_feedback": response.feedback,
+            "is_architecture_locked": False
+        }
 
 
     async def _send_audit_feedback_to_session(

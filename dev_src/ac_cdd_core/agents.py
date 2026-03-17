@@ -72,7 +72,7 @@ def _get_openrouter_api_key() -> str:
     return "sk-dummy"
 
 
-def get_model(model_name: str) -> Model | str:
+def get_model(model_name: str) -> Any:
     """
     Parses the model name and returns an OpenAIModel with appropriate settings
     if it is an OpenRouter model.
@@ -84,10 +84,7 @@ def get_model(model_name: str) -> Model | str:
         # OpenAIModel requires env var for OpenRouter if using provider="openrouter"
         os.environ["OPENROUTER_API_KEY"] = api_key
 
-        return OpenAIModel(
-            model_name=real_model_name,
-            provider="openrouter",
-        )
+        return OpenAIModel(real_model_name, base_url='https://openrouter.ai/api/v1')
 
     # If gemini/ prefix exists, or just return the string (let PydanticAI handle it)
     if model_name.startswith("gemini/"):
