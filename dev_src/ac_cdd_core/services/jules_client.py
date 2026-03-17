@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 import unittest.mock
-from typing import Any
+from typing import Any, cast
 
 try:
     import select
@@ -58,14 +58,14 @@ class JulesClient:
         self.git = GitManager()
 
         try:
-            self.credentials, self.project_id_from_auth = google.auth.default()  # type: ignore[no-untyped-call]
+            self.credentials, self.project_id_from_auth = google.auth.default()
             if not self.project_id:
                 self.project_id = self.project_id_from_auth
         except Exception as e:
             logger.warning(
                 f"Could not load Google Credentials: {e}. Falling back to API Key if available."
             )
-            self.credentials = None
+            self.credentials = cast(Any, None)
 
         self.manager_agent = get_manager_agent()
 

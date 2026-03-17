@@ -39,7 +39,9 @@ class JulesContextBuilder:
                 path = Path(filepath)
                 if path.exists():
                     content = path.read_text(encoding="utf-8")
-                    context_parts.append(f"\n## Context File: {path.name}\n```markdown\n{content}\n```\n")
+                    context_parts.append(
+                        f"\n## Context File: {path.name}\n```markdown\n{content}\n```\n"
+                    )
             except Exception as e:
                 logger.debug(f"Could not read context file {filepath}: {e}")
 

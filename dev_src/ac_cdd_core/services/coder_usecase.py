@@ -47,7 +47,7 @@ class CoderUseCase:
         phase_label = "REFACTORING" if current_phase == WorkPhase.REFACTORING else "CODER"
 
         mgr = StateManager()
-        cycle_manifest = mgr.get_cycle(cycle_id)
+        cycle_manifest = mgr.get_cycle(state.cycle_id)
 
         jules_session_name: str | None = None
         result: dict[str, Any] | None = None
@@ -58,11 +58,15 @@ class CoderUseCase:
             or (state.resume_mode and state.status != FlowStatus.RETRY_FIX)
         ) and (cycle_manifest and cycle_manifest.jules_session_id):
             jules_session_name = cycle_manifest.jules_session_id
-            console.print(f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]")
+            console.print(
+                f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]"
+            )
             try:
                 result = await self.jules.wait_for_completion(jules_session_name)
                 if not (result.get("status") == "success" or result.get("pr_url")):
-                    console.print("[yellow]Existing session did not produce PR. Restarting...[/yellow]")
+                    console.print(
+                        "[yellow]Existing session did not produce PR. Restarting...[/yellow]"
+                    )
                     result = None
             except Exception as e:
                 console.print(f"[yellow]Wait/Resume failed: {e}. Starting new session.[/yellow]")
@@ -80,24 +84,24 @@ class CoderUseCase:
         # --- C. Launch NEW session ---
         if not result:
             console.print(
-                f"[bold green]Starting {phase_label} Session for Cycle {cycle_id} "
+                f"[bold green]Starting {phase_label} Session for Cycle {state.cycle_id} "
                 f"(Iteration {iteration})...[/bold green]"
             )
-            instruction = self._build_instruction(cycle_id, current_phase, state, cycle_manifest)
+            instruction = self._build_instruction(state.cycle_id, current_phase, state, cycle_manifest)
             target_files = settings.get_target_files()
             context_files = settings.get_context_files()
 
             try:
                 timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
                 prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
-                session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}"
+                session_req_id = f"{prefix}-cycle-{state.cycle_id}-iter-{iteration}-{timestamp}"
 
                 jules_session_name, result = await self._run_jules_session(
-                    session_req_id, instruction, target_files, context_files, cycle_id, mgr
+                    session_req_id, instruction, target_files, context_files, state.cycle_id, mgr
                 )
             except Exception as e:
                 console.print(f"[red]{phase_label} Session Failed: {e}[/red]")
-                return self._handle_session_failure(cycle_manifest, cycle_id, str(e), mgr)
+                return self._handle_session_failure(cycle_manifest, state.cycle_id, str(e), mgr)
 
         # --- D. Post-Session Processing (Success Handling & Self-Critic) ---
         if result and (result.get("status") == "success" or result.get("pr_url")):
@@ -107,10 +111,10 @@ class CoderUseCase:
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
             if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
-                result = await self._run_critic_phase(cycle_id, jules_session_name) or result
+                result = await self._run_critic_phase(state.cycle_id, jules_session_name) or result
 
             if cycle_manifest:
-                mgr.update_cycle_state(cycle_id, session_restart_count=0)
+                mgr.update_cycle_state(state.cycle_id, session_restart_count=0)
 
             # If we just finished a post-audit refactor, we are COMPLETED for this cycle
             if is_post_audit_refactor:
@@ -121,11 +125,10 @@ class CoderUseCase:
         # --- E. Failure Handling ---
         if result and result.get("status") == "failed":
             return self._handle_session_failure(
-                cycle_manifest, cycle_id, result.get("error", "Unknown error"), mgr
+                cycle_manifest, state.cycle_id, result.get("error", "Unknown error"), mgr
             )
 
         return {"status": FlowStatus.FAILED, "error": "Jules failed to produce PR"}
-
 
     def _build_instruction(
         self,
@@ -142,7 +145,7 @@ class CoderUseCase:
         else:
             instruction = settings.get_template("CODER_INSTRUCTION.md").read_text()
 
-        instruction = instruction.replace("{{cycle_id}}", str(cycle_id))
+        instruction = instruction.replace("{{state.cycle_id}}", str(state.cycle_id))
 
         last_audit = state.audit_result
         if state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback:
@@ -162,9 +165,7 @@ class CoderUseCase:
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
         if not (
-            (is_retry or is_post_refactor)
-            and cycle_manifest
-            and cycle_manifest.jules_session_id
+            (is_retry or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
         ):
             return None
 
@@ -182,7 +183,8 @@ class CoderUseCase:
         # For Post-Audit Refactor, we send the new instruction as a message
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
             return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id, self._build_instruction(cycle_id, None, state, cycle_manifest)
+                cycle_manifest.jules_session_id,
+                self._build_instruction(state.cycle_id, None, state, cycle_manifest),
             )
 
         return await self._send_audit_feedback_to_session(

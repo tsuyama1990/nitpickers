@@ -78,7 +78,9 @@ class JulesSessionNodes:
 
                     # Only emit INFO when state changes; repeated same-state polls are demoted to DEBUG
                     if new_jules_state != _state_in.jules_state:
-                        logger.info(f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}")
+                        logger.info(
+                            f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}"
+                        )
                     else:
                         logger.debug(f"Jules session state (unchanged): {new_jules_state}")
 

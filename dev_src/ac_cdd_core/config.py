@@ -302,7 +302,7 @@ class Settings(BaseSettings):
             self.filename_arch,
             "SPEC.md",
             "UAT.md",
-            "USER_TEST_SCENARIO.md"
+            "USER_TEST_SCENARIO.md",
         ]
 
         found_files = []
