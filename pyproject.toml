@@ -3,10 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "autonomous-dev-env"
+name = "nitpickers"
 version = "0.1.0"
-description = "AI-Native Cycle-Based Contract-Driven Development Environment"
+description = "AI-Native Code Development Environment with Red Teaming (Nitpickers)."
 readme = "README.md"
+authors = [
+    { name = "tomoyuki tsuyama", email = "tomoyuki.tsuyaman@gmail.com" },
+]
 requires-python = ">=3.12, <3.14"
 dependencies = [
     "pydantic~=2.11.0",
