@@ -4,7 +4,7 @@
 Cycle 04 constructs the second, definitive layer of the Zero-Trust Validation mechanism: execution-based verification within an isolated E2B sandbox. The system will no longer rely on the AI's assurance that the code works; it will demand physical proof in the form of successful test executions. This cycle fully implements the `uat_evaluate_node`, establishing a secure bridge between the local LangGraph orchestrator and the remote ephemeral E2B environment. The process involves synchronizing the AI-generated source code and test scripts (`pytest`) into the sandbox, executing the test commands remotely, and rigorously extracting the standard output, standard error, exit codes, and coverage reports. If the tests fail, the raw execution traceback is precisely extracted and fed back to the Jules Coder session, transforming the debugging process from a guessing game into an evidence-based resolution loop. This ensures that only code that demonstrably passes its User Acceptance Tests is permitted to merge.
 
 ## 2. System Architecture
-This cycle focuses heavily on the `src/ac_cdd_core/sandbox.py` module and its integration within `ac_cdd_core/graph_nodes.py`. We will utilize the `e2b-code-interpreter` SDK to manage the remote container lifecycle. The architecture requires a seamless file synchronization mechanism to push the local project directory (or specifically, the generated `src` and `tests` directories) into the remote sandbox workspace before execution.
+This cycle focuses heavily on the `src/sandbox.py` module and its integration within `ac_cdd_core/graph_nodes.py`. We will utilize the `e2b-code-interpreter` SDK to manage the remote container lifecycle. The architecture requires a seamless file synchronization mechanism to push the local project directory (or specifically, the generated `src` and `tests` directories) into the remote sandbox workspace before execution.
 
 ### File Structure Modification
 ```ascii
@@ -27,9 +27,9 @@ The design requires robust encapsulation of the remote execution logic and preci
 ## 4. Implementation Approach
 The implementation involves complex remote API interactions and careful state mapping.
 
-1.  **Enhance SandboxRunner**: Open `src/ac_cdd_core/sandbox.py`. Implement the file upload logic using the `e2b-code-interpreter` SDK to transfer the necessary files to the container. Implement a robust `execute` method that runs commands like `pytest -v --tb=short` and captures the outputs.
-2.  **Update CycleState**: Modify `src/ac_cdd_core/state.py` to include fields for `sandbox_stdout`, `sandbox_stderr`, and `sandbox_exit_code`.
-3.  **Implement uat_evaluate_node**: In `src/ac_cdd_core/graph_nodes.py`, fully flesh out the `uat_evaluate_node`. This node must:
+1.  **Enhance SandboxRunner**: Open `src/sandbox.py`. Implement the file upload logic using the `e2b-code-interpreter` SDK to transfer the necessary files to the container. Implement a robust `execute` method that runs commands like `pytest -v --tb=short` and captures the outputs.
+2.  **Update CycleState**: Modify `src/state.py` to include fields for `sandbox_stdout`, `sandbox_stderr`, and `sandbox_exit_code`.
+3.  **Implement uat_evaluate_node**: In `src/graph_nodes.py`, fully flesh out the `uat_evaluate_node`. This node must:
     *   Initialize the `SandboxRunner`.
     *   Sync the current cycle's source and test files.
     *   Execute the tests.

@@ -23,7 +23,7 @@ This cycle introduces a new state machine layer specifically for integration, ex
 ## 3. Design Architecture
 The implementation requires a robust mechanism to represent Git conflicts as Pydantic models.
 
-1.  **ConflictRegistry Schema**: Define `ConflictRegistry` in `src/ac_cdd_core/domain_models.py`. It should contain `file_path`, `conflicting_blocks` (a list of raw text strings containing the `<<<<<<<` to `>>>>>>>` blocks), and `resolution_status`.
+1.  **ConflictRegistry Schema**: Define `ConflictRegistry` in `src/domain_models.py`. It should contain `file_path`, `conflicting_blocks` (a list of raw text strings containing the `<<<<<<<` to `>>>>>>>` blocks), and `resolution_status`.
 2.  **Git Conflict Extractor**: Implement a utility function in `utils.py` that, upon a failed `git merge`, scans the repository for files containing standard Git conflict markers and populates the `ConflictRegistry`.
 3.  **Master Integrator Node**: Create a new node in LangGraph, `master_integrator_node`. This node uses `MASTER_INTEGRATOR_INSTRUCTION.md` to instruct a dedicated Jules session (the 'Master Integrator') to resolve the specific conflicts listed in the registry, ensuring the DRY principle is respected during the synthesis.
 4.  **Marker Validation**: A strict regex-based validation step is required immediately after the integrator returns its code. If any string matching `<<<<<<<`, `=======`, or `>>>>>>>` remains in the file, the payload is instantly rejected and sent back to the integrator.
@@ -32,9 +32,9 @@ The implementation requires a robust mechanism to represent Git conflicts as Pyd
 The implementation focuses on intercepting Git failures and routing them into an AI-driven resolution loop.
 
 1.  **Define Instruction**: Create `MASTER_INTEGRATOR_INSTRUCTION.md`. This must instruct the AI to perform a semantic merge, not just a line-by-line choice. It must understand the specifications of both branches.
-2.  **Implement Extractor**: In `src/ac_cdd_core/utils.py`, write `extract_git_conflicts(repo_path)`. This function uses regex to find conflict markers, extracts the surrounding blocks, and returns a list of `ConflictRegistry` objects.
-3.  **Modify Merge Logic**: In `src/ac_cdd_core/services/workflow.py`, wrap the final `git merge` command (where the cycle branch merges into the integration branch). Catch the `subprocess.CalledProcessError` that occurs on conflict.
-4.  **Implement Integrator Node**: In `src/ac_cdd_core/graph_nodes.py`, build `master_integrator_node`. It reads the `ConflictRegistry`, formats the prompt, calls the AI, writes the resulting code back to the files, and crucially, runs a regex check to ensure all markers are gone.
+2.  **Implement Extractor**: In `src/utils.py`, write `extract_git_conflicts(repo_path)`. This function uses regex to find conflict markers, extracts the surrounding blocks, and returns a list of `ConflictRegistry` objects.
+3.  **Modify Merge Logic**: In `src/services/workflow.py`, wrap the final `git merge` command (where the cycle branch merges into the integration branch). Catch the `subprocess.CalledProcessError` that occurs on conflict.
+4.  **Implement Integrator Node**: In `src/graph_nodes.py`, build `master_integrator_node`. It reads the `ConflictRegistry`, formats the prompt, calls the AI, writes the resulting code back to the files, and crucially, runs a regex check to ensure all markers are gone.
 5.  **State Machine Updates**: Ensure the state machine logic in `workflow.py` loops back to the `master_integrator_node` if the validation fails, and proceeds to `git add` and `git commit` if the resolution is verified clean.
 
 ## 5. Test Strategy

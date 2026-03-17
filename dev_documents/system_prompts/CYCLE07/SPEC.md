@@ -23,14 +23,14 @@ The implementation requires defining instructions for macro-level analysis and r
 
 1.  **Global Refactor Node**: This node is unique because its context window must encompass the entire `src/` directory. It uses `GLOBAL_REFACTOR_INSTRUCTION.md` to instruct Jules to look for specific anti-patterns of parallel development (duplication, orphaned files, inconsistent naming across modules).
 2.  **State Management**: We will introduce a top-level state machine phase, e.g., `WorkflowPhase.GLOBAL_REFACTOR`, to distinguish this from standard cycle execution.
-3.  **Verification Re-routing**: The most critical architectural decision here is that the output of `global_refactor_node` must automatically trigger the execution of `linter_gate_node` and all assembled `uat_evaluate_node` tests across the entire project. If the refactoring breaks a test, the pipeline must fail and route back to the refactor node with the traceback.
+3.  **Verification Re-routing**: The most critical architectural decision here is that the output of `global_refactor_node` must automatically trigger the execution of the entire project validation sequence. This sequence must strictly enforce: Self-Critic Review -> Stateful Auditor Passes (2 passes x 3 auditors) -> Final Self-Critic Review -> Linter Gate -> Sandbox UAT execution. If any step fails, the pipeline must fail and route back to the refactor node with the traceback.
 
 ## 4. Implementation Approach
 The implementation focuses on orchestrating a final, project-wide review and validation loop.
 
 1.  **Define Instruction**: Create `GLOBAL_REFACTOR_INSTRUCTION.md`. This prompt must explicitly instruct the AI to perform AST-level analysis, consolidate helper functions, and enforce the DRY principle across module boundaries.
-2.  **Implement Node**: In `src/ac_cdd_core/graph_nodes.py`, create `global_refactor_node`. This node reads all files in `src/`, bundles them into a massive context prompt, and queries Jules. It then writes the updated files back to disk.
-3.  **Modify Workflow Orchestrator**: Update `src/ac_cdd_core/services/workflow.py`. Add logic so that after all pending cycles report `COMPLETED` and are merged via the Integrator, the system transitions to the `GLOBAL_REFACTOR` phase.
+2.  **Implement Node**: In `src/graph_nodes.py`, create `global_refactor_node`. This node reads all files in `src/`, bundles them into a massive context prompt, and queries Jules. It then writes the updated files back to disk.
+3.  **Modify Workflow Orchestrator**: Update `src/services/workflow.py`. Add logic so that after all pending cycles report `COMPLETED` and are merged via the Integrator, the system transitions to the `GLOBAL_REFACTOR` phase.
 4.  **Re-Validation Logic**: Construct a sub-graph or sequence within `workflow.py` that executes the `ruff`/`mypy` checks against the entire project, followed by executing the complete `pytest` suite in the E2B sandbox. If any test fails, feed the error back to the `global_refactor_node`.
 
 ## 5. Test Strategy

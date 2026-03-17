@@ -23,17 +23,17 @@ This cycle heavily modifies the `coder_session` graph within `ac_cdd_core/graph.
 The implementation hinges on capturing deterministic execution outputs and mapping them into the LangGraph state machine.
 
 1.  **Linter Output Schema**: We need a small internal structure to capture the stdout, stderr, and exit codes of the `ruff` and `mypy` processes. If the exit code is non-zero, the execution fails.
-2.  **State Update**: `CycleState` will be updated to handle `linter_feedback` (string) and `coder_critic_feedback` (string).
-3.  **Prompt Engineering**: The `CODER_CRITIC_INSTRUCTION.md` must be meticulously designed. It must force the AI to execute a specific Chain of Thought (CoT), e.g., "Step 1: Verify all function signatures exactly match the SPEC.md. Step 2: Search for any hardcoded strings or magic numbers. Step 3: Ensure type hints are completely defined."
+2.  **State Update**: `CycleState` will be updated to handle `linter_feedback` (string), `pre_audit_critic_feedback` (string), and `post_audit_critic_feedback` (string).
+3.  **Prompt Engineering**: The `CODER_CRITIC_INSTRUCTION.md` (for pre-audit) and `POST_AUDIT_REFACTOR_INSTRUCTION.md` (for post-audit) must be meticulously designed. They must force the AI to execute a specific Chain of Thought (CoT), e.g., "Step 1: Verify all function signatures exactly match the SPEC.md. Step 2: Search for any hardcoded strings or magic numbers. Step 3: Ensure type hints are completely defined."
 4.  **Strict Mode**: The execution of `mypy` and `ruff` must be configured (via `pyproject.toml` or CLI flags) to run in their strictest possible modes. We are aiming for zero-tolerance of sloppy code.
 
 ## 4. Implementation Approach
 The implementation focuses on executing local shell commands securely and parsing their outputs into actionable feedback for the AI.
 
 1.  **Define Instructions**: Create `CODER_CRITIC_INSTRUCTION.md` and `POST_AUDIT_REFACTOR_INSTRUCTION.md` in the templates directory. These files define the rigorous checklists for intra-cycle review and post-audit refactoring.
-2.  **Implement Linter Gate**: In `src/ac_cdd_core/graph_nodes.py`, create `linter_gate_node`. This node will use Python's `subprocess` module to execute `uv run ruff check .` and `uv run mypy .` (or equivalent commands based on the project structure). Capture the output. If the return code is not 0, format the output into a string and transition the state to a failure route.
-3.  **Implement Coder Critic**: Create `coder_critic_node`. This node functions like the architect critic: it loads the checklist template, formats it with the current code context, and queries the existing Jules session.
-4.  **Modify the Graph**: Update `_create_coder_graph` in `src/ac_cdd_core/graph.py`. The edge from `coder_session` must now point to `linter_gate_node`. From `linter_gate_node`, conditional routing must dictate that a pass goes to `coder_critic_node`, and a fail routes back to `coder_session` with the linter feedback. From `coder_critic_node`, a pass goes to the Auditor (or UAT), and a fail routes back to `coder_session`.
+2.  **Implement Linter Gate**: In `src/graph_nodes.py`, create `linter_gate_node`. This node will use Python's `subprocess` module to execute `uv run ruff check .` and `uv run mypy .` (or equivalent commands based on the project structure). Capture the output. If the return code is not 0, format the output into a string and transition the state to a failure route.
+3.  **Implement Coder Critics**: Create `pre_audit_critic_node` and `post_audit_critic_node`. These nodes function like the architect critic: they load their respective checklist templates, format them with the current code context, and query the existing Jules session. The `post_audit_critic_node` specifically runs *after* the external Auditor nodes have completed their passes.
+4.  **Modify the Graph**: Update `_create_coder_graph` in `src/graph.py`. The edge from `coder_session` must now point to `linter_gate_node`. From `linter_gate_node`, conditional routing must dictate that a pass goes to `pre_audit_critic_node`, and a fail routes back to `coder_session` with the linter feedback. From `pre_audit_critic_node`, a pass goes to the Auditor. From the Auditor, a pass goes to `post_audit_critic_node`, and a fail routes back to `coder_session`.
 
 ## 5. Test Strategy
 Testing relies heavily on executing the linters against known good and bad code samples.

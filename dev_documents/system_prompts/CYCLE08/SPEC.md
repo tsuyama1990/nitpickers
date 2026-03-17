@@ -31,9 +31,9 @@ The implementation relies on specialized, single-purpose AI nodes and determinis
 The implementation focuses on the `finalize_session` command execution flow.
 
 1.  **Define Instructions**: Create `README_GENERATION_INSTRUCTION.md` and `DEPENDENCY_AUDIT_INSTRUCTION.md`.
-2.  **Implement Docs Generation**: In `src/ac_cdd_core/graph_nodes.py`, implement `generate_docs_node`. This node reads the context, generates the README, and writes it to the root directory. It also generates the single Marimo file defined in `USER_TEST_SCENARIO.md`.
-3.  **Implement Dependency Audit**: In `src/ac_cdd_core/graph_nodes.py`, implement `audit_dependencies_node`. This node executes a script (or utilizes a tool like `pip-audit` or `deptry` via subprocess) to identify unused packages and updates the `pyproject.toml` accordingly. It then runs `uv sync` to ensure the environment resolves correctly.
-4.  **Modify Finalize Workflow**: In `src/ac_cdd_core/services/workflow.py`, update `finalize_session`. Sequence the execution: `audit_dependencies_node` -> `generate_docs_node` -> execute final test suite in sandbox -> generate Pull Request.
+2.  **Implement Docs Generation**: In `src/graph_nodes.py`, implement `generate_docs_node`. This node reads the context, generates the README, and writes it to the root directory. It also generates the single Marimo file defined in `USER_TEST_SCENARIO.md`.
+3.  **Implement Dependency Audit**: In `src/graph_nodes.py`, implement `audit_dependencies_node`. This node executes a script (or utilizes a tool like `pip-audit` or `deptry` via subprocess) to identify unused packages and updates the `pyproject.toml` accordingly. It then runs `uv sync` to ensure the environment resolves correctly.
+4.  **Modify Finalize Workflow**: In `src/services/workflow.py`, update `finalize_session`. Sequence the execution: `audit_dependencies_node` -> `generate_docs_node` -> execute final test suite in sandbox -> generate Pull Request.
 
 ## 5. Test Strategy
 Testing this final phase involves verifying document generation and safe file modification.

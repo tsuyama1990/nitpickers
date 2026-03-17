@@ -21,19 +21,19 @@ The architecture for this cycle modifies the LangGraph workflow defined in `ac_c
 ## 3. Design Architecture
 The implementation relies heavily on Pydantic to ensure the integrity of the state machine. We will extend the existing `CycleState` and internal status enums to represent the new transition states.
 
-1.  **State Extension**: `CycleState` in `src/ac_cdd_core/state.py` will be subtly extended to include a `critic_feedback` list (string) and a boolean `is_architecture_locked`.
-2.  **Enum Updates**: `FlowStatus` in `src/ac_cdd_core/enums.py` will require new states such as `CRITIC_REJECTED` and `ARCHITECTURE_APPROVED`.
+1.  **State Extension**: `CycleState` in `src/state.py` will be subtly extended to include a `critic_feedback` list (string) and a boolean `is_architecture_locked`.
+2.  **Enum Updates**: `FlowStatus` in `src/enums.py` will require new states such as `CRITIC_REJECTED` and `ARCHITECTURE_APPROVED`.
 3.  **Prompt Template**: The `ARCHITECT_CRITIC_INSTRUCTION.md` will serve as the rigid contract for the critic node. It must explicitly enforce checking for N+1 problems, race conditions, scalability bottlenecks, security risks, and strictly demand that every `SPEC.md` defines unalterable function signatures, class names, and API payloads.
 4.  **Immutability**: Once the loop resolves and `is_architecture_locked` becomes true, the generated specification files (`SYSTEM_ARCHITECTURE.md` and the individual `SPEC.md` files) are treated as read-only contracts for the remainder of the project. Any attempt by a later Coder session to modify these contracts will be blocked.
 
 ## 4. Implementation Approach
 The implementation will follow a precise, step-by-step methodology to integrate the Self-Critic loop into the existing `gen-cycles` command without destabilizing the current CLI or orchestrator.
 
-1.  **Define the Instructions**: First, create the `ARCHITECT_CRITIC_INSTRUCTION.md` template in `src/ac_cdd_core/templates/`. This file must contain the exhaustive checklist of architectural anti-patterns and the strict requirement for interface locking.
-2.  **Update Enums**: Modify `src/ac_cdd_core/enums.py` to include `FlowStatus.CRITIC_REJECTED` and `FlowStatus.ARCHITECTURE_APPROVED`.
-3.  **Implement the Node Logic**: In `src/ac_cdd_core/graph_nodes.py`, implement the `architect_critic_node` function. This function must retrieve the current state, load the `ARCHITECT_CRITIC_INSTRUCTION.md` template, format it with the current architectural drafts, and send it to the existing Jules session via `jules_client`.
-4.  **Implement the Validation Parser**: Within the new node, implement a rigid parser using Pydantic validation (in `src/ac_cdd_core/validators.py`) to interpret Jules's response. The response must be forced into a structured JSON format indicating either 'pass' or 'fail' along with specific, actionable feedback if it fails.
-5.  **Modify the Graph**: Finally, update `src/ac_cdd_core/graph.py`. Locate the `_create_architect_graph` method. Change the edge `architect_session -> END` to point to the new `architect_critic_node`. Add conditional edges from the critic node: if `ARCHITECTURE_APPROVED`, route to `END`; if `CRITIC_REJECTED`, route back to `architect_session` with the feedback appended to the state.
+1.  **Define the Instructions**: First, create the `ARCHITECT_CRITIC_INSTRUCTION.md` template in `src/templates/`. This file must contain the exhaustive checklist of architectural anti-patterns and the strict requirement for interface locking.
+2.  **Update Enums**: Modify `src/enums.py` to include `FlowStatus.CRITIC_REJECTED` and `FlowStatus.ARCHITECTURE_APPROVED`.
+3.  **Implement the Node Logic**: In `src/graph_nodes.py`, implement the `architect_critic_node` function. This function must retrieve the current state, load the `ARCHITECT_CRITIC_INSTRUCTION.md` template, format it with the current architectural drafts, and send it to the existing Jules session via `jules_client`.
+4.  **Implement the Validation Parser**: Within the new node, implement a rigid parser using Pydantic validation (in `src/validators.py`) to interpret Jules's response. The response must be forced into a structured JSON format indicating either 'pass' or 'fail' along with specific, actionable feedback if it fails.
+5.  **Modify the Graph**: Finally, update `src/graph.py`. Locate the `_create_architect_graph` method. Change the edge `architect_session -> END` to point to the new `architect_critic_node`. Add conditional edges from the critic node: if `ARCHITECTURE_APPROVED`, route to `END`; if `CRITIC_REJECTED`, route back to `architect_session` with the feedback appended to the state.
 
 ## 5. Test Strategy
 Testing this cycle requires verifying both the prompt formatting and the state machine routing.
