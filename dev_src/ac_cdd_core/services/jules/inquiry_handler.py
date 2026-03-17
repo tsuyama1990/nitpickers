@@ -182,7 +182,7 @@ class JulesInquiryHandler:
         max_rejections: int,
     ) -> None:
         """Handles automated plan review and approval."""
-        session_name = "sessions/" + session_url.split("/sessions/")[-1]
+        session_name = "sessions/" + session_url.rsplit("/sessions/", maxsplit=1)[-1]
 
         result = await self.fetch_pending_plan(client, session_url, processed_ids)
         if not result:

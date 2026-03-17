@@ -24,7 +24,7 @@ class GitCheckoutMixin(BaseGitManager):
                 if force:
                     cmd.append("-f")
                 await self._run_git(cmd)
-                
+
                 # IMPORTANT: Always try to sync with remote to get any freshly merged PRs
                 with contextlib.suppress(Exception):
                     await self._run_git(["fetch"])

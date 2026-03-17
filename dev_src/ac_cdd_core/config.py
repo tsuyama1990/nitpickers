@@ -304,13 +304,13 @@ class Settings(BaseSettings):
             "UAT.md",
             "USER_TEST_SCENARIO.md"
         ]
-        
+
         found_files = []
         for fname in target_files:
             fpath = p / fname
             if fpath.exists() and str(fpath) not in found_files:
                 found_files.append(str(fpath))
-                
+
         if found_files:
             return found_files
 
