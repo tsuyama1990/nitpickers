@@ -36,9 +36,20 @@ class GraphBuilder:
         workflow = StateGraph(CycleState)
 
         workflow.add_node("architect_session", self.nodes.architect_session_node)
+        workflow.add_node("architect_critic", self.nodes.architect_critic_node)
 
         workflow.add_edge(START, "architect_session")
-        workflow.add_edge("architect_session", END)
+        workflow.add_edge("architect_session", "architect_critic")
+
+        # Conditional edge from critic back to session if rejected, else end
+        workflow.add_conditional_edges(
+            "architect_critic",
+            lambda state: FlowStatus.ARCHITECTURE_APPROVED.value if state.get("is_architecture_locked") else FlowStatus.CRITIC_REJECTED.value,
+            {
+                FlowStatus.ARCHITECTURE_APPROVED.value: END,
+                FlowStatus.CRITIC_REJECTED.value: "architect_session",
+            },
+        )
 
         return workflow
 

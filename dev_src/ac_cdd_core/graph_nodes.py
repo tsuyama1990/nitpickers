@@ -1,10 +1,16 @@
 import asyncio
+import os
 from datetime import UTC, datetime
 from typing import Any
+import json
 
 from rich.console import Console
+from pydantic_ai import Agent
 
 from .config import settings
+from .domain_models import ArchitectCriticResponse
+from .enums import FlowStatus
+from .agents import get_model
 from .interfaces import IGraphNodes
 from .sandbox import SandboxRunner
 from .services.audit_orchestrator import AuditOrchestrator
@@ -73,75 +79,119 @@ class CycleNodes(IGraphNodes):
             and result.get("pr_url")
             and result.get("session_name")
         ):
-            # Save session_name now – the Critic phase will overwrite `result`
-            # and wait_for_completion() does NOT include session_name in its return value.
             session_name = result["session_name"]
-
-            # ── Critic Phase: Self-Reflection & Correction ──
-            console.print(
-                "[bold cyan]Initial Architecture PR created. "
-                "Invoking Critic Agent for self-reflection...[/bold cyan]"
-            )
-            try:
-                critic_instruction = settings.get_template(
-                    "ARCHITECT_CRITIC_INSTRUCTION.md"
-                ).read_text()
-                session_url = self.jules._get_session_url(session_name)
-                await self.jules._send_message(session_url, critic_instruction)
-
-                console.print(
-                    "[dim]Waiting for Critic Agent to finish review and push fixes...[/dim]"
-                )
-                # Short sleep to allow state to transition from COMPLETED back to working
-                await asyncio.sleep(10)
-
-                # Wait for the second completion (post-criticism)
-                result = await self.jules.wait_for_completion(session_name)
-            except Exception as e:
-                console.print(
-                    f"[yellow]Warning: Critic phase error, proceeding with initial PR: {e}[/yellow]"
-                )
-
-            if not result.get("pr_url"):
-                return {
-                    "status": "architect_failed",
-                    "error": "Jules failed during the Critic phase or the PR was lost.",
-                }
-
             pr_url = result["pr_url"]
-            pr_number = pr_url.split("/")[-1]
-
-            # Auto-Merge Architecture PR
-            try:
-                console.print(
-                    f"[bold blue]Auto-merging Architecture PR #{pr_number}...[/bold blue]"
-                )
-                await self.git.merge_pr(pr_number)
-                console.print("[bold green]Architecture merged successfully![/bold green]")
-
-                # Prepare environment (fix perms, sync dependencies)
-                try:
-                    await ProjectManager().prepare_environment()
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Environment preparation issue: {e}[/yellow]")
-
-            except Exception as e:
-                console.print(f"[bold red]Failed to auto-merge Architecture PR: {e}[/bold red]")
-                # We don't fail the cycle here, but manual intervention will be needed
 
             return {
                 "status": "architect_completed",
-                "current_phase": "architect_done",
+                "current_phase": "architect",
                 "integration_branch": integration_branch,
-                "active_branch": integration_branch,  # Working on integration branch
-                "project_session_id": session_name,  # Use saved session_name (result was overwritten)
+                "active_branch": integration_branch,
+                "project_session_id": session_name,
                 "pr_url": pr_url,
+                "jules_session_name": session_name,
             }
 
         if result.get("error"):
             return {"status": "architect_failed", "error": result.get("error")}
 
         return {"status": "architect_failed", "error": "Unknown Jules error or no PR URL"}
+
+    async def architect_critic_node(self, state: CycleState) -> dict[str, Any]:
+        """Node for Architect Critic Phase: self-reflection and requirement check."""
+        console.print("[bold cyan]Invoking Architect Critic Agent for design validation...[/bold cyan]")
+        session_name = state.get("jules_session_name") or state.get("project_session_id")
+
+        # 1. Fetch current context/files if needed, or rely on Jules Session Context
+        # Here we formulate the evaluation prompt for Pydantic AI
+        critic_instruction = settings.get_template("ARCHITECT_CRITIC_INSTRUCTION.md").read_text()
+
+        # Pull generated specs
+        spec_content = ""
+        docs_dir = settings.paths.documents_dir
+        for root, dirs, files in os.walk(docs_dir):
+            for file in files:
+                if file.endswith(".md"):
+                    with open(os.path.join(root, file), 'r') as f:
+                        spec_content += f"\n--- {file} ---\n{f.read()}\n"
+
+        prompt = f"{critic_instruction}\n\nReview the following generated documents:\n{spec_content}"
+
+        # 2. Execute Pydantic AI Agent to get structured feedback
+        critic_agent = Agent(
+            model=get_model(settings.agents.auditor_model),
+            result_type=ArchitectCriticResponse,
+            system_prompt="You are a strict architecture auditor. Output JSON exactly matching the requested schema."
+        )
+
+        try:
+            result = await critic_agent.run(prompt)
+            response: ArchitectCriticResponse = result.data
+        except Exception as e:
+            console.print(f"[yellow]Warning: Critic failed to parse, routing back to architect. Error: {e}[/yellow]")
+            return {
+                "status": FlowStatus.CRITIC_REJECTED.value,
+                "critic_feedback": [f"Critic agent crashed: {e}"],
+                "is_architecture_locked": False
+            }
+
+        # 3. Determine routing based on CriticResponse
+        if response.is_passed:
+            console.print("[bold green]Architecture Passed Critic Validation! Locking Design.[/bold green]")
+            # Auto-Merge Architecture PR
+            try:
+                pr_url = state.get("pr_url")
+                if pr_url:
+                    pr_number = pr_url.split("/")[-1]
+                    console.print(f"[bold blue]Auto-merging Architecture PR #{pr_number}...[/bold blue]")
+                    await self.git.merge_pr(pr_number)
+                    console.print("[bold green]Architecture merged successfully![/bold green]")
+
+                    # Prepare environment (fix perms, sync dependencies)
+                    try:
+                        await ProjectManager().prepare_environment()
+                    except Exception as e:
+                        console.print(f"[yellow]Warning: Environment preparation issue: {e}[/yellow]")
+            except Exception as e:
+                console.print(f"[bold red]Failed to auto-merge Architecture PR: {e}[/bold red]")
+
+            return {
+                "status": FlowStatus.ARCHITECTURE_APPROVED.value,
+                "is_architecture_locked": True,
+                "current_phase": "architect_done",
+                "critic_feedback": []
+            }
+        else:
+            console.print("[bold red]Architecture Failed Critic Validation! Routing back to Architect.[/bold red]")
+            for flaw in response.feedback:
+                console.print(f"  - [red]{flaw}[/red]")
+
+            # Send feedback back to Jules Session
+            if session_name:
+                try:
+                    session_url = self.jules._get_session_url(session_name)
+                    feedback_str = "CRITIC FEEDBACK - FIX THESE ISSUES:\n" + "\n".join([f"- {f}" for f in response.feedback])
+                    await self.jules._send_message(session_url, feedback_str)
+
+                    console.print("[dim]Waiting for Architect Agent to finish review and push fixes...[/dim]")
+                    await asyncio.sleep(10)
+                    wait_result = await self.jules.wait_for_completion(session_name)
+                    if wait_result.get("pr_url"):
+                        return {
+                            "status": FlowStatus.CRITIC_REJECTED.value,
+                            "critic_feedback": response.feedback,
+                            "is_architecture_locked": False,
+                            "pr_url": wait_result["pr_url"]
+                        }
+                except Exception as e:
+                    console.print(f"[yellow]Failed to push feedback to Jules Session: {e}[/yellow]")
+
+            return {
+                "status": FlowStatus.CRITIC_REJECTED.value,
+                "critic_feedback": response.feedback,
+                "is_architecture_locked": False
+            }
+
 
     async def _send_audit_feedback_to_session(
         self, session_id: str, feedback: str

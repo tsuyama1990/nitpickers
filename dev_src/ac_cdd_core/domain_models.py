@@ -214,3 +214,16 @@ class PlanAuditResult(BaseModel):
     status: Literal["APPROVED", "REJECTED"]
     reason: str
     feedback: str | None = Field(default="", description="Mandatory if REJECTED")
+
+
+class ArchitectCriticResponse(BaseModel):
+    """Structured response from the Architect Critic."""
+
+    model_config = ConfigDict(extra="forbid")
+    is_passed: bool = Field(
+        description="True if the architecture avoids all anti-patterns and locks all interfaces. False otherwise."
+    )
+    feedback: list[str] = Field(
+        default_factory=list,
+        description="List of specific, actionable architectural flaws and missing interface contracts. Empty if passed.",
+    )

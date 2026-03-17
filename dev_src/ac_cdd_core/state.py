@@ -32,6 +32,10 @@ class CycleState(BaseModel):
     audit_result: AuditResult | None = None
     audit_feedback: list[str] = Field(default_factory=list)
     audit_pass_count: int = 0
+
+    # Architect Critic State
+    critic_feedback: list[str] = Field(default_factory=list)
+    is_architecture_locked: bool = False
     audit_retries: int = 0
     audit_logs: str = ""
 

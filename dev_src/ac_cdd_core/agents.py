@@ -9,7 +9,7 @@ from ac_cdd_core.domain_models import (
 from ac_cdd_core.utils import logger
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
-from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.openai import OpenAIModel
 
 
 def _load_file_content(filepath: str) -> str:
@@ -81,10 +81,10 @@ def get_model(model_name: str) -> Model | str:
         real_model_name = model_name.replace("openrouter/", "", 1)
         api_key = _get_openrouter_api_key()
 
-        # OpenAIChatModel requires env var for OpenRouter if using provider="openrouter"
+        # OpenAIModel requires env var for OpenRouter if using provider="openrouter"
         os.environ["OPENROUTER_API_KEY"] = api_key
 
-        return OpenAIChatModel(
+        return OpenAIModel(
             model_name=real_model_name,
             provider="openrouter",
         )

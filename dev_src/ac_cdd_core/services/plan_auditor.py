@@ -26,7 +26,7 @@ class PlanAuditor:
     def __init__(self, agent: Agent[Any, PlanAuditResult] | None = None) -> None:
         self.agent = agent or Agent(
             model=_create_model(settings.agents.auditor_model),
-            output_type=PlanAuditResult,
+            result_type=PlanAuditResult,
             system_prompt=(
                 "You are an expert Software Architect and QA Auditor. "
                 "Your job is to audit ARCHITECTURAL PLANS (not implementation code) against requirements. "
