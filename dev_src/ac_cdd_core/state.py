@@ -63,6 +63,10 @@ class CycleState(BaseModel):
     coder_report: dict[str, Any] | None = None
     planned_cycles: list[str] = Field(default_factory=list)
 
+    # Critic Phase
+    critic_feedback: list[str] = Field(default_factory=list)
+    is_architecture_locked: bool = False
+
     # Session tracking
     project_session_id: str | None = None
     feature_branch: str | None = None  # Main development branch

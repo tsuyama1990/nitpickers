@@ -182,7 +182,7 @@ class CoderUseCase:
         # For Post-Audit Refactor, we send the new instruction as a message
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
             return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id, self._build_instruction(cycle_id, None, state, cycle_manifest)
+                cycle_manifest.jules_session_id, self._build_instruction(state.cycle_id, None, state, cycle_manifest)
             )
 
         return await self._send_audit_feedback_to_session(

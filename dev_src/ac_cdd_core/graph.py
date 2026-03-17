@@ -36,9 +36,19 @@ class GraphBuilder:
         workflow = StateGraph(CycleState)
 
         workflow.add_node("architect_session", self.nodes.architect_session_node)
+        workflow.add_node("architect_critic", self.nodes.architect_critic_node)
 
         workflow.add_edge(START, "architect_session")
-        workflow.add_edge("architect_session", END)
+        workflow.add_edge("architect_session", "architect_critic")
+        workflow.add_conditional_edges(
+            "architect_critic",
+            self.nodes.route_architect_critic,
+            {
+                FlowStatus.ARCHITECTURE_APPROVED.value: END,
+                FlowStatus.CRITIC_REJECTED.value: "architect_session",
+                FlowStatus.ARCHITECT_FAILED.value: END,
+            },
+        )
 
         return workflow
 

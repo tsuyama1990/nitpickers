@@ -20,6 +20,8 @@ class FlowStatus(str, Enum):
     # Architect
     ARCHITECT_COMPLETED = "architect_completed"
     ARCHITECT_FAILED = "architect_failed"
+    CRITIC_REJECTED = "critic_rejected"
+    ARCHITECTURE_APPROVED = "architecture_approved"
 
     # Coder / Session
     READY_FOR_AUDIT = "ready_for_audit"

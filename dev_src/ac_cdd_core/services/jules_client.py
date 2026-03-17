@@ -99,7 +99,7 @@ class JulesClient:
 
         if self.credentials:
             if not self.credentials.valid:
-                self.credentials.refresh(GoogleAuthRequest())  # type: ignore[no-untyped-call]
+                self.credentials.refresh(GoogleAuthRequest())
             headers["Authorization"] = f"Bearer {self.credentials.token or ''}"
         return headers
 
