@@ -424,16 +424,31 @@ class WorkflowService:
                         )
 
                     logger.warning(
-                        f"Merge conflicts recorded. Left {len(registry_items)} conflicted files on {integration_branch}."
+                        "Merge conflicts recorded. Invoking Master Integrator..."
                     )
 
-                    # We preserve the conflict markers in the repo.
-                    # We commit them to keep the state for the master integrator or abort depending on next cycle.
-                    # Since we shouldn't commit conflict markers before validate_resolution,
-                    # but we also need to leave the branch dirty or abort.
-                    # We leave it dirty as per spec.
-                    # Wait, if we leave it dirty, we can't switch branches. But finalize_session is the end.
-                    # So it's fine.
+                    # Invoke Master Integrator to resolve conflicts
+                    from src.nodes.master_integrator import MasterIntegratorNodes
+                    from src.state import IntegrationState
+
+                    integrator_nodes = MasterIntegratorNodes()
+                    integration_state = IntegrationState(
+                        unresolved_conflicts=registry_items
+                    )
+
+                    final_integration_state_dict = await integrator_nodes.master_integrator_node(integration_state)
+
+                    unresolved = [item for item in final_integration_state_dict["unresolved_conflicts"] if not item.resolved]
+
+                    if unresolved:
+                        logger.error(f"Master Integrator failed to resolve {len(unresolved)} files.")
+                        console.print(f"[bold red]Integration aborted due to unresolved conflicts in {len(unresolved)} files.[/bold red]")
+                        sys.exit(1)
+
+                    # All resolved, add and commit
+                    await git._run_git(["add", "."])
+                    await git._run_git(["commit", "-m", f"Merge {feature_branch} into {integration_branch} and resolve conflicts via Master Integrator"])
+                    console.print("[bold green]Master Integrator successfully resolved all conflicts.[/bold green]")
 
             # Archive and reset for next phase BEFORE creating the PR
             # This ensures the archiving commit is included in the final PR and pushed remotely

@@ -9,8 +9,11 @@ try:
 except ImportError:
     select = None  # type: ignore[assignment]
 
+import uuid
+
 import google.auth
 import httpx
+import litellm
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from rich.console import Console
 
@@ -606,6 +609,47 @@ class JulesClient:
             session_id if session_id.startswith("sessions/") else f"sessions/{session_id}"
         )
         return self.api_client.approve_plan(session_id_path, plan_id)
+
+    def create_master_integrator_session(self) -> str:
+        """
+        Creates a new session ID for the Master Integrator.
+        This session is entirely local (via litellm) and stateful,
+        to resolve merge conflicts without spawning full Jules PR sessions.
+        """
+        return f"master-integrator-{uuid.uuid4().hex[:8]}"
+
+    async def send_message_to_session(
+        self, session_id: str, message: str, message_history: list[dict[str, str]] | None = None
+    ) -> str:
+        """
+        Sends a message to the stateful Master Integrator session.
+        Uses litellm for direct interaction.
+        """
+        messages = message_history if message_history is not None else []
+
+        # Add the new message
+        messages.append({"role": "user", "content": message})
+
+        model = settings.reviewer.smart_model
+
+        try:
+            response = await litellm.acompletion(
+                model=model,
+                messages=messages,
+                temperature=0.0,
+            )
+        except Exception as e:
+            logger.error(f"Failed to communicate with LLM for Master Integrator: {e}")
+            msg = f"LLM API error: {e}"
+            raise JulesSessionError(msg) from e
+        else:
+            content_str = str(response.choices[0].message.content)
+
+            # Append the assistant's response to history if provided
+            if message_history is not None:
+                message_history.append({"role": "assistant", "content": content_str})
+
+            return content_str
 
     async def _create_manual_pr(self, session_url: str) -> str | None:  # noqa: C901
         """

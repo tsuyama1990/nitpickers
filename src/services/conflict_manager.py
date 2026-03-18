@@ -94,3 +94,42 @@ class ConflictManager:
             raise ConflictMarkerRemainsError(err_msg)
 
         return True
+
+    def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
+        """
+        Builds the conflict resolution prompt package for the Jules Master Integrator session.
+        Reads the conflicted file's current state and potentially incorporates context.
+        """
+        file_path = repo_path / item.file_path
+
+        try:
+            content = file_path.read_text(encoding="utf-8")
+        except Exception as e:
+            logger.error(f"Failed to read file for conflict package: {e}")
+            content = "Error reading file content."
+
+        # Read specific instructions from MASTER_INTEGRATOR_PROMPT.md if available
+        # or fall back to an inline prompt.
+        try:
+            from src.config import settings
+            prompt_template = settings.get_prompt_content("MASTER_INTEGRATOR_PROMPT.md")
+        except Exception:
+            prompt_template = ""
+
+        if not prompt_template:
+            prompt_template = (
+                "You are the Master Integrator. Resolve the Git conflicts in this file.\n"
+                "Do not just pick A or B; understand the intent of both branches.\n"
+                "Apply DRY principles. Return the completely unified file without any `<<<<<<<` markers.\n"
+                "Respond ONLY with the complete fixed file content wrapped in a markdown code block."
+            )
+
+        return f"""{prompt_template}
+
+###################
+File: {item.file_path}
+
+```
+{content}
+```
+"""
