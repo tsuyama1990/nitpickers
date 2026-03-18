@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
+from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
@@ -384,6 +385,80 @@ class WorkflowService:
             console.print(f"[bold red]Tutorial Generation Failed:[/bold red] {e}")
             logger.exception("Tutorial Generation Failed")
 
+    def _get_quality_gate_cmds(self) -> list[list[str]]:
+        from src.config import settings
+        cmds = []
+        if settings.sandbox.lint_check_cmd:
+            cmds.append(settings.sandbox.lint_check_cmd)
+        if settings.sandbox.type_check_cmd:
+            cmds.append(settings.sandbox.type_check_cmd)
+        if settings.sandbox.test_cmd:
+            cmds.append(settings.sandbox.test_cmd.split())
+
+        if not cmds:
+            cmds = [
+                ["uv", "run", "ruff", "check", "."],
+                ["uv", "run", "ruff", "format", "."],
+                ["uv", "run", "mypy", "."],
+                ["uv", "run", "pytest"]
+            ]
+        return cmds
+
+    async def _handle_global_refactor_result(self, result: dict[str, Any], git: "GitManager") -> None:
+        """Helper to handle the result of the global refactoring loop."""
+        gr_res = result["global_refactor_result"]
+        if not gr_res.refactorings_applied:
+            return
+
+        from src.process_runner import ProcessRunner
+        from src.service_container import ServiceContainer
+
+        container = ServiceContainer.default()
+        runner = container.resolve(ProcessRunner) if hasattr(container, "resolve") else ProcessRunner()
+        cmds = self._get_quality_gate_cmds()
+
+        import shutil
+        import tempfile
+        from pathlib import Path
+
+        # Execute quality gates in isolated temporary directories
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Copy current codebase to temp_dir to validate without affecting workspace yet
+                # We want to run the tools in the temp dir
+                temp_path = Path(temp_dir)
+
+                # Exclude .git, .venv, etc when copying to save time and avoid issues
+                def ignore_func(dir_path: str, contents: list[str]) -> list[str]:
+                    return [c for c in contents if c in (".git", ".venv", "venv", "__pycache__")]
+
+                shutil.copytree(Path.cwd(), temp_path / "workspace", ignore=ignore_func)
+                workspace_dir = temp_path / "workspace"
+
+                console.print("[cyan]Running final quality gates post-refactor in isolated sandbox...[/cyan]")
+                for cmd in cmds:
+                    # This throws CalledProcessError if it fails
+                    await runner.run_command(cmd, cwd=workspace_dir)
+
+            # If we reached here, validations passed. Commit the changes in the actual workspace.
+            status_output = await git.get_status()
+            if status_output and status_output.strip():
+                try:
+                    await git.add_all()
+                    await git.commit("Global refactoring applied.")
+                    console.print("[green]Global refactoring successful and tests passed.[/green]")
+                except Exception as commit_err:
+                    console.print(f"[bold red]Failed to commit global refactoring: {commit_err}[/bold red]")
+                    await git.reset_hard()
+        except Exception as e:
+            console.print(f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]")
+            console.print("[yellow]Reverting refactoring changes...[/yellow]")
+            try:
+                await git.reset_hard()
+            except Exception as reset_err:
+                console.print(f"[bold red]Failed to revert changes: {reset_err}[/bold red]")
+            console.print("[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]")
+
     async def finalize_session(self, project_session_id: str | None) -> None:
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
         ensure_api_key()
@@ -427,13 +502,18 @@ class WorkflowService:
                         f"Merge conflicts recorded. Left {len(registry_items)} conflicted files on {integration_branch}."
                     )
 
-                    # We preserve the conflict markers in the repo.
-                    # We commit them to keep the state for the master integrator or abort depending on next cycle.
-                    # Since we shouldn't commit conflict markers before validate_resolution,
-                    # but we also need to leave the branch dirty or abort.
-                    # We leave it dirty as per spec.
-                    # Wait, if we leave it dirty, we can't switch branches. But finalize_session is the end.
-                    # So it's fine.
+            # Global Refactoring Loop (CYCLE08)
+            from src.nodes.global_refactor import GlobalRefactorNodes
+            from src.state import CycleState
+
+            refactor_node = GlobalRefactorNodes()
+            refactor_state = CycleState(cycle_id="global_refactor", project_session_id=sid)
+            result = await refactor_node.global_refactor_node(refactor_state)
+
+            if "global_refactor_result" in result:
+                await self._handle_global_refactor_result(result, git)
+
+            # We preserve the conflict markers in the repo.
 
             # Archive and reset for next phase BEFORE creating the PR
             # This ensures the archiving commit is included in the final PR and pushed remotely
@@ -450,110 +530,100 @@ class WorkflowService:
             console.print(f"[bold red]Finalization failed:[/bold red] {e}")
             sys.exit(1)
 
-    async def _archive_and_reset_state(self) -> None:  # noqa: C901, PLR0912, PLR0915
+    async def _archive_and_reset_state(self) -> None:
         """
         Archives current session artifacts to dev_documents/system_prompts_phaseNN
-        and resets the state for the next phase.
+        and resets the state for the next phase safely.
         """
-        import shutil
-
+        from src.config import settings
         docs_dir = settings.paths.documents_dir
         if not docs_dir.exists():
             return
 
-        # 1. Determine next phase number
-        existing_phases = [
-            d
-            for d in docs_dir.iterdir()
-            if d.is_dir() and d.name.startswith("system_prompts_phase")
-        ]
-        next_phase_num = 1
-        if existing_phases:
-            import contextlib
-
-            nums = []
-            for d in existing_phases:
-                with contextlib.suppress(IndexError, ValueError):
-                    nums.append(int(d.name.split("_phase")[1]))
-            if nums:
-                next_phase_num = max(nums) + 1
-
-        phase_dir = docs_dir / f"system_prompts_phase{next_phase_num:02d}"
+        next_phase_num = self._get_next_phase_num(docs_dir)
+        dir_name = settings.ARCHIVE_DIR_TEMPLATE.format(phase_num=next_phase_num)
+        phase_dir = docs_dir / dir_name
         console.print(f"\n[bold cyan]Archiving session artifacts to {phase_dir}...[/bold cyan]")
 
-        async def move_item(src: Path, dest: Path) -> None:
-            import anyio
+        try:
+            await self._archive_files(docs_dir, phase_dir)
+            self._reset_project_state(phase_dir)
+            self._prepare_next_phase(docs_dir)
+            await self._commit_archived_phase(next_phase_num)
+        except Exception as e:
+            logger.error(f"Failed during archive and reset state: {e}")
+            # Consider rollback if needed, but this is best effort
 
-            if not await anyio.Path(src).exists():
-                return
+        console.print("[green]Created fresh, empty ALL_SPEC.md for the next phase.[/green]")
+        console.print(f"[green]Ready for Phase {next_phase_num + 1}![/green]")
+
+    def _get_next_phase_num(self, docs_dir: Path) -> int:
+        import contextlib
+        existing_phases = [d for d in docs_dir.iterdir() if d.is_dir() and d.name.startswith("system_prompts_phase")]
+        nums = []
+        for d in existing_phases:
+            with contextlib.suppress(IndexError, ValueError):
+                nums.append(int(d.name.split("_phase")[1]))
+        return max(nums) + 1 if nums else 1
+
+    async def _safe_move_item(self, src: Path, dest: Path) -> None:
+        import shutil
+
+        import anyio
+        anyio_src = anyio.Path(src)
+        anyio_dest = anyio.Path(dest)
+        if not await anyio_src.exists():
+            return
+        await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            await self.git._run_git(["mv", str(src), str(dest)]) # Keeping _run_git for mv as there's no public method yet
+        except Exception:
             try:
-                # Try git mv first to keep history
-                await self.git._run_git(["mv", str(src), str(dest)])
-            except Exception:
-                # Fallback to pure filesystem move
-                logger.warning(f"git mv failed for {src.name}, falling back to shutil.move")
+                await anyio_src.replace(dest)
+            except OSError:
                 shutil.move(str(src), str(dest))
 
-        # Rename system_prompts to system_prompts_phaseXX
+    async def _archive_files(self, docs_dir: Path, phase_dir: Path) -> None:
+        import anyio
+
         sys_prompts_dir = docs_dir / "system_prompts"
         if sys_prompts_dir.exists():
-            await move_item(sys_prompts_dir, phase_dir)
+            await self._safe_move_item(sys_prompts_dir, phase_dir)
         else:
-            phase_dir.mkdir(parents=True, exist_ok=True)
+            await anyio.Path(phase_dir).mkdir(parents=True, exist_ok=True)
 
-        # 2. Archive files
-        # ALL_SPEC.md
-        await move_item(docs_dir / "ALL_SPEC.md", phase_dir / "ALL_SPEC.md")
+        await self._safe_move_item(docs_dir / "ALL_SPEC.md", phase_dir / "ALL_SPEC.md")
+        await self._safe_move_item(docs_dir / "USER_TEST_SCENARIO.md", phase_dir / "USER_TEST_SCENARIO.md")
 
-        # UAT Scenario
-        await move_item(docs_dir / "USER_TEST_SCENARIO.md", phase_dir / "USER_TEST_SCENARIO.md")
-
-        # Tutorials
         tutorials_dir = Path.cwd() / "tutorials"
         if tutorials_dir.exists():
-            phase_tutorials_dir = phase_dir / "tutorials"
-            phase_tutorials_dir.mkdir(parents=True, exist_ok=True)
             for item in tutorials_dir.iterdir():
-                await move_item(item, phase_tutorials_dir / item.name)
-            tutorials_dir.mkdir(exist_ok=True)
+                await self._safe_move_item(item, phase_dir / "tutorials" / item.name)
+            await anyio.Path(tutorials_dir).mkdir(exist_ok=True)
 
-        # Cycle subdirectories (dev_documents/templates/CYCLENN/)
-        # These contain SPEC.md, UAT.md, schema.py, PLAN_THOUGHTS.md per cycle.
-        # Must be archived so they are not silently deleted on next phase start.
-        templates_dir = settings.paths.templates  # dev_documents/templates/
+        templates_dir = settings.paths.templates
         if templates_dir.exists():
-            cycle_dirs = sorted(
-                [d for d in templates_dir.iterdir() if d.is_dir() and d.name.startswith("CYCLE")]
-            )
-            if cycle_dirs:
-                phase_templates_dir = phase_dir / "templates"
-                phase_templates_dir.mkdir(parents=True, exist_ok=True)
-                for cycle_dir in cycle_dirs:
-                    await move_item(cycle_dir, phase_templates_dir / cycle_dir.name)
-                console.print(
-                    f"[dim]Archived {len(cycle_dirs)} CYCLE director(ies) to {phase_templates_dir}[/dim]"
-                )
+            for cycle_dir in sorted([d for d in templates_dir.iterdir() if d.is_dir() and d.name.startswith("CYCLE")]):
+                await self._safe_move_item(cycle_dir, phase_dir / "templates" / cycle_dir.name)
 
-        # 3. Archive State (project_state.json)
+    def _reset_project_state(self, phase_dir: Path) -> None:
+        import shutil
         state_mgr = StateManager()
         if state_mgr.STATE_FILE.exists():
             shutil.copy2(str(state_mgr.STATE_FILE), str(phase_dir / "project_state.json"))
             state_mgr.STATE_FILE.unlink()
             console.print("Project state reset (project_state.json archived and removed).")
 
-        # 4. Create empty ALL_SPEC.md and USER_TEST_SCENARIO.md for next phase
+    def _prepare_next_phase(self, docs_dir: Path) -> None:
         (docs_dir / "ALL_SPEC.md").touch()
         (docs_dir / "USER_TEST_SCENARIO.md").touch()
+        (docs_dir / "system_prompts").mkdir(exist_ok=True)
 
-        # Re-create empty system_prompts directory ready for next phase
-        sys_prompts_dir.mkdir(exist_ok=True)
-
-        # 5. Commit the archiving
+    async def _commit_archived_phase(self, next_phase_num: int) -> None:
+        from src.config import settings
+        msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
         try:
-            await self.git._run_git(["add", "."])
-            await self.git._run_git(["commit", "-m", f"Archive Phase {next_phase_num} Artifacts"])
+            await self.git.add_all()
+            await self.git.commit(msg)
         except Exception as e:
             logger.warning(f"Failed to commit archive: {e}")
-
-        console.print("[green]Created fresh, empty ALL_SPEC.md for the next phase.[/green]")
-        console.print(f"[green]Ready for Phase {next_phase_num + 1}![/green]")
