@@ -55,6 +55,7 @@ class GraphBuilder:
         workflow = StateGraph(CycleState)
 
         workflow.add_node("coder_session", self.nodes.coder_session_node)
+        workflow.add_node("sandbox_evaluate", self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
         workflow.add_node("committee_manager", self.nodes.committee_manager_node)
         workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
@@ -66,10 +67,23 @@ class GraphBuilder:
             "coder_session",
             self.nodes.check_coder_outcome,
             {
-                FlowStatus.READY_FOR_AUDIT.value: "auditor",
+                "sandbox_evaluate": "sandbox_evaluate",
                 FlowStatus.FAILED.value: END,
                 FlowStatus.COMPLETED.value: "uat_evaluate",
                 FlowStatus.CODER_RETRY.value: "coder_session",
+            },
+        )
+
+        # Sandbox Evaluate -> Auditor or Coder
+        from src.nodes.routers import route_sandbox_evaluate
+
+        workflow.add_conditional_edges(
+            "sandbox_evaluate",
+            route_sandbox_evaluate,
+            {
+                "auditor": "auditor",
+                "coder_session": "coder_session",
+                "failed": END,
             },
         )
 

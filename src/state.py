@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -52,6 +52,7 @@ class CycleState(BaseModel):
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
     conflict_status: FlowStatus | None = None
     concurrent_dependencies: list[str] = Field(default_factory=list)
+    tdd_phase: Literal["red", "green"] | None = Field(default=None)
 
     # Phase Tracking
     current_phase: WorkPhase = WorkPhase.INIT

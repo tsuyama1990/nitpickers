@@ -13,12 +13,12 @@ NITPICKERS is an evolution of the AC-CDD framework, designed to operate as a com
 
 ## Key Features
 
+*   **🔒 Agentic Test-Driven Development (E2B Sandbox):**
+    All AI-generated code is enforced through a strict **Red-Green-Refactor** loop. The AI (Coder) must write a failing test first. The system executes it in a secure, ephemeral E2B sandbox to prove it fails (Red phase), before requesting the implementation to make it pass (Green phase). This completely eliminates "cheating" where tests are generated without proper assertions.
 *   **⚡ Massive Throughput via Concurrent Development:**
     Multiple cycles are executed simultaneously with strict pre-defined interface locks. No more waiting for feature A to finish before starting feature B.
 *   **🛡️ Zero-Trust Validation (Red Team Intra-Cycle):**
     AI-generated code is aggressively attacked by an automated Red Team Auditor checking for N+1 queries, race conditions, and vulnerabilities.
-*   **🔒 Agentic Test-Driven Development (E2B Sandbox):**
-    All AI code goes through a strict Red-Green-Refactor loop. The Coder must write failing tests *first*, and prove they fail and then pass inside a secure, ephemeral E2B sandbox.
 *   **🧬 Evolutionary Refactoring & Conflict Resolution:**
     Git merge conflicts aren't failures; they are opportunities. A stateful "Master Integrator" AI session semantically resolves conflicts, enforcing DRY principles and refactoring logic to be as elegant as possible.
 
