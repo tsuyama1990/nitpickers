@@ -1,6 +1,7 @@
 import asyncio
 import sys
 from pathlib import Path
+from typing import Any
 
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
@@ -384,6 +385,40 @@ class WorkflowService:
             console.print(f"[bold red]Tutorial Generation Failed:[/bold red] {e}")
             logger.exception("Tutorial Generation Failed")
 
+    async def _handle_global_refactor_result(self, result: dict[str, Any], git: "GitManager") -> None:
+        """Helper to handle the result of the global refactoring loop."""
+        gr_res = result["global_refactor_result"]
+        if not gr_res.refactorings_applied:
+            return
+
+        from src.process_runner import ProcessRunner
+        runner = ProcessRunner()
+
+        cmds = [
+            ["uv", "run", "ruff", "check", "."],
+            ["uv", "run", "ruff", "format", "."],
+            ["uv", "run", "mypy", "."],
+            ["uv", "run", "pytest"]
+        ]
+
+        try:
+            console.print("[cyan]Running final quality gates post-refactor...[/cyan]")
+            for cmd in cmds:
+                # This throws CalledProcessError if it fails
+                await runner.run_command(cmd)
+
+            status_output = await git._run_git(["status", "--porcelain"])
+            if status_output.strip():
+                await git._run_git(["add", "."])
+                await git._run_git(["commit", "-m", "Global refactoring applied."])
+                console.print("[green]Global refactoring successful and tests passed.[/green]")
+        except Exception as e:
+            console.print(f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]")
+            console.print("[yellow]Reverting refactoring changes...[/yellow]")
+            await git._run_git(["reset", "--hard", "HEAD"])
+            await git._run_git(["clean", "-fd"])
+            console.print("[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]")
+
     async def finalize_session(self, project_session_id: str | None) -> None:
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
         ensure_api_key()
@@ -427,7 +462,18 @@ class WorkflowService:
                         f"Merge conflicts recorded. Left {len(registry_items)} conflicted files on {integration_branch}."
                     )
 
-                    # We preserve the conflict markers in the repo.
+            # Global Refactoring Loop (CYCLE08)
+            from src.nodes.global_refactor import GlobalRefactorNodes
+            from src.state import CycleState
+
+            refactor_node = GlobalRefactorNodes()
+            refactor_state = CycleState(cycle_id="global_refactor", project_session_id=sid)
+            result = await refactor_node.global_refactor_node(refactor_state)
+
+            if "global_refactor_result" in result:
+                await self._handle_global_refactor_result(result, git)
+
+            # We preserve the conflict markers in the repo.
                     # We commit them to keep the state for the master integrator or abort depending on next cycle.
                     # Since we shouldn't commit conflict markers before validate_resolution,
                     # but we also need to leave the branch dirty or abort.

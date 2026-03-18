@@ -1,0 +1,1 @@
+Analyze the complete project context. Unify duplicated logic across the following modules: {AST_duplicates}. Ensure consistent error handling and typing. Ensure maximum McCabe complexity is strictly under 10. Do not break existing tests.
