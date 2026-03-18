@@ -69,6 +69,8 @@ class JulesConfig(BaseModel):
     polling_interval_seconds: int = 120
     base_url: str = "https://jules.googleapis.com/v1alpha"
     wait_for_pr_timeout_seconds: int = 900
+    max_plan_rejections: int = 2
+    pr_polling_interval_seconds: int = 10
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -126,6 +128,7 @@ class ToolsConfig(BaseModel):
     ruff_cmd: str = "ruff"
     gemini_cmd: str = "gemini"
     required_executables: list[str] = ["uv", "git"]
+    git_conflict_codes: set[str] = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
 
 
 class SandboxConfig(BaseModel):

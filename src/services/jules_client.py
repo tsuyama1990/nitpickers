@@ -316,7 +316,7 @@ class JulesClient:
 
         last_activity_count = 0
         plan_rejection_count = [0]  # Use list to persist across iterations
-        max_plan_rejections = 2  # Limit plan approval iterations
+        max_plan_rejections = settings.jules.max_plan_rejections  # Limit plan approval iterations
         async with httpx.AsyncClient() as client:
             while True:
                 if asyncio.get_running_loop().time() - start_time > self.timeout:
@@ -674,7 +674,7 @@ class JulesClient:
             import asyncio
 
             max_wait = settings.jules.wait_for_pr_timeout_seconds
-            poll_interval = 10
+            poll_interval = settings.jules.pr_polling_interval_seconds
             elapsed = 0
             processed_fallback_ids: set[str] = set()
 

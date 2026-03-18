@@ -43,7 +43,7 @@ class ConflictManager:
 
         unmerged_files = []
         if result.stdout:
-            conflict_codes = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+            conflict_codes = settings.tools.git_conflict_codes
             for line in result.stdout.splitlines():
                 if len(line) >= 3 and line[:2] in conflict_codes:
                     unmerged_files.append(line[3:])
