@@ -2,7 +2,8 @@ import shlex
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.sandbox import SandboxRunner
+
+from src.sandbox import SandboxRunner
 
 
 def test_shlex_quoting() -> None:
@@ -28,7 +29,7 @@ async def test_sync_hash_reset_on_failure() -> None:
     ]
 
     with (
-        patch("ac_cdd_core.sandbox.Sandbox.create", return_value=MagicMock()),
+        patch("src.sandbox.Sandbox.create", return_value=MagicMock()),
         patch.object(runner, "_sync_to_sandbox", new_callable=AsyncMock),
     ):
         # We also need to mock _get_sandbox to return a new sandbox
@@ -59,7 +60,7 @@ async def test_get_sandbox_creates_new() -> None:
     """Test that _get_sandbox creates new sandbox when none exists."""
     runner = SandboxRunner()
 
-    with patch("ac_cdd_core.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create:
+    with patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create:
         sandbox = await runner._get_sandbox()
 
         assert sandbox is not None
@@ -72,7 +73,7 @@ async def test_get_sandbox_reuses_existing() -> None:
     runner = SandboxRunner()
     runner.sandbox = MagicMock()
 
-    with patch("ac_cdd_core.sandbox.Sandbox.create") as mock_create:
+    with patch("src.sandbox.Sandbox.create") as mock_create:
         sandbox = await runner._get_sandbox()
 
         assert sandbox == runner.sandbox
@@ -145,7 +146,7 @@ async def test_run_command_retry_on_failure() -> None:
     new_sandbox_mock.commands.run.return_value = MagicMock(stdout="ok", stderr="", exit_code=0)
 
     with (
-        patch("ac_cdd_core.sandbox.Sandbox.create", return_value=new_sandbox_mock) as mock_create,
+        patch("src.sandbox.Sandbox.create", return_value=new_sandbox_mock) as mock_create,
         patch.object(runner, "_sync_to_sandbox", new_callable=AsyncMock),
     ):
         _stdout, _stderr, code = await runner.run_command(["test"])

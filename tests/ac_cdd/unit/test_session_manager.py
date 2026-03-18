@@ -1,8 +1,9 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import ProjectManifest
-from ac_cdd_core.session_manager import SessionManager
+
+from src.domain_models import ProjectManifest
+from src.session_manager import SessionManager
 
 
 @pytest.mark.asyncio
@@ -11,7 +12,7 @@ class TestSessionManager:
     def manager(self) -> SessionManager:
         return SessionManager()
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_load_manifest_success(
         self, mock_read: AsyncMock, manager: SessionManager
     ) -> None:
@@ -25,7 +26,7 @@ class TestSessionManager:
         assert isinstance(manifest, ProjectManifest)
         mock_read.assert_awaited_once_with("project_state.json")
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_load_manifest_not_found(
         self, mock_read: AsyncMock, manager: SessionManager
     ) -> None:
@@ -35,7 +36,7 @@ class TestSessionManager:
 
         assert manifest is None
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_load_manifest_invalid_json(
         self, mock_read: AsyncMock, manager: SessionManager
     ) -> None:
@@ -45,7 +46,7 @@ class TestSessionManager:
 
         assert manifest is None
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.save_state_file")
+    @patch("src.services.git_ops.GitManager.save_state_file")
     async def test_save_manifest(self, mock_save: AsyncMock, manager: SessionManager) -> None:
         manifest = ProjectManifest(
             project_session_id="p1", feature_branch="feat/p1", integration_branch="dev/p1"
@@ -60,14 +61,14 @@ class TestSessionManager:
         assert "p1" in call_args[0][1]  # Content
         assert call_args[0][2] == "Test update"
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.save_state_file")
+    @patch("src.services.git_ops.GitManager.save_state_file")
     async def test_create_manifest(self, mock_save: AsyncMock, manager: SessionManager) -> None:
         manifest = await manager.create_manifest("p_new", "feat/p_new", "dev/p_new")
 
         assert manifest.project_session_id == "p_new"
         mock_save.assert_awaited_once()
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_get_cycle(self, mock_read: AsyncMock, manager: SessionManager) -> None:
         json_data = """
         {
@@ -84,8 +85,8 @@ class TestSessionManager:
         cycle = await manager.get_cycle("99")
         assert cycle is None
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.save_state_file")
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.save_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_update_cycle_state(
         self, mock_read: AsyncMock, mock_save: AsyncMock, manager: SessionManager
     ) -> None:
@@ -107,7 +108,7 @@ class TestSessionManager:
             " ", ""
         ) or '"status":"in_progress"' in content_str.replace(" ", "")
 
-    @patch("ac_cdd_core.services.git_ops.GitManager.read_state_file")
+    @patch("src.services.git_ops.GitManager.read_state_file")
     async def test_update_cycle_not_found(
         self, mock_read: AsyncMock, manager: SessionManager
     ) -> None:
@@ -115,7 +116,7 @@ class TestSessionManager:
             '{"project_session_id": "p1", "integration_branch": "dev/p1", "cycles": []}'
         )
 
-        from ac_cdd_core.session_manager import SessionValidationError
+        from src.session_manager import SessionValidationError
 
         with pytest.raises(SessionValidationError):
             await manager.update_cycle_state("01", status="in_progress")

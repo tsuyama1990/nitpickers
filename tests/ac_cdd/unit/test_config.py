@@ -5,7 +5,8 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ac_cdd_core.config import Settings
+
+from src.config import Settings
 
 
 @pytest.fixture

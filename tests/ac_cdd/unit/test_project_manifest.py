@@ -1,7 +1,8 @@
 from datetime import datetime
 
 import pytest
-from ac_cdd_core.domain_models import CycleManifest, ProjectManifest
+
+from src.domain_models import CycleManifest, ProjectManifest
 
 
 class TestProjectManifest:

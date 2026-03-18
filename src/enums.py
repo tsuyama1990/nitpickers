@@ -1,0 +1,45 @@
+from enum import StrEnum
+
+
+class WorkPhase(StrEnum):
+    INIT = "init"
+    ARCHITECT = "architect"
+    ARCHITECT_DONE = "architect_done"
+    CODER = "coder"
+    REFACTORING = "refactoring"
+    QA = "qa"
+
+
+class FlowStatus(StrEnum):
+    # Common
+    START = "start"
+    FAILED = "failed"
+    COMPLETED = "completed"
+    END = "end"
+
+    # Architect
+    ARCHITECT_COMPLETED = "architect_completed"
+    ARCHITECT_FAILED = "architect_failed"
+
+    # Coder / Session
+    READY_FOR_AUDIT = "ready_for_audit"
+    CODER_RETRY = "coder_retry"
+    RETRY_FIX = "retry_fix"
+    WAIT_FOR_JULES_COMPLETION = "wait_for_jules_completion"
+
+    # Auditor / Committee
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    WAITING_FOR_JULES = "waiting_for_jules"
+    NEXT_AUDITOR = "next_auditor"
+    CYCLE_APPROVED = "cycle_approved"
+    POST_AUDIT_REFACTOR = "post_audit_refactor"
+
+    # UAT & Refactor
+    UAT_FAILED = "uat_failed"
+    START_REFACTOR = "start_refactor"
+    CONFLICT_DETECTED = "conflict_detected"
+    CONFLICT_RESOLVED = "conflict_resolved"
+
+    # QA
+    MAX_RETRIES = "max_retries"
