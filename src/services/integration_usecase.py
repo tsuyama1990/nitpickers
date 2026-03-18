@@ -13,10 +13,19 @@ class MaxRetriesExceededError(Exception):
 
 
 class IntegrationUsecase:
-    def __init__(self, jules_client: JulesClient | None = None) -> None:
+    def __init__(self, jules_client: JulesClient | None = None, max_retries: int | None = None) -> None:
         self.jules = jules_client or JulesClient()
         self.conflict_manager = ConflictManager()
         self.file_ops = FilePatcher()
+
+        if max_retries is not None:
+            self.max_retries = max_retries
+        else:
+            try:
+                from src.config import settings
+                self.max_retries = settings.max_audit_retries + 1
+            except ImportError:
+                self.max_retries = 3
 
     async def run_integration_loop(self, state: IntegrationState, repo_path: Path) -> IntegrationState:
         """
@@ -45,8 +54,7 @@ class IntegrationUsecase:
         return state
 
     async def _resolve_single_file(self, session_id: str, item: ConflictRegistryItem, repo_path: Path) -> None:
-        from src.config import settings
-        max_retries = settings.max_audit_retries + 1 # Use a similar max retries configuration
+        max_retries = self.max_retries
         # message history for this file context inside the session.
         # we can just use the global session, but for specific files, we might need a fresh context
         # or we just rely on the LLM's capacity if we maintain one list. For Master Integrator,

@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -8,11 +9,11 @@ from src.state import IntegrationState
 
 
 @pytest.fixture
-def repo_path(tmp_path):
+def repo_path(tmp_path: Path) -> Path:
     return tmp_path
 
 @pytest.fixture
-def mock_jules():
+def mock_jules() -> AsyncMock:
     jules = AsyncMock()
     # It's a synchronous method now
     jules.create_master_integrator_session.return_value = "test-session-id"
@@ -23,7 +24,7 @@ def mock_jules():
     return jules
 
 @pytest.mark.asyncio
-async def test_integration_usecase_success(repo_path, mock_jules):
+async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path
@@ -50,7 +51,7 @@ async def test_integration_usecase_success(repo_path, mock_jules):
     assert full_path.read_text() == "clean_code"
 
 @pytest.mark.asyncio
-async def test_integration_usecase_retry_loop(repo_path, mock_jules):
+async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: AsyncMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path
@@ -80,7 +81,7 @@ async def test_integration_usecase_retry_loop(repo_path, mock_jules):
     assert full_path.read_text() == "clean_code"
 
 @pytest.mark.asyncio
-async def test_integration_usecase_max_retries_exceeded(repo_path, mock_jules):
+async def test_integration_usecase_max_retries_exceeded(repo_path: Path, mock_jules: AsyncMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path

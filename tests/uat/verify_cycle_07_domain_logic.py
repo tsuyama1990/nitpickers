@@ -10,7 +10,7 @@ from src.state import IntegrationState
 
 # Scenario ID 07-01: Successful Stateful Conflict Resolution
 @pytest.mark.asyncio
-async def test_uat_07_01_successful_stateful_conflict_resolution(tmp_path: Path):
+async def test_uat_07_01_successful_stateful_conflict_resolution(tmp_path: Path) -> None:
     file_a = tmp_path / "fileA.py"
     file_b = tmp_path / "fileB.py"
 
@@ -42,7 +42,7 @@ async def test_uat_07_01_successful_stateful_conflict_resolution(tmp_path: Path)
 
 # Scenario ID 07-02: Conflict Marker Retry Loop
 @pytest.mark.asyncio
-async def test_uat_07_02_conflict_marker_retry_loop(tmp_path: Path):
+async def test_uat_07_02_conflict_marker_retry_loop(tmp_path: Path) -> None:
     file_a = tmp_path / "fileA.py"
     file_a.write_text("<<<<<<< HEAD\ncodeA\n=======\ncodeB\n>>>>>>> branch")
 
@@ -71,7 +71,7 @@ async def test_uat_07_02_conflict_marker_retry_loop(tmp_path: Path):
 
 # Scenario ID 07-03: Maximum Conflict Retries Exceeded
 @pytest.mark.asyncio
-async def test_uat_07_03_maximum_conflict_retries_exceeded(tmp_path: Path):
+async def test_uat_07_03_maximum_conflict_retries_exceeded(tmp_path: Path) -> None:
     file_a = tmp_path / "fileA.py"
     file_a.write_text("<<<<<<< HEAD\ncodeA\n=======\ncodeB\n>>>>>>> branch")
 
