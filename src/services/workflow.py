@@ -385,6 +385,25 @@ class WorkflowService:
             console.print(f"[bold red]Tutorial Generation Failed:[/bold red] {e}")
             logger.exception("Tutorial Generation Failed")
 
+    def _get_quality_gate_cmds(self) -> list[list[str]]:
+        from src.config import settings
+        cmds = []
+        if settings.sandbox.lint_check_cmd:
+            cmds.append(settings.sandbox.lint_check_cmd)
+        if settings.sandbox.type_check_cmd:
+            cmds.append(settings.sandbox.type_check_cmd)
+        if settings.sandbox.test_cmd:
+            cmds.append(settings.sandbox.test_cmd.split())
+
+        if not cmds:
+            cmds = [
+                ["uv", "run", "ruff", "check", "."],
+                ["uv", "run", "ruff", "format", "."],
+                ["uv", "run", "mypy", "."],
+                ["uv", "run", "pytest"]
+            ]
+        return cmds
+
     async def _handle_global_refactor_result(self, result: dict[str, Any], git: "GitManager") -> None:
         """Helper to handle the result of the global refactoring loop."""
         gr_res = result["global_refactor_result"]
@@ -392,31 +411,52 @@ class WorkflowService:
             return
 
         from src.process_runner import ProcessRunner
-        runner = ProcessRunner()
+        from src.service_container import ServiceContainer
 
-        cmds = [
-            ["uv", "run", "ruff", "check", "."],
-            ["uv", "run", "ruff", "format", "."],
-            ["uv", "run", "mypy", "."],
-            ["uv", "run", "pytest"]
-        ]
+        container = ServiceContainer.default()
+        runner = container.resolve(ProcessRunner) if hasattr(container, "resolve") else ProcessRunner()
+        cmds = self._get_quality_gate_cmds()
 
+        import shutil
+        import tempfile
+        from pathlib import Path
+
+        # Execute quality gates in isolated temporary directories
         try:
-            console.print("[cyan]Running final quality gates post-refactor...[/cyan]")
-            for cmd in cmds:
-                # This throws CalledProcessError if it fails
-                await runner.run_command(cmd)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Copy current codebase to temp_dir to validate without affecting workspace yet
+                # We want to run the tools in the temp dir
+                temp_path = Path(temp_dir)
 
-            status_output = await git._run_git(["status", "--porcelain"])
-            if status_output.strip():
-                await git._run_git(["add", "."])
-                await git._run_git(["commit", "-m", "Global refactoring applied."])
-                console.print("[green]Global refactoring successful and tests passed.[/green]")
+                # Exclude .git, .venv, etc when copying to save time and avoid issues
+                def ignore_func(dir_path: str, contents: list[str]) -> list[str]:
+                    return [c for c in contents if c in (".git", ".venv", "venv", "__pycache__")]
+
+                shutil.copytree(Path.cwd(), temp_path / "workspace", ignore=ignore_func)
+                workspace_dir = temp_path / "workspace"
+
+                console.print("[cyan]Running final quality gates post-refactor in isolated sandbox...[/cyan]")
+                for cmd in cmds:
+                    # This throws CalledProcessError if it fails
+                    await runner.run_command(cmd, cwd=workspace_dir)
+
+            # If we reached here, validations passed. Commit the changes in the actual workspace.
+            status_output = await git.get_status()
+            if status_output and status_output.strip():
+                try:
+                    await git.add_all()
+                    await git.commit("Global refactoring applied.")
+                    console.print("[green]Global refactoring successful and tests passed.[/green]")
+                except Exception as commit_err:
+                    console.print(f"[bold red]Failed to commit global refactoring: {commit_err}[/bold red]")
+                    await git.reset_hard()
         except Exception as e:
             console.print(f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]")
             console.print("[yellow]Reverting refactoring changes...[/yellow]")
-            await git._run_git(["reset", "--hard", "HEAD"])
-            await git._run_git(["clean", "-fd"])
+            try:
+                await git.reset_hard()
+            except Exception as reset_err:
+                console.print(f"[bold red]Failed to revert changes: {reset_err}[/bold red]")
             console.print("[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]")
 
     async def finalize_session(self, project_session_id: str | None) -> None:
@@ -495,12 +535,14 @@ class WorkflowService:
         Archives current session artifacts to dev_documents/system_prompts_phaseNN
         and resets the state for the next phase safely.
         """
+        from src.config import settings
         docs_dir = settings.paths.documents_dir
         if not docs_dir.exists():
             return
 
         next_phase_num = self._get_next_phase_num(docs_dir)
-        phase_dir = docs_dir / f"system_prompts_phase{next_phase_num:02d}"
+        dir_name = settings.ARCHIVE_DIR_TEMPLATE.format(phase_num=next_phase_num)
+        phase_dir = docs_dir / dir_name
         console.print(f"\n[bold cyan]Archiving session artifacts to {phase_dir}...[/bold cyan]")
 
         try:
@@ -534,7 +576,7 @@ class WorkflowService:
             return
         await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
         try:
-            await self.git._run_git(["mv", str(src), str(dest)])
+            await self.git._run_git(["mv", str(src), str(dest)]) # Keeping _run_git for mv as there's no public method yet
         except Exception:
             try:
                 await anyio_src.replace(dest)
@@ -578,8 +620,10 @@ class WorkflowService:
         (docs_dir / "system_prompts").mkdir(exist_ok=True)
 
     async def _commit_archived_phase(self, next_phase_num: int) -> None:
+        from src.config import settings
+        msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
         try:
-            await self.git._run_git(["add", "."])
-            await self.git._run_git(["commit", "-m", f"Archive Phase {next_phase_num} Artifacts"])
+            await self.git.add_all()
+            await self.git.commit(msg)
         except Exception as e:
             logger.warning(f"Failed to commit archive: {e}")

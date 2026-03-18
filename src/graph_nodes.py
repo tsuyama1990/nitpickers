@@ -44,7 +44,7 @@ class CycleNodes(IGraphNodes):
         from src.service_container import ServiceContainer
         container = ServiceContainer.default()
 
-        self.git = GitManager()
+        self.git = container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
         self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 

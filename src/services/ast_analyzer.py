@@ -5,14 +5,15 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
-from src.config import settings
+from src.config import ASTAnalyzerConfig, settings
 
 
 class ASTAnalyzer:
     """Analyzes Python files to find structural duplicates and high complexity functions."""
 
-    def __init__(self, base_dir: Path | None = None) -> None:
+    def __init__(self, base_dir: Path | None = None, config: ASTAnalyzerConfig | None = None) -> None:
         self.base_dir = base_dir or settings.paths.src
+        self.config = config or settings.ast_analyzer
 
     def _hash_ast(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
         """
@@ -85,37 +86,38 @@ class ASTAnalyzer:
                 complexity += 1
         return complexity
 
+    def _is_valid_dir(self, item: Path) -> bool:
+        import os
+        return item.is_dir() and item.name not in (".git", "__pycache__", ".venv", "venv", "env") and os.access(item, os.R_OK | os.X_OK)
+
+    def _is_valid_py_file(self, item: Path) -> bool:
+        import os
+        return item.is_file() and item.suffix == ".py" and os.access(item, os.R_OK)
+
     def _get_python_files(self) -> Generator[Path, None, None]:
         """Generator that streams python files to prevent OOM on large codebases."""
         if not self.base_dir.exists():
             return
 
         import os
-        max_files = settings.ast_analyzer.max_files
-        max_depth = settings.ast_analyzer.max_depth
         count = 0
 
         # We manually walk to respect depth limits
         stack = [(self.base_dir, 0)]
-        while stack and count < max_files:
+        while stack and count < self.config.max_files:
             current_dir, depth = stack.pop()
 
-            if depth > max_depth:
+            if depth > self.config.max_depth or not os.access(current_dir, os.R_OK | os.X_OK):
                 continue
 
             try:
-                # Add explicit permission check
-                if not os.access(current_dir, os.R_OK | os.X_OK):
-                    continue
-
                 for item in current_dir.iterdir():
-                    if item.is_dir() and item.name not in (".git", "__pycache__", ".venv", "venv", "env"):
-                        if os.access(item, os.R_OK | os.X_OK):
-                            stack.append((item, depth + 1))
-                    elif item.is_file() and item.suffix == ".py" and os.access(item, os.R_OK):
+                    if self._is_valid_dir(item):
+                        stack.append((item, depth + 1))
+                    elif self._is_valid_py_file(item):
                         count += 1
                         yield item
-                        if count >= max_files:
+                        if count >= self.config.max_files:
                             break
             except (PermissionError, OSError):
                 continue
@@ -124,11 +126,11 @@ class ASTAnalyzer:
         """Parses a python file into an AST module with size limits."""
         try:
             # Check file size before reading to prevent DoS via large files
-            if file_path.stat().st_size > settings.ast_analyzer.max_file_size_bytes:
+            if file_path.stat().st_size > self.config.max_file_size_bytes:
                 return None
             content = file_path.read_text(encoding="utf-8")
             return ast.parse(content, filename=str(file_path))
-        except (SyntaxError, Exception):
+        except (SyntaxError, UnicodeDecodeError, OSError):
             return None
 
     def find_duplicates(self) -> list[list[dict[str, Any]]]:

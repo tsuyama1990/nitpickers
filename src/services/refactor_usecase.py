@@ -72,11 +72,10 @@ class RefactorUsecase:
 
         def _add_safe_file(filepath: str) -> None:
             path = Path(filepath).resolve()
-            # Ensure path is relative to the base directory (prevent directory traversal)
-            try:
-                path.relative_to(self.base_dir.parent)
+            # Ensure path is relative to the base directory strictly (prevent directory traversal)
+            if path.is_relative_to(self.base_dir):
                 modified_files.add(str(path))
-            except ValueError:
+            else:
                 logger.warning(f"File {filepath} is outside permitted boundary. Skipping.")
 
         for group in duplicates:
@@ -94,7 +93,7 @@ class RefactorUsecase:
         logger.info(f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules...")
 
         # Securely generate Session ID to prevent session fixation attacks
-        secure_token = secrets.token_hex(8)
+        secure_token = secrets.token_urlsafe(32)
         session_id = f"master-integrator-{settings.current_session_id}-{secure_token}"
 
         try:
@@ -110,10 +109,9 @@ class RefactorUsecase:
                 summary=f"Refactoring applied to address {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions.",
             )
         except Exception as e:
-            # Generic error to prevent sensitive stacktrace leakage
-            error_type = type(e).__name__
-            logger.error(f"Global refactoring LLM session failed ({error_type}): Review logs for details.")
+            # Log the full exception stack trace for debugging
+            logger.exception("Global refactoring LLM session failed.")
             return GlobalRefactorResult(
                 refactorings_applied=False,
-                summary=f"Refactoring failed during LLM execution. Error Type: {error_type}",
+                summary=f"Refactoring failed during LLM execution. Error Type: {type(e).__name__}",
             )
