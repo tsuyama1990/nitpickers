@@ -39,7 +39,7 @@ class CycleNodes(IGraphNodes):
 
         # Logic moved from CLI: requested_cycle_count is now the primary driver if present
         n = state.get("requested_cycle_count") or state.get("planned_cycle_count")
-        
+
         if n:
             instruction = instruction.replace("{{max_cycles}}", str(n))
             instruction += (
