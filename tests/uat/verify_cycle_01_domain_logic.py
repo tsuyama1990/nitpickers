@@ -9,13 +9,13 @@ def setup_imports():
     return mo,
 
 @app.cell
-def setup_imports():
+def setup_models() -> tuple:
     from src.domain_models import ConflictRegistryItem, E2BExecutionResult
     from src.state import CycleState, IntegrationState
     return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState
 
 @app.cell
-def scenario_01_01(CycleState, mo):
+def scenario_01_01(CycleState: type, mo: type) -> tuple:
     # Scenario ID 01-01: Backward Compatible State Initialization
     state = CycleState(cycle_id="legacy-session")
 
@@ -26,7 +26,7 @@ def scenario_01_01(CycleState, mo):
     return state,
 
 @app.cell
-def scenario_01_02(ConflictRegistryItem, E2BExecutionResult, mo):
+def scenario_01_02(ConflictRegistryItem: type, E2BExecutionResult: type, mo: type) -> tuple:
     # Scenario ID 01-02: Conflict & Sandbox State Assignment
     import pydantic
 
@@ -50,7 +50,7 @@ def scenario_01_02(ConflictRegistryItem, E2BExecutionResult, mo):
     return conflict, result, serialized
 
 @app.cell
-def scenario_01_03(mo):
+def scenario_01_03(mo: type) -> tuple:
     # Scenario ID 01-03: Source Path Verification
     import subprocess
 
