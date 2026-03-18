@@ -12,7 +12,8 @@ This cycle involves modifying `src/graph.py` and `src/graph_nodes.py` to add the
 ├── pyproject.toml
 ├── src/
 │   ├── graph.py                 (Update: Add Self-Critic node to Architect graph)
-│   ├── graph_nodes.py           (Update: Implement Architect Self-Critic logic)
+│   ├── nodes/
+│   │   └── architect_critic.py  (New: Isolated node implementation)
 │   └── services/
 │       ├── architect_usecase.py (Update)
 │       └── self_critic_evaluator.py (New: Evaluator logic)
@@ -22,7 +23,7 @@ This cycle involves modifying `src/graph.py` and `src/graph_nodes.py` to add the
 ```
 **Modifications:**
 - **`src/graph.py`**: Add `architect_critic` node between `architect_session` and `END`.
-- **`src/graph_nodes.py`**: Add `architect_critic_node` and routing logic `route_architect_critic`.
+- **`src/nodes/architect_critic.py`**: Implement `architect_critic_node` and routing logic `route_architect_critic` in total isolation to prevent merge conflicts.
 - **`src/services/self_critic_evaluator.py`**: Implement the LLM calls to Jules using the new fixed prompts to validate the generated specs.
 
 ## Design Architecture

@@ -92,23 +92,28 @@ The system enforces strict typing using Pydantic. Existing domain models are pre
 │       ├── CYCLE01/ ... CYCLE08/
 │       └── ...
 ├── src/
-│   └── ac_cdd_core/           (Note: To be moved to src/ directly in implementation)
-│       ├── cli.py
-│       ├── config.py
-│       ├── graph.py           (Updated: Added new nodes)
-│       ├── graph_nodes.py     (Updated: Added Self-Critic, E2B, Conflict logic)
-│       ├── state.py           (Updated: Extended CycleState)
-│       ├── services/
-│       │   ├── e2b_executor.py       (New)
-│       │   ├── conflict_manager.py   (New)
-│       │   ├── async_dispatcher.py   (New)
-│       │   └── ...
-│       └── ...
+│   ├── cli.py
+│   ├── config.py
+│   ├── graph.py               (Updated: Uses Node Registry pattern)
+│   ├── nodes/                 (New: Modularized nodes to prevent merge conflicts)
+│   │   ├── architect_critic.py
+│   │   ├── sandbox_evaluator.py
+│   │   ├── coder_critic.py
+│   │   ├── master_integrator.py
+│   │   └── global_refactor.py
+│   ├── state.py               (Updated: Extended CycleState, added IntegrationState)
+│   ├── services/
+│   │   ├── e2b_executor.py       (New)
+│   │   ├── conflict_manager.py   (New)
+│   │   ├── async_dispatcher.py   (New)
+│   │   └── ...
+│   └── ...
 └── tests/
 ```
 
 ### Core Domain Pydantic Models (Extensions)
 - `CycleState`: Extended to include `sandbox_artifacts` (dict), `conflict_status` (enum), and `concurrent_dependencies` (list).
+- `IntegrationState`: A global state managing the `master_integrator_session_id` and the complete `ConflictRegistry`.
 - `ConflictRegistryItem`: A new Pydantic model tracking file paths, specific merge markers, and resolution attempts.
 - `E2BExecutionResult`: Tracks stdout, stderr, exit code, and coverage from the sandbox.
 

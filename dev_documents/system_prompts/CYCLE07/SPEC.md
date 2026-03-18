@@ -13,6 +13,8 @@ This cycle introduces a new dedicated LangGraph workflow or an extension of the 
 ├── src/
 │   ├── workflow.py                    (Update: Implement post-cycle Integrator loop)
 │   ├── graph.py                       (Update: Optional Integration Graph)
+│   ├── nodes/
+│   │   └── master_integrator.py       (New: Isolated Integrator node logic)
 │   └── services/
 │       ├── integration_usecase.py     (New: Manages Master Integrator Session)
 │       └── conflict_manager.py        (Update: Build context package for Jules)
@@ -21,7 +23,8 @@ This cycle introduces a new dedicated LangGraph workflow or an extension of the 
         └── MASTER_INTEGRATOR_PROMPT.md (New: Fixed prompt for resolving conflicts)
 ```
 **Modifications:**
-- **`src/services/integration_usecase.py`**: A new usecase that initializes one Jules session (`IntegrationState.jules_session_id`) and sends consecutive conflict resolution requests.
+- **`src/nodes/master_integrator.py`**: Contains the stateful loop logic interfacing with the usecase.
+- **`src/services/integration_usecase.py`**: A new usecase that initializes one Jules session using `IntegrationState` and sends consecutive conflict resolution requests.
 - **`src/services/conflict_manager.py`**: Add `build_conflict_package(item: ConflictRegistryItem)` to format the file content and relevant `SPEC.md` fragments.
 - **`src/workflow.py`**: After concurrent cycles merge and populate the `ConflictRegistry`, instantiate the Integrator and loop through the registry items.
 

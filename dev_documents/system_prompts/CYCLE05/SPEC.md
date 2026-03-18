@@ -12,7 +12,8 @@ This cycle builds on the existing `auditor_node` and introduces new nodes and ri
 ├── pyproject.toml
 ├── src/
 │   ├── graph.py                 (Update: Add post-audit Self-Critic refactoring node)
-│   ├── graph_nodes.py           (Update: Implement Self-Critic logic for Coder graph)
+│   ├── nodes/
+│   │   └── coder_critic.py      (New: Isolated Self-Critic logic for Coder graph)
 │   └── services/
 │       ├── auditor_usecase.py   (Update: Use fixed RED_TEAM prompts)
 │       └── self_critic_evaluator.py (Reuse: From Architect phase, adapt for Coder phase)
@@ -24,7 +25,7 @@ This cycle builds on the existing `auditor_node` and introduces new nodes and ri
 **Modifications:**
 - **`src/services/auditor_usecase.py`**: Inject `CODER_CRITIC_INSTRUCTION.md` instead of general review prompts.
 - **`src/graph.py`**: Add `coder_critic_node` immediately following `committee_manager`.
-- **`src/graph_nodes.py`**: Implement the routing logic for `coder_critic_node` (to `coder_session` if refactoring is needed, else to `uat_evaluate` or `END`).
+- **`src/nodes/coder_critic.py`**: Implement the routing logic for `coder_critic_node` (to `coder_session` if refactoring is needed, else to `uat_evaluate` or `END`).
 
 ## Design Architecture
 ### Pydantic Models & Extensibility

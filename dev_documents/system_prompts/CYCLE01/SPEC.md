@@ -16,6 +16,8 @@ This cycle involves the refactoring of existing modules to include new states, e
 │   ├── domain_models.py        (Update: Add ConflictRegistryItem, E2BExecutionResult)
 │   ├── enums.py                (Update: Add new states for conflict and sandbox)
 │   └── ...
+    ├── nodes/                  (New: Create directory for modular LangGraph nodes)
+    │   └── __init__.py
 └── tests/
     └── unit/
         ├── test_state.py       (Create/Update)
@@ -23,9 +25,10 @@ This cycle involves the refactoring of existing modules to include new states, e
 ```
 **Modifications:**
 - Move `dev_src/ac_cdd_core` to `src/` directly.
-- **`src/state.py`**: Extend `CycleState`.
+- **`src/state.py`**: Extend `CycleState` and introduce `IntegrationState`.
 - **`src/domain_models.py`**: Add new schema components.
 - **`src/enums.py`**: Define `FlowStatus` and `SessionStatus` additions.
+- **`src/graph.py` & `src/graph_nodes.py`**: Decompose the monolithic `graph_nodes.py` into `src/nodes/` to prepare for parallel development.
 
 ## Design Architecture
 ### Pydantic Models & Extensibility
@@ -33,7 +36,10 @@ This cycle involves the refactoring of existing modules to include new states, e
    - Add a `sandbox_artifacts: dict[str, Any]` field to temporarily hold output from E2B tests.
    - Add a `conflict_status: FlowStatus | None` to indicate if the cycle is currently blocked by merge conflicts.
    - Add a `concurrent_dependencies: list[str]` to allow DAG scheduling to verify dependencies.
-2. **`ConflictRegistryItem`:**
+2. **`IntegrationState`:**
+   - Properties: `master_integrator_session_id` (str | None), `unresolved_conflicts` (list[ConflictRegistryItem]).
+   - Purpose: To establish the contract for Cycle 06 and 07 before they execute concurrently.
+3. **`ConflictRegistryItem`:**
    - Properties: `file_path` (str), `conflict_markers` (list of markers detected), `resolution_attempts` (int), `resolved` (bool).
    - Expected Producers: GitManager parsing.
    - Expected Consumers: Master Integrator Jules Session.

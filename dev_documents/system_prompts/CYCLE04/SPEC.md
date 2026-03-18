@@ -13,7 +13,8 @@ This cycle involves fully implementing the `E2BExecutorService` and integrating 
 ├── pyproject.toml
 ├── src/
 │   ├── graph.py                   (Update: Add TDD validation routing)
-│   ├── graph_nodes.py             (Update: Implement uat_evaluate_node logic)
+│   ├── nodes/
+│   │   └── sandbox_evaluator.py   (New: Isolated implementation for uat_evaluate_node)
 │   └── services/
 │       ├── uat_usecase.py         (Update: Use E2BExecutorService)
 │       └── e2b_executor.py        (New: Manages sandbox synchronization and execution)
@@ -24,7 +25,7 @@ This cycle involves fully implementing the `E2BExecutorService` and integrating 
 ```
 **Modifications:**
 - **`src/services/e2b_executor.py`**: A new service using the E2B SDK to run isolated `bash` commands (e.g., `uv run pytest tests/` or similar). It maps the results to `E2BExecutionResult`.
-- **`src/graph_nodes.py`**: The `uat_evaluate_node` will now push code to E2B, run the UAT scripts generated in CYCLE XX `UAT.md`, and evaluate success based purely on the `exit_code`.
+- **`src/nodes/sandbox_evaluator.py`**: The `uat_evaluate_node` is relocated here. It pushes code to E2B, runs the UAT scripts generated in `UAT.md`, and evaluates success based purely on the `exit_code`.
 
 ## Design Architecture
 ### Pydantic Models & Extensibility

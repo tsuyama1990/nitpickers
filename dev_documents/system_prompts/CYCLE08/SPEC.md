@@ -12,7 +12,8 @@ This cycle involves adding a `global_refactor_node` to the workflow post-integra
 ├── pyproject.toml
 ├── src/
 │   ├── workflow.py                    (Update: Add Global Refactor to post-integration)
-│   ├── graph_nodes.py                 (Update: Implement global_refactor_node)
+│   ├── nodes/
+│   │   └── global_refactor.py         (New: Isolated global_refactor_node implementation)
 │   └── services/
 │       ├── refactor_usecase.py        (New: Analyze and apply global refactoring)
 │       └── ast_analyzer.py            (New: AST parsing for duplicate logic detection)
@@ -21,6 +22,7 @@ This cycle involves adding a `global_refactor_node` to the workflow post-integra
         └── GLOBAL_REFACTOR_PROMPT.md  (New: Fixed prompt for global optimization)
 ```
 **Modifications:**
+- **`src/nodes/global_refactor.py`**: Registers the node that calls the refactor usecase and validates post-refactor tests.
 - **`src/services/refactor_usecase.py`**: A new service. It utilizes `ast_analyzer.py` (a Python AST parser) to detect identical or highly similar function signatures across modules. It packages this data into the `GLOBAL_REFACTOR_PROMPT.md` and sends it to the Master Integrator session.
 - **`src/workflow.py`**: After the integration commit, invoke the Global Refactor node. This is followed immediately by the standard Auditor node loop (reuse from Cycle 05) to ensure the refactor didn't introduce bugs.
 
