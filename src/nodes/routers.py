@@ -1,3 +1,4 @@
+from src.config import settings
 from src.enums import FlowStatus
 from src.state import CycleState
 
@@ -13,8 +14,8 @@ def check_coder_outcome(state: CycleState) -> str:
     if status == FlowStatus.CODER_RETRY:
         return str(FlowStatus.CODER_RETRY.value)
     if status == FlowStatus.READY_FOR_AUDIT:
-        return "sandbox_evaluate"
-    return str(FlowStatus.COMPLETED.value)
+        return settings.node_sandbox_evaluate
+    return settings.node_uat_evaluate
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
@@ -35,7 +36,7 @@ def route_committee(state: CycleState) -> str:
     if status == FlowStatus.NEXT_AUDITOR:
         return "auditor"
     if status == FlowStatus.CYCLE_APPROVED:
-        return "uat_evaluate"
+        return settings.node_coder_critic
     if status in {
         FlowStatus.RETRY_FIX,
         FlowStatus.WAIT_FOR_JULES_COMPLETION,
@@ -52,6 +53,13 @@ def route_uat(state: CycleState) -> str:
     if status == FlowStatus.COMPLETED:
         return "end"
     return "end"
+
+
+def route_coder_critic(state: CycleState) -> str:
+    status = state.get("status")
+    if status == FlowStatus.CODER_RETRY:
+        return "coder_session"
+    return settings.node_uat_evaluate
 
 
 def route_qa(state: CycleState) -> str:

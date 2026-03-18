@@ -104,13 +104,13 @@ class AuditorUseCase:
         template_name = (
             "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md"
             if is_refactor_phase
-            else "AUDITOR_INSTRUCTION.md"
+            else "CODER_CRITIC_INSTRUCTION.md"
         )
 
         template_path = settings.get_template(template_name)
         if not template_path.exists() and is_refactor_phase:
             # Fallback if someone hasn't created it yet
-            template_path = settings.get_template("AUDITOR_INSTRUCTION.md")
+            template_path = settings.get_template("CODER_CRITIC_INSTRUCTION.md")
 
         instruction = template_path.read_text()
         instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
