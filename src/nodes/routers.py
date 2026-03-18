@@ -13,8 +13,17 @@ def check_coder_outcome(state: CycleState) -> str:
     if status == FlowStatus.CODER_RETRY:
         return str(FlowStatus.CODER_RETRY.value)
     if status == FlowStatus.READY_FOR_AUDIT:
-        return str(FlowStatus.READY_FOR_AUDIT.value)
+        return "sandbox_evaluate"
     return str(FlowStatus.COMPLETED.value)
+
+
+def route_sandbox_evaluate(state: CycleState) -> str:
+    status = state.get("status")
+    if status == FlowStatus.READY_FOR_AUDIT:
+        return "auditor"
+    if status == FlowStatus.TDD_FAILED:
+        return "coder_session"
+    return "failed"
 
 
 def check_audit_outcome(_state: CycleState) -> str:

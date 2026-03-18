@@ -17,14 +17,23 @@ class SandboxRunner:
     def __init__(self, sandbox_id: str | None = None, cwd: str | None = None) -> None:
         self.api_key = os.getenv("E2B_API_KEY")
         if not self.api_key:
-            logger.warning("E2B_API_KEY not found. Sandbox execution will fail.")
+            msg = "E2B_API_KEY environment variable is not set"
+            raise ValueError(msg)
 
         self.cwd = cwd or settings.sandbox.cwd
+        if not self.cwd:
+            msg = "Working directory must be specified"
+            raise ValueError(msg)
+
+        if not self.cwd.startswith("/home/") and not self.cwd.startswith("/opt/"):
+            msg = f"Invalid sandbox working directory: {self.cwd}"
+            raise ValueError(msg)
+
         self.sandbox_id = sandbox_id
         self.sandbox: Sandbox | None = None
         self._last_sync_hash: str | None = None
 
-    async def _get_sandbox(self) -> Sandbox:
+    async def get_sandbox(self) -> Sandbox:
         """Get or create a sandbox instance."""
         if self.sandbox:
             return self.sandbox
@@ -41,21 +50,41 @@ class SandboxRunner:
                 return self.sandbox
 
         logger.info("Creating new E2B Sandbox...")
-        self.sandbox = Sandbox.create(
-            api_key=self.api_key,
-            template=settings.sandbox.template,
-            timeout=settings.sandbox.timeout,
-        )
+        import asyncio
 
-        self.sandbox.commands.run(f"mkdir -p {self.cwd}")
-        await self._sync_to_sandbox(self.sandbox)
+        max_retries = settings.sandbox.max_retries
+        for attempt in range(max_retries + 1):
+            try:
+                self.sandbox = Sandbox.create(
+                    api_key=self.api_key,
+                    template=settings.sandbox.template,
+                    timeout=settings.sandbox.timeout,
+                )
+                break
+            except Exception as e:
+                if attempt < max_retries:
+                    logger.warning(f"Failed to create sandbox: {e}. Retrying...")
+                    await asyncio.sleep(2**attempt)
+                else:
+                    logger.error(f"Sandbox creation failed after {max_retries} retries.")
+                    msg = f"Failed to create E2B Sandbox: {e}"
+                    raise RuntimeError(msg) from e
 
-        if settings.sandbox.install_cmd:
+        if self.sandbox:
             self.sandbox.commands.run(
-                settings.sandbox.install_cmd, timeout=settings.sandbox.timeout
+                f"mkdir -p {self.cwd} || true", timeout=settings.sandbox.timeout
             )
+            await self._sync_to_sandbox(self.sandbox)
 
-        return self.sandbox
+            if settings.sandbox.install_cmd:
+                self.sandbox.commands.run(
+                    settings.sandbox.install_cmd, timeout=settings.sandbox.timeout
+                )
+
+            return self.sandbox
+
+        msg = "Sandbox creation failed."
+        raise RuntimeError(msg)
 
     async def run_command(
         self, cmd: list[str], check: bool = False, env: dict[str, str] | None = None
@@ -63,14 +92,16 @@ class SandboxRunner:
         """
         Runs a shell command in the sandbox with retry logic.
         """
-        max_retries = 1
+        max_retries = settings.sandbox.max_retries
         stdout = ""
         stderr = ""
         exit_code = 0
 
+        import asyncio
+
         for attempt in range(max_retries + 1):
             try:
-                sandbox = await self._get_sandbox()
+                sandbox = await self.get_sandbox()
                 await self._sync_to_sandbox(sandbox)
 
                 command_str = shlex.join(cmd)
@@ -114,6 +145,7 @@ class SandboxRunner:
                             logger.debug(f"Failed to kill sandbox: {sandbox_kill_err}")
                         self.sandbox = None
                         self._last_sync_hash = None
+                    await asyncio.sleep(2**attempt)
                     continue
 
                 if hasattr(e, "exit_code") and hasattr(e, "stdout") and hasattr(e, "stderr"):
@@ -156,10 +188,18 @@ class SandboxRunner:
         tar_buffer = self._create_sync_tarball()
 
         remote_tar_path = f"{self.cwd}/bundle.tar.gz"
-        sandbox.files.write(remote_tar_path, tar_buffer)
+        if not remote_tar_path.startswith(self.cwd):
+            msg = "Invalid remote tar path destination"
+            raise ValueError(msg)
 
+        sandbox.files.write(remote_path=remote_tar_path, data=tar_buffer)
+
+        import shlex
+
+        safe_remote_tar_path = shlex.quote(remote_tar_path)
+        safe_cwd = shlex.quote(self.cwd)
         sandbox.commands.run(
-            f"tar -xzf {remote_tar_path} -C {self.cwd}", timeout=settings.sandbox.timeout
+            f"tar -xzf {safe_remote_tar_path} -C {safe_cwd}", timeout=settings.sandbox.timeout
         )
         logger.info("Synced files to sandbox via tarball.")
         self._last_sync_hash = current_hash
