@@ -43,6 +43,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             # FIX: Add api_client mock which is now used by wait_for_completion
             self.client.api_client = MagicMock()
             self.client.api_client.api_key = "mock_key"
+            self.client.test_mode = False
 
     def tearDown(self) -> None:
         self.auth_patcher.stop()

@@ -45,7 +45,7 @@ Since running multiple cycles concurrently increases the risk of `HTTP 429 Too M
        tasks = [dispatcher.run(cycle_id) for cycle_id in planned_cycles]
        await asyncio.gather(*tasks)
    ```
-3. **DAG Resolution:** Before `asyncio.gather`, resolve a topological sort of the cycles based on `depends_on` from the manifest using an optimized Kahn's algorithm approach to yield O(V+E) performance, avoiding excessive nested iterations. Execute batches of independent cycles sequentially (e.g., [Cycle01] $\rightarrow$ [Cycle02, Cycle03] $\rightarrow$ [Cycle04]).
+3. **DAG Resolution:** Before `asyncio.gather`, resolve a topological sort of the cycles based on `depends_on` from the manifest. Execute batches of independent cycles sequentially (e.g., [Cycle01] $\rightarrow$ [Cycle02, Cycle03] $\rightarrow$ [Cycle04]).
 4. **API Retry Decorator:** Implement a generic `@retry_on_429` decorator or modify the `jules_client.py` and `llm_reviewer.py` to catch `HTTPStatusError` (429) and implement jittered sleep.
 5. **CLI Integration:** Add the `--parallel` flag in Typer (`cli.py`).
 

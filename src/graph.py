@@ -14,7 +14,9 @@ from .state import CycleState
 
 
 class GraphBuilder:
-    def __init__(self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient) -> None:
+    def __init__(
+        self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient
+    ) -> None:
         self.sandbox = sandbox
         self.jules = jules
         self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)

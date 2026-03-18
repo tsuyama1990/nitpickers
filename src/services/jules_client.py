@@ -16,6 +16,8 @@ from rich.console import Console
 
 from src.agents import get_manager_agent
 from src.config import settings
+from src.domain_models.config import DispatcherConfig
+from src.services.async_dispatcher import retry_on_429
 from src.services.git_ops import GitManager
 from src.utils import logger
 
@@ -57,6 +59,7 @@ class JulesClient:
         self.poll_interval = settings.jules.polling_interval_seconds
         self.console = Console()
         self.git = GitManager()
+        self.test_mode = settings.test_mode
 
         try:
             self.credentials, self.project_id_from_auth = google.auth.default()
@@ -74,9 +77,10 @@ class JulesClient:
             self.plan_auditor = plan_auditor
         else:
             from src.services.plan_auditor import PlanAuditor
+
             self.plan_auditor = PlanAuditor()
 
-        api_key_to_use = settings.JULES_API_KEY
+        api_key_to_use = settings.JULES_API_KEY or os.getenv("JULES_API_KEY")
         if not api_key_to_use and self.credentials:
             api_key_to_use = self.credentials.token
 
@@ -121,7 +125,7 @@ class JulesClient:
         **extra: Any,
     ) -> dict[str, Any]:
         """Orchestrates the Jules session."""
-        if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
+        if settings.test_mode and not self._is_httpx_mocked():
             logger.info("Test Mode: Simulating Jules Session run.")
             return {
                 "session_name": f"sessions/dummy-{session_id}",
@@ -188,7 +192,7 @@ class JulesClient:
 
     async def continue_session(self, session_name: str, prompt: str) -> dict[str, Any]:
         """Continues an existing session."""
-        if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
+        if settings.test_mode and not self._is_httpx_mocked():
             return {
                 "session_name": session_name,
                 "pr_url": "https://github.com/dummy/repo/pull/2",
@@ -214,7 +218,7 @@ class JulesClient:
         - Requesting manual PR creation if needed
         - Waiting for PR with state re-validation
         """
-        if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
+        if self.test_mode and not self._is_httpx_mocked():
             return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
 
         from langchain_core.runnables import RunnableConfig
@@ -291,7 +295,7 @@ class JulesClient:
         self, session_name: str, require_plan_approval: bool = False
     ) -> dict[str, Any]:
         """Legacy polling-based implementation (kept for reference/fallback)."""
-        if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
+        if self.test_mode and not self._is_httpx_mocked():
             return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
 
         processed_activity_ids: set[str] = set()
@@ -361,6 +365,7 @@ class JulesClient:
             return f"{self.base_url}/{session_name}"
         return f"{self.base_url}/sessions/{session_name}"
 
+    @retry_on_429(DispatcherConfig())
     async def get_session_state(self, session_id: str) -> str:
         """Get current state of Jules session.
 
@@ -539,9 +544,10 @@ class JulesClient:
         """Sends a message to the active session."""
         await self._send_message(session_url, content)
 
+    @retry_on_429(DispatcherConfig())
     async def _send_message(self, session_url: str, content: str) -> None:
         """Internal implementation for sending messages."""
-        if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
+        if settings.test_mode and not self._is_httpx_mocked():
             logger.info("Test Mode: Dummy Message Sent.")
             return
 
