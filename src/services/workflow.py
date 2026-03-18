@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 from pathlib import Path
@@ -12,6 +13,7 @@ from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
+from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -103,11 +105,12 @@ class WorkflowService:
         auto: bool,
         start_iter: int,
         project_session_id: str | None,
+        parallel: bool = False,
     ) -> None:
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
-                await self._run_all_cycles(resume, auto, start_iter, project_session_id)
+                await self._run_all_cycles(resume, auto, start_iter, project_session_id, parallel)
                 return
 
             await self._run_single_cycle(cycle_id, resume, auto, start_iter, project_session_id)
@@ -115,26 +118,45 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def _run_all_cycles(
-        self, resume: bool, auto: bool, start_iter: int, project_session_id: str | None
+        self, resume: bool, auto: bool, start_iter: int, project_session_id: str | None, parallel: bool = False
     ) -> None:
         mgr = StateManager()
         manifest = mgr.load_manifest()
 
         if manifest:
-            cycles_to_run = [c.id for c in manifest.cycles if c.status != "completed"]
+            # We construct instances of CycleManifest for all remaining ones to feed the dispatcher
+            cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
         else:
-            cycles_to_run = settings.default_cycles
+            from src.domain_models.manifest import CycleManifest
+            cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
 
-        console.print(f"[bold cyan]Running Pending Cycles: {cycles_to_run}[/bold cyan]")
+        cycle_ids = [c.id for c in cycles_to_run]
+        console.print(f"[bold cyan]Running Pending Cycles: {cycle_ids}[/bold cyan]")
 
-        for idx, cid in enumerate(cycles_to_run, 1):
-            console.print(
-                f"[bold yellow]Starting Cycle {cid} ({idx}/{len(cycles_to_run)})[/bold yellow]"
-            )
-            await self._run_single_cycle(str(cid), resume, auto, start_iter, project_session_id)
-            console.print(
-                f"[bold green]Completed Cycle {cid} ({idx}/{len(cycles_to_run)})[/bold green]"
-            )
+        if not parallel:
+            for idx, cid in enumerate(cycle_ids, 1):
+                console.print(
+                    f"[bold yellow]Starting Cycle {cid} ({idx}/{len(cycle_ids)})[/bold yellow]"
+                )
+                await self._run_single_cycle(str(cid), resume, auto, start_iter, project_session_id)
+                console.print(
+                    f"[bold green]Completed Cycle {cid} ({idx}/{len(cycle_ids)})[/bold green]"
+                )
+        else:
+            dispatcher = AsyncDispatcher()
+            batches = dispatcher.resolve_dag(cycles_to_run)
+            console.print(f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]")
+
+            for i, batch in enumerate(batches, 1):
+                console.print(f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]")
+                tasks = [
+                    dispatcher.run_with_semaphore(
+                        self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)
+                    )
+                    for c in batch
+                ]
+                await asyncio.gather(*tasks)
+                console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
 
         # After all cycles, run QA/Tutorial Generation
         await self.generate_tutorials(project_session_id)

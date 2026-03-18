@@ -16,6 +16,8 @@ from rich.console import Console
 
 from src.agents import get_manager_agent
 from src.config import settings
+from src.domain_models.config import DispatcherConfig
+from src.services.async_dispatcher import retry_on_429
 from src.services.git_ops import GitManager
 from src.utils import logger
 
@@ -361,6 +363,7 @@ class JulesClient:
             return f"{self.base_url}/{session_name}"
         return f"{self.base_url}/sessions/{session_name}"
 
+    @retry_on_429(DispatcherConfig())
     async def get_session_state(self, session_id: str) -> str:
         """Get current state of Jules session.
 
@@ -539,6 +542,7 @@ class JulesClient:
         """Sends a message to the active session."""
         await self._send_message(session_url, content)
 
+    @retry_on_429(DispatcherConfig())
     async def _send_message(self, session_url: str, content: str) -> None:
         """Internal implementation for sending messages."""
         if self.api_client.api_key == "dummy_jules_key" and not self._is_httpx_mocked():
