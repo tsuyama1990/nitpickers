@@ -146,6 +146,11 @@ class SandboxConfig(BaseModel):
     security_check_cmd: list[str] = ["uv", "run", "bandit", "-r", "src/", "-ll"]
 
 
+class ASTAnalyzerConfig(BaseModel):
+    max_files: int = Field(default=10000, description="Maximum number of files to analyze")
+    max_depth: int = Field(default=20, description="Maximum directory depth to search")
+    max_file_size_bytes: int = Field(default=10 * 1024 * 1024, description="Maximum file size to read (10MB)")
+
 class AgentsConfig(BaseModel):
     auditor_model: str = "claude-3-5-sonnet"
     qa_analyst_model: str = "claude-3-5-sonnet"
@@ -215,6 +220,7 @@ class Settings(BaseSettings):
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
+    ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
 
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"

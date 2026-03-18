@@ -51,6 +51,10 @@ class ASTAnalyzer:
         else:
             visitor.structure.append("returns:Any")
 
+        docstring = ast.get_docstring(node)
+        if docstring:
+            visitor.structure.append(f"doc:{docstring}")
+
         visitor.visit(node)
         structure_str = ",".join(visitor.structure)
         return hashlib.sha256(structure_str.encode("utf-8")).hexdigest()
@@ -86,8 +90,9 @@ class ASTAnalyzer:
         if not self.base_dir.exists():
             return
 
-        max_files = 10000  # Safety limit
-        max_depth = 20     # Directory depth limit
+        import os
+        max_files = settings.ast_analyzer.max_files
+        max_depth = settings.ast_analyzer.max_depth
         count = 0
 
         # We manually walk to respect depth limits
@@ -99,20 +104,28 @@ class ASTAnalyzer:
                 continue
 
             try:
+                # Add explicit permission check
+                if not os.access(current_dir, os.R_OK | os.X_OK):
+                    continue
+
                 for item in current_dir.iterdir():
                     if item.is_dir() and item.name not in (".git", "__pycache__", ".venv", "venv", "env"):
-                        stack.append((item, depth + 1))
-                    elif item.is_file() and item.suffix == ".py":
+                        if os.access(item, os.R_OK | os.X_OK):
+                            stack.append((item, depth + 1))
+                    elif item.is_file() and item.suffix == ".py" and os.access(item, os.R_OK):
                         count += 1
                         yield item
                         if count >= max_files:
                             break
-            except PermissionError:
+            except (PermissionError, OSError):
                 continue
 
     def _parse_file(self, file_path: Path) -> ast.Module | None:
-        """Parses a python file into an AST module."""
+        """Parses a python file into an AST module with size limits."""
         try:
+            # Check file size before reading to prevent DoS via large files
+            if file_path.stat().st_size > settings.ast_analyzer.max_file_size_bytes:
+                return None
             content = file_path.read_text(encoding="utf-8")
             return ast.parse(content, filename=str(file_path))
         except (SyntaxError, Exception):
