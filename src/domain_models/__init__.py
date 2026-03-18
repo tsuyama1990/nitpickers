@@ -1,5 +1,4 @@
 from .architecture import SystemArchitecture
-from .config import DispatcherConfig
 from .critic import CriticResult
 from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
@@ -15,7 +14,6 @@ __all__ = [
     "CycleManifest",
     "CyclePlan",
     "CycleStatus",
-    "DispatcherConfig",
     "E2BExecutionResult",
     "Feature",
     "FileArtifact",

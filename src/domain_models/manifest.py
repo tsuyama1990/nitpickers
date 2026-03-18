@@ -19,10 +19,6 @@ class CycleManifest(BaseModel):
     current_iteration: int = 1
     pr_url: str | None = None
     last_error: str | None = None
-    # DAG Scheduling
-    depends_on: list[str] = Field(
-        default_factory=list, description="IDs of cycles that must be completed before this one"
-    )
     # Session restart tracking
     session_restart_count: int = Field(
         default=0, description="Number of session restarts attempted"

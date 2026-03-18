@@ -1,4 +1,4 @@
-import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -12,7 +12,6 @@ from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
-from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -27,12 +26,7 @@ class WorkflowService:
     def __init__(self, services: ServiceContainer | None = None) -> None:
         self.services = services or ServiceContainer.default()
         from src.sandbox import SandboxRunner
-
-        self.builder = GraphBuilder(
-            self.services,
-            SandboxRunner(),
-            self.services.jules if self.services.jules else JulesClient(),
-        )
+        self.builder = GraphBuilder(self.services, SandboxRunner(), self.services.jules if self.services.jules else JulesClient())
         self.git = GitManager()
 
     async def run_gen_cycles(
@@ -109,12 +103,11 @@ class WorkflowService:
         auto: bool,
         start_iter: int,
         project_session_id: str | None,
-        parallel: bool = False,
     ) -> None:
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
-                await self._run_all_cycles(resume, auto, start_iter, project_session_id, parallel)
+                await self._run_all_cycles(resume, auto, start_iter, project_session_id)
                 return
 
             await self._run_single_cycle(cycle_id, resume, auto, start_iter, project_session_id)
@@ -122,55 +115,26 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def _run_all_cycles(
-        self,
-        resume: bool,
-        auto: bool,
-        start_iter: int,
-        project_session_id: str | None,
-        parallel: bool = False,
+        self, resume: bool, auto: bool, start_iter: int, project_session_id: str | None
     ) -> None:
         mgr = StateManager()
         manifest = mgr.load_manifest()
 
         if manifest:
-            # We construct instances of CycleManifest for all remaining ones to feed the dispatcher
-            cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
+            cycles_to_run = [c.id for c in manifest.cycles if c.status != "completed"]
         else:
-            from src.domain_models.manifest import CycleManifest
+            cycles_to_run = settings.default_cycles
 
-            cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
+        console.print(f"[bold cyan]Running Pending Cycles: {cycles_to_run}[/bold cyan]")
 
-        cycle_ids = [c.id for c in cycles_to_run]
-        console.print(f"[bold cyan]Running Pending Cycles: {cycle_ids}[/bold cyan]")
-
-        if not parallel:
-            for idx, cid in enumerate(cycle_ids, 1):
-                console.print(
-                    f"[bold yellow]Starting Cycle {cid} ({idx}/{len(cycle_ids)})[/bold yellow]"
-                )
-                await self._run_single_cycle(str(cid), resume, auto, start_iter, project_session_id)
-                console.print(
-                    f"[bold green]Completed Cycle {cid} ({idx}/{len(cycle_ids)})[/bold green]"
-                )
-        else:
-            dispatcher = AsyncDispatcher()
-            batches = dispatcher.resolve_dag(cycles_to_run)
+        for idx, cid in enumerate(cycles_to_run, 1):
             console.print(
-                f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
+                f"[bold yellow]Starting Cycle {cid} ({idx}/{len(cycles_to_run)})[/bold yellow]"
             )
-
-            for i, batch in enumerate(batches, 1):
-                console.print(
-                    f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
-                )
-                tasks = [
-                    dispatcher.run_with_semaphore(
-                        self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)
-                    )
-                    for c in batch
-                ]
-                await asyncio.gather(*tasks)
-                console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
+            await self._run_single_cycle(str(cid), resume, auto, start_iter, project_session_id)
+            console.print(
+                f"[bold green]Completed Cycle {cid} ({idx}/{len(cycles_to_run)})[/bold green]"
+            )
 
         # After all cycles, run QA/Tutorial Generation
         await self.generate_tutorials(project_session_id)
@@ -203,7 +167,7 @@ class WorkflowService:
 
         try:
             if auto:
-                settings.auto_approve = True
+                os.environ["AC_CDD_AUTO_APPROVE"] = "1"
 
             mgr = StateManager()
             manifest = mgr.load_manifest()

@@ -3,56 +3,31 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-# Load environment variables from .env file
-# Priority: .ac_cdd/.env > .env (root)
-_ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-_root_env = Path.cwd() / ".env"
-
-try:
-    if _ac_cdd_env.exists():
-        load_dotenv(_ac_cdd_env, override=True)
-    elif _root_env.exists():
-        load_dotenv(_root_env, override=True)
-    else:
-        load_dotenv()  # Try default locations
-except Exception:
-    # If environment loading fails (e.g. in strict docker envs), continue
-    # The application will handle missing keys later if they are actually needed
-    import logging
-
-    logging.debug("Environment loading failed, will use defaults")
-
-# Constants
-PROMPT_FILENAME_MAP = {
-    "auditor.md": "AUDITOR_INSTRUCTION.md",
-    "coder.md": "CODER_INSTRUCTION.md",
-    "architect.md": "ARCHITECT_INSTRUCTION.md",
-}
-
-
-def _detect_package_dir() -> str:
-    """Detects the main package directory."""
-    docker_path = Path("/opt/ac_cdd/src")
-    if docker_path.exists():
-        return str(docker_path)
-
-    src_path = Path("dev_src")
-    if src_path.exists():
-        for p in src_path.iterdir():
-            if p.is_dir() and (p / "__init__.py").exists():
-                return str(p)
-
-    return "dev_src/src"
 
 
 class PathsConfig(BaseModel):
     workspace_root: Path = Field(default_factory=Path.cwd)
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
-    package_dir: str = Field(default_factory=_detect_package_dir)
+    package_dir: str = Field(default="")
+
+    @model_validator(mode="after")
+    def _set_default_package_dir(self) -> "PathsConfig":
+        if not self.package_dir:
+            docker_path = Path("/opt/ac_cdd/src")
+            if docker_path.exists():
+                self.package_dir = str(docker_path)
+            else:
+                src_path = Path("dev_src")
+                if src_path.exists():
+                    for p in src_path.iterdir():
+                        if p.is_dir() and (p / "__init__.py").exists():
+                            self.package_dir = str(p)
+                            break
+                if not self.package_dir:
+                    self.package_dir = "dev_src/src"
+        return self
     contracts_dir: str = ""
     sessions_dir: str = ".jules/sessions"
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
@@ -69,10 +44,10 @@ class PathsConfig(BaseModel):
 
 class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = 7200
-    polling_interval_seconds: int = 120
-    base_url: str = "https://jules.googleapis.com/v1alpha"
-    wait_for_pr_timeout_seconds: int = 900
+    timeout_seconds: int = Field(default=300, validate_default=True, description="Timeout for API calls in seconds")
+    polling_interval_seconds: int = Field(default=30, validate_default=True, description="Interval for polling Jules")
+    base_url: str = Field(default="https://jules.googleapis.com/v1alpha", validate_default=True, description="API URL")
+    wait_for_pr_timeout_seconds: int = Field(default=600, validate_default=True, description="Timeout waiting for PR creation")
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -136,7 +111,7 @@ class SandboxConfig(BaseModel):
 
     template: str | None = None
     timeout: int = 7200
-    cwd: str = "/home/user/project"
+    cwd: str = Field(default="/home/user/project", validate_default=True, description="Working directory inside Sandbox")
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
     files_to_sync: list[str] = [
         "pyproject.toml",
@@ -228,6 +203,14 @@ class Settings(BaseSettings):
         description="Auto approve AI decisions"
     )
 
+    prompt_filename_map: dict[str, str] = Field(
+        default_factory=lambda: {
+            "auditor.md": "AUDITOR_INSTRUCTION.md",
+            "coder.md": "CODER_INSTRUCTION.md",
+            "architect.md": "ARCHITECT_INSTRUCTION.md",
+        }
+    )
+
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
         env_nested_delimiter="__",
@@ -288,7 +271,7 @@ class Settings(BaseSettings):
 
     def get_prompt_content(self, filename: str, default: str = "") -> str:
         """Reads prompt content."""
-        target_filename = PROMPT_FILENAME_MAP.get(filename, filename)
+        target_filename = self.prompt_filename_map.get(filename, filename)
         path = self.get_template(target_filename)
 
         if path.exists():

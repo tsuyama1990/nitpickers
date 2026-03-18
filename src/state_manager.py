@@ -48,18 +48,13 @@ class StateManager:
 
         try:
             data = json.loads(self.STATE_FILE.read_text())
-            manifest = ProjectManifest(**data)
+            return ProjectManifest(**data)
         except (json.JSONDecodeError, ValueError, TypeError):
             logger.exception("Failed to load project manifest")
             return None
         except Exception:
             logger.exception("Unexpected error loading manifest")
             return None
-        else:
-            if not manifest.project_session_id or not manifest.integration_branch:
-                logger.error("Manifest missing required project_session_id or integration_branch")
-                return None
-            return manifest
 
     def save_manifest(self, manifest: ProjectManifest) -> None:
         """
