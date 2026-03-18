@@ -1,7 +1,7 @@
 import os
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,8 +46,8 @@ class JulesConfig(BaseModel):
     executable: str = "jules"
     timeout_seconds: int = Field(default=300, validate_default=True, description="Timeout for API calls in seconds")
     polling_interval_seconds: int = Field(default=30, validate_default=True, description="Interval for polling Jules")
-    base_url: str = Field(default="https://jules.googleapis.com/v1alpha", validate_default=True, description="API URL")
-    wait_for_pr_timeout_seconds: int = Field(default=600, validate_default=True, description="Timeout waiting for PR creation")
+    base_url: str = Field(default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha"), validate_default=True, description="API URL")
+    pr_creation_timeout_seconds: int = Field(default=600, validate_default=True, description="Timeout waiting for PR creation")
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -127,17 +127,17 @@ class SandboxConfig(BaseModel):
 
 
 class AgentsConfig(BaseModel):
-    auditor_model: str = "claude-3-5-sonnet"
-    qa_analyst_model: str = "claude-3-5-sonnet"
+    auditor_model: str = Field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"))
+    qa_analyst_model: str = Field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"))
 
 
 class ReviewerConfig(BaseModel):
     smart_model: str = Field(
-        default="claude-3-5-sonnet",
+        default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"),
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="claude-3-5-sonnet",
+        default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"),
         description="Model for reading/auditing code",
     )
 
@@ -146,9 +146,9 @@ class SessionConfig(BaseModel):
     """Session-based development configuration."""
 
     session_id: str | None = None
-    integration_branch_prefix: str = "dev"
+    integration_branch_prefix: str = Field(default_factory=lambda: os.getenv("INTEGRATION_BRANCH_PREFIX", "dev"))
     auto_merge_to_integration: bool = True
-    final_merge_strategy: Literal["merge", "squash", "rebase"] = "squash"
+    final_merge_strategy: str = Field(default_factory=lambda: os.getenv("FINAL_MERGE_STRATEGY", "squash"))
     auto_delete_session_branches: bool = True
 
 
@@ -165,7 +165,7 @@ class Settings(BaseSettings):
     E2B_API_KEY: str | None = None
 
     GCP_PROJECT_ID: str | None = None
-    GCP_REGION: str = "us-central1"
+    GCP_REGION: str = Field(default_factory=lambda: os.getenv("GCP_REGION", "us-central1"))
 
     NUM_AUDITORS: int = 3
     REVIEWS_PER_AUDITOR: int = 2
@@ -192,7 +192,7 @@ class Settings(BaseSettings):
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
 
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
+    AUDITOR_MODEL_MODE: str = Field(default_factory=lambda: os.getenv("AUDITOR_MODEL_MODE", "fast"))
 
     auto_approve: bool = Field(
         default=False,

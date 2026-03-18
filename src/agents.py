@@ -66,11 +66,9 @@ def _get_openrouter_api_key() -> str:
         except (OSError, UnicodeDecodeError) as e:
             logger.debug(f"Failed to read .env for OpenRouter key: {e}")
 
-    logger.warning(
-        "OPENROUTER_API_KEY is not set. Using dummy key 'sk-dummy'. "
-        "This will fail if real API calls are attempted."
-    )
-    return "sk-dummy"
+    # No dummy keys allowed. We rely on the user to provide the API key.
+    msg = "OPENROUTER_API_KEY is required but not set."
+    raise ValueError(msg)
 
 
 def get_model(model_name: str) -> Model | str:

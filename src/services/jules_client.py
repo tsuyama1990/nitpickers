@@ -221,7 +221,7 @@ class JulesClient:
             timeout_seconds=self.timeout,
             poll_interval=self.poll_interval,
             require_plan_approval=require_plan_approval,
-            fallback_max_wait=settings.jules.wait_for_pr_timeout_seconds,
+            fallback_max_wait=settings.jules.pr_creation_timeout_seconds,
             processed_activity_ids=processed_ids,
             processed_completion_ids=processed_completion_ids,
         )
@@ -357,7 +357,7 @@ class JulesClient:
 
         async with httpx.AsyncClient() as client:
             try:
-                resp = await client.get(session_url, headers=self._get_headers(), timeout=10.0)
+                resp = await client.get(session_url, headers=self._get_headers(), timeout=settings.jules.polling_interval_seconds)
                 resp.raise_for_status()
                 data = resp.json()
                 return str(data.get("state", "UNKNOWN"))
@@ -379,13 +379,13 @@ class JulesClient:
             try:
                 async with httpx.AsyncClient() as client:
                     session_resp = await client.get(
-                        session_url, headers=self._get_headers(), timeout=10.0
+                        session_url, headers=self._get_headers(), timeout=settings.jules.polling_interval_seconds
                     )
                     if session_resp.status_code == httpx.codes.OK:
                         state = session_resp.json().get("state", "UNKNOWN")
 
                     act_url = f"{session_url}/activities?pageSize=100"
-                    act_resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+                    act_resp = await client.get(act_url, headers=self._get_headers(), timeout=settings.jules.polling_interval_seconds)
                     if act_resp.status_code == httpx.codes.OK:
                         initial_acts = act_resp.json().get("activities", [])
             except Exception as e:
@@ -484,7 +484,7 @@ class JulesClient:
     ) -> int:
         act_url = f"{session_url}/activities"
         try:
-            resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+            resp = await client.get(act_url, headers=self._get_headers(), timeout=settings.jules.polling_interval_seconds)
             if resp.status_code == httpx.codes.OK:
                 activities = resp.json().get("activities", [])
                 if len(activities) > last_count:
@@ -589,7 +589,7 @@ class JulesClient:
             # Poll for PR creation (max 5 minutes)
             import asyncio
 
-            max_wait = settings.jules.wait_for_pr_timeout_seconds
+            max_wait = settings.jules.pr_creation_timeout_seconds
             poll_interval = 10
             elapsed = 0
             processed_fallback_ids: set[str] = set()
@@ -603,7 +603,7 @@ class JulesClient:
                     act_url = f"{session_url}/activities"
                     try:
                         act_resp = await client.get(
-                            act_url, headers=self._get_headers(), timeout=10.0
+                            act_url, headers=self._get_headers(), timeout=settings.jules.polling_interval_seconds
                         )
                         if act_resp.status_code == httpx.codes.OK:
                             activities = act_resp.json().get("activities", [])
