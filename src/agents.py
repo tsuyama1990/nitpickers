@@ -78,6 +78,9 @@ def get_model(model_name: str) -> Model | str:
     Parses the model name and returns an OpenAIModel with appropriate settings
     if it is an OpenRouter model.
     """
+    if model_name in ("claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus"):
+        model_name = f"anthropic:{model_name}"
+
     if model_name.startswith("openrouter/"):
         real_model_name = model_name.replace("openrouter/", "", 1)
         api_key = _get_openrouter_api_key()

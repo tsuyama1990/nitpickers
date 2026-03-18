@@ -194,10 +194,6 @@ class Settings(BaseSettings):
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
 
-    test_mode: bool = Field(
-        default=False,
-        description="Run in test mode with dummy keys and responses"
-    )
     auto_approve: bool = Field(
         default=False,
         description="Auto approve AI decisions"
