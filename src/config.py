@@ -137,6 +137,9 @@ class SandboxConfig(BaseModel):
     template: str | None = None
     timeout: int = 7200
     cwd: str = "/home/user/project"
+    test_cmd: str = "uv run pytest -v --tb=short"
+    max_retries: int = 3
+    command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
     files_to_sync: list[str] = [
         "pyproject.toml",
@@ -145,7 +148,6 @@ class SandboxConfig(BaseModel):
         "README.md",
     ]
     install_cmd: str = "pip install --no-cache-dir ruff"
-    test_cmd: list[str] = ["uv", "run", "pytest"]
     lint_check_cmd: list[str] = ["uv", "run", "ruff", "check", "--fix", "."]
     type_check_cmd: list[str] = ["uv", "run", "mypy", "src/"]
     security_check_cmd: list[str] = ["uv", "run", "bandit", "-r", "src/", "-ll"]

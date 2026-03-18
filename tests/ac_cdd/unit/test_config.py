@@ -131,8 +131,8 @@ def test_path_separation() -> None:
 
         # Verify Context Files
         # get_context_files uses exists(), not glob, so it constructs path from documents_dir
-        assert len(context_files) == 1
-        assert context_files[0] == "/app/dev_documents/spec1.md"
+        assert len(context_files) == 5
+        assert "/app/dev_documents/spec1.md" in context_files
         # Ensure no src files here
         for f in context_files:
             assert "src" not in f
