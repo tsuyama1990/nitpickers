@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -7,8 +7,6 @@ import pytest
 from src.domain_models.execution import E2BExecutionResult
 from src.services.e2b_executor import E2BExecutorServiceImpl
 
-
-from typing import Generator
 
 @pytest.fixture
 def mock_sandbox_runner() -> Generator[Any, None, None]:

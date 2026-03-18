@@ -31,9 +31,21 @@ class E2BExecutorServiceImpl(E2BExecutorService):
         """
         import shlex
 
+        from src.config import settings
+
+        allowed = False
+        for whitelist_cmd in settings.sandbox.command_whitelist:
+            if command.startswith(whitelist_cmd):
+                allowed = True
+                break
+
+        if not allowed:
+            msg = f"Command {command} is not in the allowed whitelist."
+            raise ValueError(msg)
+
         cmd_list = shlex.split(command)
         stdout, stderr, exit_code = await self.sandbox.run_command(cmd_list)
-        return E2BExecutionResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
+        return E2BExecutionResult(stdout=str(stdout), stderr=str(stderr), exit_code=int(exit_code))
 
     async def cleanup(self) -> None:
         """

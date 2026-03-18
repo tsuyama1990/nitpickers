@@ -32,12 +32,12 @@ async def test_sync_hash_reset_on_failure() -> None:
         patch("src.sandbox.Sandbox.create", return_value=MagicMock()),
         patch.object(runner, "_sync_to_sandbox", new_callable=AsyncMock),
     ):
-        # We also need to mock _get_sandbox to return a new sandbox
-        # But the logic is internal. Let's patch _get_sandbox actually?
+        # We also need to mock get_sandbox to return a new sandbox
+        # But the logic is internal. Let's patch get_sandbox actually?
         # No, we want to test run_command's loop.
-        # We need _get_sandbox to return a sandbox.
+        # We need get_sandbox to return a sandbox.
 
-        # Since _get_sandbox calls Sandbox.create if self.sandbox is None,
+        # Since get_sandbox calls Sandbox.create if self.sandbox is None,
         # the retry loop sets self.sandbox=None.
 
         await runner.run_command(["ls"])
@@ -46,22 +46,22 @@ async def test_sync_hash_reset_on_failure() -> None:
         assert runner._last_sync_hash is None
         # Sync should be called twice (once for initial (mocked out context), once after retry)
         # Actually, in this test setup:
-        # 1. run_command calls _get_sandbox -> returns self.sandbox (already set)
+        # 1. run_command calls get_sandbox -> returns self.sandbox (already set)
         # 2. calls _sync_to_sandbox
         # 3. runs command -> Fails
         # 4. sets self.sandbox = None, self._last_sync_hash = None
         # 5. loop continues
-        # 6. run_command calls _get_sandbox -> creates new sandbox
+        # 6. run_command calls get_sandbox -> creates new sandbox
         assert runner._last_sync_hash is None
 
 
 @pytest.mark.asyncio
 async def test_get_sandbox_creates_new() -> None:
-    """Test that _get_sandbox creates new sandbox when none exists."""
+    """Test that get_sandbox creates new sandbox when none exists."""
     runner = SandboxRunner()
 
     with patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create:
-        sandbox = await runner._get_sandbox()
+        sandbox = await runner.get_sandbox()
 
         assert sandbox is not None
         mock_create.assert_called_once()
@@ -69,12 +69,12 @@ async def test_get_sandbox_creates_new() -> None:
 
 @pytest.mark.asyncio
 async def test_get_sandbox_reuses_existing() -> None:
-    """Test that _get_sandbox reuses existing sandbox."""
+    """Test that get_sandbox reuses existing sandbox."""
     runner = SandboxRunner()
     runner.sandbox = MagicMock()
 
     with patch("src.sandbox.Sandbox.create") as mock_create:
-        sandbox = await runner._get_sandbox()
+        sandbox = await runner.get_sandbox()
 
         assert sandbox == runner.sandbox
         mock_create.assert_not_called()
@@ -121,7 +121,7 @@ async def test_run_command_success() -> None:
     runner.sandbox.commands.run.return_value = MagicMock(stdout="output", stderr="", exit_code=0)
 
     with (
-        patch.object(runner, "_get_sandbox", new_callable=AsyncMock) as mock_get,
+        patch.object(runner, "get_sandbox", new_callable=AsyncMock) as mock_get,
         patch.object(runner, "_sync_to_sandbox", new_callable=AsyncMock),
     ):
         mock_get.return_value = runner.sandbox
@@ -154,9 +154,9 @@ async def test_run_command_retry_on_failure() -> None:
         # Should retry and succeed
         assert code == 0
         # Should create new sandbox after failure
-        # (via _get_sandbox logic which calls create if sandbox fails/is None)
-        # Note: logic inside run_command calls _get_sandbox again on retry.
-        # But wait, run_command calls _get_sandbox at start of loop.
+        # (via get_sandbox logic which calls create if sandbox fails/is None)
+        # Note: logic inside run_command calls get_sandbox again on retry.
+        # But wait, run_command calls get_sandbox at start of loop.
         # We need to ensure _get_sandbox creates new one on stored state change?
         # Actually logic is: catch exception -> kill sandbox -> continue loop
         assert mock_create.called
