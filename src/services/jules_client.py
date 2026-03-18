@@ -59,6 +59,7 @@ class JulesClient:
         self.poll_interval = settings.jules.polling_interval_seconds
         self.console = Console()
         self.git = GitManager()
+        self.test_mode = settings.test_mode
 
         try:
             self.credentials, self.project_id_from_auth = google.auth.default()
@@ -217,7 +218,7 @@ class JulesClient:
         - Requesting manual PR creation if needed
         - Waiting for PR with state re-validation
         """
-        if settings.test_mode and not self._is_httpx_mocked():
+        if self.test_mode and not self._is_httpx_mocked():
             return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
 
         from langchain_core.runnables import RunnableConfig
@@ -294,7 +295,7 @@ class JulesClient:
         self, session_name: str, require_plan_approval: bool = False
     ) -> dict[str, Any]:
         """Legacy polling-based implementation (kept for reference/fallback)."""
-        if settings.test_mode and not self._is_httpx_mocked():
+        if self.test_mode and not self._is_httpx_mocked():
             return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
 
         processed_activity_ids: set[str] = set()

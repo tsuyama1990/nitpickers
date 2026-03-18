@@ -1,5 +1,4 @@
 import asyncio
-import os
 import sys
 from pathlib import Path
 
@@ -204,10 +203,6 @@ class WorkflowService:
 
         try:
             if auto:
-                # The auditor suggested not using os.environ.
-                # Since the underlying code might still depend on it, we will use settings
-                # and os.getenv to avoid explicit hardcoded "1".
-                os.environ["AC_CDD_AUTO_APPROVE"] = os.getenv("AC_CDD_AUTO_APPROVE", "1")
                 settings.auto_approve = True
 
             mgr = StateManager()
