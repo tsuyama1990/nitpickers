@@ -16,8 +16,6 @@ def _create_model(model_str: str) -> str | Any:
         # Use OpenAIModel with openrouter provider
         return OpenAIModel(model_name, provider="openrouter")
     # Otherwise, return the model string as-is for pydantic-ai to infer
-    if model_str in ("claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus"):
-        return f"anthropic:{model_str}"
     return model_str
 
 

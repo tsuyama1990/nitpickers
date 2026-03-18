@@ -39,11 +39,12 @@ class IWorkflowOrchestrator(Protocol):
 
     async def run_cycle(
         self,
-        cycle_id: str,
+        cycle_id: str | None,
         resume: bool,
         auto: bool,
         start_iter: int,
         project_session_id: str | None,
+        parallel: bool = False,
     ) -> None: ...
 
     async def start_session(self, prompt: str, audit_mode: bool, max_retries: int) -> None: ...

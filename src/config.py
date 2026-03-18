@@ -1,33 +1,58 @@
 import os
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load environment variables from .env file
+# Priority: .ac_cdd/.env > .env (root)
+_ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+_root_env = Path.cwd() / ".env"
+
+try:
+    if _ac_cdd_env.exists():
+        load_dotenv(_ac_cdd_env, override=True)
+    elif _root_env.exists():
+        load_dotenv(_root_env, override=True)
+    else:
+        load_dotenv()  # Try default locations
+except Exception:
+    # If environment loading fails (e.g. in strict docker envs), continue
+    # The application will handle missing keys later if they are actually needed
+    import logging
+
+    logging.debug("Environment loading failed, will use defaults")
+
+# Constants
+PROMPT_FILENAME_MAP = {
+    "auditor.md": "AUDITOR_INSTRUCTION.md",
+    "coder.md": "CODER_INSTRUCTION.md",
+    "architect.md": "ARCHITECT_INSTRUCTION.md",
+}
+
+
+def _detect_package_dir() -> str:
+    """Detects the main package directory."""
+    docker_path = Path("/opt/ac_cdd/src")
+    if docker_path.exists():
+        return str(docker_path)
+
+    src_path = Path("dev_src")
+    if src_path.exists():
+        for p in src_path.iterdir():
+            if p.is_dir() and (p / "__init__.py").exists():
+                return str(p)
+
+    return "dev_src/src"
 
 
 class PathsConfig(BaseModel):
     workspace_root: Path = Field(default_factory=Path.cwd)
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
-    package_dir: str = Field(default="")
-
-    @model_validator(mode="after")
-    def _set_default_package_dir(self) -> "PathsConfig":
-        if not self.package_dir:
-            docker_path = Path("/opt/ac_cdd/src")
-            if docker_path.exists():
-                self.package_dir = str(docker_path)
-            else:
-                src_path = Path("dev_src")
-                if src_path.exists():
-                    for p in src_path.iterdir():
-                        if p.is_dir() and (p / "__init__.py").exists():
-                            self.package_dir = str(p)
-                            break
-                if not self.package_dir:
-                    self.package_dir = "dev_src/src"
-        return self
+    package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
     sessions_dir: str = ".jules/sessions"
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
@@ -44,10 +69,10 @@ class PathsConfig(BaseModel):
 
 class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = Field(default=300, validate_default=True, description="Timeout for API calls in seconds")
-    polling_interval_seconds: int = Field(default=30, validate_default=True, description="Interval for polling Jules")
-    base_url: str = Field(default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha"), validate_default=True, description="API URL")
-    pr_creation_timeout_seconds: int = Field(default=600, validate_default=True, description="Timeout waiting for PR creation")
+    timeout_seconds: int = 7200
+    polling_interval_seconds: int = 120
+    base_url: str = "https://jules.googleapis.com/v1alpha"
+    wait_for_pr_timeout_seconds: int = 900
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -111,7 +136,7 @@ class SandboxConfig(BaseModel):
 
     template: str | None = None
     timeout: int = 7200
-    cwd: str = Field(default="/home/user/project", validate_default=True, description="Working directory inside Sandbox")
+    cwd: str = "/home/user/project"
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
     files_to_sync: list[str] = [
         "pyproject.toml",
@@ -127,17 +152,17 @@ class SandboxConfig(BaseModel):
 
 
 class AgentsConfig(BaseModel):
-    auditor_model: str = Field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"))
-    qa_analyst_model: str = Field(default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"))
+    auditor_model: str = "claude-3-5-sonnet"
+    qa_analyst_model: str = "claude-3-5-sonnet"
 
 
 class ReviewerConfig(BaseModel):
     smart_model: str = Field(
-        default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"),
+        default="claude-3-5-sonnet",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default_factory=lambda: os.getenv("DEFAULT_MODEL", "claude-3-5-sonnet"),
+        default="claude-3-5-sonnet",
         description="Model for reading/auditing code",
     )
 
@@ -146,9 +171,9 @@ class SessionConfig(BaseModel):
     """Session-based development configuration."""
 
     session_id: str | None = None
-    integration_branch_prefix: str = Field(default_factory=lambda: os.getenv("INTEGRATION_BRANCH_PREFIX", "dev"))
+    integration_branch_prefix: str = "dev"
     auto_merge_to_integration: bool = True
-    final_merge_strategy: str = Field(default_factory=lambda: os.getenv("FINAL_MERGE_STRATEGY", "squash"))
+    final_merge_strategy: Literal["merge", "squash", "rebase"] = "squash"
     auto_delete_session_branches: bool = True
 
 
@@ -165,7 +190,7 @@ class Settings(BaseSettings):
     E2B_API_KEY: str | None = None
 
     GCP_PROJECT_ID: str | None = None
-    GCP_REGION: str = Field(default_factory=lambda: os.getenv("GCP_REGION", "us-central1"))
+    GCP_REGION: str = "us-central1"
 
     NUM_AUDITORS: int = 3
     REVIEWS_PER_AUDITOR: int = 2
@@ -192,20 +217,12 @@ class Settings(BaseSettings):
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
 
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: str = Field(default_factory=lambda: os.getenv("AUDITOR_MODEL_MODE", "fast"))
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
 
-    auto_approve: bool = Field(
-        default=False,
-        description="Auto approve AI decisions"
+    test_mode: bool = Field(
+        default=False, description="Run in test mode with dummy keys and responses"
     )
-
-    prompt_filename_map: dict[str, str] = Field(
-        default_factory=lambda: {
-            "auditor.md": "AUDITOR_INSTRUCTION.md",
-            "coder.md": "CODER_INSTRUCTION.md",
-            "architect.md": "ARCHITECT_INSTRUCTION.md",
-        }
-    )
+    auto_approve: bool = Field(default=False, description="Auto approve AI decisions")
 
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
@@ -267,7 +284,7 @@ class Settings(BaseSettings):
 
     def get_prompt_content(self, filename: str, default: str = "") -> str:
         """Reads prompt content."""
-        target_filename = self.prompt_filename_map.get(filename, filename)
+        target_filename = PROMPT_FILENAME_MAP.get(filename, filename)
         path = self.get_template(target_filename)
 
         if path.exists():

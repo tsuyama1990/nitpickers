@@ -66,9 +66,11 @@ def _get_openrouter_api_key() -> str:
         except (OSError, UnicodeDecodeError) as e:
             logger.debug(f"Failed to read .env for OpenRouter key: {e}")
 
-    # No dummy keys allowed. We rely on the user to provide the API key.
-    msg = "OPENROUTER_API_KEY is required but not set."
-    raise ValueError(msg)
+    logger.warning(
+        "OPENROUTER_API_KEY is not set. Using dummy key 'sk-dummy'. "
+        "This will fail if real API calls are attempted."
+    )
+    return "sk-dummy"
 
 
 def get_model(model_name: str) -> Model | str:
@@ -76,9 +78,6 @@ def get_model(model_name: str) -> Model | str:
     Parses the model name and returns an OpenAIModel with appropriate settings
     if it is an OpenRouter model.
     """
-    if model_name in ("claude-3-5-sonnet", "claude-3-5-haiku", "claude-3-opus"):
-        model_name = f"anthropic:{model_name}"
-
     if model_name.startswith("openrouter/"):
         real_model_name = model_name.replace("openrouter/", "", 1)
         api_key = _get_openrouter_api_key()
