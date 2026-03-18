@@ -76,6 +76,7 @@ class JulesClient:
             self.plan_auditor = plan_auditor
         else:
             from src.services.plan_auditor import PlanAuditor
+
             self.plan_auditor = PlanAuditor()
 
         api_key_to_use = settings.JULES_API_KEY

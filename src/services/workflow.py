@@ -28,7 +28,12 @@ class WorkflowService:
     def __init__(self, services: ServiceContainer | None = None) -> None:
         self.services = services or ServiceContainer.default()
         from src.sandbox import SandboxRunner
-        self.builder = GraphBuilder(self.services, SandboxRunner(), self.services.jules if self.services.jules else JulesClient())
+
+        self.builder = GraphBuilder(
+            self.services,
+            SandboxRunner(),
+            self.services.jules if self.services.jules else JulesClient(),
+        )
         self.git = GitManager()
 
     async def run_gen_cycles(
@@ -118,7 +123,12 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def _run_all_cycles(
-        self, resume: bool, auto: bool, start_iter: int, project_session_id: str | None, parallel: bool = False
+        self,
+        resume: bool,
+        auto: bool,
+        start_iter: int,
+        project_session_id: str | None,
+        parallel: bool = False,
     ) -> None:
         mgr = StateManager()
         manifest = mgr.load_manifest()
@@ -128,6 +138,7 @@ class WorkflowService:
             cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
         else:
             from src.domain_models.manifest import CycleManifest
+
             cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
 
         cycle_ids = [c.id for c in cycles_to_run]
@@ -145,10 +156,14 @@ class WorkflowService:
         else:
             dispatcher = AsyncDispatcher()
             batches = dispatcher.resolve_dag(cycles_to_run)
-            console.print(f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]")
+            console.print(
+                f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
+            )
 
             for i, batch in enumerate(batches, 1):
-                console.print(f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]")
+                console.print(
+                    f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
+                )
                 tasks = [
                     dispatcher.run_with_semaphore(
                         self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)

@@ -21,7 +21,7 @@ def _() -> tuple[()]:
         CycleManifest(id="02", depends_on=["01"]),
         CycleManifest(id="03", depends_on=["01"]),
         CycleManifest(id="04", depends_on=["02", "03"]),
-        CycleManifest(id="05"), # Independent
+        CycleManifest(id="05"),  # Independent
     ]
 
     # 3. Resolve DAG
