@@ -11,5 +11,6 @@ class AuditorNodes:
 
     async def auditor_node(self, state: CycleState) -> dict[str, Any]:
         from src.services.auditor_usecase import AuditorUseCase
+
         usecase = AuditorUseCase(self.jules, self.git, self.llm_reviewer)
         return dict(await usecase.execute(state))

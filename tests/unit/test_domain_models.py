@@ -19,7 +19,7 @@ def test_conflict_registry_item_valid() -> None:
 def test_conflict_registry_item_invalid_missing_fields() -> None:
     with pytest.raises(ValidationError):
         # Missing conflict_markers
-        ConflictRegistryItem(file_path="src/main.py") # type: ignore[call-arg]
+        ConflictRegistryItem(file_path="src/main.py")  # type: ignore[call-arg]
 
 
 def test_e2b_execution_result_valid() -> None:
@@ -38,9 +38,9 @@ def test_e2b_execution_result_valid() -> None:
 def test_e2b_execution_result_invalid_exit_code() -> None:
     with pytest.raises(ValidationError):
         # exit_code should be int, Pydantic strict mode (or just coercing strings failing if we used strict config but default coerces '0' to int 0, 'fail' throws)
-        E2BExecutionResult(exit_code="fail") # type: ignore[arg-type]
+        E2BExecutionResult(exit_code="fail")  # type: ignore[arg-type]
 
 
 def test_e2b_execution_result_coercion() -> None:
-    result = E2BExecutionResult(exit_code="0") # type: ignore[arg-type]
+    result = E2BExecutionResult(exit_code="0")  # type: ignore[arg-type]
     assert result.exit_code == 0

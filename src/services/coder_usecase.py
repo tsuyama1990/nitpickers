@@ -59,11 +59,15 @@ class CoderUseCase:
             or (state.resume_mode and state.status != FlowStatus.RETRY_FIX)
         ) and (cycle_manifest and cycle_manifest.jules_session_id):
             jules_session_name = cycle_manifest.jules_session_id
-            console.print(f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]")
+            console.print(
+                f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]"
+            )
             try:
                 result = await self.jules.wait_for_completion(jules_session_name)
                 if not (result.get("status") == "success" or result.get("pr_url")):
-                    console.print("[yellow]Existing session did not produce PR. Restarting...[/yellow]")
+                    console.print(
+                        "[yellow]Existing session did not produce PR. Restarting...[/yellow]"
+                    )
                     result = None
             except Exception as e:
                 console.print(f"[yellow]Wait/Resume failed: {e}. Starting new session.[/yellow]")
@@ -127,7 +131,6 @@ class CoderUseCase:
 
         return {"status": FlowStatus.FAILED, "error": "Jules failed to produce PR"}
 
-
     def _build_instruction(
         self,
         cycle_id: str,
@@ -164,9 +167,7 @@ class CoderUseCase:
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
         if not (
-            (is_retry or is_post_refactor)
-            and cycle_manifest
-            and cycle_manifest.jules_session_id
+            (is_retry or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
         ):
             return None
 
@@ -185,12 +186,18 @@ class CoderUseCase:
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
             instruction = self._build_instruction(cycle_id, None, state, cycle_manifest)
             if cycle_manifest.jules_session_id is not None:
-                return await self._send_audit_feedback_to_session(cycle_manifest.jules_session_id, instruction)
-            return {"status": FlowStatus.FAILED, "error": "No jules_session_id available for POST_AUDIT_REFACTOR."}
+                return await self._send_audit_feedback_to_session(
+                    cycle_manifest.jules_session_id, instruction
+                )
+            return {
+                "status": FlowStatus.FAILED,
+                "error": "No jules_session_id available for POST_AUDIT_REFACTOR.",
+            }
 
         if cycle_manifest.jules_session_id is not None:
             return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id, last_audit.feedback if last_audit and last_audit.feedback else ""
+                cycle_manifest.jules_session_id,
+                last_audit.feedback if last_audit and last_audit.feedback else "",
             )
         return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
 

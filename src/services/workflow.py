@@ -415,6 +415,7 @@ class WorkflowService:
 
         async def move_item(src: Path, dest: Path) -> None:
             import anyio
+
             if not await anyio.Path(src).exists():
                 return
             try:

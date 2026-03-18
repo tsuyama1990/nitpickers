@@ -32,15 +32,16 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
 
         # Mock settings.get_template to return our test content
         with (
-            patch("src.graph_nodes.settings") as mock_settings,
-            patch("src.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -62,10 +63,10 @@ class TestGenCyclesCountOption:
             await nodes.architect_session_node(state)
 
             # Verify run_session was called
-            assert mock_jules.run_session.called
+            assert mock_jules.execute_command.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.run_session.call_args
+            call_args = mock_jules.execute_command.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was injected
@@ -79,15 +80,16 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
 
         # Mock settings.get_template to return our test content
         with (
-            patch("src.graph_nodes.settings") as mock_settings,
-            patch("src.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -117,10 +119,10 @@ class TestGenCyclesCountOption:
             await nodes.architect_session_node(state)
 
             # Verify run_session was called
-            assert mock_jules.run_session.called
+            assert mock_jules.execute_command.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.run_session.call_args
+            call_args = mock_jules.execute_command.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was NOT injected
@@ -135,13 +137,14 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
 
         instruction_content = "Test instruction."
 
         with (
-            patch("src.graph_nodes.settings") as mock_settings,
-            patch("src.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -159,7 +162,7 @@ class TestGenCyclesCountOption:
 
             await nodes.architect_session_node(state)
 
-            call_args = mock_jules.run_session.call_args
+            call_args = mock_jules.execute_command.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the specific count is in the prompt

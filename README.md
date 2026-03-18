@@ -32,12 +32,12 @@ graph TD
     B --> C{Self-Critic Evaluator}
     C -- Revision Required --> B
     C -- Approved --> D[Cycle Contracts Locked]
-    
+
     D --> E(Async Dispatcher)
     E --> F1[Cycle 01 Coder Graph]
     E --> F2[Cycle 02 Coder Graph]
     E --> F3[Cycle 0n Coder Graph]
-    
+
     subgraph "Cycle N Execution (Concurrent)"
         F1 --> G1[Sandbox: Red Test]
         G1 --> H1[Coder: Implementation]
@@ -46,11 +46,11 @@ graph TD
         J1 -- Reject --> H1
         J1 -- Approve --> K1[Self-Critic Refactor]
     end
-    
+
     K1 --> L(Conflict Registry)
     F2 --> L
     F3 --> L
-    
+
     L --> M[Master Integrator Session]
     M --> N[Global Refactor Node]
     N --> O[Final UAT Verification]

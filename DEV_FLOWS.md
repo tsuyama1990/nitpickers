@@ -45,20 +45,20 @@ graph TB
         A1[START] --> A2[architect_session]
         A2 --> A3[END]
     end
-    
+
     subgraph "Coder Graph (run-cycle)"
         C1[START] --> C2[coder_session]
         C2 -->|ready_for_audit| C3[auditor]
         C2 -->|failed| C4[END]
         C2 -->|completed| C5[uat_evaluate]
-        
+
         C3[auditor] --> C6[committee_manager]
-        
+
         C6 -->|cycle_approved| C5
         C6 -->|next_auditor| C3
         C6 -->|retry_fix| C2
         C6 -->|failed| C4
-        
+
         C5 --> C4
     end
 ```
@@ -134,9 +134,9 @@ final_state = await graph.ainvoke(initial_state, config)
    ```python
    result = await jules.run_session(
        prompt="""
-       Generate SYSTEM_ARCHITECTURE.md and create SPEC.md + UAT.md 
+       Generate SYSTEM_ARCHITECTURE.md and create SPEC.md + UAT.md
        for each of the 8 cycles.
-       
+
        Structure:
        - dev_documents/system_prompts/SYSTEM_ARCHITECTURE.md
        - dev_documents/system_prompts/CYCLE01/SPEC.md
@@ -153,14 +153,14 @@ final_state = await graph.ainvoke(initial_state, config)
    - **Jules's branch**: `jules/generate-architectural-documents-{session_id}` (Jules creates this from starting branch)
    - **PR**: `jules/generate-architectural-documents-{session_id}` → **`dev/int-{timestamp}`** ✅
    - **Files**: All SPEC.md and UAT.md files
-   
+
    **How it works**:
    - `create_feature_branch()` already checked out `dev/int-{timestamp}`
    - `_prepare_git_context()` gets current branch = `dev/int-{timestamp}`
    - Jules receives `startingBranch: dev/int-{timestamp}`
    - Jules creates its own branch from this starting point
    - **Jules creates PR to startingBranch itself** = `dev/int-{timestamp}` ✅
-   
+
    **Important**: Jules's PR behavior:
    - `automationMode: AUTO_CREATE_PR` creates PR to **startingBranch itself**
    - NOT to the parent/base of startingBranch
@@ -182,7 +182,7 @@ final_state = await graph.ainvoke(initial_state, config)
 dev/int-{timestamp} (our feature branch)
   ↑ (PR #123: jules/generate-architectural-documents-{session_id} → feature branch)
   ← Currently checked out
-  
+
 jules/generate-architectural-documents-{session_id} (Jules's branch, will be deleted after merge)
 ```
 
@@ -250,7 +250,7 @@ await git._run_git([
 await git._run_git(["push", "origin", integration_branch])
 ```
 
-**Result**: 
+**Result**:
 - ✅ Jules's PR to main contains all SPEC.md files
 - ✅ Manifest saved with feature_branch and integration_branch
 - ✅ Integration branch created (for future use)
@@ -268,7 +268,7 @@ dev/int-20260111-1044 (feature branch, will be used for run-cycle)
 dev/int-20260111-1044 (created, currently unused)
 ```
 
-**Important**: 
+**Important**:
 - `run-cycle` uses `dev/int-*` as the base
 - Integration branch is created but not actively used
 - All cycle PRs target the feature branch
@@ -341,13 +341,13 @@ uat_content = read_file("dev_documents/system_prompts/CYCLE01/UAT.md")
 result = await jules.run_session(
     prompt=f"""
     Implement CYCLE 01 according to the specification.
-    
+
     SPEC.md:
     {spec_content}
-    
+
     UAT.md:
     {uat_content}
-    
+
     Requirements:
     - Implement all features in SPEC.md
     - Write tests
@@ -577,7 +577,7 @@ await git.checkout_branch(manifest.feature_branch)
 ```
 main
   ↑ (PR #123: Jules's architecture PR, may or may not be merged yet)
-  
+
 dev/int-20260111-1044 (feature branch)
   ↑ (PR #124: feat/cycle-01-implementation-{session_id} → feature branch)
   ↓ (after merge)
@@ -601,7 +601,7 @@ feat/cycle-01-implementation-{session_id} (Jules's branch, deleted after merge)
 ```
 main (production)
   ↑ (Final PR from feature branch - manual)
-  
+
 dev/int-{timestamp} (our feature branch)
   ↑ (PR from Jules's architecture branch)
   ↑ (PRs from Jules's cycle implementation branches)
@@ -611,11 +611,11 @@ dev/int-{timestamp} (our feature branch)
 jules/generate-architectural-documents-{session_id} (Jules's architecture branch)
   → Creates PR to feature branch
   → Deleted after merge
-  
+
 jules/cycle-XX-impl-{session_id} (Jules's cycle branches)
   → Creates PR to feature branch
   → Deleted after merge
-  
+
 dev/int-{timestamp} (integration branch)
   → Created but currently unused
   → Reserved for future use
@@ -839,25 +839,25 @@ class CycleState(BaseModel):
     # Identity
     cycle_id: str
     project_session_id: str | None
-    
+
     # Branches
     feature_branch: str | None          # Main development branch
     integration_branch: str | None      # Integration branch
     active_branch: str | None           # Current working branch
-    
+
     # Jules Session
     jules_session_name: str | None      # Jules session ID
     pr_url: str | None                  # PR URL
-    
+
     # Audit State
     audit_result: AuditResult | None    # Review result
     audit_retries: int                  # Retry count
     current_auditor_index: int          # Auditor number
-    
+
     # Status
     status: str | None                  # Current status
     error: str | None                   # Error message
-    
+
     # ... (50+ fields total)
 ```
 
@@ -868,7 +868,7 @@ gen-cycles:
   {} → {project_session_id, integration_branch, active_branch, pr_url}
 
 run-cycle:
-  {cycle_id, feature_branch} 
+  {cycle_id, feature_branch}
   → {jules_session_name, pr_url, status="ready_for_audit"}
   → {audit_result, audit_retries}
   → {status="auditor" | "uat_evaluate" | "coder_session"}
@@ -881,15 +881,15 @@ run-cycle:
 
 ### Complete Flow
 
-1. **gen-cycles**: 
+1. **gen-cycles**:
    - GitManager creates feature branch from main
    - Jules generates architecture on feature branch
    - Jules creates its own branch and PR to **feature branch** ✅
    - PR merged: architecture files now in feature branch
    - Manifest created with feature_branch reference
    - Integration branch created (optional, unused)
-   
-2. **run-cycle**: 
+
+2. **run-cycle**:
    - Checkout feature branch (has architecture files)
    - Jules implements cycle on its own branch
    - Jules creates PR to feature branch
@@ -898,7 +898,7 @@ run-cycle:
    - Loop until approved
    - PR merged to feature branch
    - Manifest updated
-   
+
 3. **Repeat**: Run cycles 01-08, each accumulating on feature branch
 
 4. **Final**: Manual review and merge of feature branch → main

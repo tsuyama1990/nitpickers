@@ -39,7 +39,9 @@ class JulesContextBuilder:
                 path = Path(filepath)
                 if path.exists():
                     content = path.read_text(encoding="utf-8")
-                    context_parts.append(f"\n## Context File: {path.name}\n```markdown\n{content}\n```\n")
+                    context_parts.append(
+                        f"\n## Context File: {path.name}\n```markdown\n{content}\n```\n"
+                    )
             except Exception as e:
                 logger.debug(f"Could not read context file {filepath}: {e}")
 
@@ -53,6 +55,7 @@ class JulesContextBuilder:
 
         max_files = 10  # Prevent context overflow
         import anyio
+
         max_file_size = 5000  # chars per file
 
         for filepath in changed_files[:max_files]:

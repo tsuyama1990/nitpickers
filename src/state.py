@@ -30,6 +30,7 @@ class CycleState(BaseModel):
 
     # Session Persistence
     jules_session_name: str | None = None
+    critic_retry_count: int = 0
     pr_url: str | None = None
     resume_mode: bool = False
     active_branch: str | None = None

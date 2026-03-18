@@ -44,12 +44,8 @@ async def test_initialize_project_robustness(tmp_path: Path) -> None:
             return_value=mock_runner_instance,
         ),
         patch("pathlib.Path.cwd", return_value=tmp_path),
-        patch(
-            "src.services.project_setup.dependency_manager.Path.cwd", return_value=tmp_path
-        ),
-        patch(
-            "src.services.project_setup.template_manager.Path.cwd", return_value=tmp_path
-        ),
+        patch("src.services.project_setup.dependency_manager.Path.cwd", return_value=tmp_path),
+        patch("src.services.project_setup.template_manager.Path.cwd", return_value=tmp_path),
     ):
         # Setup mock template files since template_manager copies them
         templates_path.mkdir(parents=True, exist_ok=True)

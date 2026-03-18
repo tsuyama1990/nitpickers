@@ -32,7 +32,7 @@ def run_command(
     logger.info(f"Running: {cmd_str}")
 
     try:
-        process = subprocess.Popen(  # noqa: S603
+        process = subprocess.Popen(
             command,
             cwd=cwd,
             env=env,
@@ -133,7 +133,7 @@ class KeepAwake:
                 "sleep",
                 "infinity",
             ]
-            self.process = subprocess.Popen(  # noqa: S603
+            self.process = subprocess.Popen(
                 cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
             logger.info("💤 System sleep inhibited (AC-CDD is running).")

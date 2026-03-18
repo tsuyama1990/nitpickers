@@ -52,3 +52,14 @@ def route_qa(state: CycleState) -> str:
     if status == FlowStatus.REJECTED:
         return "retry_fix"
     return "failed"
+
+
+def route_architect_critic(state: CycleState) -> str:
+    status = getattr(state, "status", None)
+    if status == "architect_completed":
+        return "end"
+    if status == "architect_failed":
+        return "end"
+    if status == "architect_critic_rejected":
+        return "architect_session"
+    return "end"
