@@ -109,10 +109,14 @@ class CycleState(BaseModel):
     def get(self, item: str, default: Any = None) -> Any:
         return getattr(self, item, default)
 
-    # LangGraph injects arbitrary state keys during graph traversal (e.g. langgraph_node, langgraph_step).
-    # extra="allow" is intentional here and must NOT be changed to "forbid".
-    # validate_assignment=True ensures FlowStatus enum is enforced on status updates.
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    # LangGraph internally injects these
+    langgraph_step: int | None = None
+    langgraph_node: str | None = None
+    langgraph_triggers: list[Any] | None = None
+    langgraph_path: tuple[Any, ...] | None = None
+    langgraph_checkpoint: dict[str, Any] | None = None
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
 
 class IntegrationState(BaseModel):
@@ -121,4 +125,10 @@ class IntegrationState(BaseModel):
     master_integrator_session_id: str | None = None
     unresolved_conflicts: list[ConflictRegistryItem] = Field(default_factory=list)
 
-    model_config = ConfigDict(extra="allow", validate_assignment=True)
+    langgraph_step: int | None = None
+    langgraph_node: str | None = None
+    langgraph_triggers: list[Any] | None = None
+    langgraph_path: tuple[Any, ...] | None = None
+    langgraph_checkpoint: dict[str, Any] | None = None
+
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)

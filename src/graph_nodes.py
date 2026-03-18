@@ -37,12 +37,9 @@ class CycleNodes(IGraphNodes):
         self.sandbox = sandbox_runner
         self.jules = jules_client
         self.git = GitManager()
-        # Dependency injection for sub-services could be improved by passing them in,
-        # but for now we construct them with the injected clients.
-        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
+        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
-        # Initialize node modules
         self._architect = ArchitectNodes(self.jules, self.git)
         self._architect_critic = ArchitectCriticNodes(self.jules)
         self._coder = CoderNodes(self.jules)

@@ -12,6 +12,9 @@ console = Console()
 
 class SelfCriticEvaluator:
     def __init__(self, jules_client: Any) -> None:
+        if not jules_client:
+            msg = "JulesClient must be injected into SelfCriticEvaluator"
+            raise ValueError(msg)
         self.jules = jules_client
 
     def _extract_raw_text(self, raw_data: dict[str, Any]) -> str:

@@ -21,13 +21,16 @@ class AuditOrchestrator:
 
     def __init__(
         self,
-        jules_client: JulesClient | None = None,
-        sandbox_runner: "SandboxRunner | None" = None,
+        jules_client: JulesClient,
+        sandbox_runner: "SandboxRunner",
         plan_auditor: PlanAuditor | None = None,
     ) -> None:
-        self.jules = jules_client or JulesClient()
-        self.auditor = plan_auditor or PlanAuditor()
+        self.jules = jules_client
+        if not self.jules:
+            msg = "JulesClient must be injected into AuditOrchestrator"
+            raise ValueError(msg)
         self.sandbox = sandbox_runner
+        self.auditor = plan_auditor or PlanAuditor()
 
     async def run_interactive_session(
         self, prompt: str, spec_files: dict[str, str], max_retries: int = 3

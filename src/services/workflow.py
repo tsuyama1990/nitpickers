@@ -8,6 +8,7 @@ from rich.panel import Panel
 
 from src.config import settings
 from src.domain_models import CycleManifest
+from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
@@ -16,16 +17,16 @@ from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
-from src.enums import WorkPhase, FlowStatus
 from src.utils import KeepAwake, logger
 
 console = Console()
 
 
 class WorkflowService:
-    def __init__(self) -> None:
-        self.services = ServiceContainer.default()
-        self.builder = GraphBuilder(self.services)
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+        from src.sandbox import SandboxRunner
+        self.builder = GraphBuilder(self.services, SandboxRunner(), self.services.jules if self.services.jules else JulesClient())
         self.git = GitManager()
 
     async def run_gen_cycles(
@@ -243,7 +244,8 @@ class WorkflowService:
         }
 
         if audit_mode:
-            orch = AuditOrchestrator(self.services.jules, self.builder.sandbox)
+            jules = self.services.jules or JulesClient()
+            orch = AuditOrchestrator(jules, self.builder.sandbox)
             try:
                 result = await orch.run_interactive_session(
                     prompt=prompt,

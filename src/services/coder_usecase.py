@@ -34,6 +34,9 @@ class CoderUseCase:
     """
 
     def __init__(self, jules_client: JulesClient) -> None:
+        if not jules_client:
+            msg = "JulesClient must be injected into CoderUseCase"
+            raise ValueError(msg)
         self.jules = jules_client
 
     # ------------------------------------------------------------------ #

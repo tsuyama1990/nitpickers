@@ -14,16 +14,9 @@ from .state import CycleState
 
 
 class GraphBuilder:
-    def __init__(self, services: ServiceContainer) -> None:
-        # Initialize SandboxRunner via ServiceContainer or directly if not present (though it's not a service in ServiceContainer definition currently)
-        # Refactoring to avoid direct instantiation if possible, but SandboxRunner is specific to execution.
-        # For now, we keep it here but we can inject it if we extend ServiceContainer.
-        self.sandbox = SandboxRunner()
-
-        # Use jules from services, fallback to direct instantiation if None
-        self.jules = services.jules if services.jules else JulesClient()
-
-        # Inject dependencies into CycleNodes
+    def __init__(self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient) -> None:
+        self.sandbox = sandbox
+        self.jules = jules
         self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
 
     async def cleanup(self) -> None:

@@ -50,7 +50,7 @@ class JulesClient:
     Client for interacting with the Google Cloud Code Agents API (Jules API).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
         self.base_url = "https://jules.googleapis.com/v1alpha"
         self.timeout = settings.jules.timeout_seconds
@@ -68,12 +68,13 @@ class JulesClient:
             )
             self.credentials = None  # type: ignore[assignment]
 
-        self.manager_agent = get_manager_agent()
+        self.manager_agent = manager_agent if manager_agent else get_manager_agent()
 
-        # Import PlanAuditor for plan approval (separate from manager_agent for questions)
-        from src.services.plan_auditor import PlanAuditor
-
-        self.plan_auditor = PlanAuditor()
+        if plan_auditor:
+            self.plan_auditor = plan_auditor
+        else:
+            from src.services.plan_auditor import PlanAuditor
+            self.plan_auditor = PlanAuditor()
 
         api_key_to_use = settings.JULES_API_KEY
         if not api_key_to_use and self.credentials:

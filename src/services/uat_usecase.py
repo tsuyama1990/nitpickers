@@ -15,6 +15,9 @@ class UatUseCase:
     """
 
     def __init__(self, git_manager: GitManager) -> None:
+        if not git_manager:
+            msg = "GitManager must be injected into UatUseCase"
+            raise ValueError(msg)
         self.git = git_manager
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
