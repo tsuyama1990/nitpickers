@@ -20,8 +20,8 @@ try:
         load_dotenv(_root_env, override=True)
     else:
         load_dotenv()  # Try default locations
-except Exception as e:
-    logging.debug(f"Could not load dotenv: {e}")
+except Exception:
+    logging.exception("Could not load dotenv")
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -33,6 +33,11 @@ PROMPT_FILENAME_MAP = {
 
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
+    # Use environment variable for configurable override, fallback to detection
+    env_pkg_dir = os.getenv("PACKAGE_DIR")
+    if env_pkg_dir and Path(env_pkg_dir).exists():
+        return env_pkg_dir
+
     docker_path = Path("/opt/ac_cdd/src")
     if docker_path.exists():
         return str(docker_path)
@@ -43,7 +48,7 @@ def _detect_package_dir() -> str:
             if p.is_dir() and (p / "__init__.py").exists():
                 return str(p)
 
-    return "dev_src/src"
+    return os.getenv("DEFAULT_SRC_DIR", "dev_src/src")
 
 
 class PathsConfig(BaseModel):
@@ -146,6 +151,11 @@ class SandboxConfig(BaseModel):
     security_check_cmd: list[str] = ["uv", "run", "bandit", "-r", "src/", "-ll"]
 
 
+class ASTAnalyzerConfig(BaseModel):
+    max_files: int = Field(default=10000, description="Maximum number of files to analyze")
+    max_depth: int = Field(default=20, description="Maximum directory depth to search")
+    max_file_size_bytes: int = Field(default=10 * 1024 * 1024, description="Maximum file size to read (10MB)")
+
 class AgentsConfig(BaseModel):
     auditor_model: str = "claude-3-5-sonnet"
     qa_analyst_model: str = "claude-3-5-sonnet"
@@ -187,6 +197,9 @@ class Settings(BaseSettings):
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 
+    ARCHIVE_DIR_TEMPLATE: str = "system_prompts_phase{phase_num:02d}"
+    ARCHIVE_COMMIT_MESSAGE: str = "Archive Phase {phase_num} Artifacts"
+
     NUM_AUDITORS: int = 3
     REVIEWS_PER_AUDITOR: int = 2
     MAX_ITERATIONS: int = 3
@@ -215,6 +228,7 @@ class Settings(BaseSettings):
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
+    ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
 
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"

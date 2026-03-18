@@ -41,3 +41,16 @@ class BaseGitManager:
             [self.git_cmd, "rev-parse", "HEAD"], check=True
         )
         return str(stdout).strip()
+
+    async def get_status(self) -> str:
+        return await self._run_git(["status", "--porcelain"], check=False)
+
+    async def add_all(self) -> None:
+        await self._run_git(["add", "."])
+
+    async def commit(self, message: str) -> None:
+        await self._run_git(["commit", "-m", message])
+
+    async def reset_hard(self) -> None:
+        await self._run_git(["reset", "--hard", "HEAD"])
+        await self._run_git(["clean", "-fd"])

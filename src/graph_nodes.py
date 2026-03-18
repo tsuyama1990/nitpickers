@@ -20,6 +20,7 @@ from src.nodes import (
     route_uat,
 )
 from src.nodes.coder_critic import CoderCriticNodes
+from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.sandbox import SandboxRunner
 from src.services.audit_orchestrator import AuditOrchestrator
@@ -39,7 +40,11 @@ class CycleNodes(IGraphNodes):
     def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
         self.sandbox = sandbox_runner
         self.jules = jules_client
-        self.git = GitManager()
+
+        from src.service_container import ServiceContainer
+        container = ServiceContainer.default()
+
+        self.git = container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
         self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
@@ -52,6 +57,15 @@ class CycleNodes(IGraphNodes):
         self._sandbox_evaluator = SandboxEvaluatorNodes()
         self._qa = QaNodes(self.jules, self.git, self.llm_reviewer)
         self._coder_critic = CoderCriticNodes(self.jules)
+
+        # Dependency injection for Global Refactor
+        from src.services.refactor_usecase import RefactorUsecase
+        if hasattr(container, "resolve"):
+            refactor_usecase = container.resolve(RefactorUsecase)
+        else:
+            refactor_usecase = RefactorUsecase(jules_client=self.jules)
+
+        self._global_refactor = GlobalRefactorNodes(usecase=refactor_usecase)
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._architect.architect_session_node(state)
@@ -81,6 +95,9 @@ class CycleNodes(IGraphNodes):
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
         return await self._coder_critic.coder_critic_node(state)
+
+    async def global_refactor_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._global_refactor.global_refactor_node(state)
 
     def check_coder_outcome(self, state: CycleState) -> str:
         return check_coder_outcome(state)
