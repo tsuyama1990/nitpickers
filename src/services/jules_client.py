@@ -619,7 +619,7 @@ class JulesClient:
         return f"master-integrator-{uuid.uuid4().hex[:8]}"
 
     async def send_message_to_session(
-        self, session_id: str, message: str, message_history: list[dict[str, str]] | None = None
+        self, session_id: str, message: str, message_history: list[dict[str, str]] | None = None, model: str | None = None
     ) -> str:
         """
         Sends a message to the stateful Master Integrator session.
@@ -630,7 +630,10 @@ class JulesClient:
         # Add the new message
         messages.append({"role": "user", "content": message})
 
-        model = settings.reviewer.smart_model
+        # Inject default model if none provided without hard-relying strictly on settings globally inside the method
+        if not model:
+            from src.config import settings
+            model = settings.reviewer.smart_model
 
         try:
             response = await litellm.acompletion(
