@@ -2,10 +2,10 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from src.services.refactor_usecase import RefactorUsecase
 
 from src.domain_models.refactor import GlobalRefactorResult
 from src.services.jules_client import JulesClient
+from src.services.refactor_usecase import RefactorUsecase
 
 
 @pytest.fixture

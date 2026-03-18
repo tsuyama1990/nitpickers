@@ -1,9 +1,7 @@
 import textwrap
+from pathlib import Path
 
 from src.services.ast_analyzer import ASTAnalyzer
-
-
-from pathlib import Path
 
 
 def test_ast_analyzer_find_duplicates(tmp_path: Path) -> None:

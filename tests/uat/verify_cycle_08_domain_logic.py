@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import marimo
 
@@ -6,8 +7,6 @@ logger = logging.getLogger(__name__)
 
 __generated_with = "0.10.19"
 app = marimo.App()
-
-from typing import Any
 
 
 @app.cell
@@ -26,9 +25,8 @@ def cell_2() -> Any:
     from unittest.mock import AsyncMock, patch
 
     from src.nodes.global_refactor import GlobalRefactorNodes
-    from src.services.refactor_usecase import RefactorUsecase
-
     from src.services.jules_client import JulesClient
+    from src.services.refactor_usecase import RefactorUsecase
     from src.state import CycleState
 
     # Scenario ID 08-01: Successful Global Refactoring
