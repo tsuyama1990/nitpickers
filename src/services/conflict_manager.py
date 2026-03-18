@@ -27,8 +27,10 @@ class ConflictManager:
 
         try:
             # Use git status --porcelain to find unmerged files quickly
-            result = subprocess.run(
-                ["/usr/bin/env", "git", "status", "--porcelain"],
+            import shutil
+            git_cmd = shutil.which("git") or "git"
+            result = subprocess.run(  # noqa: S603
+                [git_cmd, "status", "--porcelain"],
                 cwd=str(repo_path),
                 capture_output=True,
                 text=True,
@@ -55,6 +57,9 @@ class ConflictManager:
                 content = file_path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 continue  # Skip binary files
+            except (FileNotFoundError, PermissionError) as e:
+                logger.warning(f"Could not read {file_path} during conflict scan: {e}")
+                continue
 
             markers = self.conflict_marker_pattern.findall(content)
             if markers:
@@ -79,6 +84,9 @@ class ConflictManager:
             content = file_path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             return True  # Binary files handled differently, assume True for text based check
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning(f"Could not read {file_path} during conflict validation: {e}")
+            return True
 
         if self.conflict_marker_pattern.search(content):
             err_msg = f"File {file_path} still contains git conflict markers."

@@ -55,8 +55,8 @@ tests/unit/test_state.py ...                                             [100%]
 ==================================== ERRORS ====================================
 ____________ ERROR at setup of test_run_session_approved_first_try _____________
 
-mock_jules = <MagicMock name='JulesClient()' id='140081066915984'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140081065361280'>
+mock_jules = <MagicMock name='JulesClient()' id='140055601661568'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140055602364336'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -67,8 +67,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 __________ ERROR at setup of test_run_session_rejected_then_approved ___________
 
-mock_jules = <MagicMock name='JulesClient()' id='140081065392608'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140081065886640'>
+mock_jules = <MagicMock name='JulesClient()' id='140055602395664'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140055600808976'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -79,8 +79,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 _________________ ERROR at setup of test_max_retries_exceeded __________________
 
-mock_jules = <MagicMock name='JulesClient()' id='140081065901040'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140081066001760'>
+mock_jules = <MagicMock name='JulesClient()' id='140055600823376'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140055600924096'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -531,7 +531,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f672a30f1d0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f613c7ab290>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -858,7 +858,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f672a30f5c0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f613c7ab680>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -1185,7 +1185,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f672a30f9b0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f613c7aba70>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -2291,8 +2291,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a88a750>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_injection_with_cou0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c73a960>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-4/test_prompt_injection_with_cou0')
 
     @pytest.mark.asyncio
     async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
@@ -2646,8 +2646,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8aea50>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_no_injection_witho0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75eb70>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-4/test_prompt_no_injection_witho0')
 
     @pytest.mark.asyncio
     async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
@@ -3001,7 +3001,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8adbe0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75dd60>
 count_value = 1
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -3354,7 +3354,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8ad250>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75d340>
 count_value = 2
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -3707,7 +3707,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8ad100>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75d310>
 count_value = 3
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4060,7 +4060,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8acfb0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75d2b0>
 count_value = 5
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4413,7 +4413,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f672a8acec0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f613c75d0a0>
 count_value = 10
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4655,8 +4655,8 @@ ________________________ test_monitor_session_batching _________________________
             # Verify
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140081055734032'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140081055734032'> = <MagicMock name='httpx.AsyncClient()' id='140081056349312'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140055590180032'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140055590180032'> = <MagicMock name='httpx.AsyncClient()' id='140055591663904'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:46: AssertionError
 _________________ test_monitor_session_returns_early_on_change _________________
@@ -4700,8 +4700,8 @@ _________________ test_monitor_session_returns_early_on_change _________________
             # Verify
 >           assert mock_instance.get.call_count == 3
 E           AssertionError: assert 2 == 3
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140081051946544'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140081051946544'> = <MagicMock name='httpx.AsyncClient()' id='140081052448144'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140055591127568'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140055591127568'> = <MagicMock name='httpx.AsyncClient()' id='140055591973376'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:88: AssertionError
 _________________ test_monitor_session_avoids_validation_loop __________________
@@ -4750,8 +4750,8 @@ _________________ test_monitor_session_avoids_validation_loop __________________
             # Should have looped 12 times (batching) because it didn't exit early, 2 calls per loop
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140081051870240'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140081051870240'> = <MagicMock name='httpx.AsyncClient()' id='140081056590080'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140055587430448'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140055587430448'> = <MagicMock name='httpx.AsyncClient()' id='140055591396624'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:202: AssertionError
 _____ TestJulesGitContextRobustness.test_detached_head_creates_temp_branch _____
@@ -4905,7 +4905,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7f672a340830>
+self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7f613c7dc710>
 
     @pytest.mark.asyncio
     async def test_detached_head_creates_temp_branch(self) -> None:
@@ -5155,7 +5155,7 @@ src/services/audit_orchestrator.py                    76     60    21%   30-31, 
 src/services/auditor_usecase.py                      180     44    76%   40-43, 56, 61, 67-68, 81-83, 89-92, 95-96, 113, 145-148, 172-175, 180-183, 194-195, 199-200, 272-273, 278-289, 299-301, 319, 321, 343-344
 src/services/coder_usecase.py                        174     31    82%   38-39, 71-77, 125, 130-135, 146, 148, 175, 190-195, 205, 264-267, 304-305, 312, 321-330, 380
 src/services/committee_usecase.py                     50     40    20%   21-104
-src/services/conflict_manager.py                      45      9    80%   37-39, 52, 56-57, 76, 80-81
+src/services/conflict_manager.py                      53     15    72%   39-41, 54, 58-62, 81, 85-89
 src/services/contracts.py                             26     21    19%   16-43
 src/services/e2b_executor.py                          28      2    93%   43-44
 src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
@@ -5188,7 +5188,7 @@ src/tools.py                                          21     21     0%   1-48
 src/utils.py                                          72     54    25%   31-56, 65-78, 83-102, 112-113, 118-142, 151-160
 src/validators.py                                     41      7    83%   56, 78, 82-86
 --------------------------------------------------------------------------------
-TOTAL                                               4836   2255    53%
+TOTAL                                               4844   2261    53%
 =========================== short test summary info ============================
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_logic_flow
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_pipeline_handover
@@ -5213,4 +5213,4 @@ ERROR tests/ac_cdd/unit/test_cli_reconstruction.py::test_finalize_session_comman
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_in_progress
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_completed
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
-======= 14 failed, 131 passed, 41 warnings, 9 errors in 66.02s (0:01:06) =======
+======= 14 failed, 131 passed, 41 warnings, 9 errors in 67.64s (0:01:07) =======
