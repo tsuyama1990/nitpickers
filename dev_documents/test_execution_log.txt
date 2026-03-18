@@ -636,8 +636,8 @@ E           AttributeError: module 'src.cli' has no attribute 'utils'
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pkgutil.py:528: AttributeError
 ____________ ERROR at setup of test_run_session_approved_first_try _____________
 
-mock_jules = <MagicMock name='JulesClient()' id='140350491259728'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140350490520912'>
+mock_jules = <MagicMock name='JulesClient()' id='139736435241904'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139736435551136'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -648,8 +648,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 __________ ERROR at setup of test_run_session_rejected_then_approved ___________
 
-mock_jules = <MagicMock name='JulesClient()' id='140350491386432'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140350491160704'>
+mock_jules = <MagicMock name='JulesClient()' id='139736435351504'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139736434912928'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -660,8 +660,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 _________________ ERROR at setup of test_max_retries_exceeded __________________
 
-mock_jules = <MagicMock name='JulesClient()' id='140350490524944'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140350491255360'>
+mock_jules = <MagicMock name='JulesClient()' id='139736435555312'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139736435237440'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -1112,7 +1112,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a72f0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f16ece8b0e0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -1439,7 +1439,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a76e0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f16ece8b4d0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -1766,7 +1766,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a75c0>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f16ece8b3b0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -2772,8 +2772,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e58592b0>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_injection_with_cou0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3d4f0>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-4/test_prompt_injection_with_cou0')
 
     @pytest.mark.asyncio
     async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
@@ -3127,8 +3127,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e5858770>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_no_injection_witho0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3c5c0>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-4/test_prompt_no_injection_witho0')
 
     @pytest.mark.asyncio
     async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
@@ -3482,7 +3482,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b4a0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3f290>
 count_value = 1
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -3835,7 +3835,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b770>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3f560>
 count_value = 2
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4188,7 +4188,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b830>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3f620>
 count_value = 3
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4541,7 +4541,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b8f0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3f6e0>
 count_value = 5
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4894,7 +4894,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b9b0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f16ece3f7a0>
 count_value = 10
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -5136,8 +5136,8 @@ ________________________ test_monitor_session_batching _________________________
             # Verify
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350477614400'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350477614400'> = <MagicMock name='httpx.AsyncClient()' id='140350477599280'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='139736429182896'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='139736429182896'> = <MagicMock name='httpx.AsyncClient()' id='139736429167920'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:46: AssertionError
 _________________ test_monitor_session_returns_early_on_change _________________
@@ -5181,8 +5181,8 @@ _________________ test_monitor_session_returns_early_on_change _________________
             # Verify
 >           assert mock_instance.get.call_count == 3
 E           AssertionError: assert 2 == 3
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350477776512'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350477776512'> = <MagicMock name='httpx.AsyncClient()' id='140350479847344'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='139736430393824'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='139736430393824'> = <MagicMock name='httpx.AsyncClient()' id='139736430574960'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:88: AssertionError
 _________________ test_monitor_session_avoids_validation_loop __________________
@@ -5231,8 +5231,8 @@ _________________ test_monitor_session_avoids_validation_loop __________________
             # Should have looped 12 times (batching) because it didn't exit early, 2 calls per loop
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350478592256'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350478592256'> = <MagicMock name='httpx.AsyncClient()' id='140350477954480'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='139736429669664'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='139736429669664'> = <MagicMock name='httpx.AsyncClient()' id='139736429769168'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:202: AssertionError
 _____ TestJulesGitContextRobustness.test_detached_head_creates_temp_branch _____
@@ -5386,7 +5386,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7fa5e5328110>
+self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7f16eceb8260>
 
     @pytest.mark.asyncio
     async def test_detached_head_creates_temp_branch(self) -> None:
@@ -5614,7 +5614,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                       ^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <unittest.mock._patch object at 0x7fa5e46ffdd0>
+self = <unittest.mock._patch object at 0x7f16ebff2ae0>
 
     def get_original(self):
         target = self.getter()
@@ -5637,7 +5637,7 @@ self = <unittest.mock._patch object at 0x7fa5e46ffdd0>
 >           raise AttributeError(
                 "%s does not have the attribute %r" % (target, name)
             )
-E           AttributeError: <src.sandbox.SandboxRunner object at 0x7fa5e47ecd70> does not have the attribute '_get_sandbox'
+E           AttributeError: <src.sandbox.SandboxRunner object at 0x7f16ebff1580> does not have the attribute '_get_sandbox'
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1437: AttributeError
 =============================== warnings summary ===============================
@@ -5653,6 +5653,12 @@ tests/ac_cdd/unit/test_jules_client_logic.py: 8 warnings
 tests/ac_cdd/unit/test_jules_session_fixes.py: 5 warnings
   /app/src/jules_session_nodes.py:27: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
     for field in current.model_fields:
+
+tests/unit/test_e2b_executor.py::test_push_files
+  /app/src/services/e2b_executor.py:24: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    sandbox.files.write(remote_path, content)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ================================ tests coverage ================================
@@ -5675,7 +5681,7 @@ src/domain_models/file_ops.py                         19      0   100%
 src/domain_models/manifest.py                         26      0   100%
 src/domain_models/review.py                           28      0   100%
 src/domain_models/spec.py                             26      0   100%
-src/enums.py                                          31      0   100%
+src/enums.py                                          32      0   100%
 src/error_messages.py                                  7      7     0%   4-18
 src/graph.py                                          56     36    36%   20-22, 26-27, 31-51, 55-115, 118, 121, 125-150, 153
 src/graph_nodes.py                                    59     24    59%   44-51, 54, 57, 62, 65, 68, 71, 74, 77, 80, 83, 86, 89, 92, 95, 98, 101
@@ -5693,10 +5699,10 @@ src/nodes/coder.py                                     9      4    56%   8, 11-1
 src/nodes/committee.py                                 7      3    57%   8-11
 src/nodes/qa.py                                       15      9    40%   8-10, 13-16, 19-22
 src/nodes/routers.py                                  54     38    30%   6-17, 21-26, 30, 34-45, 49-54, 58-63, 74
-src/nodes/sandbox_evaluator.py                        32      3    91%   85-87
+src/nodes/sandbox_evaluator.py                        34      3    91%   87-89
 src/nodes/uat.py                                       9      4    56%   8, 11-14
 src/process_runner.py                                 40     21    48%   44-68, 72-74
-src/sandbox.py                                       100     21    79%   20, 33-41, 88, 113-114, 119-124, 127-128, 134, 138, 148
+src/sandbox.py                                       106     22    79%   20-21, 34-42, 92, 117-118, 123-128, 131-132, 138, 142, 152
 src/service_container.py                              18      1    94%   22
 src/services/__init__.py                               5      0   100%
 src/services/artifacts.py                             14      8    43%   17-28
@@ -5706,7 +5712,7 @@ src/services/auditor_usecase.py                      180     44    76%   40-43, 
 src/services/coder_usecase.py                        174     31    82%   38-39, 71-77, 125, 130-135, 146, 148, 175, 190-195, 205, 264-267, 304-305, 312, 321-330, 380
 src/services/committee_usecase.py                     50     40    20%   21-104
 src/services/contracts.py                             26     21    19%   16-43
-src/services/e2b_executor.py                          15      0   100%
+src/services/e2b_executor.py                          19      0   100%
 src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
 src/services/git/base.py                              28      9    68%   20-25, 34-35, 40-43
 src/services/git/branching.py                        108     45    58%   10-13, 17, 23-38, 53-57, 85-95, 120-130, 153-154, 174-188
@@ -5737,7 +5743,7 @@ src/tools.py                                          21     21     0%   1-48
 src/utils.py                                          72     54    25%   31-56, 65-78, 83-102, 112-113, 118-142, 151-160
 src/validators.py                                     41      7    83%   56, 78, 82-86
 --------------------------------------------------------------------------------
-TOTAL                                               4651   2218    52%
+TOTAL                                               4664   2219    52%
 =========================== short test summary info ============================
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_logic_flow
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_pipeline_handover
@@ -5770,4 +5776,4 @@ ERROR tests/ac_cdd/unit/test_cli_reconstruction.py::test_finalize_session_comman
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_in_progress
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_completed
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
-====== 16 failed, 123 passed, 40 warnings, 15 errors in 61.84s (0:01:01) =======
+====== 16 failed, 123 passed, 41 warnings, 15 errors in 61.61s (0:01:01) =======

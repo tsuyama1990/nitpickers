@@ -2,6 +2,7 @@ from typing import Any
 
 from rich.console import Console
 
+from src.config import settings
 from src.contracts.e2b_executor import E2BExecutorService
 from src.enums import FlowStatus
 from src.services.e2b_executor import E2BExecutorServiceImpl
@@ -29,7 +30,8 @@ class SandboxEvaluatorNodes:
 
         try:
             # Sync files and run pytest
-            result = await self.executor.run_tests("uv run pytest -v --tb=short")
+            pytest_cmd = getattr(settings.sandbox, "test_cmd", "uv run pytest -v --tb=short")
+            result = await self.executor.run_tests(str(pytest_cmd))
 
             console.print(f"[dim]Sandbox Execution Exit Code: {result.exit_code}[/dim]")
             # Note: We omit dumping the raw stdout/stderr to the console directly

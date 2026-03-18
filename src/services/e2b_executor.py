@@ -14,11 +14,14 @@ class E2BExecutorServiceImpl(E2BExecutorService):
     async def push_files(self, local_path: str, remote_path: str) -> None:
         """
         Push files from local path to remote sandbox path.
-        Note: SandboxRunner run_command handles syncing automatically.
         """
-        # We rely on the public method `run_command` which automatically handles
-        # syncing to the sandbox environment.
-        await self.sandbox.run_command(["echo", "syncing"])
+
+        sandbox = await self.sandbox.get_sandbox()
+        from anyio import Path
+
+        path = Path(local_path)
+        content = await path.read_bytes()
+        sandbox.files.write(remote_path, content)
 
     async def run_tests(self, command: str) -> E2BExecutionResult:
         """

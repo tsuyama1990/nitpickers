@@ -17,7 +17,8 @@ class SandboxRunner:
     def __init__(self, sandbox_id: str | None = None, cwd: str | None = None) -> None:
         self.api_key = os.getenv("E2B_API_KEY")
         if not self.api_key:
-            logger.warning("E2B_API_KEY not found. Sandbox execution will fail.")
+            msg = "E2B_API_KEY environment variable is not set"
+            raise ValueError(msg)
 
         self.cwd = cwd or settings.sandbox.cwd
         self.sandbox_id = sandbox_id
@@ -47,7 +48,10 @@ class SandboxRunner:
             timeout=settings.sandbox.timeout,
         )
 
-        self.sandbox.commands.run(f"mkdir -p {self.cwd}")
+        import shlex
+
+        safe_cwd = shlex.quote(self.cwd)
+        self.sandbox.commands.run(f"mkdir -p {safe_cwd}")
         await self._sync_to_sandbox(self.sandbox)
 
         if settings.sandbox.install_cmd:
@@ -158,8 +162,12 @@ class SandboxRunner:
         remote_tar_path = f"{self.cwd}/bundle.tar.gz"
         sandbox.files.write(remote_tar_path, tar_buffer)
 
+        import shlex
+
+        safe_remote_tar_path = shlex.quote(remote_tar_path)
+        safe_cwd = shlex.quote(self.cwd)
         sandbox.commands.run(
-            f"tar -xzf {remote_tar_path} -C {self.cwd}", timeout=settings.sandbox.timeout
+            f"tar -xzf {safe_remote_tar_path} -C {safe_cwd}", timeout=settings.sandbox.timeout
         )
         logger.info("Synced files to sandbox via tarball.")
         self._last_sync_hash = current_hash

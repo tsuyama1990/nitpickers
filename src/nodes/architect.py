@@ -26,7 +26,7 @@ class ArchitectNodes:
             feedback = ""
             if state.get("audit_feedback"):
                 feedback = "\n".join(state.audit_feedback)
-            result = await self._send_audit_feedback_to_session(str(session_id), feedback)
+            result = await self.send_audit_feedback_to_session(str(session_id), feedback)
             if result and result.get("pr_url"):
                 pr_url = result["pr_url"]
                 pr_number = pr_url.split("/")[-1]

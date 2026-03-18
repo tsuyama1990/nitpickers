@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,7 +10,7 @@ from src.state import CycleState
 
 
 @pytest.fixture
-def mock_executor():
+def mock_executor() -> Any:
     executor = AsyncMock()
     executor.run_tests.return_value = E2BExecutionResult(
         stdout="Test passed", stderr="", exit_code=0
@@ -18,12 +19,12 @@ def mock_executor():
 
 
 @pytest.fixture
-def base_state():
+def base_state() -> CycleState:
     return CycleState(cycle_id="test_cycle", sandbox_id="test_sandbox_123")
 
 
 @pytest.mark.asyncio
-async def test_evaluate_red_phase_success_fails(base_state, mock_executor):
+async def test_evaluate_red_phase_success_fails(base_state: CycleState, mock_executor: Any) -> None:
     base_state.tdd_phase = "red"
     mock_executor.run_tests.return_value = E2BExecutionResult(
         stdout="Test passed", stderr="", exit_code=0
@@ -38,7 +39,9 @@ async def test_evaluate_red_phase_success_fails(base_state, mock_executor):
 
 
 @pytest.mark.asyncio
-async def test_evaluate_red_phase_failure_passes(base_state, mock_executor):
+async def test_evaluate_red_phase_failure_passes(
+    base_state: CycleState, mock_executor: Any
+) -> None:
     base_state.tdd_phase = "red"
     mock_executor.run_tests.return_value = E2BExecutionResult(
         stdout="", stderr="Test failed", exit_code=1
@@ -52,7 +55,9 @@ async def test_evaluate_red_phase_failure_passes(base_state, mock_executor):
 
 
 @pytest.mark.asyncio
-async def test_evaluate_green_phase_success_passes(base_state, mock_executor):
+async def test_evaluate_green_phase_success_passes(
+    base_state: CycleState, mock_executor: Any
+) -> None:
     base_state.tdd_phase = "green"
     mock_executor.run_tests.return_value = E2BExecutionResult(
         stdout="Test passed", stderr="", exit_code=0
@@ -66,7 +71,9 @@ async def test_evaluate_green_phase_success_passes(base_state, mock_executor):
 
 
 @pytest.mark.asyncio
-async def test_evaluate_green_phase_failure_fails(base_state, mock_executor):
+async def test_evaluate_green_phase_failure_fails(
+    base_state: CycleState, mock_executor: Any
+) -> None:
     base_state.tdd_phase = "green"
     mock_executor.run_tests.return_value = E2BExecutionResult(
         stdout="", stderr="Test failed", exit_code=1
