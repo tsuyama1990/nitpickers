@@ -1,11 +1,8 @@
-from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from src.cli import app
-from src.domain_models import CycleManifest, ProjectManifest
 
 runner = CliRunner()
 

@@ -69,6 +69,7 @@ class JulesConfig(BaseModel):
     polling_interval_seconds: int = 120
     base_url: str = "https://jules.googleapis.com/v1alpha"
     wait_for_pr_timeout_seconds: int = 900
+    max_plan_rejections: int = 2
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -126,6 +127,9 @@ class ToolsConfig(BaseModel):
     ruff_cmd: str = "ruff"
     gemini_cmd: str = "gemini"
     required_executables: list[str] = ["uv", "git"]
+    conflict_codes: set[str] = Field(
+        default_factory=lambda: {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+    )
 
 
 class SandboxConfig(BaseModel):
@@ -238,17 +242,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        missing = []
         if not getattr(self, "test_mode", False):
-            missing = []
             if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
                 missing.append("JULES_API_KEY")
             if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
                 missing.append("E2B_API_KEY")
-            if missing:
-                # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-                if not os.getenv("PYTEST_CURRENT_TEST"):
-                    msg = f"Missing required environment variables: {', '.join(missing)}"
-                    raise ValueError(msg)
+        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+            # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
+            msg = f"Missing required environment variables: {', '.join(missing)}"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="before")

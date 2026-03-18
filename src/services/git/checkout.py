@@ -42,7 +42,8 @@ class GitCheckoutMixin(BaseGitManager):
             # CRITICAL: Check for unmerged files (conflicts) before committing
             # Codes: DD, AU, UD, UA, DU, AA, UU
             lines = stdout.splitlines()
-            conflict_codes = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+            from src.config import settings
+            conflict_codes = settings.tools.conflict_codes
             for line in lines:
                 # Porcelain v1: XY PATH (X=index, Y=worktree)
                 if line[:2] in conflict_codes:

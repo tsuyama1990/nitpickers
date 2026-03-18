@@ -16,7 +16,7 @@ class JulesApiError(Exception):
 
 
 class JulesApiClient:
-    BASE_URL = "https://jules.googleapis.com/v1alpha"
+    BASE_URL = settings.jules.base_url
 
     def __init__(self, api_key: str | None = None) -> None:
         self.api_key = api_key or settings.JULES_API_KEY
