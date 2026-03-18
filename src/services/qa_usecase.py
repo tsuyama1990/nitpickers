@@ -134,7 +134,7 @@ class QaUseCase:
                 )
 
                 feedback_template = settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text()
-                feedback_msg = str(feedback_template).replace("{{feedback}}", feedback)
+                feedback_msg = str(feedback_template).replace("{{feedback}}", str(feedback))
                 result = await self._send_audit_feedback_to_session(
                     session_id=qa_session_id,
                     feedback=feedback_msg,
@@ -158,7 +158,7 @@ class QaUseCase:
                 injection_template = str(
                     settings.get_template("AUDIT_FEEDBACK_INJECTION.md").read_text()
                 )
-                injection = injection_template.replace("{{feedback}}", feedback)
+                injection = injection_template.replace("{{feedback}}", str(feedback))
                 injection = str(
                     re.sub(r"\{\{#pr_url\}\}.*?\{\{/pr_url\}\}", "", injection, flags=re.DOTALL)
                 ).strip()

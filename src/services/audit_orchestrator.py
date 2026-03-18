@@ -69,7 +69,7 @@ class AuditOrchestrator:
                     t_msg = "Timed out waiting for plan generation."
                     raise TimeoutError(t_msg)
 
-                plan_details = activity.get("planGenerated")
+                plan_details = activity.get("planGenerated", {})
 
             if not plan_details:
                 v_msg = "Plan activity found but no details."
@@ -96,7 +96,8 @@ class AuditOrchestrator:
                 console.print(
                     "[bold green]Plan Approved. Proceeding to implementation...[/bold green]"
                 )
-                await self.jules.approve_plan(session_name, plan_id)
+                if plan_id:
+                    await self.jules.approve_plan(session_name, str(plan_id))
                 result = await self.jules.wait_for_completion(session_name)
                 return dict(result)
 

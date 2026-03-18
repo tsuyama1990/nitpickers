@@ -16,6 +16,7 @@ from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
+from src.enums import WorkPhase, FlowStatus
 from src.utils import KeepAwake, logger
 
 console = Console()
@@ -309,8 +310,8 @@ class WorkflowService:
         initial_state = CycleState(
             cycle_id="qa-tutorials",
             project_session_id=project_session_id,
-            current_phase="qa",
-            status="start",
+            current_phase=WorkPhase.QA,
+            status=FlowStatus.START,
         )
 
         thread_id = f"qa-{project_session_id}"
@@ -323,7 +324,8 @@ class WorkflowService:
             console.print("[cyan]Running QA Tutorial Generation Graph...[/cyan]")
             final_state = await graph.ainvoke(initial_state, config)
 
-            if final_state.get("audit_result") and final_state.get("audit_result").is_approved:
+            audit_res = final_state.get("audit_result")
+            if audit_res and getattr(audit_res, "is_approved", False):
                 console.print(
                     Panel(
                         f"QA Tutorials Generated & Verified.\nPR: {final_state.get('pr_url')}",
