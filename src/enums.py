@@ -43,3 +43,4 @@ class FlowStatus(StrEnum):
 
     # QA
     MAX_RETRIES = "max_retries"
+    ARCHITECT_CRITIC_REJECTED = "architect_critic_rejected"

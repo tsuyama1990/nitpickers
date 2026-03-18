@@ -7,7 +7,7 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.fixture
+@pytest.fixture()
 def git_manager() -> GitManager:
     """Create a GitManager instance."""
     return GitManager()
@@ -28,7 +28,7 @@ def test_ensure_clean_state_clean(git_manager: GitManager) -> None:
         assert mock_run.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> None:
     """Test ensure_clean_state with dirty state and auto-stash."""
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
@@ -43,7 +43,7 @@ async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> N
         assert mock_run.call_count == 3
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_integration_branch(git_manager: GitManager) -> None:
     """Test creating integration branch."""
     session_id = "session-20251230-120000"
@@ -57,7 +57,7 @@ async def test_create_integration_branch(git_manager: GitManager) -> None:
         assert mock_run.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_session_branch_arch(git_manager: GitManager) -> None:
     """Test creating architecture branch."""
     session_id = "session-20251230-120000"
@@ -72,7 +72,7 @@ async def test_create_session_branch_arch(git_manager: GitManager) -> None:
         assert mock_run.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
     """Test creating cycle branch."""
     session_id = "session-20251230-120000"
@@ -88,7 +88,7 @@ async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
         assert branch == "dev/session-20251230-120000/cycle01"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_merge_pr(git_manager: GitManager) -> None:
     """Test merging PR with auto-merge."""
     pr_number = 123
@@ -129,7 +129,7 @@ async def test_merge_pr(git_manager: GitManager) -> None:
         assert last_merge_args == ["gh", "pr", "merge", "123", "--merge", "--delete-branch"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_final_pr_new(git_manager: GitManager) -> None:
     """Test creating new final PR to main."""
     integration_branch = "dev/session-20251230-120000/integration"
@@ -155,7 +155,7 @@ async def test_create_final_pr_new(git_manager: GitManager) -> None:
         assert mock_run.call_count == 5
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_final_pr_existing(git_manager: GitManager) -> None:
     """Test returning existing final PR."""
     integration_branch = "dev/session-20251230-120000/integration"
@@ -172,7 +172,7 @@ async def test_create_final_pr_existing(git_manager: GitManager) -> None:
         assert mock_run.call_count == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_validate_remote_branch_success(git_manager: GitManager) -> None:
     """Test validating branch that exists on remote."""
     branch = "dev/session-20251230-120000"
@@ -195,7 +195,7 @@ async def test_validate_remote_branch_success(git_manager: GitManager) -> None:
         assert error == ""
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None:
     """Test validating branch that doesn't exist on remote."""
     branch = "nonexistent-branch"
@@ -210,7 +210,7 @@ async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None
         assert "does not exist" in error
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_changed_files(git_manager: GitManager) -> None:
     """Test getting list of changed files."""
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:

@@ -9,5 +9,6 @@ class UatNodes:
 
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         from src.services.uat_usecase import UatUseCase
+
         usecase = UatUseCase(self.git)
         return dict(await usecase.execute(state))

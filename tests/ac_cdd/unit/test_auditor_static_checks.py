@@ -8,7 +8,7 @@ from src.services.auditor_usecase import AuditorUseCase
 from src.state import CycleState
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_auditor_node_includes_static_errors() -> None:
     """
     Verify that if static analysis fails, the feedback includes errors and status is rejected.

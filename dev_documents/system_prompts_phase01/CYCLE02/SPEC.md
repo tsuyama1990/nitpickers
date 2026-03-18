@@ -44,12 +44,13 @@ The Self-Critic logic utilizes the **same** Jules session as the Architect to sa
 
 ## Implementation Approach
 1. **Prompts Creation:** Write `ARCHITECT_CRITIC_INSTRUCTION.md` with explicit anti-pattern rules.
-2. **Service Implementation:** Create `src/services/self_critic_evaluator.py`. It reads the generated `SYSTEM_ARCHITECTURE.md` and `SPEC.md` files (or directly from LangGraph state). It sends the fixed evaluation prompt to the existing Architect session.
+2. **Service Implementation:** Create `src/services/self_critic_evaluator.py`. It uses robust JSON extraction logic leveraging substring targeting rather than regex to enforce validation reliability against API boundaries.
 3. **Graph Modification:** In `src/graph.py`, modify `_create_architect_graph` to transition from `architect_session` to `architect_critic`.
-4. **Routing Logic:** Add `route_architect_critic` in `src/graph_nodes.py`.
+4. **Routing Logic:** Add `route_architect_critic` in `src/nodes/routers.py`.
    - If `CriticResult.is_approved` is `True`, go to `END`.
-   - If `False`, go back to `architect_session` with feedback injected into the next prompt.
-5. **Session Management:** Ensure the Jules session state handles the follow-up effectively without resetting. Add retry limits (e.g., max 3 self-critic loops) to prevent infinite loops.
+   - If `False`, go back to `architect_session` with feedback injected into the next prompt via `state.audit_feedback`.
+5. **Dependency Injection:** Enforce safe testing bounds across nodes via `ServiceContainer` injection across orchestrators and use case processors explicitly checking for instantiation validity (`if not client: ValueError`).
+6. **Session Management:** Ensure the Jules session state handles the follow-up effectively without resetting. Add retry limits (e.g., max 3 self-critic loops) to prevent infinite loops.
 
 ## Test Strategy
 ### Unit Testing Approach

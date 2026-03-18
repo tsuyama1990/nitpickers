@@ -8,6 +8,7 @@ from rich.panel import Panel
 
 from src.config import settings
 from src.domain_models import CycleManifest
+from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
@@ -22,9 +23,15 @@ console = Console()
 
 
 class WorkflowService:
-    def __init__(self) -> None:
-        self.services = ServiceContainer.default()
-        self.builder = GraphBuilder(self.services)
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+        from src.sandbox import SandboxRunner
+
+        self.builder = GraphBuilder(
+            self.services,
+            SandboxRunner(),
+            self.services.jules if self.services.jules else JulesClient(),
+        )
         self.git = GitManager()
 
     async def run_gen_cycles(
@@ -242,7 +249,8 @@ class WorkflowService:
         }
 
         if audit_mode:
-            orch = AuditOrchestrator(self.services.jules, self.builder.sandbox)
+            jules = self.services.jules or JulesClient()
+            orch = AuditOrchestrator(jules, self.builder.sandbox)
             try:
                 result = await orch.run_interactive_session(
                     prompt=prompt,
@@ -309,8 +317,8 @@ class WorkflowService:
         initial_state = CycleState(
             cycle_id="qa-tutorials",
             project_session_id=project_session_id,
-            current_phase="qa",
-            status="start",
+            current_phase=WorkPhase.QA,
+            status=FlowStatus.START,
         )
 
         thread_id = f"qa-{project_session_id}"
@@ -323,7 +331,8 @@ class WorkflowService:
             console.print("[cyan]Running QA Tutorial Generation Graph...[/cyan]")
             final_state = await graph.ainvoke(initial_state, config)
 
-            if final_state.get("audit_result") and final_state.get("audit_result").is_approved:
+            audit_res = final_state.get("audit_result")
+            if audit_res and getattr(audit_res, "is_approved", False):
                 console.print(
                     Panel(
                         f"QA Tutorials Generated & Verified.\nPR: {final_state.get('pr_url')}",
@@ -415,6 +424,7 @@ class WorkflowService:
 
         async def move_item(src: Path, dest: Path) -> None:
             import anyio
+
             if not await anyio.Path(src).exists():
                 return
             try:

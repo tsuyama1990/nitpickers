@@ -5,12 +5,12 @@ import pytest
 from src.services.llm_reviewer import LLMReviewer
 
 
-@pytest.fixture
+@pytest.fixture()
 def reviewer() -> LLMReviewer:
     return LLMReviewer()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_review_code_success(reviewer: LLMReviewer) -> None:
     """Test successful code review call."""
     target_files = {"main.py": "print('hello')"}
@@ -50,7 +50,7 @@ async def test_review_code_success(reviewer: LLMReviewer) -> None:
         assert "File: main.py (AUDIT TARGET)" in prompt
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_review_code_api_failure(reviewer: LLMReviewer) -> None:
     """Test error handling when API fails."""
     target_files = {"main.py": "content"}

@@ -6,7 +6,7 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_git_env(tmp_path: Path) -> Path:
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
@@ -14,7 +14,7 @@ def mock_git_env(tmp_path: Path) -> Path:
     return repo_dir
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
     """
     Verify that create_feature_branch doesn't fail if branch already exists.
@@ -53,7 +53,7 @@ async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
         # If I want to simulate "exists", rev-parse should return 0.
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
     """
     Verify smart checkout recovers from dirty state.

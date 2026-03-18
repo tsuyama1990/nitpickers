@@ -7,7 +7,7 @@ import pytest
 from src.services.jules_client import JulesClient, JulesTimeoutError
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_client() -> Generator[JulesClient, None, None]:
     # Use dummy key to pass init
     with patch.dict("os.environ", {"JULES_API_KEY": "dummy"}):
@@ -19,7 +19,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
         yield client
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_httpx() -> Generator[AsyncMock, None, None]:
     with patch("httpx.AsyncClient") as mock_cls:
         mock_instance = AsyncMock()
@@ -29,7 +29,7 @@ def mock_httpx() -> Generator[AsyncMock, None, None]:
         yield mock_instance
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_wait_for_completion_sucess_first_try(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
@@ -52,7 +52,7 @@ async def test_wait_for_completion_sucess_first_try(
     mock_client._sleep.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_wait_for_completion_loop_success(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
@@ -88,7 +88,7 @@ async def test_wait_for_completion_loop_success(
     assert mock_client._sleep.call_count >= expected_calls
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx: AsyncMock) -> None:
     """Test timeout behaves correctly."""
     mock_client.timeout = 0.001
@@ -108,7 +108,7 @@ async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx:
         await mock_client.wait_for_completion("sessions/123")
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_interactive_inquiry_handling(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:

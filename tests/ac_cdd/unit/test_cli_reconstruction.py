@@ -9,7 +9,7 @@ from src.cli import app
 runner = CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_deps() -> Iterator[None]:
     with (
         patch("src.cli.utils.check_api_key", return_value=True),

@@ -8,7 +8,7 @@ from src.graph_nodes import CycleNodes
 from src.state import CycleState
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_committee_logic_flow() -> None:
     # Mock settings
     mock_settings = MagicMock()
@@ -99,7 +99,7 @@ async def test_committee_logic_flow() -> None:
         assert route == "coder_session"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_committee_pipeline_handover() -> None:
     """Test pipeline handover: when review limit reached, move to next auditor."""
     # Mock settings: 2 Auditors × 1 Review each (small for testing)

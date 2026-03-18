@@ -31,7 +31,7 @@ class JulesSessionNodes:
                 updates[field] = new_val
         return updates
 
-    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
+    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Monitor Jules session and detect state changes with batched polling."""
         from src.config import settings
 
@@ -79,7 +79,9 @@ class JulesSessionNodes:
 
                     # Only emit INFO when state changes; repeated same-state polls are demoted to DEBUG
                     if new_jules_state != _state_in.jules_state:
-                        logger.info(f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}")
+                        logger.info(
+                            f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}"
+                        )
                     else:
                         logger.debug(f"Jules session state (unchanged): {new_jules_state}")
 
@@ -539,7 +541,7 @@ class JulesSessionNodes:
         state.fallback_elapsed_seconds = 0
         return self._compute_diff(_state_in, state)
 
-    async def wait_for_pr(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0912
+    async def wait_for_pr(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901
         """Wait for PR creation after manual request, with session state re-validation."""
         state = _state_in.model_copy(deep=True)
 

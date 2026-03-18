@@ -50,7 +50,7 @@ class JulesClient:
     Client for interacting with the Google Cloud Code Agents API (Jules API).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
         self.base_url = "https://jules.googleapis.com/v1alpha"
         self.timeout = settings.jules.timeout_seconds
@@ -59,21 +59,23 @@ class JulesClient:
         self.git = GitManager()
 
         try:
-            self.credentials, self.project_id_from_auth = google.auth.default()  # type: ignore[no-untyped-call]
+            self.credentials, self.project_id_from_auth = google.auth.default()
             if not self.project_id:
                 self.project_id = self.project_id_from_auth
         except Exception as e:
             logger.warning(
                 f"Could not load Google Credentials: {e}. Falling back to API Key if available."
             )
-            self.credentials = None
+            self.credentials = None  # type: ignore[assignment]
 
-        self.manager_agent = get_manager_agent()
+        self.manager_agent = manager_agent if manager_agent else get_manager_agent()
 
-        # Import PlanAuditor for plan approval (separate from manager_agent for questions)
-        from src.services.plan_auditor import PlanAuditor
+        if plan_auditor:
+            self.plan_auditor = plan_auditor
+        else:
+            from src.services.plan_auditor import PlanAuditor
 
-        self.plan_auditor = PlanAuditor()
+            self.plan_auditor = PlanAuditor()
 
         api_key_to_use = settings.JULES_API_KEY
         if not api_key_to_use and self.credentials:
@@ -259,7 +261,7 @@ class JulesClient:
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
         )
 
-        final_state = await graph.ainvoke(initial_state, config)
+        final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
 
         # Handle final state
         # LangGraph may return dict or object

@@ -5,9 +5,9 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 class TestGitStatePersistence:
-    @pytest.fixture
+    @pytest.fixture()
     def git_manager(self) -> GitManager:
         return GitManager()
 
@@ -22,7 +22,7 @@ class TestGitStatePersistence:
 
         # Verify check called but no creation commands
         assert mock_run.call_count >= 1
-        args, _ = mock_run.call_args_list[0]  # First call should be rev-parse or fetch
+        _args, _ = mock_run.call_args_list[0]  # First call should be rev-parse or fetch
         # Given the updated logic might fetch first, we check that rev-parse eventually succeeds
 
     @patch("src.process_runner.ProcessRunner.run_command")

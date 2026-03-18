@@ -6,7 +6,7 @@ from src.domain_models import ProjectManifest
 from src.validators import SessionValidator, ValidationError
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 class TestSessionValidator:
     @patch("src.validators.StateManager.load_manifest")
     async def test_session_validator_valid(self, mock_load: AsyncMock) -> None:

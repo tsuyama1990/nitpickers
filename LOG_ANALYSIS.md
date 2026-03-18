@@ -42,7 +42,7 @@ DEBUG: Final reviewable files: [
 ```
 
 **Problem:** Auditor is reviewing `.egg-info` files (build artifacts)
-**Impact:** 
+**Impact:**
 - Wastes tokens reviewing generated files
 - May confuse the AI model
 - Not actual source code
@@ -83,7 +83,7 @@ DEBUG: - tests/__init__.py (0 chars)
 
 **Evidence:**
 ```
-INFO: LLMReviewer: preparing review for 16 files using model 
+INFO: LLMReviewer: preparing review for 16 files using model
       openrouter/meta-llama/llama-3.3-70b-instruct:free
 ```
 
@@ -100,7 +100,7 @@ Auditor gave generic feedback like:
 
 This sounds like **template-based feedback**, not code-specific.
 
-**Recommendation:** 
+**Recommendation:**
 - Try SMART_MODEL for auditor (if budget allows)
 - Or use AC_CDD_AUDITOR_MODEL_MODE=smart
 

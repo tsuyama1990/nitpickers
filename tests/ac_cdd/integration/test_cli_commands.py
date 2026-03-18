@@ -10,7 +10,7 @@ from src.domain_models import CycleManifest, ProjectManifest
 runner = CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_dependencies() -> Iterator[None]:
     with (
         patch("src.cli.utils.check_api_key", return_value=True),
