@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -19,8 +20,8 @@ try:
         load_dotenv(_root_env, override=True)
     else:
         load_dotenv()  # Try default locations
-except Exception:
-    pass
+except Exception as e:
+    logging.debug(f"Could not load dotenv: {e}")
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -65,22 +66,23 @@ class PathsConfig(BaseModel):
 
 class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = 7200
-    polling_interval_seconds: int = 120
-    base_url: str = "https://jules.googleapis.com/v1alpha"
-    wait_for_pr_timeout_seconds: int = 900
+    timeout_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200")))
+    polling_interval_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120")))
+    base_url: str = Field(default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha"))
+    wait_for_pr_timeout_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900")))
+    max_plan_rejections: int = Field(default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2")))
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
-        default=1,
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", "1")),
         description="Number of polls per LangGraph node invocation (batch_size * monitor_poll_interval_seconds = seconds per step).",
     )
     monitor_poll_interval_seconds: int = Field(
-        default=30,
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", "30")),
         description="Seconds between each poll within a monitor batch.",
     )
     stale_session_timeout_seconds: int = Field(
-        default=1800,
+        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", "1800")),
         description=(
             "Seconds without a Jules state change before sending a nudge message. "
             "Jules sometimes enters a silent mode where IN_PROGRESS stays unchanged. "
@@ -89,25 +91,16 @@ class JulesConfig(BaseModel):
         ),
     )
     max_stale_nudges: int = Field(
-        default=3,
+        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", "3")),
         description="Maximum number of nudge messages to send before giving up and raising a timeout.",
     )
 
     # Distress detection keywords - Jules sometimes completes but signals a problem in its last message
     distress_keywords: list[str] = Field(
-        default=[
-            "inconsistent",
-            "cannot act",
-            "faulty audit",
-            "incorrect version",
-            "please manually",
-            "blocked",
-            "issue with",
-            "reiterate",
-            "cannot proceed",
-            "unable to complete",
-            "needs your input",
-        ],
+        default_factory=lambda: os.getenv(
+            "JULES_DISTRESS_KEYWORDS",
+            "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input",
+        ).split(","),
         description=(
             "Keywords in Jules' last agentMessaged activity that indicate it is stuck or "
             "needs help. NOTE: keep these specific - broad words like 'error' will fire on "
@@ -126,6 +119,9 @@ class ToolsConfig(BaseModel):
     ruff_cmd: str = "ruff"
     gemini_cmd: str = "gemini"
     required_executables: list[str] = ["uv", "git"]
+    conflict_codes: set[str] = Field(
+        default_factory=lambda: {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+    )
 
 
 class SandboxConfig(BaseModel):
@@ -238,17 +234,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        missing = []
         if not getattr(self, "test_mode", False):
-            missing = []
             if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
                 missing.append("JULES_API_KEY")
             if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
                 missing.append("E2B_API_KEY")
-            if missing:
-                # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-                if not os.getenv("PYTEST_CURRENT_TEST"):
-                    msg = f"Missing required environment variables: {', '.join(missing)}"
-                    raise ValueError(msg)
+        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+            # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
+            msg = f"Missing required environment variables: {', '.join(missing)}"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="before")

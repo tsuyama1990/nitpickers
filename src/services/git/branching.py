@@ -47,7 +47,8 @@ class GitBranchingMixin(BaseGitManager):
             # CRITICAL: Check for unresolved conflicts before committing
             # Git porcelain v1 conflict codes: DD, AU, UD, UA, DU, AA, UU
             lines = stdout.splitlines()
-            conflict_codes = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+            from src.config import settings
+            conflict_codes = settings.tools.conflict_codes
             for line in lines:
                 if line[:2] in conflict_codes:
                     error_msg = (
