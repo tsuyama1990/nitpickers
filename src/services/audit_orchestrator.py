@@ -21,13 +21,16 @@ class AuditOrchestrator:
 
     def __init__(
         self,
-        jules_client: JulesClient | None = None,
-        sandbox_runner: "SandboxRunner | None" = None,
+        jules_client: JulesClient,
+        sandbox_runner: "SandboxRunner",
         plan_auditor: PlanAuditor | None = None,
     ) -> None:
-        self.jules = jules_client or JulesClient()
-        self.auditor = plan_auditor or PlanAuditor()
+        self.jules = jules_client
+        if not self.jules:
+            msg = "JulesClient must be injected into AuditOrchestrator"
+            raise ValueError(msg)
         self.sandbox = sandbox_runner
+        self.auditor = plan_auditor or PlanAuditor()
 
     async def run_interactive_session(
         self, prompt: str, spec_files: dict[str, str], max_retries: int = 3
@@ -69,7 +72,7 @@ class AuditOrchestrator:
                     t_msg = "Timed out waiting for plan generation."
                     raise TimeoutError(t_msg)
 
-                plan_details = activity.get("planGenerated")
+                plan_details = activity.get("planGenerated", {})
 
             if not plan_details:
                 v_msg = "Plan activity found but no details."
@@ -96,7 +99,8 @@ class AuditOrchestrator:
                 console.print(
                     "[bold green]Plan Approved. Proceeding to implementation...[/bold green]"
                 )
-                await self.jules.approve_plan(session_name, plan_id)
+                if plan_id:
+                    await self.jules.approve_plan(session_name, str(plan_id))
                 result = await self.jules.wait_for_completion(session_name)
                 return dict(result)
 

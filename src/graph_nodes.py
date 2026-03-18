@@ -4,6 +4,7 @@ from rich.console import Console
 
 from src.interfaces import IGraphNodes
 from src.nodes import (
+    ArchitectCriticNodes,
     ArchitectNodes,
     AuditorNodes,
     CoderNodes,
@@ -12,6 +13,7 @@ from src.nodes import (
     UatNodes,
     check_audit_outcome,
     check_coder_outcome,
+    route_architect_critic,
     route_committee,
     route_qa,
     route_uat,
@@ -35,13 +37,11 @@ class CycleNodes(IGraphNodes):
         self.sandbox = sandbox_runner
         self.jules = jules_client
         self.git = GitManager()
-        # Dependency injection for sub-services could be improved by passing them in,
-        # but for now we construct them with the injected clients.
-        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
+        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
-        # Initialize node modules
         self._architect = ArchitectNodes(self.jules, self.git)
+        self._architect_critic = ArchitectCriticNodes(self.jules)
         self._coder = CoderNodes(self.jules)
         self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer)
         self._committee = CommitteeNodes()
@@ -50,6 +50,9 @@ class CycleNodes(IGraphNodes):
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._architect.architect_session_node(state)
+
+    async def architect_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._architect_critic.architect_critic_node(state)
 
     async def _send_audit_feedback_to_session(
         self, session_id: str, feedback: str
@@ -73,6 +76,9 @@ class CycleNodes(IGraphNodes):
 
     def check_audit_outcome(self, _state: CycleState) -> str:
         return check_audit_outcome(_state)
+
+    def route_architect_critic(self, state: CycleState) -> str:
+        return route_architect_critic(state)
 
     def route_committee(self, state: CycleState) -> str:
         return route_committee(state)

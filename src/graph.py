@@ -14,16 +14,9 @@ from .state import CycleState
 
 
 class GraphBuilder:
-    def __init__(self, services: ServiceContainer) -> None:
-        # Initialize SandboxRunner via ServiceContainer or directly if not present (though it's not a service in ServiceContainer definition currently)
-        # Refactoring to avoid direct instantiation if possible, but SandboxRunner is specific to execution.
-        # For now, we keep it here but we can inject it if we extend ServiceContainer.
-        self.sandbox = SandboxRunner()
-
-        # Use jules from services, fallback to direct instantiation if None
-        self.jules = services.jules if services.jules else JulesClient()
-
-        # Inject dependencies into CycleNodes
+    def __init__(self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient) -> None:
+        self.sandbox = sandbox
+        self.jules = jules
         self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
 
     async def cleanup(self) -> None:
@@ -36,9 +29,22 @@ class GraphBuilder:
         workflow = StateGraph(CycleState)
 
         workflow.add_node("architect_session", self.nodes.architect_session_node)
+        workflow.add_node("architect_critic", self.nodes.architect_critic_node)
 
         workflow.add_edge(START, "architect_session")
-        workflow.add_edge("architect_session", END)
+
+        # from architect_session to architect_critic instead of END
+        workflow.add_edge("architect_session", "architect_critic")
+
+        # from architect_critic to END or back to architect_critic
+        workflow.add_conditional_edges(
+            "architect_critic",
+            self.nodes.route_architect_critic,
+            {
+                "architect_critic": "architect_critic",
+                "end": END,
+            },
+        )
 
         return workflow
 

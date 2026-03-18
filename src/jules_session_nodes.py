@@ -31,7 +31,7 @@ class JulesSessionNodes:
                 updates[field] = new_val
         return updates
 
-    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
+    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915, PLR0912
         """Monitor Jules session and detect state changes with batched polling."""
         from src.config import settings
 
@@ -79,7 +79,9 @@ class JulesSessionNodes:
 
                     # Only emit INFO when state changes; repeated same-state polls are demoted to DEBUG
                     if new_jules_state != _state_in.jules_state:
-                        logger.info(f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}")
+                        logger.info(
+                            f"Jules session state changed: {_state_in.jules_state} → {new_jules_state}"
+                        )
                     else:
                         logger.debug(f"Jules session state (unchanged): {new_jules_state}")
 

@@ -18,7 +18,7 @@ def test_cycle_state_new_fields_assignment() -> None:
         cycle_id="test_new_fields",
         sandbox_artifacts={"coverage": "85%"},
         conflict_status=FlowStatus.CONFLICT_DETECTED,
-        concurrent_dependencies=["cycle_01", "cycle_02"]
+        concurrent_dependencies=["cycle_01", "cycle_02"],
     )
 
     assert state.sandbox_artifacts == {"coverage": "85%"}
@@ -35,8 +35,7 @@ def test_integration_state_initialization() -> None:
     )
 
     state = IntegrationState(
-        master_integrator_session_id="session_123",
-        unresolved_conflicts=[conflict]
+        master_integrator_session_id="session_123", unresolved_conflicts=[conflict]
     )
 
     assert state.master_integrator_session_id == "session_123"

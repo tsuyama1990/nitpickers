@@ -15,6 +15,9 @@ class UatUseCase:
     """
 
     def __init__(self, git_manager: GitManager) -> None:
+        if not git_manager:
+            msg = "GitManager must be injected into UatUseCase"
+            raise ValueError(msg)
         self.git = git_manager
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
@@ -48,7 +51,9 @@ class UatUseCase:
 
         if current_phase != WorkPhase.REFACTORING:
             if is_last_cycle:
-                console.print("[bold magenta]All cycles completed. Transitioning to Final Refactoring Phase...[/bold magenta]")
+                console.print(
+                    "[bold magenta]All cycles completed. Transitioning to Final Refactoring Phase...[/bold magenta]"
+                )
                 # Clear audit results and reset counters for the refactoring loop
                 return {
                     "current_phase": WorkPhase.REFACTORING,
@@ -63,7 +68,9 @@ class UatUseCase:
                     "last_feedback_time": 0,
                     "pr_url": None,
                 }
-            console.print(f"[bold green]Cycle {state.cycle_id} of {planned_count} completed.[/bold green]")
+            console.print(
+                f"[bold green]Cycle {state.cycle_id} of {planned_count} completed.[/bold green]"
+            )
             return {"status": FlowStatus.COMPLETED}
 
         # If we were already in refactoring, we are done

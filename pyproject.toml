@@ -24,6 +24,7 @@ dependencies = [
     "typer",
     "rich",
     "mypy>=1.19.0",
+    "pydantic-ai-slim[anthropic]>=1.60.0",
 ]
 
 [tool.uv]
@@ -109,8 +110,8 @@ ignore = [
     "PT019",  # Fixture without value injection
     "RUF003", # Ambiguous multiplication sign
     "ARG002", # Unused method argument
-    "RUF043", # Pattern metacharacters not escaped in match
-    "RUF059", # Unused unpacked variable
+    # Pattern metacharacters not escaped in match
+    # Unused unpacked variable
     "PLR0913", # Too many arguments in function definition
     "ANN202"  # Missing return type annotation for private functions
 ]

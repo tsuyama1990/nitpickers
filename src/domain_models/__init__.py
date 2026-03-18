@@ -1,4 +1,5 @@
 from .architecture import SystemArchitecture
+from .critic import CriticResult
 from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
 from .manifest import CycleManifest, ProjectManifest
@@ -9,6 +10,7 @@ __all__ = [
     "AuditResult",
     "AuditorReport",
     "ConflictRegistryItem",
+    "CriticResult",
     "CycleManifest",
     "CyclePlan",
     "CycleStatus",

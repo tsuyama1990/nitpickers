@@ -30,6 +30,7 @@ class AuditorUseCase:
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
         import anyio
+
         result = {}
         for path_str in file_paths:
             p = anyio.Path(path_str)
@@ -101,7 +102,9 @@ class AuditorUseCase:
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
         is_refactor_phase = getattr(state, "current_phase", None) == WorkPhase.REFACTORING
         template_name = (
-            "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md" if is_refactor_phase else "AUDITOR_INSTRUCTION.md"
+            "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md"
+            if is_refactor_phase
+            else "AUDITOR_INSTRUCTION.md"
         )
 
         template_path = settings.get_template(template_name)
