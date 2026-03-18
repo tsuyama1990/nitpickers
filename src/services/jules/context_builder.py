@@ -52,12 +52,13 @@ class JulesContextBuilder:
         context_parts.append(f"\n## Changed Files ({len(changed_files)} files)\n")
 
         max_files = 10  # Prevent context overflow
+        import anyio
         max_file_size = 5000  # chars per file
 
         for filepath in changed_files[:max_files]:
             try:
-                file_path = Path(filepath)
-                if file_path.exists() and file_path.suffix in [
+                file_path = anyio.Path(filepath)
+                if await file_path.exists() and file_path.suffix in [
                     ".py",
                     ".md",
                     ".toml",
@@ -65,7 +66,7 @@ class JulesContextBuilder:
                     ".yaml",
                     ".yml",
                 ]:
-                    content = file_path.read_text(encoding="utf-8")
+                    content = await file_path.read_text(encoding="utf-8")
                     if len(content) > max_file_size:
                         content = content[:max_file_size] + "\n... (truncated)"
                     context_parts.append(

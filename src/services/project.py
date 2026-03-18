@@ -72,7 +72,8 @@ class ProjectManager:
         docs_dir = _Path(settings.paths.documents_dir)
         await perm_mgr.fix_permissions(docs_dir)
 
-        in_docker = _Path("/.dockerenv").exists() or os.environ.get("DOCKER_CONTAINER") == "true"
+        import anyio
+        in_docker = await anyio.Path("/.dockerenv").exists() or os.environ.get("DOCKER_CONTAINER") == "true"
         if in_docker:
             logger.info(
                 "[ProjectManager] Running inside Docker — skipping 'uv sync' to avoid "

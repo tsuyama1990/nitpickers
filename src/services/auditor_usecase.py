@@ -29,12 +29,13 @@ class AuditorUseCase:
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
+        import anyio
         result = {}
         for path_str in file_paths:
-            p = Path(path_str)
-            if p.exists() and p.is_file():
+            p = anyio.Path(path_str)
+            if await p.exists() and await p.is_file():
                 try:
-                    result[path_str] = p.read_text(encoding="utf-8")
+                    result[path_str] = await p.read_text(encoding="utf-8")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
             else:

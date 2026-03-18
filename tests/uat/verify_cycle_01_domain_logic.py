@@ -1,21 +1,23 @@
+from typing import Any
+
 import marimo
 
 __generated_with = "0.21.0"
 app = marimo.App(width="medium")
 
 @app.cell
-def setup_imports():
+def setup_imports() -> tuple[Any, ...]:
     import marimo as mo
     return mo,
 
 @app.cell
-def setup_models() -> tuple:
+def setup_models() -> tuple[Any, ...]:
     from src.domain_models import ConflictRegistryItem, E2BExecutionResult
     from src.state import CycleState, IntegrationState
     return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState
 
 @app.cell
-def scenario_01_01(CycleState: type, mo: type) -> tuple:
+def scenario_01_01(CycleState: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
     # Scenario ID 01-01: Backward Compatible State Initialization
     state = CycleState(cycle_id="legacy-session")
 
@@ -26,15 +28,15 @@ def scenario_01_01(CycleState: type, mo: type) -> tuple:
     return state,
 
 @app.cell
-def scenario_01_02(ConflictRegistryItem: type, E2BExecutionResult: type, mo: type) -> tuple:
+def scenario_01_02(ConflictRegistryItem: Any, E2BExecutionResult: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
     # Scenario ID 01-02: Conflict & Sandbox State Assignment
+    import contextlib
+
     import pydantic
 
-    try:
+    with contextlib.suppress(pydantic.ValidationError):
         # Invalid exit_code type
-        invalid_result = E2BExecutionResult(exit_code="abc")
-    except pydantic.ValidationError:
-        pass
+        E2BExecutionResult(exit_code="abc")
 
     result = E2BExecutionResult(exit_code="0") # Coerced to int 0
     assert result.exit_code == 0
@@ -50,15 +52,16 @@ def scenario_01_02(ConflictRegistryItem: type, E2BExecutionResult: type, mo: typ
     return conflict, result, serialized
 
 @app.cell
-def scenario_01_03(mo: type) -> tuple:
+def scenario_01_03(mo: Any) -> tuple[Any, ...]:
     # Scenario ID 01-03: Source Path Verification
     import subprocess
 
     try:
-        res = subprocess.run(["uv", "run", "ac-cdd", "--help"], capture_output=True, text=True, check=True)
+        res = subprocess.run(["uv", "run", "ac-cdd", "--help"], capture_output=True, text=True, check=True)  # noqa: S607
         assert "Usage" in res.stdout
     except subprocess.CalledProcessError as e:
-        raise AssertionError(f"CLI check failed: {e.stderr}")
+        msg = f"CLI check failed: {e.stderr}"
+        raise AssertionError(msg) from e
 
     mo.md("✅ Scenario 01-03 Passed: CLI executes successfully via `src.cli:app`.")
     return res,

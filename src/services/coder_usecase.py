@@ -157,6 +157,7 @@ class CoderUseCase:
         self, cycle_manifest: CycleManifest | None, state: CycleState
     ) -> dict[str, Any] | None:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
+        cycle_id = state.cycle_id
         last_audit = state.audit_result
         # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed)
         is_retry = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
@@ -182,13 +183,16 @@ class CoderUseCase:
         )
         # For Post-Audit Refactor, we send the new instruction as a message
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
-            return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id, self._build_instruction(cycle_id, None, state, cycle_manifest)
-            )
+            instruction = self._build_instruction(cycle_id, None, state, cycle_manifest)
+            if cycle_manifest.jules_session_id is not None:
+                return await self._send_audit_feedback_to_session(cycle_manifest.jules_session_id, instruction)
+            return {"status": FlowStatus.FAILED, "error": "No jules_session_id available for POST_AUDIT_REFACTOR."}
 
-        return await self._send_audit_feedback_to_session(
-            cycle_manifest.jules_session_id, last_audit.feedback if last_audit else ""
-        )
+        if cycle_manifest.jules_session_id is not None:
+            return await self._send_audit_feedback_to_session(
+                cycle_manifest.jules_session_id, last_audit.feedback if last_audit and last_audit.feedback else ""
+            )
+        return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
 
     async def _run_jules_session(
         self,

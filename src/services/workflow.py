@@ -414,7 +414,8 @@ class WorkflowService:
         console.print(f"\n[bold cyan]Archiving session artifacts to {phase_dir}...[/bold cyan]")
 
         async def move_item(src: Path, dest: Path) -> None:
-            if not src.exists():
+            import anyio
+            if not await anyio.Path(src).exists():
                 return
             try:
                 # Try git mv first to keep history
