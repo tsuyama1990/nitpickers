@@ -223,7 +223,7 @@ class WorkflowService:
             fb = manifest.feature_branch if manifest else None
             if fb:
                 logger.info(f"Checking out feature branch: {fb}")
-                git = GitManager()
+                git = self.git
                 try:
                     await git.checkout_branch(fb)
                     # Ensure we have latest changes (e.g. from Architecture PR merge)
@@ -399,7 +399,7 @@ class WorkflowService:
             console.print("[red]No active session found to finalize.[/red]")
             sys.exit(1)
 
-        git = GitManager()
+        git = self.git
         try:
             # Checkout integration branch and sync with remote to ensure our archiving commits cleanly
             await git.checkout_branch(integration_branch)

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator, ValidationError
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from .env file
@@ -119,6 +119,7 @@ class JulesConfig(BaseModel):
 class ToolsConfig(BaseModel):
     jules_cmd: str = "jules"
     gh_cmd: str = "gh"
+    git_cmd: str = "git"
     audit_cmd: str = "bandit"
     uv_cmd: str = "uv"
     mypy_cmd: str = "mypy"

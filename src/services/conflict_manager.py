@@ -26,9 +26,10 @@ class ConflictManager:
         import subprocess
 
         try:
+            from src.config import settings
+            git_cmd = settings.tools.git_cmd
+
             # Use git status --porcelain to find unmerged files quickly
-            import shutil
-            git_cmd = shutil.which("git") or "git"
             result = subprocess.run(  # noqa: S603
                 [git_cmd, "status", "--porcelain"],
                 cwd=str(repo_path),

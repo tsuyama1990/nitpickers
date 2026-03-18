@@ -1,3 +1,5 @@
+from typing import Any
+
 import marimo
 
 __generated_with = "0.10.14"
@@ -5,7 +7,7 @@ app = marimo.App()
 
 
 @app.cell
-def _imports():
+def _imports() -> tuple[Any, Any, Any, Any, Any, Any, Any, Any]:
     import subprocess
     import sys
     from pathlib import Path
@@ -30,7 +32,7 @@ def _imports():
 
 
 @app.cell
-def _markdown(manager, mo, path_mod):
+def _markdown(manager: Any, mo: Any, path_mod: Any) -> None:
     mo.md(
         """
         # CYCLE 06 UAT: Conflict Extraction & Registry Management
@@ -41,8 +43,8 @@ def _markdown(manager, mo, path_mod):
 
 
 @app.cell
-def _logic(git_mgr_cls, manager, path_mod, conflict_err_cls, subprocess):  # noqa: PLR0915
-    async def run_scenarios():  # noqa: PLR0915
+def _logic(git_mgr_cls: Any, manager: Any, path_mod: Any, conflict_err_cls: Any, subprocess: Any) -> tuple[Any]:  # noqa: PLR0915
+    async def run_scenarios() -> None:  # noqa: PLR0915
         # Setup temporary git repo
         test_dir = path_mod("uat_test_repo")
         if test_dir.exists():
@@ -52,7 +54,7 @@ def _logic(git_mgr_cls, manager, path_mod, conflict_err_cls, subprocess):  # noq
 
         test_dir.mkdir()
 
-        def run_git(*args):
+        def run_git(*args: str) -> Any:
             return subprocess.run(
                 ["git", *args],
                 cwd=test_dir,
@@ -137,7 +139,7 @@ def _logic(git_mgr_cls, manager, path_mod, conflict_err_cls, subprocess):  # noq
 
 
 @app.cell
-def _runner(run_scenarios):
+def _runner(run_scenarios: Any) -> None:
     import asyncio
 
     asyncio.run(run_scenarios())
