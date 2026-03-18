@@ -201,6 +201,11 @@ class Settings(BaseSettings):
     filename_spec: str = "ALL_SPEC.md"
     filename_arch: str = "SYSTEM_ARCHITECTURE.md"
     max_audit_retries: int = 2
+
+    # Graph Node Names
+    node_uat_evaluate: str = "uat_evaluate"
+    node_sandbox_evaluate: str = "sandbox_evaluate"
+    node_coder_critic: str = "coder_critic"
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
