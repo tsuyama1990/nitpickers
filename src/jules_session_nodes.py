@@ -305,7 +305,8 @@ class JulesSessionNodes:
             )
             fallback_msg = fallback_template.replace("{{question}}", state.current_inquiry or "")
             await self.client._send_message(state.session_url, fallback_msg)
-            state.processed_activity_ids.add(state.current_inquiry_id)
+            if state.current_inquiry_id is not None:
+                state.processed_activity_ids.add(state.current_inquiry_id)
 
         state.status = SessionStatus.MONITORING
         return self._compute_diff(_state_in, state)

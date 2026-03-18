@@ -44,9 +44,9 @@ class ArchitectNodes:
             return {"status": "architect_failed", "error": f"Git checkout failed: {e}"}
 
         context_files = ["dev_documents/ALL_SPEC.md", "README.md", "README_DEVELOPER.md"]
-        import os
+        from anyio import Path
 
-        if os.path.exists("dev_documents/USER_TEST_SCENARIO.md"):
+        if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
         result = await self.jules.execute_command(
@@ -170,16 +170,16 @@ class ArchitectNodes:
 
             result = await self.jules.wait_for_completion(session_id)
 
-            if result.get("status") == "success" or result.get("pr_url"):
-                return {"status": "ready_for_audit", "pr_url": result.get("pr_url")}
-
-            console.print(
-                "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
-            )
-            return None
-
         except Exception as e:
             console.print(
                 f"[yellow]Failed to send feedback to existing session: {e}. Creating new session...[/yellow]"
             )
+            return None
+
+        if result.get("status") == "success" or result.get("pr_url"):
+            return {"status": "ready_for_audit", "pr_url": result.get("pr_url")}
+
+        console.print(
+            "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
+        )
         return None

@@ -1,6 +1,6 @@
 """State model for Jules session management using LangGraph."""
 
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Any
 
 from pydantic import BaseModel, Field
@@ -12,7 +12,7 @@ def add_set(a: set[str] | None, b: set[str] | None) -> set[str]:
     return a | b
 
 
-class SessionStatus(str, Enum):
+class SessionStatus(StrEnum):
     MONITORING = "monitoring"
     INQUIRY_DETECTED = "inquiry_detected"
     ANSWERING_INQUIRY = "answering_inquiry"

@@ -112,7 +112,6 @@ class PlanAuditor:
         except Exception as e:
             return PlanAuditResult(
                 status="REJECTED",
-                is_approved=False,
                 reason=f"Audit process failed: {e}",
             )
         else:

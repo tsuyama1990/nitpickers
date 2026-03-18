@@ -1,7 +1,7 @@
 from src.state import CycleState, IntegrationState
 
 
-def test_cycle_state_backward_compatibility():
+def test_cycle_state_backward_compatibility() -> None:
     # Test initialization without new fields works via defaults
     state = CycleState(cycle_id="test_backward_compatible")
 
@@ -11,7 +11,7 @@ def test_cycle_state_backward_compatibility():
     assert state.concurrent_dependencies == []
 
 
-def test_cycle_state_new_fields_assignment():
+def test_cycle_state_new_fields_assignment() -> None:
     from src.enums import FlowStatus
 
     state = CycleState(
@@ -26,7 +26,7 @@ def test_cycle_state_new_fields_assignment():
     assert state.concurrent_dependencies == ["cycle_01", "cycle_02"]
 
 
-def test_integration_state_initialization():
+def test_integration_state_initialization() -> None:
     from src.domain_models import ConflictRegistryItem
 
     conflict = ConflictRegistryItem(

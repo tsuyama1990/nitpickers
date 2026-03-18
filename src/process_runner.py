@@ -2,6 +2,8 @@ import asyncio
 import subprocess
 from pathlib import Path
 
+import anyio
+
 from .utils import logger
 
 
@@ -49,17 +51,17 @@ class ProcessRunner:
                             import os
 
                             logger.error(f"DEBUG: Process UID={os.getuid()}, GID={os.getgid()}")
-                            git_index = Path(".git/index")
-                            if git_index.exists():
-                                st = git_index.stat()
+                            git_index = anyio.Path(".git/index")
+                            if await git_index.exists():
+                                st = await git_index.stat()
                                 logger.error(
                                     f"DEBUG: .git/index: mode={oct(st.st_mode)}, uid={st.st_uid}, gid={st.st_gid}"
                                 )
                             else:
                                 logger.error("DEBUG: .git/index not found")
 
-                            lock_file = Path(".git/index.lock")
-                            if lock_file.exists():
+                            lock_file = anyio.Path(".git/index.lock")
+                            if await lock_file.exists():
                                 logger.error("DEBUG: .git/index.lock EXISTS (Lock contention)")
                         except Exception as e:
                             logger.error(f"DEBUG failed: {e}")
