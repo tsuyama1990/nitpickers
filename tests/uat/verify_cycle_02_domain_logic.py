@@ -37,19 +37,14 @@ async def test_uat_02_02_vulnerable_spec_regeneration(mock_jules: MagicMock) -> 
     state = CycleState(cycle_id="01", project_session_id="session-123", critic_retry_count=0)
 
     # Mock evaluate response rejection
-    mock_jules.wait_for_completion.side_effect = [
-        # 1st call: The evaluation wait
-        {
-            "status": "success",
-            "raw": {
-                "outputs": [
-                    {"text": '{"is_approved": false, "vulnerabilities": ["Missing DB constraint"]}'}
-                ]
-            },
+    mock_jules.wait_for_completion.return_value = {
+        "status": "success",
+        "raw": {
+            "outputs": [
+                {"text": '{"is_approved": false, "vulnerabilities": ["Missing DB constraint"]}'}
+            ]
         },
-        # 2nd call: The wait for the PR to be updated
-        {"pr_url": "https://github.com/mock/pull/1"},
-    ]
+    }
 
     node = ArchitectCriticNodes(mock_jules)
     result = await node.architect_critic_node(state)

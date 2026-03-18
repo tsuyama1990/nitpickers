@@ -16,9 +16,40 @@ class ArchitectNodes:
         self.jules = jules
         self.git = git
 
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
+
+        # Handle feedback loop from architect_critic_node
+        session_id = state.get("project_session_id")
+        if state.get("status") == "architect_critic_rejected" and session_id:
+            feedback = ""
+            if state.get("audit_feedback"):
+                feedback = "\n".join(state.audit_feedback)
+            result = await self._send_audit_feedback_to_session(str(session_id), feedback)
+            if result and result.get("pr_url"):
+                pr_url = result["pr_url"]
+                pr_number = pr_url.split("/")[-1]
+                try:
+                    console.print(
+                        f"[bold blue]Auto-merging updated Architecture PR #{pr_number}...[/bold blue]"
+                    )
+                    await self.git.merge_pr(pr_number)
+                    console.print(
+                        "[bold green]Architecture updated and merged successfully![/bold green]"
+                    )
+                except Exception as e:
+                    console.print(f"[bold red]Failed to auto-merge Architecture PR: {e}[/bold red]")
+
+                return {
+                    "status": "architect_completed",
+                    "current_phase": "architect_done",
+                    "pr_url": pr_url,
+                }
+            return {
+                "status": "architect_failed",
+                "error": "Failed to handle architect critic feedback.",
+            }
 
         instruction = settings.get_template("ARCHITECT_INSTRUCTION.md").read_text()
 
@@ -64,34 +95,6 @@ class ArchitectNodes:
             and result.get("session_name")
         ):
             session_name = result["session_name"]
-
-            console.print(
-                "[bold cyan]Initial Architecture PR created. "
-                "Invoking Critic Agent for self-reflection...[/bold cyan]"
-            )
-            try:
-                critic_instruction = settings.get_template(
-                    "ARCHITECT_CRITIC_INSTRUCTION.md"
-                ).read_text()
-                session_url = self.jules._get_session_url(session_name)
-                await self.jules._send_message(session_url, critic_instruction)
-
-                console.print(
-                    "[dim]Waiting for Critic Agent to finish review and push fixes...[/dim]"
-                )
-                await asyncio.sleep(10)
-
-                result = await self.jules.wait_for_completion(session_name)
-            except Exception as e:
-                console.print(
-                    f"[yellow]Warning: Critic phase error, proceeding with initial PR: {e}[/yellow]"
-                )
-
-            if not result.get("pr_url"):
-                return {
-                    "status": "architect_failed",
-                    "error": "Jules failed during the Critic phase or the PR was lost.",
-                }
 
             pr_url = result["pr_url"]
             pr_number = pr_url.split("/")[-1]

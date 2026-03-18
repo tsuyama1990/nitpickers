@@ -59,22 +59,8 @@ class ArchitectCriticNodes:
             for sugg in critic_result.suggestions:
                 feedback_prompt += f"Suggestion: {sugg}\n"
 
-        try:
-            session_url = self.jules._get_session_url(session_id)
-            await self.jules._send_message(session_url, feedback_prompt)
-            console.print("[dim]Feedback sent to Jules... waiting for fixes...[/dim]")
-
-            # Since the architect node does not wait if it is restarted,
-            # we need to await jules completion here to keep the "loop" working.
-            result = await self.jules.wait_for_completion(session_id)
-            if not result.get("pr_url"):
-                return {
-                    "status": "architect_failed",
-                    "error": "Jules failed to fix architecture after criticism.",
-                }
-
-        except Exception as e:
-            console.print(f"[red]Failed to send feedback: {e}[/red]")
-            return {"status": "architect_failed", "error": f"Failed to send critic feedback: {e}"}
-
-        return {"status": "architect_critic_rejected", "critic_retry_count": critic_retry_count}
+        return {
+            "status": "architect_critic_rejected",
+            "critic_retry_count": critic_retry_count,
+            "audit_feedback": [feedback_prompt],
+        }

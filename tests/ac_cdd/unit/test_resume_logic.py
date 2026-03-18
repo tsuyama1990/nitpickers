@@ -73,6 +73,8 @@ class TestResumeLogic:
             and call.kwargs.get("jules_session_id") == "jules-new-456"
             and call.kwargs.get("status") == "in_progress"
             for call in mock_mgr.update_cycle_state.call_args_list
-        ), f"Expected update_cycle_state call with session_id not found. Calls: {mock_mgr.update_cycle_state.call_args_list}"
+        ), (
+            f"Expected update_cycle_state call with session_id not found. Calls: {mock_mgr.update_cycle_state.call_args_list}"
+        )
 
         assert result["status"] == FlowStatus.READY_FOR_AUDIT

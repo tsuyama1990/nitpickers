@@ -66,12 +66,12 @@ def build_jules_session_graph(jules_client: "JulesClient") -> StateGraph[JulesSe
     workflow: StateGraph[JulesSessionState] = StateGraph(JulesSessionState)
 
     # Add nodes
-    workflow.add_node("monitor", nodes.monitor_session)
-    workflow.add_node("answer_inquiry", nodes.answer_inquiry)
-    workflow.add_node("validate_completion", nodes.validate_completion)
-    workflow.add_node("check_pr", nodes.check_pr)
-    workflow.add_node("request_pr", nodes.request_pr_creation)
-    workflow.add_node("wait_pr", nodes.wait_for_pr)
+    workflow.add_node("monitor", nodes.monitor_session)  # type: ignore
+    workflow.add_node("answer_inquiry", nodes.answer_inquiry)  # type: ignore
+    workflow.add_node("validate_completion", nodes.validate_completion)  # type: ignore
+    workflow.add_node("check_pr", nodes.check_pr)  # type: ignore
+    workflow.add_node("request_pr", nodes.request_pr_creation)  # type: ignore
+    workflow.add_node("wait_pr", nodes.wait_for_pr)  # type: ignore
 
     # Set entry point
     workflow.set_entry_point("monitor")

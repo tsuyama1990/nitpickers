@@ -64,7 +64,10 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
 
     try:
         res = subprocess.run(
-            ["uv", "run", "ac-cdd", "--help"], capture_output=True, text=True, check=True
+            ["uv", "run", "ac-cdd", "--help"],  # noqa: S607
+            capture_output=True,
+            text=True,
+            check=True,
         )
         assert "Usage" in res.stdout
     except subprocess.CalledProcessError as e:
