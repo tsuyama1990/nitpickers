@@ -35,8 +35,9 @@ def test_config_env_vars_loaded(mock_env: Any) -> None:
 
 def test_config_defaults() -> None:
     """Test default values without env overrides."""
-    # Clean env for this test
-    with patch.dict(os.environ, {}, clear=True):
+    # Clean env for this test, but keep the API keys to pass Pydantic validation
+    env_vars = {"JULES_API_KEY": "test", "E2B_API_KEY": "test"}
+    with patch.dict(os.environ, env_vars, clear=True):
         local_settings = Settings()
         assert local_settings.reviewer.smart_model == "claude-3-5-sonnet"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")

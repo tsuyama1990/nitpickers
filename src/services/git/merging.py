@@ -30,6 +30,25 @@ class GitMergingMixin(BaseGitManager):
                 logger.warning(f"Pending {fname} detected. Aborting...")
                 await self._run_git(["quit"], check=False)  # 'quit' works for cherry-pick/revert
 
+    async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
+        """
+        Attempts to merge the given branch into the current branch without committing.
+        Returns True if successful, False if conflicts exist.
+        Crucially, it leaves the working directory dirty with Git conflict markers if conflicts occur.
+        """
+        logger.info(f"Safely merging {branch_name} into current branch...")
+
+        _stdout, _stderr, code = await self.runner.run_command(
+            ["git", "merge", "--no-commit", "--no-ff", branch_name],
+            check=False,
+        )
+
+        if code == 0:
+            logger.info(f"Successfully merged {branch_name} without conflicts.")
+            return True
+        logger.warning(f"Conflicts detected when merging {branch_name}. Leaving markers intact.")
+        return False
+
     async def merge_branch(self, target: str, source: str) -> None:
         """Merges source into target."""
         logger.info(f"Merging {source} into {target}...")

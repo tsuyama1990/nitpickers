@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator, ValidationError
+from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from .env file
@@ -20,7 +20,8 @@ try:
     else:
         load_dotenv()  # Try default locations
 except Exception:
-    pass
+    import logging
+    logging.warning("Could not load .env file")
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -119,6 +120,7 @@ class JulesConfig(BaseModel):
 class ToolsConfig(BaseModel):
     jules_cmd: str = "jules"
     gh_cmd: str = "gh"
+    git_cmd: str = "git"
     audit_cmd: str = "bandit"
     uv_cmd: str = "uv"
     mypy_cmd: str = "mypy"
@@ -243,11 +245,10 @@ class Settings(BaseSettings):
                 missing.append("JULES_API_KEY")
             if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
                 missing.append("E2B_API_KEY")
-            if missing:
+            if missing and not os.getenv("PYTEST_CURRENT_TEST"):
                 # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-                if not os.getenv("PYTEST_CURRENT_TEST"):
-                    msg = f"Missing required environment variables: {', '.join(missing)}"
-                    raise ValueError(msg)
+                msg = f"Missing required environment variables: {', '.join(missing)}"
+                raise ValueError(msg)
         return self
 
     @model_validator(mode="before")
