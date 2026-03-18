@@ -10,7 +10,10 @@ from src.services.jules_client import JulesClient, JulesTimeoutError
 @pytest.fixture
 def mock_client() -> Generator[JulesClient, None, None]:
     # Use dummy key to pass init
-    with patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"), patch("src.services.jules_client.get_manager_agent") as mock_agent:
+    with (
+        patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"),
+        patch("src.services.jules_client.get_manager_agent") as mock_agent,
+    ):
         mock_auditor = AsyncMock()
         client = JulesClient(manager_agent=mock_agent, plan_auditor=mock_auditor)
         client.timeout = 5.0  # Give it plenty of time, we control loop via sleep mock
