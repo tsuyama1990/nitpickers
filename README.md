@@ -86,6 +86,8 @@ graph TD
 
 ## Usage
 
+**Note**: To access the command line tool, use `uv run ac-cdd`.
+
 ### 1. Plan Phase (Architecture Generation)
 
 Write your raw product requirements in `dev_documents/ALL_SPEC.md`, then run:
@@ -140,7 +142,9 @@ To verify the integrity of the project locally before committing:
 │   ├── USER_TEST_SCENARIO.md
 │   └── system_prompts/         # Fixed AI prompts and Architectural outputs
 ├── src/                        # Main application source code
-│   └── ...                     # Core logic, services, LangGraph nodes
+│   ├── domain_models/          # Modular Pydantic schemas enforcing Contracts
+│   ├── nodes/                  # Granular LangGraph execution nodes
+│   └── ...                     # Core logic and utilities
 └── tests/                      # Unit and integration test suite
 ```
 

@@ -1,9 +1,10 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from ac_cdd_core.services.git.checkout import GitCheckoutMixin
-from ac_cdd_core.services.jules.git_context import JulesGitContext
-from ac_cdd_core.services.jules_client import JulesClient
+
+from src.services.git.checkout import GitCheckoutMixin
+from src.services.jules.git_context import JulesGitContext
+from src.services.jules_client import JulesClient
 
 
 class TestJulesGitContextRobustness:

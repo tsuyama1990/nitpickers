@@ -2,7 +2,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from ac_cdd_core.services.git_ops import GitManager
+
+from src.services.git_ops import GitManager
 
 
 @pytest.fixture

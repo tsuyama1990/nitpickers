@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ac_cdd_core.services.git.checkout import GitCheckoutMixin
+
+from src.services.git.checkout import GitCheckoutMixin
 
 
 class TestGitCheckout:

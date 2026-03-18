@@ -3,13 +3,14 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import PlanAuditResult
-from ac_cdd_core.services.plan_auditor import PlanAuditor
+
+from src.domain_models import PlanAuditResult
+from src.services.plan_auditor import PlanAuditor
 
 
 @pytest.fixture
 def mock_agent() -> Generator[MagicMock, None, None]:
-    with patch("ac_cdd_core.services.plan_auditor.Agent") as mock_agent_cls:
+    with patch("src.services.plan_auditor.Agent") as mock_agent_cls:
         mock_instance = mock_agent_cls.return_value
         yield mock_instance
 

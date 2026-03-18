@@ -4,8 +4,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.graph_nodes import CycleNodes
-from ac_cdd_core.state import CycleState
+
+from src.graph_nodes import CycleNodes
+from src.state import CycleState
 
 
 class TestGenCyclesCountOption:
@@ -38,8 +39,8 @@ class TestGenCyclesCountOption:
 
         # Mock settings.get_template to return our test content
         with (
-            patch("ac_cdd_core.graph_nodes.settings") as mock_settings,
-            patch("ac_cdd_core.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.graph_nodes.settings") as mock_settings,
+            patch("src.graph_nodes.GitManager") as mock_git_cls,
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -85,8 +86,8 @@ class TestGenCyclesCountOption:
 
         # Mock settings.get_template to return our test content
         with (
-            patch("ac_cdd_core.graph_nodes.settings") as mock_settings,
-            patch("ac_cdd_core.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.graph_nodes.settings") as mock_settings,
+            patch("src.graph_nodes.GitManager") as mock_git_cls,
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -139,8 +140,8 @@ class TestGenCyclesCountOption:
         instruction_content = "Test instruction."
 
         with (
-            patch("ac_cdd_core.graph_nodes.settings") as mock_settings,
-            patch("ac_cdd_core.graph_nodes.GitManager") as mock_git_cls,
+            patch("src.graph_nodes.settings") as mock_settings,
+            patch("src.graph_nodes.GitManager") as mock_git_cls,
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value

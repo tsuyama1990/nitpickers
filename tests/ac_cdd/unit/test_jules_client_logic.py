@@ -2,7 +2,7 @@ import unittest
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from ac_cdd_core.services.jules_client import JulesClient
+from src.services.jules_client import JulesClient
 
 
 class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
@@ -32,7 +32,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             )
 
             # FIX: Add inquiry handler back since __init__ is skipped
-            from ac_cdd_core.services.jules.inquiry_handler import JulesInquiryHandler
+            from src.services.jules.inquiry_handler import JulesInquiryHandler
 
             self.client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=self.client.manager_agent,

@@ -2,13 +2,14 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.domain_models import PlanAuditResult
-from ac_cdd_core.services.audit_orchestrator import AuditOrchestrator
+
+from src.domain_models import PlanAuditResult
+from src.services.audit_orchestrator import AuditOrchestrator
 
 
 @pytest.fixture
 def mock_jules() -> Any:
-    with patch("ac_cdd_core.services.audit_orchestrator.JulesClient") as MockJules:
+    with patch("src.services.audit_orchestrator.JulesClient") as MockJules:
         instance = MockJules.return_value
         instance.run_session = AsyncMock(
             return_value={"session_name": "sess-1", "status": "running"}
@@ -24,7 +25,7 @@ def mock_jules() -> Any:
 
 @pytest.fixture
 def mock_auditor() -> Any:
-    with patch("ac_cdd_core.services.audit_orchestrator.PlanAuditor") as MockAuditor:
+    with patch("src.services.audit_orchestrator.PlanAuditor") as MockAuditor:
         instance = MockAuditor.return_value
         instance.audit_plan = AsyncMock()
         yield instance

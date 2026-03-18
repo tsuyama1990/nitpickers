@@ -2,10 +2,11 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.graph import GraphBuilder
-from ac_cdd_core.service_container import ServiceContainer
-from ac_cdd_core.state import CycleState
 from langgraph.graph.state import CompiledStateGraph
+
+from src.graph import GraphBuilder
+from src.service_container import ServiceContainer
+from src.state import CycleState
 
 
 @pytest.fixture
@@ -67,7 +68,7 @@ async def test_coder_graph_structure(graph_builder: GraphBuilder) -> None:
 @pytest.mark.asyncio
 async def test_architect_graph_execution(services: ServiceContainer, mock_jules: MagicMock) -> None:
     """Test architect graph execution flow."""
-    with patch("ac_cdd_core.graph_nodes.GitManager") as mock_git_cls:
+    with patch("src.graph_nodes.GitManager") as mock_git_cls:
         # Configure the mock instance methods as AsyncMock
         mock_git = mock_git_cls.return_value
         mock_git.create_feature_branch = AsyncMock()
@@ -96,9 +97,9 @@ async def test_coder_graph_execution(services: ServiceContainer, mock_jules: Mag
     initial_state = CycleState(cycle_id="01", iteration_count=0)
 
     with (
-        patch("ac_cdd_core.services.auditor_usecase.LLMReviewer") as mock_reviewer_cls,
-        patch("ac_cdd_core.services.auditor_usecase.GitManager") as mock_git_cls,
-        patch("ac_cdd_core.services.coder_usecase.StateManager") as mock_sm_cls,
+        patch("src.services.auditor_usecase.LLMReviewer") as mock_reviewer_cls,
+        patch("src.services.auditor_usecase.GitManager") as mock_git_cls,
+        patch("src.services.coder_usecase.StateManager") as mock_sm_cls,
     ):
         mock_git = mock_git_cls.return_value
         mock_git.get_remote_url = AsyncMock(return_value="https://github.com/repo")

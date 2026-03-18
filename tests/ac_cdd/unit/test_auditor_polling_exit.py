@@ -2,8 +2,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ac_cdd_core.graph_nodes import CycleNodes
-from ac_cdd_core.state import CycleState
+
+from src.graph_nodes import CycleNodes
+from src.state import CycleState
 
 
 class TestAuditorPollingExit:

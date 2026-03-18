@@ -2,8 +2,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ac_cdd_core.graph import GraphBuilder
-from ac_cdd_core.state import CycleState
+
+from src.graph import GraphBuilder
+from src.state import CycleState
 
 
 @pytest.mark.asyncio
@@ -42,7 +43,7 @@ async def test_audit_rejection_loop() -> None:
 
     from unittest.mock import patch
 
-    from ac_cdd_core.domain_models import AuditResult
+    from src.domain_models import AuditResult
 
     # Mock PlanAuditor to avoid template/file errors during testing
     mock_auditor_instance = MagicMock()
@@ -53,7 +54,7 @@ async def test_audit_rejection_loop() -> None:
 
     mock_auditor_instance.run_audit = AsyncMock(side_effect=mock_run_audit)
 
-    with patch("ac_cdd_core.services.plan_auditor.PlanAuditor", return_value=mock_auditor_instance):
+    with patch("src.services.plan_auditor.PlanAuditor", return_value=mock_auditor_instance):
         # Build Graph
         builder = GraphBuilder(mock_services)
 
