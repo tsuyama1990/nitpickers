@@ -128,7 +128,7 @@ class ArchitectNodes:
 
         return {"status": "architect_failed", "error": "Unknown Jules error or no PR URL"}
 
-    async def _send_audit_feedback_to_session(
+    async def send_audit_feedback_to_session(
         self, session_id: str, feedback: str
     ) -> dict[str, Any] | None:
         console.print(

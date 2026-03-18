@@ -14,15 +14,17 @@ class E2BExecutorServiceImpl(E2BExecutorService):
     async def push_files(self, local_path: str, remote_path: str) -> None:
         """
         Push files from local path to remote sandbox path.
-        Note: SandboxRunner._sync_to_sandbox handles syncing automatically.
+        Note: SandboxRunner run_command handles syncing automatically.
         """
-        # We explicitly trigger a sync if needed, though run_command also syncs.
-        sandbox = await self.sandbox._get_sandbox()
-        await self.sandbox._sync_to_sandbox(sandbox)
+        # We rely on the public method `run_command` which automatically handles
+        # syncing to the sandbox environment.
+        await self.sandbox.run_command(["echo", "syncing"])
 
     async def run_tests(self, command: str) -> E2BExecutionResult:
         """
         Run tests via the given command and return execution artifacts.
+        Note: The command is passed directly to the E2B sandbox environment.
+        It is validated by the system to run basic bash testing commands.
         """
         import shlex
 

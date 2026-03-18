@@ -32,10 +32,9 @@ class SandboxEvaluatorNodes:
             result = await self.executor.run_tests("uv run pytest -v --tb=short")
 
             console.print(f"[dim]Sandbox Execution Exit Code: {result.exit_code}[/dim]")
-            if result.stdout:
-                console.print(f"[dim]STDOUT:\n{result.stdout}[/dim]")
-            if result.stderr:
-                console.print(f"[dim]STDERR:\n{result.stderr}[/dim]")
+            # Note: We omit dumping the raw stdout/stderr to the console directly
+            # to prevent potential information disclosure. They are stored in
+            # `sandbox_artifacts` for processing by subsequent AI nodes.
 
             # Evaluate based on Red-Green phase
             if tdd_phase == "red":

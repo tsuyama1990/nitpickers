@@ -24,7 +24,7 @@ class SandboxRunner:
         self.sandbox: Sandbox | None = None
         self._last_sync_hash: str | None = None
 
-    async def _get_sandbox(self) -> Sandbox:
+    async def get_sandbox(self) -> Sandbox:
         """Get or create a sandbox instance."""
         if self.sandbox:
             return self.sandbox
@@ -70,7 +70,7 @@ class SandboxRunner:
 
         for attempt in range(max_retries + 1):
             try:
-                sandbox = await self._get_sandbox()
+                sandbox = await self.get_sandbox()
                 await self._sync_to_sandbox(sandbox)
 
                 command_str = shlex.join(cmd)

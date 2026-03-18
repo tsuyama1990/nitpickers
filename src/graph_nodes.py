@@ -59,7 +59,7 @@ class CycleNodes(IGraphNodes):
     async def _send_audit_feedback_to_session(
         self, session_id: str, feedback: str
     ) -> dict[str, Any] | None:
-        return await self._architect._send_audit_feedback_to_session(session_id, feedback)
+        return await self._architect.send_audit_feedback_to_session(session_id, feedback)
 
     async def coder_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._coder.coder_session_node(state)

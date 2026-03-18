@@ -5,7 +5,7 @@ configfile: pyproject.toml
 testpaths: tests
 plugins: langsmith-0.7.20, cov-7.0.0, asyncio-1.3.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 146 items
+collected 154 items
 
 tests/ac_cdd/integration/test_audit_loop.py .                            [  0%]
 tests/ac_cdd/integration/test_cli_commands.py EEEEEE                     [  4%]
@@ -13,40 +13,42 @@ tests/ac_cdd/integration/test_end_to_end_workflow.py .                   [  5%]
 tests/ac_cdd/integration/test_git_robustness.py ..                       [  6%]
 tests/ac_cdd/unit/test_audit_orchestrator.py EEE                         [  8%]
 tests/ac_cdd/unit/test_audit_polling.py .                                [  9%]
-tests/ac_cdd/unit/test_auditor_polling_exit.py .                         [ 10%]
+tests/ac_cdd/unit/test_auditor_polling_exit.py .                         [  9%]
 tests/ac_cdd/unit/test_auditor_static_checks.py .                        [ 10%]
 tests/ac_cdd/unit/test_auto_merge.py .                                   [ 11%]
-tests/ac_cdd/unit/test_cli_reconstruction.py EEE                         [ 13%]
-tests/ac_cdd/unit/test_coder_critic_flow.py .                            [ 14%]
-tests/ac_cdd/unit/test_committee_logic.py FF                             [ 15%]
-tests/ac_cdd/unit/test_config.py ......                                  [ 19%]
-tests/ac_cdd/unit/test_file_patcher.py ...                               [ 21%]
-tests/ac_cdd/unit/test_gen_cycles_options.py ..FFFFFFF                   [ 28%]
-tests/ac_cdd/unit/test_git_checkout.py .                                 [ 28%]
-tests/ac_cdd/unit/test_git_operations.py ...........                     [ 36%]
-tests/ac_cdd/unit/test_git_ops_merge.py ...                              [ 38%]
-tests/ac_cdd/unit/test_git_state_persistence.py ...                      [ 40%]
-tests/ac_cdd/unit/test_graph.py .                                        [ 41%]
-tests/ac_cdd/unit/test_jules_client.py ....                              [ 43%]
-tests/ac_cdd/unit/test_jules_client_logic.py ..                          [ 45%]
-tests/ac_cdd/unit/test_jules_session_fixes.py FF..F                      [ 48%]
-tests/ac_cdd/unit/test_jules_session_state.py EEE                        [ 50%]
-tests/ac_cdd/unit/test_llm_reviewer.py ..                                [ 52%]
-tests/ac_cdd/unit/test_phase_transition.py .                             [ 52%]
-tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 54%]
-tests/ac_cdd/unit/test_project_init_robustness.py .                      [ 54%]
-tests/ac_cdd/unit/test_project_manifest.py ...                           [ 56%]
-tests/ac_cdd/unit/test_resume_logic.py ..                                [ 58%]
-tests/ac_cdd/unit/test_robustness_fixes.py F..                           [ 60%]
-tests/ac_cdd/unit/test_sandbox.py .........                              [ 66%]
-tests/ac_cdd/unit/test_session_manager.py ........                       [ 71%]
-tests/ac_cdd/unit/test_session_restart.py ..                             [ 73%]
-tests/ac_cdd/unit/test_session_reuse.py ...                              [ 75%]
-tests/ac_cdd/unit/test_state_manager.py ..............                   [ 84%]
-tests/ac_cdd/unit/test_validators.py ......                              [ 89%]
-tests/unit/test_dispatcher.py ......                                     [ 93%]
-tests/unit/test_domain_models.py .....                                   [ 96%]
-tests/unit/test_self_critic_evaluator.py ..                              [ 97%]
+tests/ac_cdd/unit/test_cli_reconstruction.py EEE                         [ 12%]
+tests/ac_cdd/unit/test_coder_critic_flow.py .                            [ 13%]
+tests/ac_cdd/unit/test_committee_logic.py FF                             [ 14%]
+tests/ac_cdd/unit/test_config.py ......                                  [ 18%]
+tests/ac_cdd/unit/test_file_patcher.py ...                               [ 20%]
+tests/ac_cdd/unit/test_gen_cycles_options.py ..FFFFFFF                   [ 26%]
+tests/ac_cdd/unit/test_git_checkout.py .                                 [ 27%]
+tests/ac_cdd/unit/test_git_operations.py ...........                     [ 34%]
+tests/ac_cdd/unit/test_git_ops_merge.py ...                              [ 36%]
+tests/ac_cdd/unit/test_git_state_persistence.py ...                      [ 38%]
+tests/ac_cdd/unit/test_graph.py .                                        [ 38%]
+tests/ac_cdd/unit/test_jules_client.py ....                              [ 41%]
+tests/ac_cdd/unit/test_jules_client_logic.py ..                          [ 42%]
+tests/ac_cdd/unit/test_jules_session_fixes.py FF..F                      [ 46%]
+tests/ac_cdd/unit/test_jules_session_state.py EEE                        [ 48%]
+tests/ac_cdd/unit/test_llm_reviewer.py ..                                [ 49%]
+tests/ac_cdd/unit/test_phase_transition.py .                             [ 50%]
+tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 51%]
+tests/ac_cdd/unit/test_project_init_robustness.py .                      [ 51%]
+tests/ac_cdd/unit/test_project_manifest.py ...                           [ 53%]
+tests/ac_cdd/unit/test_resume_logic.py ..                                [ 55%]
+tests/ac_cdd/unit/test_robustness_fixes.py F..                           [ 57%]
+tests/ac_cdd/unit/test_sandbox.py ..FF..F..                              [ 62%]
+tests/ac_cdd/unit/test_session_manager.py ........                       [ 68%]
+tests/ac_cdd/unit/test_session_restart.py ..                             [ 69%]
+tests/ac_cdd/unit/test_session_reuse.py ...                              [ 71%]
+tests/ac_cdd/unit/test_state_manager.py ..............                   [ 80%]
+tests/ac_cdd/unit/test_validators.py ......                              [ 84%]
+tests/unit/test_dispatcher.py ......                                     [ 88%]
+tests/unit/test_domain_models.py .....                                   [ 91%]
+tests/unit/test_e2b_executor.py ....                                     [ 94%]
+tests/unit/test_sandbox_evaluator.py ....                                [ 96%]
+tests/unit/test_self_critic_evaluator.py ..                              [ 98%]
 tests/unit/test_state.py ...                                             [100%]
 
 ==================================== ERRORS ====================================
@@ -634,8 +636,8 @@ E           AttributeError: module 'src.cli' has no attribute 'utils'
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/pkgutil.py:528: AttributeError
 ____________ ERROR at setup of test_run_session_approved_first_try _____________
 
-mock_jules = <MagicMock name='JulesClient()' id='140109125366464'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140109125933088'>
+mock_jules = <MagicMock name='JulesClient()' id='140350491259728'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140350490520912'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -646,8 +648,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 __________ ERROR at setup of test_run_session_rejected_then_approved ___________
 
-mock_jules = <MagicMock name='JulesClient()' id='140109125847472'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140109125704384'>
+mock_jules = <MagicMock name='JulesClient()' id='140350491386432'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140350491160704'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -658,8 +660,8 @@ E       TypeError: AuditOrchestrator.__init__() missing 2 required positional ar
 tests/ac_cdd/unit/test_audit_orchestrator.py:36: TypeError
 _________________ ERROR at setup of test_max_retries_exceeded __________________
 
-mock_jules = <MagicMock name='JulesClient()' id='140109126011792'>
-mock_auditor = <MagicMock name='PlanAuditor()' id='140109125999824'>
+mock_jules = <MagicMock name='JulesClient()' id='140350490524944'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='140350491255360'>
 
     @pytest.fixture
     def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
@@ -1110,7 +1112,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f6db30c2f90>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a72f0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -1437,7 +1439,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f6db30c3380>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a76e0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -1764,7 +1766,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7f6db30c3140>
+self = <unit.test_jules_session_state.TestSessionStateValidation object at 0x7fa5e58a75c0>
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
@@ -2770,8 +2772,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db30794f0>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-1/test_prompt_injection_with_cou0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e58592b0>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_injection_with_cou0')
 
     @pytest.mark.asyncio
     async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
@@ -3125,8 +3127,8 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db30785c0>
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-1/test_prompt_no_injection_witho0')
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e5858770>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-3/test_prompt_no_injection_witho0')
 
     @pytest.mark.asyncio
     async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
@@ -3480,7 +3482,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db307b290>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b4a0>
 count_value = 1
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -3833,7 +3835,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db307b560>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b770>
 count_value = 2
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4186,7 +4188,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db307b620>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b830>
 count_value = 3
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4539,7 +4541,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db307b6e0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b8f0>
 count_value = 5
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -4892,7 +4894,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f6db307b7a0>
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7fa5e585b9b0>
 count_value = 10
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
@@ -5134,8 +5136,8 @@ ________________________ test_monitor_session_batching _________________________
             # Verify
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140109114955424'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140109114955424'> = <MagicMock name='httpx.AsyncClient()' id='140109114914720'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350477614400'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350477614400'> = <MagicMock name='httpx.AsyncClient()' id='140350477599280'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:46: AssertionError
 _________________ test_monitor_session_returns_early_on_change _________________
@@ -5179,8 +5181,8 @@ _________________ test_monitor_session_returns_early_on_change _________________
             # Verify
 >           assert mock_instance.get.call_count == 3
 E           AssertionError: assert 2 == 3
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140109118510944'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140109118510944'> = <MagicMock name='httpx.AsyncClient()' id='140109114880368'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350477776512'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350477776512'> = <MagicMock name='httpx.AsyncClient()' id='140350479847344'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:88: AssertionError
 _________________ test_monitor_session_avoids_validation_loop __________________
@@ -5229,8 +5231,8 @@ _________________ test_monitor_session_avoids_validation_loop __________________
             # Should have looped 12 times (batching) because it didn't exit early, 2 calls per loop
 >           assert mock_instance.get.call_count == 24
 E           AssertionError: assert 2 == 24
-E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140109114734976'>.call_count
-E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140109114734976'> = <MagicMock name='httpx.AsyncClient()' id='140109126553520'>.get
+E            +  where 2 = <AsyncMock name='httpx.AsyncClient().get' id='140350478592256'>.call_count
+E            +    where <AsyncMock name='httpx.AsyncClient().get' id='140350478592256'> = <MagicMock name='httpx.AsyncClient()' id='140350477954480'>.get
 
 tests/ac_cdd/unit/test_jules_session_fixes.py:202: AssertionError
 _____ TestJulesGitContextRobustness.test_detached_head_creates_temp_branch _____
@@ -5384,7 +5386,7 @@ E       ImportError: cannot import name 'UserLocation' from 'anthropic.types.bet
 
 The above exception was the direct cause of the following exception:
 
-self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7f6db2b246b0>
+self = <unit.test_robustness_fixes.TestJulesGitContextRobustness object at 0x7fa5e5328110>
 
     @pytest.mark.asyncio
     async def test_detached_head_creates_temp_branch(self) -> None:
@@ -5562,6 +5564,82 @@ E       ImportError: Please install `anthropic` to use the Anthropic model, you 
 .venv/lib/python3.12/site-packages/pydantic_ai/models/anthropic.py:147: ImportError
 ------------------------------ Captured log call -------------------------------
 WARNING  AC-CDD:jules_client.py:69 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+_________________________ test_get_sandbox_creates_new _________________________
+
+    @pytest.mark.asyncio
+    async def test_get_sandbox_creates_new() -> None:
+        """Test that _get_sandbox creates new sandbox when none exists."""
+        runner = SandboxRunner()
+
+        with patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create:
+>           sandbox = await runner._get_sandbox()
+                            ^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'SandboxRunner' object has no attribute '_get_sandbox'. Did you mean: 'get_sandbox'?
+
+tests/ac_cdd/unit/test_sandbox.py:64: AttributeError
+_______________________ test_get_sandbox_reuses_existing _______________________
+
+    @pytest.mark.asyncio
+    async def test_get_sandbox_reuses_existing() -> None:
+        """Test that _get_sandbox reuses existing sandbox."""
+        runner = SandboxRunner()
+        runner.sandbox = MagicMock()
+
+        with patch("src.sandbox.Sandbox.create") as mock_create:
+>           sandbox = await runner._get_sandbox()
+                            ^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'SandboxRunner' object has no attribute '_get_sandbox'. Did you mean: 'get_sandbox'?
+
+tests/ac_cdd/unit/test_sandbox.py:77: AttributeError
+___________________________ test_run_command_success ___________________________
+
+    @pytest.mark.asyncio
+    async def test_run_command_success() -> None:
+        """Test successful command execution."""
+        runner = SandboxRunner()
+        runner.sandbox = MagicMock()
+        # commands.run is synchronous in e2b
+        runner.sandbox.commands.run.return_value = MagicMock(stdout="output", stderr="", exit_code=0)
+
+        with (
+>           patch.object(runner, "_get_sandbox", new_callable=AsyncMock) as mock_get,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            patch.object(runner, "_sync_to_sandbox", new_callable=AsyncMock),
+        ):
+
+tests/ac_cdd/unit/test_sandbox.py:124:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1467: in __enter__
+    original, local = self.get_original()
+                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <unittest.mock._patch object at 0x7fa5e46ffdd0>
+
+    def get_original(self):
+        target = self.getter()
+        name = self.attribute
+
+        original = DEFAULT
+        local = False
+
+        try:
+            original = target.__dict__[name]
+        except (AttributeError, KeyError):
+            original = getattr(target, name, DEFAULT)
+        else:
+            local = True
+
+        if name in _builtins and isinstance(target, ModuleType):
+            self.create = True
+
+        if not self.create and original is DEFAULT:
+>           raise AttributeError(
+                "%s does not have the attribute %r" % (target, name)
+            )
+E           AttributeError: <src.sandbox.SandboxRunner object at 0x7fa5e47ecd70> does not have the attribute '_get_sandbox'
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1437: AttributeError
 =============================== warnings summary ===============================
 tests/ac_cdd/unit/test_committee_logic.py: 2 warnings
 tests/ac_cdd/unit/test_gen_cycles_options.py: 7 warnings
@@ -5587,7 +5665,7 @@ src/agents.py                                         74     52    30%   17-20, 
 src/cli.py                                             8      2    75%   24-25
 src/config.py                                        194     32    84%   17, 19, 22-27, 41, 45-47, 247-257, 264-267, 271, 283, 295, 302, 323-325, 331, 335
 src/contracts/__init__.py                              0      0   100%
-src/contracts/e2b_executor.py                         10      0   100%
+src/contracts/e2b_executor.py                          9      0   100%
 src/domain_models/__init__.py                          9      0   100%
 src/domain_models/architecture.py                     11      0   100%
 src/domain_models/config.py                            6      0   100%
@@ -5599,9 +5677,9 @@ src/domain_models/review.py                           28      0   100%
 src/domain_models/spec.py                             26      0   100%
 src/enums.py                                          31      0   100%
 src/error_messages.py                                  7      7     0%   4-18
-src/graph.py                                          56     36    36%   20-22, 26-27, 31-51, 55-114, 117, 120, 124-149, 152
+src/graph.py                                          56     36    36%   20-22, 26-27, 31-51, 55-115, 118, 121, 125-150, 153
 src/graph_nodes.py                                    59     24    59%   44-51, 54, 57, 62, 65, 68, 71, 74, 77, 80, 83, 86, 89, 92, 95, 98, 101
-src/hash_utils.py                                     25      4    84%   15-16, 28-29
+src/hash_utils.py                                     25     22    12%   7-30
 src/interfaces.py                                      5      0   100%
 src/jules_session_graph.py                            45      9    80%   29, 39, 46-52
 src/jules_session_nodes.py                           328    161    51%   100-141, 146-176, 202-203, 225, 254-257, 264-265, 341-348, 352-354, 379-385, 407-408, 421-444, 458, 466, 471-490, 499-542, 546-624
@@ -5615,10 +5693,10 @@ src/nodes/coder.py                                     9      4    56%   8, 11-1
 src/nodes/committee.py                                 7      3    57%   8-11
 src/nodes/qa.py                                       15      9    40%   8-10, 13-16, 19-22
 src/nodes/routers.py                                  54     38    30%   6-17, 21-26, 30, 34-45, 49-54, 58-63, 74
-src/nodes/sandbox_evaluator.py                        36     26    28%   18, 24-83
+src/nodes/sandbox_evaluator.py                        32      3    91%   85-87
 src/nodes/uat.py                                       9      4    56%   8, 11-14
 src/process_runner.py                                 40     21    48%   44-68, 72-74
-src/sandbox.py                                       100     19    81%   20, 33-41, 88, 113-114, 119-124, 127-128, 148
+src/sandbox.py                                       100     21    79%   20, 33-41, 88, 113-114, 119-124, 127-128, 134, 138, 148
 src/service_container.py                              18      1    94%   22
 src/services/__init__.py                               5      0   100%
 src/services/artifacts.py                             14      8    43%   17-28
@@ -5628,7 +5706,7 @@ src/services/auditor_usecase.py                      180     44    76%   40-43, 
 src/services/coder_usecase.py                        174     31    82%   38-39, 71-77, 125, 130-135, 146, 148, 175, 190-195, 205, 264-267, 304-305, 312, 321-330, 380
 src/services/committee_usecase.py                     50     40    20%   21-104
 src/services/contracts.py                             26     21    19%   16-43
-src/services/e2b_executor.py                          16      8    50%   11, 19-20, 26-30, 36
+src/services/e2b_executor.py                          15      0   100%
 src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
 src/services/git/base.py                              28      9    68%   20-25, 34-35, 40-43
 src/services/git/branching.py                        108     45    58%   10-13, 17, 23-38, 53-57, 85-95, 120-130, 153-154, 174-188
@@ -5648,18 +5726,18 @@ src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 
 src/services/project_setup/permission_manager.py      62     26    58%   18-24, 34-35, 38-46, 55-56, 58-59, 70-71, 73-74
 src/services/project_setup/template_manager.py        84     14    83%   43-44, 71-72, 84-87, 171-176
 src/services/qa_usecase.py                           146    146     0%   1-268
-src/services/sandbox/sync.py                          31      0   100%
+src/services/sandbox/sync.py                          31     21    32%   15-16, 25-48
 src/services/self_critic_evaluator.py                 59     19    68%   16-17, 25, 27, 32-36, 41, 50, 57-65, 91, 98-100
 src/services/uat_usecase.py                           39     39     0%   1-78
 src/services/workflow.py                             278    248    11%   28-36, 41-103, 114-122, 132-180, 191-270, 273-320, 326-385, 388-423, 430-531
 src/session_manager.py                                65      7    89%   48-50, 70, 85-86, 105
-src/state.py                                          82      9    89%   93-96, 101-104, 107
+src/state.py                                          81      8    90%   94-97, 102-105
 src/state_manager.py                                  94     25    73%   32-37, 55-57, 60-61, 89-91, 119, 193-211
 src/tools.py                                          21     21     0%   1-48
 src/utils.py                                          72     54    25%   31-56, 65-78, 83-102, 112-113, 118-142, 151-160
 src/validators.py                                     41      7    83%   56, 78, 82-86
 --------------------------------------------------------------------------------
-TOTAL                                               4658   2209    53%
+TOTAL                                               4651   2218    52%
 =========================== short test summary info ============================
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_logic_flow
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_pipeline_handover
@@ -5674,6 +5752,9 @@ FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_batch
 FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_returns_early_on_change
 FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_avoids_validation_loop
 FAILED tests/ac_cdd/unit/test_robustness_fixes.py::TestJulesGitContextRobustness::test_detached_head_creates_temp_branch
+FAILED tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_creates_new - Attr...
+FAILED tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_reuses_existing - ...
+FAILED tests/ac_cdd/unit/test_sandbox.py::test_run_command_success - Attribut...
 ERROR tests/ac_cdd/integration/test_cli_commands.py::test_init_command - Attr...
 ERROR tests/ac_cdd/integration/test_cli_commands.py::test_gen_cycles_command
 ERROR tests/ac_cdd/integration/test_cli_commands.py::test_run_cycle_command
@@ -5689,4 +5770,4 @@ ERROR tests/ac_cdd/unit/test_cli_reconstruction.py::test_finalize_session_comman
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_in_progress
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_completed
 ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
-====== 13 failed, 118 passed, 40 warnings, 15 errors in 62.98s (0:01:02) =======
+====== 16 failed, 123 passed, 40 warnings, 15 errors in 61.84s (0:01:01) =======
