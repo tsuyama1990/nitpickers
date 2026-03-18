@@ -35,13 +35,13 @@ class UatUseCase:
 
         # Refactoring Phase Transition Logic
         current_phase = state.current_phase
-        
+
         # Determine if this is the last cycle
         try:
             cycle_id_int = int(state.cycle_id)
         except (ValueError, TypeError):
             cycle_id_int = 0
-            
+
         planned_count = state.planned_cycle_count or 0
         is_last_cycle = cycle_id_int >= planned_count
 
@@ -62,9 +62,8 @@ class UatUseCase:
                     "last_feedback_time": 0,
                     "pr_url": None,
                 }
-            else:
-                console.print(f"[bold green]Cycle {state.cycle_id} of {planned_count} completed.[/bold green]")
-                return {"status": FlowStatus.COMPLETED}
+            console.print(f"[bold green]Cycle {state.cycle_id} of {planned_count} completed.[/bold green]")
+            return {"status": FlowStatus.COMPLETED}
 
         # If we were already in refactoring, we are done
         console.print("[bold green]Refactoring Phase Completed.[/bold green]")

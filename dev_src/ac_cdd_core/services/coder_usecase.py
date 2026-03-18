@@ -39,7 +39,7 @@ class CoderUseCase:
     #  Public entry point                                                  #
     # ------------------------------------------------------------------ #
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0911, PLR0912
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
         """Routes the coder session through its many possible modes."""
         cycle_id = state.cycle_id
         iteration = state.iteration_count
@@ -105,17 +105,17 @@ class CoderUseCase:
             # CRITICAL: This triggers for the very first PR in a cycle AND the final polish PR.
             is_initial_pr = iteration <= 1 and state.status != FlowStatus.RETRY_FIX
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
-            
+
             if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
                 result = await self._run_critic_phase(cycle_id, jules_session_name) or result
 
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
-            
+
             # If we just finished a post-audit refactor, we are COMPLETED for this cycle
             if is_post_audit_refactor:
                 return {"status": FlowStatus.COMPLETED, "pr_url": result.get("pr_url")}
-                
+
             return {"status": FlowStatus.READY_FOR_AUDIT, "pr_url": result.get("pr_url")}
 
         # --- E. Failure Handling ---
@@ -160,7 +160,7 @@ class CoderUseCase:
         # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed)
         is_retry = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
-        
+
         if not (
             (is_retry or is_post_refactor)
             and cycle_manifest
@@ -184,7 +184,7 @@ class CoderUseCase:
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id, self._build_instruction(cycle_id, None, state, cycle_manifest)
             )
-            
+
         return await self._send_audit_feedback_to_session(
             cycle_manifest.jules_session_id, last_audit.feedback if last_audit else ""
         )
