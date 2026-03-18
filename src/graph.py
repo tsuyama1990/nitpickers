@@ -58,6 +58,7 @@ class GraphBuilder:
         workflow.add_node("sandbox_evaluate", self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
         workflow.add_node("committee_manager", self.nodes.committee_manager_node)
+        workflow.add_node("coder_critic", self.nodes.coder_critic_node)
         workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
 
         workflow.add_edge(START, "coder_session")
@@ -95,10 +96,20 @@ class GraphBuilder:
             "committee_manager",
             self.nodes.route_committee,
             {
-                "uat_evaluate": "uat_evaluate",
+                "uat_evaluate": "coder_critic",  # Route to coder_critic on approval instead
                 "auditor": "auditor",
                 "coder_session": "coder_session",
                 "failed": END,
+            },
+        )
+
+        # Conditional edge from coder_critic
+        workflow.add_conditional_edges(
+            "coder_critic",
+            self.nodes.route_coder_critic,
+            {
+                "uat_evaluate": "uat_evaluate",
+                "coder_session": "coder_session",
             },
         )
 

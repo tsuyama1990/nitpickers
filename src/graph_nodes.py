@@ -7,6 +7,7 @@ from src.nodes import (
     ArchitectCriticNodes,
     ArchitectNodes,
     AuditorNodes,
+    CoderCriticNodes,
     CoderNodes,
     CommitteeNodes,
     QaNodes,
@@ -14,6 +15,7 @@ from src.nodes import (
     check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
+    route_coder_critic,
     route_committee,
     route_qa,
     route_uat,
@@ -44,6 +46,7 @@ class CycleNodes(IGraphNodes):
         self._architect = ArchitectNodes(self.jules, self.git)
         self._architect_critic = ArchitectCriticNodes(self.jules)
         self._coder = CoderNodes(self.jules)
+        self._coder_critic = CoderCriticNodes(self.jules)
         self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer)
         self._committee = CommitteeNodes()
         self._uat = UatNodes(self.git)
@@ -70,6 +73,9 @@ class CycleNodes(IGraphNodes):
     async def committee_manager_node(self, state: CycleState) -> dict[str, Any]:
         return await self._committee.committee_manager_node(state)
 
+    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder_critic.coder_critic_node(state)
+
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         return await self._uat.uat_evaluate_node(state)
 
@@ -87,6 +93,9 @@ class CycleNodes(IGraphNodes):
 
     def route_committee(self, state: CycleState) -> str:
         return route_committee(state)
+
+    def route_coder_critic(self, state: CycleState) -> str:
+        return route_coder_critic(state)
 
     def route_uat(self, state: CycleState) -> str:
         return route_uat(state)
