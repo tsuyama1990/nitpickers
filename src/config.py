@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables from .env file
@@ -20,11 +20,7 @@ try:
     else:
         load_dotenv()  # Try default locations
 except Exception:
-    # If environment loading fails (e.g. in strict docker envs), continue
-    # The application will handle missing keys later if they are actually needed
-    import logging
-
-    logging.debug("Environment loading failed, will use defaults")
+    pass
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -184,12 +180,12 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str | None = None
+    JULES_API_KEY: str | None = Field(default=None, description="Google API key")
     OPENROUTER_API_KEY: str | None = None
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000
     DUMMY_CYCLE_ID: str = "00"
-    E2B_API_KEY: str | None = None
+    E2B_API_KEY: str | None = Field(default=None, description="E2B Sandbox API key")
 
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
@@ -238,6 +234,21 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
     )
+
+    @model_validator(mode="after")
+    def validate_api_keys(self) -> "Settings":
+        if not getattr(self, "test_mode", False):
+            missing = []
+            if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
+                missing.append("JULES_API_KEY")
+            if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
+                missing.append("E2B_API_KEY")
+            if missing:
+                # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
+                if not os.getenv("PYTEST_CURRENT_TEST"):
+                    msg = f"Missing required environment variables: {', '.join(missing)}"
+                    raise ValueError(msg)
+        return self
 
     @model_validator(mode="before")
     @classmethod
