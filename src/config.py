@@ -280,6 +280,20 @@ class Settings(BaseSettings):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
             msg = f"Missing required environment variables: {', '.join(missing)}"
             raise ValueError(msg)
+
+        # Validate LangSmith Tracing Configuration
+        env_enabled = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+        tracing_enabled = self.tracing.tracing_enabled or env_enabled
+        api_key = self.tracing.api_key or os.environ.get("LANGCHAIN_API_KEY")
+
+        if tracing_enabled and not api_key:
+            logging.warning(
+                "LangSmith tracing enabled but no API key provided. "
+                "Tracing will be ignored to prevent crashes."
+            )
+            os.environ["LANGCHAIN_TRACING_V2"] = "false"
+            self.tracing.tracing_enabled = False
+
         return self
 
     @model_validator(mode="before")
