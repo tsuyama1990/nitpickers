@@ -1,10 +1,11 @@
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 
 from src.domain_models.execution import ConflictRegistryItem
 from src.services.integration_usecase import IntegrationUsecase, MaxRetriesExceededError
+from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
@@ -14,20 +15,15 @@ def repo_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def mock_jules() -> AsyncMock:
-    jules = AsyncMock()
+def mock_jules() -> MagicMock:
+    jules = MagicMock(spec=JulesClient)
     # It's a synchronous method now
     jules.create_master_integrator_session.return_value = "test-session-id"
-    # To fix the pydantic validation error:
-    # MagicMock for sync methods, AsyncMock for async ones.
-    from unittest.mock import MagicMock
-
-    jules.create_master_integrator_session = MagicMock(return_value="test-session-id")
     return jules
 
 
 @pytest.mark.asyncio
-async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMock) -> None:
+async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path
@@ -55,7 +51,7 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMoc
 
 
 @pytest.mark.asyncio
-async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: AsyncMock) -> None:
+async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: MagicMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path
@@ -87,7 +83,7 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Async
 
 @pytest.mark.asyncio
 async def test_integration_usecase_max_retries_exceeded(
-    repo_path: Path, mock_jules: AsyncMock
+    repo_path: Path, mock_jules: MagicMock
 ) -> None:
     # Setup conflict file
     file_path = "fileA.py"
