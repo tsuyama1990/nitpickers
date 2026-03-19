@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.jules_session_nodes import JulesSessionNodes, SessionStatus
+from src.jules_session_nodes import JulesSessionNodes, SessionStatus  # type: ignore[attr-defined]
 from src.jules_session_state import JulesSessionState
 
 
@@ -25,7 +25,15 @@ async def test_monitor_session_batching() -> None:
     state = JulesSessionState(session_url="http://test/session", start_time=start_time)
 
     # Mock httpx in the TARGET MODULE
-    with patch("src.jules_session_nodes.httpx") as mock_httpx:
+    with (
+        patch("src.jules_session_nodes.httpx") as mock_httpx,
+        patch("src.config.settings") as mock_settings,
+    ):
+        mock_settings.jules.monitor_batch_size = 12
+        mock_settings.jules.monitor_poll_interval_seconds = 5
+        mock_settings.jules.stale_session_timeout_seconds = 3600
+        mock_settings.jules.max_stale_nudges = 3
+
         # CONFIGURE MOCK CONSTANTS
         mock_httpx.codes.OK = 200
 
@@ -65,7 +73,15 @@ async def test_monitor_session_returns_early_on_change() -> None:
     nodes = JulesSessionNodes(mock_client)
     state = JulesSessionState(session_url="http://test/session", start_time=start_time)
 
-    with patch("src.jules_session_nodes.httpx") as mock_httpx:
+    with (
+        patch("src.jules_session_nodes.httpx") as mock_httpx,
+        patch("src.config.settings") as mock_settings,
+    ):
+        mock_settings.jules.monitor_batch_size = 12
+        mock_settings.jules.monitor_poll_interval_seconds = 5
+        mock_settings.jules.stale_session_timeout_seconds = 3600
+        mock_settings.jules.max_stale_nudges = 3
+
         mock_httpx.codes.OK = 200
 
         mock_instance = mock_httpx.AsyncClient.return_value
@@ -178,7 +194,15 @@ async def test_monitor_session_avoids_validation_loop() -> None:
     state.jules_state = "COMPLETED"
     state.completion_validated = True
 
-    with patch("src.jules_session_nodes.httpx") as mock_httpx:
+    with (
+        patch("src.jules_session_nodes.httpx") as mock_httpx,
+        patch("src.config.settings") as mock_settings,
+    ):
+        mock_settings.jules.monitor_batch_size = 12
+        mock_settings.jules.monitor_poll_interval_seconds = 5
+        mock_settings.jules.stale_session_timeout_seconds = 3600
+        mock_settings.jules.max_stale_nudges = 3
+
         mock_httpx.codes.OK = 200
 
         mock_instance = mock_httpx.AsyncClient.return_value

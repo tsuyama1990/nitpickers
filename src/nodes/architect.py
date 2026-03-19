@@ -68,7 +68,7 @@ class ArchitectNodes:
         integration_branch = f"feat/generate-architecture-{timestamp}"
 
         try:
-            await self.git.checkout_branch(integration_branch, create_if_not_exists=True)
+            await self.git.create_feature_branch(integration_branch)
             console.print(f"[dim]Working on integration branch: {integration_branch}[/dim]")
         except Exception as e:
             console.print(f"[bold red]Failed to setup architect branch: {e}[/bold red]")

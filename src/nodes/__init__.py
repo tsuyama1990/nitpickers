@@ -2,6 +2,7 @@ from .architect import ArchitectNodes
 from .architect_critic import ArchitectCriticNodes
 from .auditor import AuditorNodes
 from .coder import CoderNodes
+from .coder_critic import CoderCriticNodes, route_coder_critic
 from .committee import CommitteeNodes
 from .qa import QaNodes
 from .routers import (
@@ -19,6 +20,7 @@ __all__ = [
     "ArchitectCriticNodes",
     "ArchitectNodes",
     "AuditorNodes",
+    "CoderCriticNodes",
     "CoderNodes",
     "CommitteeNodes",
     "QaNodes",

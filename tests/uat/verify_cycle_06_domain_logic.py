@@ -43,7 +43,9 @@ def _markdown(manager: Any, mo: Any, path_mod: Any) -> None:
 
 
 @app.cell
-def _logic(git_mgr_cls: Any, manager: Any, path_mod: Any, conflict_err_cls: Any, subprocess: Any) -> tuple[Any]:  # noqa: PLR0915
+def _logic(  # noqa: PLR0915
+    git_mgr_cls: Any, manager: Any, path_mod: Any, conflict_err_cls: Any, subprocess: Any
+) -> tuple[Any]:
     async def run_scenarios() -> None:  # noqa: PLR0915
         # Setup temporary git repo
         test_dir = path_mod("uat_test_repo")
@@ -135,7 +137,7 @@ def _logic(git_mgr_cls: Any, manager: Any, path_mod: Any, conflict_err_cls: Any,
             msg = "Should pass on clean file"
             raise AssertionError(msg)
 
-    return run_scenarios,
+    return (run_scenarios,)
 
 
 @app.cell

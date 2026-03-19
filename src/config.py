@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -20,7 +21,7 @@ try:
     else:
         load_dotenv()  # Try default locations
 except Exception:
-    pass
+    logging.exception("Could not load dotenv")
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -32,6 +33,11 @@ PROMPT_FILENAME_MAP = {
 
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
+    # Use environment variable for configurable override, fallback to detection
+    env_pkg_dir = os.getenv("PACKAGE_DIR")
+    if env_pkg_dir and Path(env_pkg_dir).exists():
+        return env_pkg_dir
+
     docker_path = Path("/opt/ac_cdd/src")
     if docker_path.exists():
         return str(docker_path)
@@ -42,7 +48,7 @@ def _detect_package_dir() -> str:
             if p.is_dir() and (p / "__init__.py").exists():
                 return str(p)
 
-    return "dev_src/src"
+    return os.getenv("DEFAULT_SRC_DIR", "dev_src/src")
 
 
 class PathsConfig(BaseModel):
@@ -65,24 +71,33 @@ class PathsConfig(BaseModel):
 
 class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = 7200
-    polling_interval_seconds: int = 120
-    base_url: str = "https://jules.googleapis.com/v1alpha"
-    wait_for_pr_timeout_seconds: int = 900
-    max_plan_rejections: int = 2
-    pr_polling_interval_seconds: int = 10
+    timeout_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+    )
+    polling_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
+    )
+    base_url: str = Field(
+        default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha")
+    )
+    wait_for_pr_timeout_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900"))
+    )
+    max_plan_rejections: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
+    )
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
-        default=1,
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", "1")),
         description="Number of polls per LangGraph node invocation (batch_size * monitor_poll_interval_seconds = seconds per step).",
     )
     monitor_poll_interval_seconds: int = Field(
-        default=30,
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", "30")),
         description="Seconds between each poll within a monitor batch.",
     )
     stale_session_timeout_seconds: int = Field(
-        default=1800,
+        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", "1800")),
         description=(
             "Seconds without a Jules state change before sending a nudge message. "
             "Jules sometimes enters a silent mode where IN_PROGRESS stays unchanged. "
@@ -91,25 +106,16 @@ class JulesConfig(BaseModel):
         ),
     )
     max_stale_nudges: int = Field(
-        default=3,
+        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", "3")),
         description="Maximum number of nudge messages to send before giving up and raising a timeout.",
     )
 
     # Distress detection keywords - Jules sometimes completes but signals a problem in its last message
     distress_keywords: list[str] = Field(
-        default=[
-            "inconsistent",
-            "cannot act",
-            "faulty audit",
-            "incorrect version",
-            "please manually",
-            "blocked",
-            "issue with",
-            "reiterate",
-            "cannot proceed",
-            "unable to complete",
-            "needs your input",
-        ],
+        default_factory=lambda: os.getenv(
+            "JULES_DISTRESS_KEYWORDS",
+            "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input",
+        ).split(","),
         description=(
             "Keywords in Jules' last agentMessaged activity that indicate it is stuck or "
             "needs help. NOTE: keep these specific - broad words like 'error' will fire on "
@@ -128,7 +134,9 @@ class ToolsConfig(BaseModel):
     ruff_cmd: str = "ruff"
     gemini_cmd: str = "gemini"
     required_executables: list[str] = ["uv", "git"]
-    git_conflict_codes: set[str] = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+    conflict_codes: set[str] = Field(
+        default_factory=lambda: {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+    )
 
 
 class SandboxConfig(BaseModel):
@@ -153,18 +161,26 @@ class SandboxConfig(BaseModel):
     security_check_cmd: list[str] = ["uv", "run", "bandit", "-r", "src/", "-ll"]
 
 
+class ASTAnalyzerConfig(BaseModel):
+    max_files: int = Field(default=10000, description="Maximum number of files to analyze")
+    max_depth: int = Field(default=20, description="Maximum directory depth to search")
+    max_file_size_bytes: int = Field(
+        default=10 * 1024 * 1024, description="Maximum file size to read (10MB)"
+    )
+
+
 class AgentsConfig(BaseModel):
-    auditor_model: str = "claude-3-5-sonnet"
-    qa_analyst_model: str = "claude-3-5-sonnet"
+    auditor_model: str = "openai:gpt-4o"
+    qa_analyst_model: str = "openai:gpt-4o"
 
 
 class ReviewerConfig(BaseModel):
     smart_model: str = Field(
-        default="claude-3-5-sonnet",
+        default="openai:gpt-4o",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="claude-3-5-sonnet",
+        default="openai:gpt-4o-mini",
         description="Model for reading/auditing code",
     )
 
@@ -194,6 +210,9 @@ class Settings(BaseSettings):
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 
+    ARCHIVE_DIR_TEMPLATE: str = "system_prompts_phase{phase_num:02d}"
+    ARCHIVE_COMMIT_MESSAGE: str = "Archive Phase {phase_num} Artifacts"
+
     NUM_AUDITORS: int = 3
     REVIEWS_PER_AUDITOR: int = 2
     MAX_ITERATIONS: int = 3
@@ -222,6 +241,7 @@ class Settings(BaseSettings):
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
+    ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
 
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
@@ -241,17 +261,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        missing = []
         if not getattr(self, "test_mode", False):
-            missing = []
             if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
                 missing.append("JULES_API_KEY")
             if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
                 missing.append("E2B_API_KEY")
-            if missing:
-                # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-                if not os.getenv("PYTEST_CURRENT_TEST"):
-                    msg = f"Missing required environment variables: {', '.join(missing)}"
-                    raise ValueError(msg)
+        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+            # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
+            msg = f"Missing required environment variables: {', '.join(missing)}"
+            raise ValueError(msg)
         return self
 
     @model_validator(mode="before")
