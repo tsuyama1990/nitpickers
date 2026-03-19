@@ -45,7 +45,7 @@ class TestGitCheckoutRobustness:
         """Verifies _auto_commit_if_dirty raises RuntimeError on conflicts."""
         mixin = GitCheckoutMixin()
         mixin.runner = AsyncMock()
-        mixin._run_git = AsyncMock()
+        mixin._run_git = AsyncMock()  # type: ignore[method-assign]
 
         # Simulate 'git status --porcelain' returning conflict
         # UU = both modified (conflict)
@@ -65,7 +65,7 @@ class TestGitCheckoutRobustness:
         """Verifies _auto_commit_if_dirty proceeds if just modified (no conflict)."""
         mixin = GitCheckoutMixin()
         mixin.runner = AsyncMock()
-        mixin._run_git = AsyncMock()
+        mixin._run_git = AsyncMock()  # type: ignore[method-assign]
 
         # simulate modified state
         mixin.runner.run_command = AsyncMock(return_value=(" M file.py", "", 0))

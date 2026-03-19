@@ -43,6 +43,7 @@ class GitCheckoutMixin(BaseGitManager):
             # Codes: DD, AU, UD, UA, DU, AA, UU
             lines = stdout.splitlines()
             from src.config import settings
+
             conflict_codes = settings.tools.conflict_codes
             for line in lines:
                 # Porcelain v1: XY PATH (X=index, Y=worktree)

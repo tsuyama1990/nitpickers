@@ -52,11 +52,6 @@ class JulesApiClient:
             logger.debug("Skipping malformed .env line during key check.")
 
     def _ensure_api_key_or_raise(self) -> None:
-        if os.environ.get("AC_CDD_AUTO_APPROVE") or "PYTEST_CURRENT_TEST" in os.environ:
-            logger.warning("Jules API Key missing in Test Environment. Using dummy key.")
-            self.api_key = "dummy_jules_key"
-            return
-
         msg = (
             "API Key not found for Jules API. "
             "Please set JULES_API_KEY or GOOGLE_API_KEY in your .env file or environment variables. "
@@ -67,9 +62,6 @@ class JulesApiClient:
     def _request(
         self, method: str, endpoint: str, data: dict[str, Any] | None = None
     ) -> dict[str, Any]:
-        if self.api_key == "dummy_jules_key":
-            return self._handle_dummy_request(method, endpoint)
-
         url = f"{self.BASE_URL}/{endpoint}"
         body = json.dumps(data).encode("utf-8") if data else None
         req = urllib.request.Request(url, method=method, headers=self.headers, data=body)  # noqa: S310
@@ -90,18 +82,6 @@ class JulesApiClient:
             logger.error(f"Network Error: {e}")
             emsg = f"Network request failed: {e}"
             raise JulesApiError(emsg) from e
-
-    def _handle_dummy_request(self, method: str, endpoint: str) -> dict[str, Any]:
-        logger.info(f"Test Mode: Returning dummy response for {method} {endpoint}")
-        if endpoint.endswith("sessions"):
-            return {"name": "sessions/dummy-session-123"}
-        if "activities" in endpoint:
-            return {"activities": []}
-        if endpoint.endswith("sources"):
-            return {"sources": [{"name": "sources/github/test-owner/test-repo"}]}
-        if "approvePlan" in endpoint:
-            return {}
-        return {}
 
     def list_sources(self) -> list[dict[str, Any]]:
         data = self._request("GET", "sources")
@@ -170,9 +150,6 @@ class JulesApiClient:
     async def list_activities_async(self, session_id_path: str) -> list[dict[str, Any]]:
         """Async version of list_activities using httpx to avoid blocking the event loop."""
         import httpx
-
-        if self.api_key == "dummy_jules_key":
-            return []
 
         all_activities: list[dict[str, Any]] = []
         page_token = ""

@@ -16,14 +16,14 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             self.client = JulesClient()
             self.client.base_url = "https://mock.api"
             self.client.timeout = 5
-            self.client.poll_interval = 0.1
+            self.client.poll_interval = 0.1  # type: ignore[assignment]
             self.client.console = MagicMock()
             self.client.manager_agent = AsyncMock()
             self.client.manager_agent.run.return_value = MagicMock(output="Manager Reply")
             self.client.credentials = MagicMock()
-            self.client._get_headers = MagicMock(return_value={})
+            self.client._get_headers = MagicMock(return_value={})  # type: ignore[method-assign]
             self.client.credentials.token = "mock_token"  # noqa: S105
-            self.client._sleep = AsyncMock()
+            self.client._sleep = AsyncMock()  # type: ignore[method-assign]
 
             # FIX: Add context_builder
             self.client.context_builder = MagicMock()
@@ -68,7 +68,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         monologue_id = "sessions/123/activities/monologue"
         question_id = "sessions/123/activities/question"
 
-        self.client.list_activities = MagicMock(return_value=[])
+        self.client.list_activities = MagicMock(return_value=[])  # type: ignore[method-assign]
         self.client._send_message = AsyncMock()
 
         call_counts: dict[str, int] = {"state": 0, "activities": 0}
@@ -145,7 +145,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         session_id = "sessions/123"
         old_activity_id = "sessions/123/activities/old"
 
-        self.client.list_activities = MagicMock(
+        self.client.list_activities = MagicMock(  # type: ignore[method-assign]
             return_value=[
                 {"name": old_activity_id, "agentMessaged": {"agentMessage": "Old Question"}}
             ]

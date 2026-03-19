@@ -42,9 +42,12 @@ class CycleNodes(IGraphNodes):
         self.jules = jules_client
 
         from src.service_container import ServiceContainer
+
         container = ServiceContainer.default()
 
-        self.git = container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
+        self.git = (
+            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
+        )
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
         self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
@@ -60,6 +63,7 @@ class CycleNodes(IGraphNodes):
 
         # Dependency injection for Global Refactor
         from src.services.refactor_usecase import RefactorUsecase
+
         if hasattr(container, "resolve"):
             refactor_usecase = container.resolve(RefactorUsecase)
         else:

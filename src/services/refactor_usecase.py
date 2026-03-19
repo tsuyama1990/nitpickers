@@ -12,7 +12,9 @@ from src.utils import logger
 class RefactorUsecase:
     """Uses the AST analyzer to identify global refactoring opportunities and delegates to Jules."""
 
-    def __init__(self, jules_client: JulesClient | None = None, base_dir: Path | None = None) -> None:
+    def __init__(
+        self, jules_client: JulesClient | None = None, base_dir: Path | None = None
+    ) -> None:
         self.jules_client = jules_client or JulesClient()
         self.base_dir = (base_dir or settings.paths.src).resolve()
 
@@ -50,7 +52,9 @@ class RefactorUsecase:
         complex_funcs = analyzer.find_complex_functions(max_complexity=10)
 
         if not duplicates and not complex_funcs:
-            logger.info("No structural duplicates or complex functions found. Refactoring bypassed.")
+            logger.info(
+                "No structural duplicates or complex functions found. Refactoring bypassed."
+            )
             return GlobalRefactorResult(
                 refactorings_applied=False,
                 summary="No structural duplicates or complex functions found. Clean architecture maintained.",
@@ -63,7 +67,9 @@ class RefactorUsecase:
             default="Refactor the following code to reduce complexity and unify logic: {AST_duplicates}",
         )
 
-        ast_data = f"{self._format_duplicates(duplicates)}\n\n{self._format_complex_funcs(complex_funcs)}"
+        ast_data = (
+            f"{self._format_duplicates(duplicates)}\n\n{self._format_complex_funcs(complex_funcs)}"
+        )
         prompt = prompt_template.replace("{AST_duplicates}", ast_data)
 
         # Extract files that will be modified for logging and session context
@@ -87,10 +93,12 @@ class RefactorUsecase:
         if not modified_files:
             return GlobalRefactorResult(
                 refactorings_applied=False,
-                summary="No valid files to refactor found within boundary."
+                summary="No valid files to refactor found within boundary.",
             )
 
-        logger.info(f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules...")
+        logger.info(
+            f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules..."
+        )
 
         # Securely generate Session ID to prevent session fixation attacks
         secure_token = secrets.token_urlsafe(32)
@@ -98,9 +106,7 @@ class RefactorUsecase:
 
         try:
             await self.jules_client.run_session(
-                session_id=session_id,
-                prompt=prompt,
-                files=list(modified_files)
+                session_id=session_id, prompt=prompt, files=list(modified_files)
             )
 
             return GlobalRefactorResult(

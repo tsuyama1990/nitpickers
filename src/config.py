@@ -71,11 +71,21 @@ class PathsConfig(BaseModel):
 
 class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200")))
-    polling_interval_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120")))
-    base_url: str = Field(default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha"))
-    wait_for_pr_timeout_seconds: int = Field(default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900")))
-    max_plan_rejections: int = Field(default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2")))
+    timeout_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+    )
+    polling_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
+    )
+    base_url: str = Field(
+        default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha")
+    )
+    wait_for_pr_timeout_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900"))
+    )
+    max_plan_rejections: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
+    )
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -154,20 +164,23 @@ class SandboxConfig(BaseModel):
 class ASTAnalyzerConfig(BaseModel):
     max_files: int = Field(default=10000, description="Maximum number of files to analyze")
     max_depth: int = Field(default=20, description="Maximum directory depth to search")
-    max_file_size_bytes: int = Field(default=10 * 1024 * 1024, description="Maximum file size to read (10MB)")
+    max_file_size_bytes: int = Field(
+        default=10 * 1024 * 1024, description="Maximum file size to read (10MB)"
+    )
+
 
 class AgentsConfig(BaseModel):
-    auditor_model: str = "claude-3-5-sonnet"
-    qa_analyst_model: str = "claude-3-5-sonnet"
+    auditor_model: str = "openai:gpt-4o"
+    qa_analyst_model: str = "openai:gpt-4o"
 
 
 class ReviewerConfig(BaseModel):
     smart_model: str = Field(
-        default="claude-3-5-sonnet",
+        default="openai:gpt-4o",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="claude-3-5-sonnet",
+        default="openai:gpt-4o-mini",
         description="Model for reading/auditing code",
     )
 

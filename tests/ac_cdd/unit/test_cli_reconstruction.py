@@ -12,10 +12,7 @@ runner = CliRunner()
 @pytest.fixture
 def mock_deps() -> Iterator[None]:
     with (
-        patch("src.cli.utils.check_api_key", return_value=True),
         patch("shutil.which", return_value="/usr/bin/git"),
-        patch("src.cli.ProjectManager"),
-        patch("src.cli.StateManager"),
         patch("src.cli.WorkflowService"),
     ):
         yield

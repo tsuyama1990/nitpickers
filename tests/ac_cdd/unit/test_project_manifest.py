@@ -39,8 +39,8 @@ class TestProjectManifest:
         """Test validation rules."""
         # Missing required fields
         with pytest.raises(ValueError, match="Field required"):
-            ProjectManifest(project_session_id="only-id")
+            ProjectManifest(project_session_id="only-id")  # type: ignore[call-arg]
 
         # Invalid cycle status
         with pytest.raises(ValueError, match="Input should be"):
-            CycleManifest(id="01", status="invalid_status")
+            CycleManifest(id="01", status="invalid_status")  # type: ignore[arg-type]

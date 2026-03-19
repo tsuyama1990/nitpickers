@@ -18,6 +18,7 @@ def cell_1(mo: Any) -> Any:
         """
     )
 
+
 @app.cell
 def cell_2() -> Any:
     import tempfile
@@ -82,10 +83,8 @@ def cell_2() -> Any:
         logger.info("verify_clean_architecture passed")
         return True
 
-    return (
-        verify_successful_refactoring,
-        verify_clean_architecture
-    )
+    return (verify_successful_refactoring, verify_clean_architecture)
+
 
 @app.cell
 def cell_3(verify_clean_architecture: Any, verify_successful_refactoring: Any) -> Any:
@@ -99,10 +98,12 @@ def cell_3(verify_clean_architecture: Any, verify_successful_refactoring: Any) -
     loop = asyncio.get_event_loop()
     if loop.is_running():
         import nest_asyncio
+
         nest_asyncio.apply()
         asyncio.run(run_all())
     else:
         loop.run_until_complete(run_all())
+
 
 if __name__ == "__main__":
     app.run()

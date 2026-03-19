@@ -11,7 +11,7 @@ class TestSessionStateValidation:
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
         client = JulesClient()
-        client.api_client._request = MagicMock()
+        client.api_client._request = MagicMock()  # type: ignore
         return client
 
     @pytest.mark.asyncio

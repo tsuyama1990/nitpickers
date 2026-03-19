@@ -9,14 +9,11 @@ class ConflictMarkerRemainsError(Exception):
     """Raised when a file still contains Git conflict markers."""
 
 
-
 class ConflictManager:
     """Extracts and validates Git conflict markers."""
 
     def __init__(self) -> None:
-        self.conflict_marker_pattern = re.compile(
-            r"^(<{7}\s.*|={7}|>{7}\s.*)$", re.MULTILINE
-        )
+        self.conflict_marker_pattern = re.compile(r"^(<{7}\s.*|={7}|>{7}\s.*)$", re.MULTILINE)
 
     def scan_conflicts(self, repo_path: Path) -> list[ConflictRegistryItem]:
         """
@@ -27,6 +24,7 @@ class ConflictManager:
 
         try:
             from src.config import settings
+
             git_cmd = settings.tools.git_cmd
 
             # Use git status --porcelain to find unmerged files quickly
