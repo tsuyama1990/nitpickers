@@ -38,7 +38,7 @@ def test_config_defaults() -> None:
     # Clean env for this test
     with patch.dict(os.environ, {"JULES_API_KEY": "dummy", "E2B_API_KEY": "dummy"}, clear=True):
         local_settings = Settings()
-        assert local_settings.reviewer.smart_model == "claude-3-5-sonnet"
+        assert local_settings.reviewer.smart_model == "openai:gpt-4o"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert str(local_settings.paths.templates) == str(
             Path.cwd() / "dev_documents" / "templates"

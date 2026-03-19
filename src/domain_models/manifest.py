@@ -44,5 +44,7 @@ class ProjectManifest(BaseModel):
         default=None, description="Active QA/Tutorial Generation Session ID"
     )
     cycles: list[CycleManifest] = Field(default_factory=list)
-    unresolved_conflicts: list[dict[str, Any]] = Field(default_factory=list, description="Serialized ConflictRegistryItem logs")
+    unresolved_conflicts: list[dict[str, Any]] = Field(
+        default_factory=list, description="Serialized ConflictRegistryItem logs"
+    )
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))

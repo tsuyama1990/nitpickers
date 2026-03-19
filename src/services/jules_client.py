@@ -1,7 +1,6 @@
 import asyncio
 import os
 import sys
-import unittest.mock
 from typing import Any
 
 try:
@@ -109,13 +108,6 @@ class JulesClient:
             headers["Authorization"] = f"Bearer {self.credentials.token or ''}"
         return headers
 
-    def _is_httpx_mocked(self) -> bool:
-        """Check if httpx.AsyncClient is mocked."""
-        is_mock = isinstance(httpx.AsyncClient, (unittest.mock.MagicMock, unittest.mock.AsyncMock))
-        if is_mock:
-            return True
-        return hasattr(httpx.AsyncClient, "return_value")
-
     async def run_session(
         self,
         session_id: str,
@@ -125,15 +117,6 @@ class JulesClient:
         **extra: Any,
     ) -> dict[str, Any]:
         """Orchestrates the Jules session."""
-        if settings.test_mode and not self._is_httpx_mocked():
-            logger.info("Test Mode: Simulating Jules Session run.")
-            return {
-                "session_name": f"sessions/dummy-{session_id}",
-                "pr_url": "https://github.com/dummy/repo/pull/1",
-                "status": "success",
-                "cycles": ["01", "02"],
-            }
-
         if not self.api_client.api_key and "PYTEST_CURRENT_TEST" not in os.environ:
             errmsg = "Missing JULES_API_KEY or ADC credentials."
             raise JulesSessionError(errmsg)
@@ -192,13 +175,6 @@ class JulesClient:
 
     async def continue_session(self, session_name: str, prompt: str) -> dict[str, Any]:
         """Continues an existing session."""
-        if settings.test_mode and not self._is_httpx_mocked():
-            return {
-                "session_name": session_name,
-                "pr_url": "https://github.com/dummy/repo/pull/2",
-                "status": "success",
-            }
-
         logger.info(f"Continuing Session {session_name} with info...")
         await self._send_message(session_name, prompt)
         logger.info(f"Waiting for Jules to process feedback for {session_name}...")
@@ -218,9 +194,6 @@ class JulesClient:
         - Requesting manual PR creation if needed
         - Waiting for PR with state re-validation
         """
-        if self.test_mode and not self._is_httpx_mocked():
-            return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
-
         from langchain_core.runnables import RunnableConfig
 
         from src.jules_session_graph import build_jules_session_graph
@@ -295,9 +268,6 @@ class JulesClient:
         self, session_name: str, require_plan_approval: bool = False
     ) -> dict[str, Any]:
         """Legacy polling-based implementation (kept for reference/fallback)."""
-        if self.test_mode and not self._is_httpx_mocked():
-            return {"status": "success", "pr_url": "https://github.com/dummy/pr/1"}
-
         processed_activity_ids: set[str] = set()
         start_time = asyncio.get_running_loop().time()
 
@@ -547,10 +517,6 @@ class JulesClient:
     @retry_on_429(DispatcherConfig())
     async def _send_message(self, session_url: str, content: str) -> None:
         """Internal implementation for sending messages."""
-        if settings.test_mode and not self._is_httpx_mocked():
-            logger.info("Test Mode: Dummy Message Sent.")
-            return
-
         if not session_url.startswith("http"):
             session_url = self._get_session_url(session_url)
 

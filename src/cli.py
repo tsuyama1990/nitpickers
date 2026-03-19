@@ -10,6 +10,16 @@ app = typer.Typer()
 
 
 @app.command()
+def gen_cycles(
+    cycles: int = typer.Option(5, "--cycles", "-c", help="Number of cycles to generate"),
+    session: str | None = typer.Option(None, "--session", help="Session ID"),
+) -> None:
+    """Generate architecture and development cycles."""
+    service = WorkflowService()
+    asyncio.run(service.run_gen_cycles(cycles, project_session_id=session))
+
+
+@app.command()
 def run_cycle(
     cycle_id: str = typer.Option("all", "--id", "-i", help="Cycle ID to run (e.g., '01') or 'all'"),
     resume: bool = typer.Option(False, "--resume", "-r", help="Resume from last failed node"),
@@ -32,3 +42,12 @@ def run_cycle(
             parallel=parallel,
         )
     )
+
+
+@app.command()
+def finalize_session(
+    session: str | None = typer.Option(None, "--session", help="Session ID"),
+) -> None:
+    """Finalize the current working session."""
+    service = WorkflowService()
+    asyncio.run(service.finalize_session(project_session_id=session))

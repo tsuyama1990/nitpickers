@@ -55,6 +55,7 @@ class TestGenCyclesCountOption:
 
             # Create CycleNodes instance
             nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
 
             # Create state with requested_cycle_count
             state = CycleState(cycle_id="00", requested_cycle_count=5)
@@ -103,6 +104,7 @@ class TestGenCyclesCountOption:
 
             # Create CycleNodes instance
             nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
 
             # Create state WITHOUT requested_cycle_count
             # BUT: CycleState defaults planned_cycle_count to 5 (from definition in state.py)
@@ -157,6 +159,7 @@ class TestGenCyclesCountOption:
             mock_settings.get_context_files.return_value = []
 
             nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
 
             state = CycleState(cycle_id="00", requested_cycle_count=count_value)
 

@@ -23,10 +23,10 @@ def test_ast_analyzer_find_duplicates(tmp_path: Path) -> None:
             return total
     ''')
 
-    code_c = textwrap.dedent('''
+    code_c = textwrap.dedent("""
         def multiply(x, y):
             return x * y
-    ''')
+    """)
 
     file_a.write_text(code_a)
     file_b.write_text(code_b + code_c)
@@ -44,12 +44,13 @@ def test_ast_analyzer_find_duplicates(tmp_path: Path) -> None:
     assert "sum_values" in funcs
     assert "multiply" not in funcs
 
+
 def test_ast_analyzer_mccabe_complexity(tmp_path: Path) -> None:
     """Test that the AST Analyzer correctly flags high McCabe complexity."""
     file_a = tmp_path / "complex.py"
 
     # 10 ifs/elifs > complexity 10
-    code_complex = textwrap.dedent('''
+    code_complex = textwrap.dedent("""
         def highly_complex_function(x):
             if x == 1:
                 return 1
@@ -74,7 +75,7 @@ def test_ast_analyzer_mccabe_complexity(tmp_path: Path) -> None:
             elif x == 11:
                 return 11
             return 0
-    ''')
+    """)
 
     file_a.write_text(code_complex)
 
@@ -85,17 +86,18 @@ def test_ast_analyzer_mccabe_complexity(tmp_path: Path) -> None:
     assert complex_funcs[0]["function"] == "highly_complex_function"
     assert complex_funcs[0]["complexity"] > 10
 
+
 def test_ast_analyzer_no_duplicates(tmp_path: Path) -> None:
     """Test AST analyzer with completely distinct functions."""
     file_a = tmp_path / "distinct.py"
 
-    code = textwrap.dedent('''
+    code = textwrap.dedent("""
         def first():
             print("First")
 
         def second(x):
             return x * 2
-    ''')
+    """)
 
     file_a.write_text(code)
 

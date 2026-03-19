@@ -387,6 +387,7 @@ class WorkflowService:
 
     def _get_quality_gate_cmds(self) -> list[list[str]]:
         from src.config import settings
+
         cmds = []
         if settings.sandbox.lint_check_cmd:
             cmds.append(settings.sandbox.lint_check_cmd)
@@ -400,11 +401,13 @@ class WorkflowService:
                 ["uv", "run", "ruff", "check", "."],
                 ["uv", "run", "ruff", "format", "."],
                 ["uv", "run", "mypy", "."],
-                ["uv", "run", "pytest"]
+                ["uv", "run", "pytest"],
             ]
         return cmds
 
-    async def _handle_global_refactor_result(self, result: dict[str, Any], git: "GitManager") -> None:
+    async def _handle_global_refactor_result(
+        self, result: dict[str, Any], git: "GitManager"
+    ) -> None:
         """Helper to handle the result of the global refactoring loop."""
         gr_res = result["global_refactor_result"]
         if not gr_res.refactorings_applied:
@@ -414,7 +417,9 @@ class WorkflowService:
         from src.service_container import ServiceContainer
 
         container = ServiceContainer.default()
-        runner = container.resolve(ProcessRunner) if hasattr(container, "resolve") else ProcessRunner()
+        runner = (
+            container.resolve(ProcessRunner) if hasattr(container, "resolve") else ProcessRunner()
+        )
         cmds = self._get_quality_gate_cmds()
 
         import shutil
@@ -435,7 +440,9 @@ class WorkflowService:
                 shutil.copytree(Path.cwd(), temp_path / "workspace", ignore=ignore_func)
                 workspace_dir = temp_path / "workspace"
 
-                console.print("[cyan]Running final quality gates post-refactor in isolated sandbox...[/cyan]")
+                console.print(
+                    "[cyan]Running final quality gates post-refactor in isolated sandbox...[/cyan]"
+                )
                 for cmd in cmds:
                     # This throws CalledProcessError if it fails
                     await runner.run_command(cmd, cwd=workspace_dir)
@@ -448,16 +455,22 @@ class WorkflowService:
                     await git.commit("Global refactoring applied.")
                     console.print("[green]Global refactoring successful and tests passed.[/green]")
                 except Exception as commit_err:
-                    console.print(f"[bold red]Failed to commit global refactoring: {commit_err}[/bold red]")
+                    console.print(
+                        f"[bold red]Failed to commit global refactoring: {commit_err}[/bold red]"
+                    )
                     await git.reset_hard()
         except Exception as e:
-            console.print(f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]")
+            console.print(
+                f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]"
+            )
             console.print("[yellow]Reverting refactoring changes...[/yellow]")
             try:
                 await git.reset_hard()
             except Exception as reset_err:
                 console.print(f"[bold red]Failed to revert changes: {reset_err}[/bold red]")
-            console.print("[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]")
+            console.print(
+                "[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]"
+            )
 
     async def finalize_session(self, project_session_id: str | None) -> None:
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
@@ -487,9 +500,12 @@ class WorkflowService:
             if feature_branch and feature_branch != integration_branch:
                 merge_success = await git.safe_merge_with_conflicts(feature_branch)
                 if merge_success:
-                    await git._run_git(["commit", "-m", f"Merge {feature_branch} into {integration_branch}"])
+                    await git._run_git(
+                        ["commit", "-m", f"Merge {feature_branch} into {integration_branch}"]
+                    )
                 else:
                     from src.services.conflict_manager import ConflictManager
+
                     manager = ConflictManager()
                     registry_items = manager.scan_conflicts(Path.cwd())
 
@@ -536,6 +552,7 @@ class WorkflowService:
         and resets the state for the next phase safely.
         """
         from src.config import settings
+
         docs_dir = settings.paths.documents_dir
         if not docs_dir.exists():
             return
@@ -559,7 +576,12 @@ class WorkflowService:
 
     def _get_next_phase_num(self, docs_dir: Path) -> int:
         import contextlib
-        existing_phases = [d for d in docs_dir.iterdir() if d.is_dir() and d.name.startswith("system_prompts_phase")]
+
+        existing_phases = [
+            d
+            for d in docs_dir.iterdir()
+            if d.is_dir() and d.name.startswith("system_prompts_phase")
+        ]
         nums = []
         for d in existing_phases:
             with contextlib.suppress(IndexError, ValueError):
@@ -570,13 +592,16 @@ class WorkflowService:
         import shutil
 
         import anyio
+
         anyio_src = anyio.Path(src)
         anyio_dest = anyio.Path(dest)
         if not await anyio_src.exists():
             return
         await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
         try:
-            await self.git._run_git(["mv", str(src), str(dest)]) # Keeping _run_git for mv as there's no public method yet
+            await self.git._run_git(
+                ["mv", str(src), str(dest)]
+            )  # Keeping _run_git for mv as there's no public method yet
         except Exception:
             try:
                 await anyio_src.replace(dest)
@@ -593,7 +618,9 @@ class WorkflowService:
             await anyio.Path(phase_dir).mkdir(parents=True, exist_ok=True)
 
         await self._safe_move_item(docs_dir / "ALL_SPEC.md", phase_dir / "ALL_SPEC.md")
-        await self._safe_move_item(docs_dir / "USER_TEST_SCENARIO.md", phase_dir / "USER_TEST_SCENARIO.md")
+        await self._safe_move_item(
+            docs_dir / "USER_TEST_SCENARIO.md", phase_dir / "USER_TEST_SCENARIO.md"
+        )
 
         tutorials_dir = Path.cwd() / "tutorials"
         if tutorials_dir.exists():
@@ -603,11 +630,14 @@ class WorkflowService:
 
         templates_dir = settings.paths.templates
         if templates_dir.exists():
-            for cycle_dir in sorted([d for d in templates_dir.iterdir() if d.is_dir() and d.name.startswith("CYCLE")]):
+            for cycle_dir in sorted(
+                [d for d in templates_dir.iterdir() if d.is_dir() and d.name.startswith("CYCLE")]
+            ):
                 await self._safe_move_item(cycle_dir, phase_dir / "templates" / cycle_dir.name)
 
     def _reset_project_state(self, phase_dir: Path) -> None:
         import shutil
+
         state_mgr = StateManager()
         if state_mgr.STATE_FILE.exists():
             shutil.copy2(str(state_mgr.STATE_FILE), str(phase_dir / "project_state.json"))
@@ -621,6 +651,7 @@ class WorkflowService:
 
     async def _commit_archived_phase(self, next_phase_num: int) -> None:
         from src.config import settings
+
         msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
         try:
             await self.git.add_all()

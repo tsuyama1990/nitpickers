@@ -14,6 +14,7 @@ def mock_jules_client() -> AsyncMock:
     client.run_session.return_value = {"pr_url": "http://github.com/pr/1"}
     return client
 
+
 @pytest.mark.asyncio
 async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: AsyncMock) -> None:
     usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
@@ -30,8 +31,11 @@ async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: Asy
         assert "No structural duplicates or complex functions found" in result.summary
         mock_jules_client.run_session.assert_not_called()
 
+
 @pytest.mark.asyncio
-async def test_refactor_usecase_with_duplicates(tmp_path: Path, mock_jules_client: AsyncMock) -> None:
+async def test_refactor_usecase_with_duplicates(
+    tmp_path: Path, mock_jules_client: AsyncMock
+) -> None:
     usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
     with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
@@ -39,7 +43,7 @@ async def test_refactor_usecase_with_duplicates(tmp_path: Path, mock_jules_clien
         instance.find_duplicates.return_value = [
             [
                 {"file": str(tmp_path / "a.py"), "function": "add"},
-                {"file": str(tmp_path / "b.py"), "function": "sum_numbers"}
+                {"file": str(tmp_path / "b.py"), "function": "sum_numbers"},
             ]
         ]
         instance.find_complex_functions.return_value = []
@@ -58,8 +62,11 @@ async def test_refactor_usecase_with_duplicates(tmp_path: Path, mock_jules_clien
         assert "a.py" in call_args["prompt"]
         assert "b.py" in call_args["prompt"]
 
+
 @pytest.mark.asyncio
-async def test_refactor_usecase_with_complex_functions(tmp_path: Path, mock_jules_client: AsyncMock) -> None:
+async def test_refactor_usecase_with_complex_functions(
+    tmp_path: Path, mock_jules_client: AsyncMock
+) -> None:
     usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
     with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:

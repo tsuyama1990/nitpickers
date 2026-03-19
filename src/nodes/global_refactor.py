@@ -26,7 +26,9 @@ class GlobalRefactorNodes:
             return {"error": str(e)}
         else:
             if result.refactorings_applied:
-                logger.info(f"Refactorings successfully applied to {len(result.modified_files)} files.")
+                logger.info(
+                    f"Refactorings successfully applied to {len(result.modified_files)} files."
+                )
             else:
                 logger.info("No global refactorings applied.")
 

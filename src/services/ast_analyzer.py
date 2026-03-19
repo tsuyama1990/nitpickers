@@ -11,7 +11,9 @@ from src.config import ASTAnalyzerConfig, settings
 class ASTAnalyzer:
     """Analyzes Python files to find structural duplicates and high complexity functions."""
 
-    def __init__(self, base_dir: Path | None = None, config: ASTAnalyzerConfig | None = None) -> None:
+    def __init__(
+        self, base_dir: Path | None = None, config: ASTAnalyzerConfig | None = None
+    ) -> None:
         self.base_dir = base_dir or settings.paths.src
         self.config = config or settings.ast_analyzer
 
@@ -19,6 +21,7 @@ class ASTAnalyzer:
         """
         Creates a hash of the AST structure, including function signature types and logic structure.
         """
+
         class StructuralVisitor(ast.NodeVisitor):
             def __init__(self) -> None:
                 self.structure: list[str] = []
@@ -88,10 +91,16 @@ class ASTAnalyzer:
 
     def _is_valid_dir(self, item: Path) -> bool:
         import os
-        return item.is_dir() and item.name not in (".git", "__pycache__", ".venv", "venv", "env") and os.access(item, os.R_OK | os.X_OK)
+
+        return (
+            item.is_dir()
+            and item.name not in (".git", "__pycache__", ".venv", "venv", "env")
+            and os.access(item, os.R_OK | os.X_OK)
+        )
 
     def _is_valid_py_file(self, item: Path) -> bool:
         import os
+
         return item.is_file() and item.suffix == ".py" and os.access(item, os.R_OK)
 
     def _get_python_files(self) -> Generator[Path, None, None]:
@@ -100,6 +109,7 @@ class ASTAnalyzer:
             return
 
         import os
+
         count = 0
 
         # We manually walk to respect depth limits
