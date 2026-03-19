@@ -9,6 +9,7 @@ from rich.panel import Panel
 
 from src.config import settings
 from src.domain_models import CycleManifest
+from src.domain_models.tracing import TracingMetadata
 from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
@@ -54,11 +55,17 @@ class WorkflowService:
 
         try:
             thread_id = project_session_id or "architect-session"
+            metadata = TracingMetadata(session_id=thread_id, execution_type="architect_phase")
+            tracing_config = settings.tracing_service.get_run_config(metadata)
+
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+                tags=tracing_config.get("tags", []),
+                metadata=tracing_config.get("metadata", {}),
             )
-            final_state = await graph.ainvoke(initial_state, config)
+            with settings.tracing_service.trace_context():
+                final_state = await graph.ainvoke(initial_state, config)
 
             if final_state.get("error"):
                 console.print(f"[red]Architect Phase Failed:[/red] {final_state['error']}")
@@ -247,11 +254,19 @@ class WorkflowService:
             )
 
             thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
+            metadata = TracingMetadata(
+                session_id=thread_id, execution_type="cycle_phase", git_branch=fb
+            )
+            tracing_config = settings.tracing_service.get_run_config(metadata)
+
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+                tags=tracing_config.get("tags", []),
+                metadata=tracing_config.get("metadata", {}),
             )
-            final_state = await graph.ainvoke(state, config)
+            with settings.tracing_service.trace_context():
+                final_state = await graph.ainvoke(state, config)
 
             if final_state.get("error"):
                 console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
@@ -354,14 +369,20 @@ class WorkflowService:
         )
 
         thread_id = f"qa-{project_session_id}"
+        metadata = TracingMetadata(session_id=thread_id, execution_type="qa_phase")
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+
         config = RunnableConfig(
             configurable={"thread_id": thread_id},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            tags=tracing_config.get("tags", []),
+            metadata=tracing_config.get("metadata", {}),
         )
 
         try:
             console.print("[cyan]Running QA Tutorial Generation Graph...[/cyan]")
-            final_state = await graph.ainvoke(initial_state, config)
+            with settings.tracing_service.trace_context():
+                final_state = await graph.ainvoke(initial_state, config)
 
             audit_res = final_state.get("audit_result")
             if audit_res and getattr(audit_res, "is_approved", False):
@@ -514,9 +535,7 @@ class WorkflowService:
                             unresolved_conflicts=[item.model_dump() for item in registry_items]
                         )
 
-                    logger.warning(
-                        "Merge conflicts recorded. Invoking Master Integrator..."
-                    )
+                    logger.warning("Merge conflicts recorded. Invoking Master Integrator...")
 
             # Global Refactoring Loop (CYCLE08)
             from src.nodes.global_refactor import GlobalRefactorNodes

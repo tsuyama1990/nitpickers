@@ -15,12 +15,10 @@ from src.nodes import (
     check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
-    route_coder_critic,
     route_committee,
     route_qa,
     route_uat,
 )
-from src.nodes.coder_critic import CoderCriticNodes
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.sandbox import SandboxRunner
@@ -93,17 +91,11 @@ class CycleNodes(IGraphNodes):
     async def committee_manager_node(self, state: CycleState) -> dict[str, Any]:
         return await self._committee.committee_manager_node(state)
 
-    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
-        return await self._coder_critic.coder_critic_node(state)
-
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         return await self._uat.uat_evaluate_node(state)
 
     async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         return await self._sandbox_evaluator.sandbox_evaluate_node(state)
-
-    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
-        return await self._coder_critic.coder_critic_node(state)
 
     async def global_refactor_node(self, state: CycleState) -> dict[str, Any]:
         return await self._global_refactor.global_refactor_node(state)
@@ -120,14 +112,8 @@ class CycleNodes(IGraphNodes):
     def route_committee(self, state: CycleState) -> str:
         return route_committee(state)
 
-    def route_coder_critic(self, state: CycleState) -> str:
-        return route_coder_critic(state)
-
     def route_uat(self, state: CycleState) -> str:
         return route_uat(state)
-
-    def route_coder_critic(self, state: CycleState) -> str:
-        return route_coder_critic(state)
 
     async def qa_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._qa.qa_session_node(state)
@@ -137,3 +123,6 @@ class CycleNodes(IGraphNodes):
 
     def route_qa(self, state: CycleState) -> str:
         return route_qa(state)
+
+    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]: return {}
+    def route_coder_critic(self, state: CycleState) -> str: return ""

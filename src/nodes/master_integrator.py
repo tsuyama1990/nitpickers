@@ -26,6 +26,7 @@ class MasterIntegratorNodes:
             pass
         except Exception as e:
             from src.utils import logger
+
             logger.error(f"Master Integrator node encountered an error: {e}")
         else:
             # the run_integration_loop updates unresolved_conflicts in place,

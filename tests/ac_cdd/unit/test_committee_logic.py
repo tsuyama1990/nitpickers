@@ -162,4 +162,4 @@ async def test_committee_pipeline_handover() -> None:
         # Verify check_coder_outcome returns "completed" for final_fix
         state_with_final_fix = CycleState(cycle_id="test", final_fix=True)
         outcome = nodes.check_coder_outcome(state_with_final_fix)
-        assert outcome == "sandbox_evaluate" or outcome == FlowStatus.COMPLETED.value or outcome == "uat_evaluate"
+        assert outcome in {"sandbox_evaluate", FlowStatus.COMPLETED.value, "uat_evaluate"}
