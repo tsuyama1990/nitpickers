@@ -71,8 +71,9 @@ class SandboxRunner:
                     raise RuntimeError(msg) from e
 
         if self.sandbox:
+            safe_cwd = shlex.quote(self.cwd)
             self.sandbox.commands.run(
-                f"mkdir -p {self.cwd} || true", timeout=settings.sandbox.timeout
+                f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout
             )
             await self._sync_to_sandbox(self.sandbox)
 
