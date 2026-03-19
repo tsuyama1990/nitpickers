@@ -1,9 +1,20 @@
+import asyncio
+import logging
+import os
 import sys
-from unittest.mock import MagicMock
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+# Configure a simple logger for tests to avoid T201 (print)
+logging.basicConfig(level=logging.INFO)
+test_logger = logging.getLogger("test_permission_manager")
+
 
 class MockModule(MagicMock):
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return MagicMock()
+
 
 # Mock only necessary parts if possible, but the app seems tightly coupled
 sys.modules["dotenv"] = MockModule()
@@ -19,13 +30,12 @@ sys.modules["e2b_code_interpreter"] = MockModule()
 sys.modules["google"] = MockModule()
 sys.modules["google.auth"] = MockModule()
 
-import os
-import asyncio
-from pathlib import Path
-from unittest.mock import patch
-from src.services.project_setup.permission_manager import PermissionManager
+# Now we can import the manager
+from src.services.project_setup.permission_manager import PermissionManager  # noqa: E402
 
-async def test_fix_permissions_traverses_all_files():
+
+async def test_fix_permissions_traverses_all_files() -> None:
+    """Test that all files and directories are traversed and chmodded."""
     # Mock data
     mock_root = MagicMock(spec=Path)
     mock_root.exists.return_value = True
@@ -37,15 +47,17 @@ async def test_fix_permissions_traverses_all_files():
     mock_dir1 = MagicMock(spec=Path)
     mock_dir1.is_dir.return_value = True
 
-    def rglob_side_effect(pattern):
+    def rglob_side_effect(_pattern: str) -> Any:
         return iter([mock_file1, mock_dir1])
+
     mock_root.rglob.side_effect = rglob_side_effect
 
     manager = PermissionManager()
 
-    with patch("os.chown") as mock_chown, \
-         patch("src.services.project_setup.permission_manager.logger") as mock_logger:
-
+    with (
+        patch("os.chown"),
+        patch("src.services.project_setup.permission_manager.logger"),
+    ):
         await manager.fix_permissions(mock_root)
 
         assert mock_root.rglob.call_count == 2
@@ -59,22 +71,27 @@ async def test_fix_permissions_traverses_all_files():
         assert mock_dir1.chmod.call_count == 1
         mock_dir1.chmod.assert_called_with(0o777)
 
-async def test_fix_permissions_handles_chown():
+
+async def test_fix_permissions_handles_chown() -> None:
+    """Test that chown is called when HOST_UID and HOST_GID are set."""
     mock_root = MagicMock(spec=Path)
     mock_root.exists.return_value = True
     mock_root.is_dir.return_value = True
     mock_root.rglob.return_value = iter([])
 
-    with patch.dict(os.environ, {"HOST_UID": "1000", "HOST_GID": "1000"}), \
-         patch("os.chown") as mock_chown, \
-         patch("src.services.project_setup.permission_manager.logger"):
-
+    with (
+        patch.dict(os.environ, {"HOST_UID": "1000", "HOST_GID": "1000"}),
+        patch("os.chown") as mock_chown,
+        patch("src.services.project_setup.permission_manager.logger"),
+    ):
         manager = PermissionManager()
         await manager.fix_permissions(mock_root)
 
         mock_chown.assert_any_call(mock_root, 1000, 1000)
 
-async def test_fix_permissions_ignores_non_existent_path():
+
+async def test_fix_permissions_ignores_non_existent_path() -> None:
+    """Test that non-existent paths are ignored."""
     mock_root = MagicMock(spec=Path)
     mock_root.exists.return_value = False
 
@@ -83,18 +100,20 @@ async def test_fix_permissions_ignores_non_existent_path():
         await manager.fix_permissions(mock_root)
         mock_root.chmod.assert_not_called()
 
+
 if __name__ == "__main__":
-    print("Running tests...")
-    async def run_all():
+    test_logger.info("Running tests...")
+
+    async def run_all() -> None:
         try:
             await test_fix_permissions_traverses_all_files()
-            print("test_fix_permissions_traverses_all_files: PASSED")
+            test_logger.info("test_fix_permissions_traverses_all_files: PASSED")
             await test_fix_permissions_handles_chown()
-            print("test_fix_permissions_handles_chown: PASSED")
+            test_logger.info("test_fix_permissions_handles_chown: PASSED")
             await test_fix_permissions_ignores_non_existent_path()
-            print("test_fix_permissions_ignores_non_existent_path: PASSED")
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            exit(1)
+            test_logger.info("test_fix_permissions_ignores_non_existent_path: PASSED")
+        except Exception:
+            test_logger.exception("Tests FAILED")
+            sys.exit(1)
+
     asyncio.run(run_all())
