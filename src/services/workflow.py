@@ -139,9 +139,9 @@ class WorkflowService:
             # Pydantic schema enforcing invariants
             import os
             ObservabilityConfig(
-                langchain_tracing_v2=os.environ.get("LANGCHAIN_TRACING_V2", ""),
-                langchain_api_key=os.environ.get("LANGCHAIN_API_KEY", ""),
-                langchain_project=os.environ.get("LANGCHAIN_PROJECT", ""),
+                langchain_tracing_v2=os.getenv("LANGCHAIN_TRACING_V2", ""),
+                langchain_api_key=os.getenv("LANGCHAIN_API_KEY", ""),
+                langchain_project=os.getenv("LANGCHAIN_PROJECT", ""),
             )
         except Exception as e:
             console.print("[bold red]Observability check failed![/bold red]")
@@ -165,7 +165,7 @@ class WorkflowService:
                 content = spec_path.read_text(encoding="utf-8")
                 # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
                 for secret in settings.known_implicit_secrets:
-                    if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.environ.get(secret):
+                    if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.getenv(secret):
                         console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
                         console.print(
                             f"[yellow]The specification file references '{secret}', "

@@ -49,7 +49,7 @@ async def test_missing_api_key_fallback() -> None:
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
         patch("logging.warning") as mock_logger,
     ):
-        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", test_mode=True)
+        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", OPENROUTER_API_KEY="dummy", test_mode=True)
         assert settings.tracing.tracing_enabled is False
         assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
 

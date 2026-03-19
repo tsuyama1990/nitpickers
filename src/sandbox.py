@@ -15,8 +15,8 @@ class SandboxRunner:
     """
 
     def __init__(self, sandbox_id: str | None = None, cwd: str | None = None) -> None:
-        self.api_key = settings.E2B_API_KEY or os.getenv("E2B_API_KEY")
-        if not self.api_key:
+        self.api_key = settings.E2B_API_KEY
+        if self.api_key is None:
             msg = "E2B_API_KEY environment variable is not set"
             raise ValueError(msg)
 
@@ -76,9 +76,8 @@ class SandboxRunner:
                     raise RuntimeError(msg) from e
 
         if self.sandbox:
-            safe_cwd = shlex.quote(self.cwd)
             self.sandbox.commands.run(
-                f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout
+                f"mkdir -p {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
             )
             await self._sync_to_sandbox(self.sandbox)
 
@@ -93,8 +92,9 @@ class SandboxRunner:
 
                 self.sandbox.commands.run(safe_install_cmd, timeout=settings.sandbox.timeout)
 
-            safe_cwd = shlex.quote(self.cwd)
-            self.sandbox.commands.run(f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout)
+            self.sandbox.commands.run(
+                f"mkdir -p {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
+            )
             await self._sync_to_sandbox(self.sandbox)
 
     async def run_command(
@@ -208,10 +208,8 @@ class SandboxRunner:
 
         import shlex
 
-        safe_remote_tar_path = shlex.quote(remote_tar_path)
-        safe_cwd = shlex.quote(self.cwd)
         sandbox.commands.run(
-            f"tar -xzf {safe_remote_tar_path} -C {safe_cwd}", timeout=settings.sandbox.timeout
+            f"tar -xzf {shlex.quote(remote_tar_path)} -C {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
         )
         logger.info("Synced files to sandbox via tarball.")
         self._last_sync_hash = current_hash
