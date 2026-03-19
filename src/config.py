@@ -151,6 +151,7 @@ class SandboxConfig(BaseModel):
     max_retries: int = 3
     command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
+    sandbox_env_cleanup: list[str] = ["UV_PROJECT_ENVIRONMENT"]
     files_to_sync: list[str] = [
         "pyproject.toml",
         "uv.lock",
@@ -271,21 +272,21 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        import os
         missing = []
         if not getattr(self, "test_mode", False):
-            if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
+            if not self.JULES_API_KEY:
                 missing.append("JULES_API_KEY")
-            if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
+            if not self.E2B_API_KEY:
                 missing.append("E2B_API_KEY")
-        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+        if missing and not os.environ.get("PYTEST_CURRENT_TEST"):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
             msg = f"Missing required environment variables: {', '.join(missing)}"
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration
-        env_enabled = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-        tracing_enabled = self.tracing.tracing_enabled or env_enabled
-        api_key = self.tracing.api_key or os.environ.get("LANGCHAIN_API_KEY")
+        tracing_enabled = self.tracing.tracing_enabled
+        api_key = self.tracing.api_key
 
         if tracing_enabled and not api_key:
             logging.warning(
@@ -297,31 +298,6 @@ class Settings(BaseSettings):
 
         return self
 
-    @model_validator(mode="before")
-    @classmethod
-    def load_legacy_env_vars(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Inject legacy/global env vars if missing from structured data."""
-        smart = os.getenv("SMART_MODEL")
-        fast = os.getenv("FAST_MODEL")
-
-        for key in ["JULES_API_KEY", "OPENROUTER_API_KEY", "E2B_API_KEY"]:
-            if not data.get(key) and os.getenv(key):
-                data[key] = os.getenv(key)
-
-        if smart or fast:
-            data.setdefault("agents", {})
-            if isinstance(data["agents"], dict) and smart:
-                data["agents"].setdefault("auditor_model", smart)
-                data["agents"].setdefault("qa_analyst_model", smart)
-
-            data.setdefault("reviewer", {})
-            if isinstance(data["reviewer"], dict):
-                if smart:
-                    data["reviewer"].setdefault("smart_model", smart)
-                if fast:
-                    data["reviewer"].setdefault("fast_model", fast)
-
-        return data
 
     @property
     def current_session_id(self) -> str:

@@ -15,7 +15,7 @@ class SandboxRunner:
     """
 
     def __init__(self, sandbox_id: str | None = None, cwd: str | None = None) -> None:
-        self.api_key = os.getenv("E2B_API_KEY")
+        self.api_key = settings.E2B_API_KEY or os.getenv("E2B_API_KEY")
         if not self.api_key:
             msg = "E2B_API_KEY environment variable is not set"
             raise ValueError(msg)
@@ -125,9 +125,10 @@ class SandboxRunner:
                 # Docker container (to avoid host-venv path leakage), but /opt/ is
                 # not writable inside E2B, so ruff/mypy fail with "Permission denied".
                 sandbox_env: dict[str, str] = dict(env or {})
-                # Forcefully clear the variable inherited from the Docker container
-                if "UV_PROJECT_ENVIRONMENT" in sandbox_env:
-                    sandbox_env.pop("UV_PROJECT_ENVIRONMENT")
+                # Forcefully clear the variables inherited from the Docker container
+                for env_var in settings.sandbox.sandbox_env_cleanup:
+                    if env_var in sandbox_env:
+                        sandbox_env.pop(env_var)
 
                 exec_result = sandbox.commands.run(
                     command_str, cwd=self.cwd, envs=sandbox_env, timeout=settings.sandbox.timeout
