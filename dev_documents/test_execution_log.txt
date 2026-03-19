@@ -4,10 +4,129 @@ rootdir: /app
 configfile: pyproject.toml
 plugins: langsmith-0.7.20, cov-7.0.0, asyncio-1.3.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 3 items
+collected 6 items
 
-tests/uat/verify_cycle_01_domain_logic.py ...                            [100%]
+tests/unit/test_uat_models.py ...                                        [ 50%]
+tests/uat/verify_cycle_01_domain_logic.py FF.                            [100%]
 
+=================================== FAILURES ===================================
+____________________________ test_scenario_01_new_1 ____________________________
+
+self = Cell(_name='test_scenario_01_new_1', _cell=CellImpl(key=-3272083421563065534, code='import pytest\nfrom pydantic impor...st.app.InternalApp object at 0x7f45c90c2db0>, _pytest_reserved={'mo'}, _test_allowed=True, _expected_signature=('mo',))
+
+    @property
+    def _is_coroutine(self) -> bool:
+        """Whether this cell is a coroutine function.
+
+        If True, then this cell's `run` method returns an awaitable.
+        """
+        if hasattr(self, "_is_coro_cached"):
+            return self._is_coro_cached
+        assert self._app is not None
+>       self._is_coro_cached: bool = self._app.runner.is_coroutine(
+                                     ^^^^^^^^^^^^^^^^
+            self._cell.cell_id
+        )
+
+.venv/lib/python3.12/site-packages/marimo/_ast/cell.py:484:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/marimo/_ast/app.py:985: in runner
+    self._app._maybe_initialize()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <marimo._ast.app.App object at 0x7f45c9904980>
+
+    def _maybe_initialize(self) -> None:
+        if self._unparsable:
+            errors: list[str] = []
+            for code in self._unparsable_code:
+                try:
+                    ast_parse(dedent(code))
+                except SyntaxError as e:
+                    error_line = e.text
+                    error_marker: str = (
+                        " " * (e.offset - 1) + "^"
+                        if e.offset is not None
+                        else ""
+                    )
+                    err = f"{error_line}{error_marker}\n{e.msg}"
+                    errors.append(err)
+            syntax_errors = "\n-----\n".join(errors)
+
+            raise UnparsableError(
+                f"The notebook '{self._filename}' has cells with syntax errors, "
+                + f"so it cannot be initialized:\n {syntax_errors}"
+            ) from None
+
+        if self._initialized:
+            return
+
+        # Add cells to graph
+        for cell_id, cell in self._cell_manager.valid_cells():
+            self._graph.register_cell(cell_id, cell._cell)
+        self._defs = self._graph.definitions.keys()
+
+        try:
+            # Check for cycles, multiply defined names, and deleted nonlocal
+            if self._graph.cycles:
+                raise CycleError(
+                    "This app can't be run because it has cycles."
+                )
+            multiply_defined_names = self._graph.get_multiply_defined()
+            if multiply_defined_names:
+>               raise MultipleDefinitionError(
+                    "This app can't be run because it has multiple "
+                    f"definitions of the name {multiply_defined_names[0]}"
+                )
+E               marimo._ast.errors.MultipleDefinitionError: This app can't be run because it has multiple definitions of the name CycleState
+
+.venv/lib/python3.12/site-packages/marimo/_ast/app.py:601: MultipleDefinitionError
+____________________________ test_scenario_01_new_2 ____________________________
+
+self = Cell(_name='test_scenario_01_new_2', _cell=CellImpl(key=-1262012678954075674, code='# SCENARIO-01-2: UAT Artifacts Ins... at 0x7f45c91de8d0>, _pytest_reserved={'mo', 'UATResult'}, _test_allowed=True, _expected_signature=('UATResult', 'mo'))
+args = (), kwargs = {}
+TopLevelExtraction = <class 'marimo._ast.toplevel.TopLevelExtraction'>
+allowed_refs = {'ArithmeticError', 'AssertionError', 'AttributeError', 'BaseException', 'BaseExceptionGroup', 'BlockingIOError', ...}
+arg_names = ['Any', 'UATResult'], argc = 2, call_argc = 2, unexpected = set()
+is_pytest = True
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        from marimo._ast.toplevel import TopLevelExtraction
+
+        assert self._app is not None
+        # Definitions on a module level are not part of the signature, and as
+        # such, should not be provided with the call.
+
+        # NB. TopLevelExtraction assumes that all cells that can be exposed will
+        # be, but signature provides context for what is actually scoped.
+        allowed_refs = TopLevelExtraction.from_app(self._app).allowed_refs
+        allowed_refs -= set(self._expected_signature or ())
+
+        arg_names = sorted((self._cell.refs - allowed_refs) - self._cell.defs)
+        argc = len(arg_names)
+
+        call_args = {name: arg for name, arg in zip(arg_names, args)}
+        call_args.update(kwargs)
+        call_argc = len(call_args.keys()) + len(self._pytest_reserved)
+
+        if unexpected := call_args.keys() - arg_names:
+            raise TypeError(
+                f"{self.name}() got an unexpected argument(s) '{unexpected}'"
+            )
+
+        is_pytest = (
+            "PYTEST_CURRENT_TEST" in os.environ
+            or "MARIMO_PYTEST_WASM" in os.environ
+        )
+        # Capture pytest case, where arguments don't match the references.
+        if self._pytest_reserved - set(arg_names):
+>           raise TypeError(
+                "A mismatch in expected argument names likely means you should "
+                "resave the notebook in the marimo editor."
+            )
+E           TypeError: A mismatch in expected argument names likely means you should resave the notebook in the marimo editor.
+
+.venv/lib/python3.12/site-packages/marimo/_ast/cell.py:696: TypeError
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.13-final-0 _______________
 
@@ -31,7 +150,7 @@ src/domain_models/refactor.py               6      0   100%
 src/domain_models/review.py                28      0   100%
 src/domain_models/spec.py                  26      0   100%
 src/domain_models/tracing.py               17      4    76%   25-29
-src/domain_models/uat_models.py            15      2    87%   15-16
+src/domain_models/uat_models.py            15      0   100%
 src/enums.py                               32      0   100%
 src/error_messages.py                       7      7     0%   4-18
 src/graph.py                               59     59     0%   1-166
@@ -89,7 +208,10 @@ src/tools.py                               21     21     0%   1-48
 src/utils.py                               72     72     0%   1-160
 src/validators.py                          41     41     0%   3-86
 ---------------------------------------------------------------------
-TOTAL                                    4300   3837    11%
-============================== 3 passed in 2.42s ===============================
+TOTAL                                    4300   3835    11%
+=========================== short test summary info ============================
+FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_1 - ma...
+FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_2 - Ty...
+========================= 2 failed, 4 passed in 2.71s ==========================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

@@ -92,7 +92,7 @@ class CycleState(BaseModel):
 
     # Architect Config
     planned_cycle_count: int | None = Field(
-        default=None, description="Planned cycle count from configuration"
+        default=None, ge=1, description="Planned cycle count from configuration"
     )
     requested_cycle_count: int | None = Field(
         default=None, description="User-requested cycle count from CLI"

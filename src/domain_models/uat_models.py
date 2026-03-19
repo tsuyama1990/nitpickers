@@ -16,4 +16,4 @@ class UATResult(BaseModel):
             raise ValueError(msg)
         return v
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(strict=True, extra="forbid")

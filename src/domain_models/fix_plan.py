@@ -6,10 +6,10 @@ class FileModification(BaseModel):
     explanation: str = Field(...)
     diff_block: str = Field(...)
 
-    model_config = ConfigDict(strict=True)
+    model_config = ConfigDict(strict=True, extra="forbid")
 
 
 class FixPlan(BaseModel):
     modifications: list[FileModification] = Field(...)
 
-    model_config = ConfigDict(strict=True)
+    model_config = ConfigDict(strict=True, extra="forbid")

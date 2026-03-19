@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -15,8 +17,9 @@ def test_fix_plan_validation() -> None:
     assert plan.modifications[0].filepath == "foo.py"
 
     # Missing fields should raise ValidationError
+    payload: Any = {"filepath": "foo.py", "explanation": "fix bug"}
     with pytest.raises(ValidationError) as exc:
-        FixPlan(modifications=[{"filepath": "foo.py", "explanation": "fix bug"}])  # type: ignore[list-item]
+        FixPlan(modifications=[payload])
     assert "diff_block" in str(exc.value)
 
 

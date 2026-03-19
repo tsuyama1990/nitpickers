@@ -16,7 +16,7 @@ def setup_imports() -> tuple[Any, ...]:
 @app.cell
 def setup_models() -> tuple[Any, ...]:
     from src.domain_models import ConflictRegistryItem, E2BExecutionResult, UATResult
-    from src.state import IntegrationState
+    from src.state import CycleState, IntegrationState
 
     return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState, UATResult
 
@@ -79,7 +79,7 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
 
 
 @app.cell
-def test_scenario_01_new_1() -> None:
+def test_scenario_01_new_1(mo: Any) -> tuple[Any, ...]:
     import pytest
     from pydantic import ValidationError
 
@@ -88,15 +88,18 @@ def test_scenario_01_new_1() -> None:
     # SCENARIO-01-1: The stateless Auditor generates a malformed JSON response
     # Expectation: System immediately raises a ValidationError preventing bad data
     malformed_payload = {"modifications": [{"filepath": "src/app.py", "explanation": "fix bug"}]}
+    payload: Any = malformed_payload
 
     with pytest.raises(ValidationError) as exc:
-        FixPlan(**malformed_payload)  # type: ignore[arg-type]
+        FixPlan(**payload)
 
     assert "diff_block" in str(exc.value)
 
+    return (exc,)
+
 
 @app.cell
-def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, str]:  # noqa: N803
+def test_scenario_01_new_2(UATResult: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
     # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
     # Expectation: Mock paths are parsed correctly and serialization preserves structure
     valid_payload = {
@@ -106,7 +109,8 @@ def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, str]:  # noqa: N803
         "dom_trace_path": "tests/uat/artifacts/trace.txt",
     }
 
-    uat_result = UATResult(**valid_payload)
+    payload_uat: Any = valid_payload
+    uat_result = UATResult(**payload_uat)
     assert uat_result.exit_code == 1
     assert uat_result.screenshot_path == "tests/uat/artifacts/screenshot.png"
 
