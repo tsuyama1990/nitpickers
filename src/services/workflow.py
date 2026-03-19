@@ -515,7 +515,7 @@ class WorkflowService:
                         )
 
                     logger.warning(
-                        f"Merge conflicts recorded. Left {len(registry_items)} conflicted files on {integration_branch}."
+                        "Merge conflicts recorded. Invoking Master Integrator..."
                     )
 
             # Global Refactoring Loop (CYCLE08)
