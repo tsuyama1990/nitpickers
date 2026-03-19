@@ -5,8 +5,7 @@ import pytest
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
-from src.domain_models.tracing import LangSmithConfig, TracingMetadata
-from src.services.tracing import TracingService
+from src.domain_models.tracing import TracingMetadata
 
 
 def dummy_node(state: dict) -> dict:
@@ -43,18 +42,16 @@ async def test_graph_execution_with_context() -> None:
 
 @pytest.mark.asyncio
 async def test_missing_api_key_fallback() -> None:
-    config = LangSmithConfig(tracing_enabled=True, api_key=None)
-    service = TracingService(config)
 
-    graph = create_mock_graph()
+    from src.config import Settings
 
     with (
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
-        patch("src.services.tracing.logger.warning") as mock_logger,
+        patch("logging.warning") as mock_logger,
     ):
-        with service.trace_context("test_project"):
-            final_state = await graph.ainvoke({"status": "start"})
-            assert final_state["status"] == "success"
+        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", test_mode=True)
+        assert settings.tracing.tracing_enabled is False
+        assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
 
         mock_logger.assert_called_once()
         assert "LangSmith tracing enabled but no API key provided" in mock_logger.call_args[0][0]

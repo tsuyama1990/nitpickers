@@ -27,6 +27,7 @@ class TracingMetadata(BaseModel):
             tags.append(f"branch:{self.git_branch}")
 
         return {
+            "run_name": f"Workflow_{self.execution_type.capitalize()}",
             "tags": tags,
             "metadata": {
                 "session_id": self.session_id,

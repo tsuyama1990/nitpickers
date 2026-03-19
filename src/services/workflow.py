@@ -61,11 +61,9 @@ class WorkflowService:
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                tags=tracing_config.get("tags", []),
-                metadata=tracing_config.get("metadata", {}),
+                **tracing_config,  # type: ignore[typeddict-item]
             )
-            with settings.tracing_service.trace_context():
-                final_state = await graph.ainvoke(initial_state, config)
+            final_state = await graph.ainvoke(initial_state, config)
 
             if final_state.get("error"):
                 console.print(f"[red]Architect Phase Failed:[/red] {final_state['error']}")
@@ -262,11 +260,9 @@ class WorkflowService:
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                tags=tracing_config.get("tags", []),
-                metadata=tracing_config.get("metadata", {}),
+                **tracing_config,  # type: ignore[typeddict-item]
             )
-            with settings.tracing_service.trace_context():
-                final_state = await graph.ainvoke(state, config)
+            final_state = await graph.ainvoke(state, config)
 
             if final_state.get("error"):
                 console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
@@ -375,14 +371,12 @@ class WorkflowService:
         config = RunnableConfig(
             configurable={"thread_id": thread_id},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-            tags=tracing_config.get("tags", []),
-            metadata=tracing_config.get("metadata", {}),
+            **tracing_config,  # type: ignore[typeddict-item]
         )
 
         try:
             console.print("[cyan]Running QA Tutorial Generation Graph...[/cyan]")
-            with settings.tracing_service.trace_context():
-                final_state = await graph.ainvoke(initial_state, config)
+            final_state = await graph.ainvoke(initial_state, config)
 
             audit_res = final_state.get("audit_result")
             if audit_res and getattr(audit_res, "is_approved", False):

@@ -30,6 +30,9 @@ from .jules.context_builder import JulesContextBuilder
 from .jules.git_context import JulesGitContext
 from .jules.inquiry_handler import JulesInquiryHandler
 
+litellm.success_callback = ["langsmith"]
+litellm.failure_callback = ["langsmith"]
+
 console = Console()
 
 
@@ -245,12 +248,10 @@ class JulesClient:
         config = RunnableConfig(
             configurable={"thread_id": f"jules-{session_name}"},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-            tags=tracing_config.get("tags", []),
-            metadata=tracing_config.get("metadata", {}),
+            **tracing_config,  # type: ignore[typeddict-item]
         )
 
-        with settings.tracing_service.trace_context():
-            final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
 
         # Handle final state
         # LangGraph may return dict or object
@@ -621,6 +622,7 @@ class JulesClient:
                 model=model,
                 messages=messages,
                 temperature=0.0,
+                metadata={"tags": ["master_integrator"], "session_id": session_id},
             )
         except Exception as e:
             logger.error(f"Failed to communicate with LLM for Master Integrator: {e}")

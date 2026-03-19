@@ -16,6 +16,7 @@ def test_tracing_metadata_to_langchain_kwargs() -> None:
     kwargs = metadata.to_langchain_kwargs()
 
     assert kwargs == {
+        "run_name": "Workflow_Jules_session",
         "tags": ["jules_session", "branch:feature/branch"],
         "metadata": {"session_id": "session-123", "key": "value"},
     }
@@ -29,7 +30,11 @@ def test_tracing_metadata_no_branch() -> None:
 
     kwargs = metadata.to_langchain_kwargs()
 
-    assert kwargs == {"tags": ["cli_run"], "metadata": {"session_id": "session-123"}}
+    assert kwargs == {
+        "run_name": "Workflow_Cli_run",
+        "tags": ["cli_run"],
+        "metadata": {"session_id": "session-123"},
+    }
 
 
 def test_tracing_service_is_enabled() -> None:

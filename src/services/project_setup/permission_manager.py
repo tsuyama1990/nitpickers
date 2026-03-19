@@ -1,3 +1,4 @@
+import itertools
 import os
 import pwd
 from pathlib import Path
@@ -49,7 +50,7 @@ class PermissionManager:
             try:
                 for path in paths:
                     if path.exists():
-                        for item in [path, *list(path.rglob("*"))]:
+                        for item in itertools.chain([path], path.rglob("*")):
                             try:
                                 os.chown(item, uid, gid)
                             except (PermissionError, OSError) as e:
@@ -61,7 +62,7 @@ class PermissionManager:
         try:
             for path in paths:
                 if path.exists():
-                    for item in [path, *list(path.rglob("*"))]:
+                    for item in itertools.chain([path], path.rglob("*")):
                         try:
                             if item.is_dir():
                                 item.chmod(0o777)

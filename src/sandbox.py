@@ -75,9 +75,17 @@ class SandboxRunner:
                     msg = f"Failed to create E2B Sandbox: {e}"
                     raise RuntimeError(msg) from e
 
-        if not self.sandbox:
-            msg = "Sandbox creation failed."
-            raise RuntimeError(msg)
+        if self.sandbox:
+            safe_cwd = shlex.quote(self.cwd)
+            self.sandbox.commands.run(
+                f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout
+            )
+            await self._sync_to_sandbox(self.sandbox)
+
+            if settings.sandbox.install_cmd:
+                self.sandbox.commands.run(
+                    settings.sandbox.install_cmd, timeout=settings.sandbox.timeout
+                )
 
         safe_cwd = shlex.quote(self.cwd)
         self.sandbox.commands.run(f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout)
