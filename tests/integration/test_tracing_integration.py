@@ -5,8 +5,7 @@ import pytest
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 
-from src.domain_models.tracing import LangSmithConfig, TracingMetadata
-from src.services.tracing import TracingService
+from src.domain_models.tracing import TracingMetadata
 
 
 def dummy_node(state: dict) -> dict:
@@ -43,9 +42,8 @@ async def test_graph_execution_with_context() -> None:
 
 @pytest.mark.asyncio
 async def test_missing_api_key_fallback() -> None:
+
     from src.config import Settings
-    from pydantic import ValidationError
-    import logging
 
     with (
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),

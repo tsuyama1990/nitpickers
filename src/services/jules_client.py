@@ -16,9 +16,6 @@ import google.auth
 import httpx
 import litellm
 from google.auth.transport.requests import Request as GoogleAuthRequest
-
-litellm.success_callback = ["langsmith"]
-litellm.failure_callback = ["langsmith"]
 from rich.console import Console
 
 from src.agents import get_manager_agent
@@ -32,6 +29,9 @@ from .jules.api import JulesApiClient
 from .jules.context_builder import JulesContextBuilder
 from .jules.git_context import JulesGitContext
 from .jules.inquiry_handler import JulesInquiryHandler
+
+litellm.success_callback = ["langsmith"]
+litellm.failure_callback = ["langsmith"]
 
 console = Console()
 
@@ -248,7 +248,7 @@ class JulesClient:
         config = RunnableConfig(
             configurable={"thread_id": f"jules-{session_name}"},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-            **tracing_config
+            **tracing_config,  # type: ignore[typeddict-item]
         )
 
         final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]

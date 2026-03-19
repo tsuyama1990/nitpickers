@@ -61,7 +61,7 @@ class WorkflowService:
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                **tracing_config
+                **tracing_config,  # type: ignore[typeddict-item]
             )
             final_state = await graph.ainvoke(initial_state, config)
 
@@ -260,7 +260,7 @@ class WorkflowService:
             config = RunnableConfig(
                 configurable={"thread_id": thread_id},
                 recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                **tracing_config
+                **tracing_config,  # type: ignore[typeddict-item]
             )
             final_state = await graph.ainvoke(state, config)
 
@@ -371,7 +371,7 @@ class WorkflowService:
         config = RunnableConfig(
             configurable={"thread_id": thread_id},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-            **tracing_config
+            **tracing_config,  # type: ignore[typeddict-item]
         )
 
         try:
