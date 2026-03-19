@@ -1,15 +1,15 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class FileModification(BaseModel):
-    filepath: str
-    explanation: str
-    diff_block: str
+    filepath: str = Field(...)
+    explanation: str = Field(...)
+    diff_block: str = Field(...)
 
     model_config = ConfigDict(strict=True)
 
 
 class FixPlan(BaseModel):
-    modifications: list[FileModification]
+    modifications: list[FileModification] = Field(...)
 
     model_config = ConfigDict(strict=True)

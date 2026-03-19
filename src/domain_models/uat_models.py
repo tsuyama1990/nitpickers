@@ -1,12 +1,12 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UATResult(BaseModel):
-    exit_code: int
-    stderr: str
-    screenshot_path: str | None = None
-    dom_trace_path: str | None = None
-    console_logs: str | None = None
+    exit_code: int = Field(...)
+    stderr: str = Field(...)
+    screenshot_path: str | None = Field(default=None)
+    dom_trace_path: str | None = Field(default=None)
+    console_logs: str | None = Field(default=None)
 
     @field_validator("screenshot_path", "dom_trace_path", "console_logs", mode="before")
     @classmethod

@@ -15,10 +15,10 @@ def setup_imports() -> tuple[Any, ...]:
 
 @app.cell
 def setup_models() -> tuple[Any, ...]:
-    from src.domain_models import ConflictRegistryItem, E2BExecutionResult
-    from src.state import CycleState, IntegrationState
+    from src.domain_models import ConflictRegistryItem, E2BExecutionResult, UATResult
+    from src.state import IntegrationState
 
-    return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState
+    return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState, UATResult
 
 
 @app.cell
@@ -96,9 +96,7 @@ def test_scenario_01_new_1() -> None:
 
 
 @app.cell
-def test_scenario_01_new_2() -> tuple[Any, str]:
-    from src.domain_models import UATResult
-
+def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, str]:  # noqa: N803
     # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
     # Expectation: Mock paths are parsed correctly and serialization preserves structure
     valid_payload = {
@@ -108,22 +106,22 @@ def test_scenario_01_new_2() -> tuple[Any, str]:
         "dom_trace_path": "tests/uat/artifacts/trace.txt",
     }
 
-    result = UATResult(**valid_payload)  # type: ignore[arg-type]
-    assert result.exit_code == 1
-    assert result.screenshot_path == "tests/uat/artifacts/screenshot.png"
+    uat_result = UATResult(**valid_payload)
+    assert uat_result.exit_code == 1
+    assert uat_result.screenshot_path == "tests/uat/artifacts/screenshot.png"
 
-    serialized = result.model_dump_json()
-    assert "screenshot.png" in serialized
+    serialized_uat = uat_result.model_dump_json()
+    assert "screenshot.png" in serialized_uat
 
-    return result, serialized
+    return uat_result, serialized_uat
 
 
 @app.cell
 def test_scenario_01_new_3() -> tuple[Any]:
-    from src.state import CycleState
-
     # SCENARIO-01-3: CycleState Backward Compatibility
     # Expectation: Initializing state without UAT fields works and defaults correctly
+    from src.state import CycleState
+
     legacy_state = CycleState(cycle_id="legacy-cycle")
 
     assert legacy_state.uat_exit_code == 0
