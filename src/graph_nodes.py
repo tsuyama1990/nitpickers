@@ -124,5 +124,8 @@ class CycleNodes(IGraphNodes):
     def route_qa(self, state: CycleState) -> str:
         return route_qa(state)
 
-    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]: return {}
-    def route_coder_critic(self, state: CycleState) -> str: return ""
+    async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return {}
+
+    def route_coder_critic(self, state: CycleState) -> str:
+        return ""
