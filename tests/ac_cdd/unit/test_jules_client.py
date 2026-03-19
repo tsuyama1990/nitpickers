@@ -3,18 +3,22 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.jules_client import JulesClient, JulesTimeoutError
+
+from src.services.jules_client import JulesClient, JulesTimeoutError
 
 
 @pytest.fixture
 def mock_client() -> Generator[JulesClient, None, None]:
     # Use dummy key to pass init
-    with patch.dict("os.environ", {"JULES_API_KEY": "dummy"}):
-        client = JulesClient()
-        client.timeout = 5.0  # Give it plenty of time, we control loop via sleep mock
-        client.poll_interval = 0.1
+    with (
+        patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"),
+        patch("src.services.jules_client.get_manager_agent") as mock_agent,
+    ):
+        mock_auditor = AsyncMock()
+        client = JulesClient(manager_agent=mock_agent, plan_auditor=mock_auditor)
+        client.timeout = 5.0  # type: ignore[assignment]
+        client.poll_interval = 0.1  # type: ignore[assignment]
         client.git = AsyncMock()
-        client.manager_agent = AsyncMock()
         yield client
 
 
@@ -33,7 +37,7 @@ async def test_wait_for_completion_sucess_first_try(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
     """Test finding PR immediately."""
-    mock_client._sleep = AsyncMock()
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Return COMPLETED with PR (official Jules API state - not SUCCEEDED)
     mock_response = MagicMock()
@@ -56,7 +60,7 @@ async def test_wait_for_completion_loop_success(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
     """Test polling loop finds PR after few tries."""
-    mock_client._sleep = AsyncMock()
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Sequence: IN_PROGRESS -> IN_PROGRESS -> COMPLETED
     # NOTE: list_activities also calls GET, we need to handle that or distinguish by URL
@@ -69,7 +73,7 @@ async def test_wait_for_completion_loop_success(
 
         # Session Status
         # We use sleep call count to decide iteration
-        if mock_client._sleep.call_count < expected_calls:
+        if mock_client._sleep.call_count < expected_calls:  # type: ignore[attr-defined]
             return MagicMock(status_code=200, json=lambda: {"state": "IN_PROGRESS"})
 
         return MagicMock(
@@ -90,8 +94,8 @@ async def test_wait_for_completion_loop_success(
 @pytest.mark.asyncio
 async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx: AsyncMock) -> None:
     """Test timeout behaves correctly."""
-    mock_client.timeout = 0.001
-    mock_client._sleep = AsyncMock()
+    mock_client.timeout = 0.001  # type: ignore[assignment]
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Always IN_PROGRESS (never completes → triggers timeout)
     mock_response = MagicMock()
@@ -112,8 +116,8 @@ async def test_interactive_inquiry_handling(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
     """Test handling of Jules inquiry."""
-    mock_client._sleep = AsyncMock()
-    mock_client.manager_agent.run.return_value = MagicMock(output="My Answer")
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
+    mock_client.manager_agent.run.return_value = MagicMock(output="My Answer")  # type: ignore[union-attr]
 
     async def get_side_effect(url: str, **_kwargs: Any) -> MagicMock:
         if "activities" in url:
@@ -153,5 +157,5 @@ async def test_interactive_inquiry_handling(
     result = await mock_client.wait_for_completion("sessions/123")
 
     assert result["pr_url"] == "https://pr"
-    assert mock_client.manager_agent.run.called
+    assert mock_client.manager_agent.run.called  # type: ignore[union-attr]
     assert mock_httpx.post.called

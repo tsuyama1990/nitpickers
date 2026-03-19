@@ -1,9 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ac_cdd_core.enums import FlowStatus
-from ac_cdd_core.services.auditor_usecase import AuditorUseCase
-from ac_cdd_core.state import CycleState
+
+from src.enums import FlowStatus
+from src.services.auditor_usecase import AuditorUseCase
+from src.state import CycleState
 
 
 class TestAuditPolling:

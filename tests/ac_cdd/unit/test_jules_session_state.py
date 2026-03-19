@@ -1,7 +1,8 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from ac_cdd_core.services.jules_client import JulesClient
+
+from src.services.jules_client import JulesClient
 
 
 class TestSessionStateValidation:
@@ -10,7 +11,7 @@ class TestSessionStateValidation:
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
         client = JulesClient()
-        client.api_client._request = MagicMock()
+        client.api_client._request = MagicMock()  # type: ignore
         return client
 
     @pytest.mark.asyncio

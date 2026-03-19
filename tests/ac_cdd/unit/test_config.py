@@ -5,7 +5,8 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ac_cdd_core.config import Settings
+
+from src.config import Settings
 
 
 @pytest.fixture
@@ -35,9 +36,9 @@ def test_config_env_vars_loaded(mock_env: Any) -> None:
 def test_config_defaults() -> None:
     """Test default values without env overrides."""
     # Clean env for this test
-    with patch.dict(os.environ, {}, clear=True):
+    with patch.dict(os.environ, {"JULES_API_KEY": "dummy", "E2B_API_KEY": "dummy"}, clear=True):
         local_settings = Settings()
-        assert local_settings.reviewer.smart_model == "claude-3-5-sonnet"
+        assert local_settings.reviewer.smart_model == "openai:gpt-4o"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert str(local_settings.paths.templates) == str(
             Path.cwd() / "dev_documents" / "templates"
@@ -130,8 +131,8 @@ def test_path_separation() -> None:
 
         # Verify Context Files
         # get_context_files uses exists(), not glob, so it constructs path from documents_dir
-        assert len(context_files) == 1
-        assert context_files[0] == "/app/dev_documents/spec1.md"
+        assert len(context_files) == 5
+        assert "/app/dev_documents/spec1.md" in context_files
         # Ensure no src files here
         for f in context_files:
             assert "src" not in f

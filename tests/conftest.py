@@ -2,6 +2,7 @@ import os
 
 # Set dummy API keys before any tests run, to prevent pydantic-ai from complaining
 # during module import and inspection.
+os.environ["OPENAI_API_KEY"] = "dummy_key_for_test"
 os.environ["ANTHROPIC_API_KEY"] = "dummy_key_for_test"
 os.environ["GEMINI_API_KEY"] = "dummy_key_for_test"
 os.environ["OPENROUTER_API_KEY"] = "dummy_key_for_test"

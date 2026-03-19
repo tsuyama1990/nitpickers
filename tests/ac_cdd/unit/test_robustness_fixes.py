@@ -1,9 +1,10 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from ac_cdd_core.services.git.checkout import GitCheckoutMixin
-from ac_cdd_core.services.jules.git_context import JulesGitContext
-from ac_cdd_core.services.jules_client import JulesClient
+
+from src.services.git.checkout import GitCheckoutMixin
+from src.services.jules.git_context import JulesGitContext
+from src.services.jules_client import JulesClient
 
 
 class TestJulesGitContextRobustness:
@@ -44,7 +45,7 @@ class TestGitCheckoutRobustness:
         """Verifies _auto_commit_if_dirty raises RuntimeError on conflicts."""
         mixin = GitCheckoutMixin()
         mixin.runner = AsyncMock()
-        mixin._run_git = AsyncMock()
+        mixin._run_git = AsyncMock()  # type: ignore[method-assign]
 
         # Simulate 'git status --porcelain' returning conflict
         # UU = both modified (conflict)
@@ -64,7 +65,7 @@ class TestGitCheckoutRobustness:
         """Verifies _auto_commit_if_dirty proceeds if just modified (no conflict)."""
         mixin = GitCheckoutMixin()
         mixin.runner = AsyncMock()
-        mixin._run_git = AsyncMock()
+        mixin._run_git = AsyncMock()  # type: ignore[method-assign]
 
         # simulate modified state
         mixin.runner.run_command = AsyncMock(return_value=(" M file.py", "", 0))

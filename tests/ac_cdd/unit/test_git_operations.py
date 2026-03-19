@@ -3,7 +3,8 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from ac_cdd_core.services.git_ops import GitManager
+
+from src.services.git_ops import GitManager
 
 
 @pytest.fixture
@@ -85,6 +86,36 @@ async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
         )
 
         assert branch == "dev/session-20251230-120000/cycle01"
+
+
+@pytest.mark.asyncio
+async def test_safe_merge_with_conflicts_success(git_manager: GitManager) -> None:
+    """Test safe_merge_with_conflicts on clean merge."""
+    with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
+        mock_run.return_value = ("", "", 0)
+
+        result = await git_manager.safe_merge_with_conflicts("feature-branch")
+
+        assert result is True
+        mock_run.assert_called_once_with(
+            ["git", "merge", "--no-commit", "--no-ff", "feature-branch"],
+            check=False,
+        )
+
+
+@pytest.mark.asyncio
+async def test_safe_merge_with_conflicts_failure(git_manager: GitManager) -> None:
+    """Test safe_merge_with_conflicts on conflicting merge."""
+    with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
+        mock_run.return_value = ("Merge conflict in test.py", "error", 1)
+
+        result = await git_manager.safe_merge_with_conflicts("feature-branch")
+
+        assert result is False
+        mock_run.assert_called_once_with(
+            ["git", "merge", "--no-commit", "--no-ff", "feature-branch"],
+            check=False,
+        )
 
 
 @pytest.mark.asyncio

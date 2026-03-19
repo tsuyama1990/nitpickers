@@ -2,8 +2,9 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from ac_cdd_core.config import Settings
-from ac_cdd_core.service_container import ServiceContainer
+
+from src.config import Settings
+from src.service_container import ServiceContainer
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +32,7 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Any:
         # Fallback if creation fails (e.g. missing required env vars if any)
         real_defaults = MagicMock()
 
-    with patch("ac_cdd_core.config.settings", real_defaults):
+    with patch("src.config.settings", real_defaults):
         yield real_defaults
 
 

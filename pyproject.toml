@@ -24,13 +24,15 @@ dependencies = [
     "typer",
     "rich",
     "mypy>=1.19.0",
+    "pydantic-ai-slim[anthropic]>=1.60.0",
+    "anthropic>=0.86.0",
 ]
 
 [tool.uv]
 environments = ["sys_platform == 'linux'"]
 
 [project.scripts]
-ac-cdd = "ac_cdd_core.cli:app"
+ac-cdd = "src.cli:app"
 
 [dependency-groups]
 dev = [
@@ -109,8 +111,8 @@ ignore = [
     "PT019",  # Fixture without value injection
     "RUF003", # Ambiguous multiplication sign
     "ARG002", # Unused method argument
-    "RUF043", # Pattern metacharacters not escaped in match
-    "RUF059", # Unused unpacked variable
+    # Pattern metacharacters not escaped in match
+    # Unused unpacked variable
     "PLR0913", # Too many arguments in function definition
     "ANN202"  # Missing return type annotation for private functions
 ]
@@ -125,7 +127,7 @@ max-complexity = 10  # Exceeding this prompts function splitting (prevent AI lon
 suppress-dummy-args = true  # Arguments starting with _ do not require type hints
 
 [tool.pytest.ini_options]
-addopts = "--cov=dev_src --cov=src --cov-report=term-missing"
+addopts = "--cov=src --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.mypy]
@@ -133,4 +135,4 @@ strict = true
 ignore_missing_imports = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["dev_src/ac_cdd_core"]
+packages = ["src"]
