@@ -22,19 +22,46 @@ def test_fix_plan_validation() -> None:
         FixPlan(modifications=[payload])
     assert "diff_block" in str(exc.value)
 
+    # Empty list should raise ValidationError
+    with pytest.raises(ValidationError) as exc_empty:
+        FixPlan(modifications=[])
+    assert "List should have at least 1 item" in str(exc_empty.value)
+
 
 def test_uat_result_validation() -> None:
-    # Valid instantiation
-    res = UATResult(
-        exit_code=1, stderr="error", screenshot_path="path.png", dom_trace_path="trace.txt"
-    )
-    assert res.exit_code == 1
-    assert res.screenshot_path == "path.png"
+    import tempfile
+    from pathlib import Path
 
-    # Empty path should raise ValidationError
-    with pytest.raises(ValidationError) as exc:
-        UATResult(exit_code=1, stderr="error", screenshot_path="   ")
-    assert "Path cannot be empty if provided" in str(exc.value)
+    with (
+        tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_img,
+        tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_txt,
+    ):
+        img_path = tmp_img.name
+        txt_path = tmp_txt.name
+
+    try:
+        # Valid instantiation
+        res = UATResult(
+            exit_code=1, stderr="error", screenshot_path=img_path, dom_trace_path=txt_path
+        )
+        assert res.exit_code == 1
+        assert res.screenshot_path == img_path
+
+        # Empty path should raise ValidationError
+        with pytest.raises(ValidationError) as exc:
+            UATResult(exit_code=1, stderr="error", screenshot_path="   ")
+        assert "Path cannot be empty if provided" in str(exc.value)
+
+        # Non-existent path should raise ValidationError
+        with pytest.raises(ValidationError) as exc_exist:
+            UATResult(exit_code=1, stderr="error", screenshot_path="nonexistent.png")
+        assert "File does not exist" in str(exc_exist.value)
+
+    finally:
+        if Path(img_path).exists():
+            Path(img_path).unlink()
+        if Path(txt_path).exists():
+            Path(txt_path).unlink()
 
 
 def test_cycle_state_backward_compatibility() -> None:

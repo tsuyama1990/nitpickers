@@ -12,7 +12,7 @@ tests/uat/verify_cycle_01_domain_logic.py FF.                            [100%]
 =================================== FAILURES ===================================
 ____________________________ test_scenario_01_new_1 ____________________________
 
-self = Cell(_name='test_scenario_01_new_1', _cell=CellImpl(key=-3272083421563065534, code='import pytest\nfrom pydantic impor...st.app.InternalApp object at 0x7f45c90c2db0>, _pytest_reserved={'mo'}, _test_allowed=True, _expected_signature=('mo',))
+self = Cell(_name='test_scenario_01_new_1', _cell=CellImpl(key=-7927821803030634157, code='import pytest\nfrom pydantic impor...dationError', 'FixPlan', 'mo'}, _test_allowed=True, _expected_signature=('FixPlan', 'mo', 'pytest', 'ValidationError'))
 
     @property
     def _is_coroutine(self) -> bool:
@@ -34,7 +34,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     self._app._maybe_initialize()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <marimo._ast.app.App object at 0x7f45c9904980>
+self = <marimo._ast.app.App object at 0x7efc79ccd1c0>
 
     def _maybe_initialize(self) -> None:
         if self._unparsable:
@@ -83,12 +83,12 @@ E               marimo._ast.errors.MultipleDefinitionError: This app can't be ru
 .venv/lib/python3.12/site-packages/marimo/_ast/app.py:601: MultipleDefinitionError
 ____________________________ test_scenario_01_new_2 ____________________________
 
-self = Cell(_name='test_scenario_01_new_2', _cell=CellImpl(key=-1262012678954075674, code='# SCENARIO-01-2: UAT Artifacts Ins... at 0x7f45c91de8d0>, _pytest_reserved={'mo', 'UATResult'}, _test_allowed=True, _expected_signature=('UATResult', 'mo'))
+self = Cell(_name='test_scenario_01_new_2', _cell=CellImpl(key=-2528137945372041337, code='import tempfile\nfrom pathlib impo...Path', 'UATResult', 'tempfile', 'mo'}, _test_allowed=True, _expected_signature=('UATResult', 'mo', 'tempfile', 'Path'))
 args = (), kwargs = {}
 TopLevelExtraction = <class 'marimo._ast.toplevel.TopLevelExtraction'>
 allowed_refs = {'ArithmeticError', 'AssertionError', 'AttributeError', 'BaseException', 'BaseExceptionGroup', 'BlockingIOError', ...}
-arg_names = ['Any', 'UATResult'], argc = 2, call_argc = 2, unexpected = set()
-is_pytest = True
+arg_names = ['Any', 'UATResult', 'mo'], argc = 3, call_argc = 4
+unexpected = set(), is_pytest = True
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         from marimo._ast.toplevel import TopLevelExtraction
@@ -127,6 +127,14 @@ is_pytest = True
 E           TypeError: A mismatch in expected argument names likely means you should resave the notebook in the marimo editor.
 
 .venv/lib/python3.12/site-packages/marimo/_ast/cell.py:696: TypeError
+=============================== warnings summary ===============================
+tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_3
+  /app/.venv/lib/python3.12/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_3 returned <class 'marimo._output.md._md'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.13-final-0 _______________
 
@@ -150,7 +158,7 @@ src/domain_models/refactor.py               6      0   100%
 src/domain_models/review.py                28      0   100%
 src/domain_models/spec.py                  26      0   100%
 src/domain_models/tracing.py               17      4    76%   25-29
-src/domain_models/uat_models.py            15      0   100%
+src/domain_models/uat_models.py            20      0   100%
 src/enums.py                               32      0   100%
 src/error_messages.py                       7      7     0%   4-18
 src/graph.py                               59     59     0%   1-166
@@ -202,16 +210,16 @@ src/services/tracing.py                    12     12     0%   1-21
 src/services/uat_usecase.py                39     39     0%   1-78
 src/services/workflow.py                  369    369     0%   1-673
 src/session_manager.py                     65     65     0%   3-110
-src/state.py                               84      9    89%   105-108, 113-116, 119
+src/state.py                              101     23    77%   105-119, 124-127, 132-135, 138
 src/state_manager.py                       94     94     0%   3-211
 src/tools.py                               21     21     0%   1-48
 src/utils.py                               72     72     0%   1-160
 src/validators.py                          41     41     0%   3-86
 ---------------------------------------------------------------------
-TOTAL                                    4300   3835    11%
+TOTAL                                    4322   3849    11%
 =========================== short test summary info ============================
 FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_1 - ma...
 FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_2 - Ty...
-========================= 2 failed, 4 passed in 2.71s ==========================
+==================== 2 failed, 4 passed, 1 warning in 4.73s ====================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

@@ -79,11 +79,9 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
 
 
 @app.cell
-def test_scenario_01_new_1(mo: Any) -> tuple[Any, ...]:
+def test_scenario_01_new_1(FixPlan: Any, mo: Any, pytest: Any, ValidationError: Any) -> tuple[Any, ...]:  # noqa: N803
     import pytest
     from pydantic import ValidationError
-
-    from src.domain_models import FixPlan
 
     # SCENARIO-01-1: The stateless Auditor generates a malformed JSON response
     # Expectation: System immediately raises a ValidationError preventing bad data
@@ -95,33 +93,58 @@ def test_scenario_01_new_1(mo: Any) -> tuple[Any, ...]:
 
     assert "diff_block" in str(exc.value)
 
-    return (exc,)
+    # test empty list as well
+    with pytest.raises(ValidationError) as exc_empty:
+        FixPlan(modifications=[])
+    assert "List should have at least 1 item" in str(exc_empty.value)
+
+    mo.md("✅ Scenario 01-New-1 Passed: Malformed FixPlan payload rejected.")
+    return exc, exc_empty
 
 
 @app.cell
-def test_scenario_01_new_2(UATResult: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
+def test_scenario_01_new_2(UATResult: Any, mo: Any, tempfile: Any, Path: Any) -> tuple[Any, ...]:  # noqa: N803
+    import tempfile
+    from pathlib import Path
+
     # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
     # Expectation: Mock paths are parsed correctly and serialization preserves structure
-    valid_payload = {
-        "exit_code": 1,
-        "stderr": "test failed",
-        "screenshot_path": "tests/uat/artifacts/screenshot.png",
-        "dom_trace_path": "tests/uat/artifacts/trace.txt",
-    }
+    with (
+        tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_img,
+        tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_txt,
+    ):
+        img_path = tmp_img.name
+        txt_path = tmp_txt.name
 
-    payload_uat: Any = valid_payload
-    uat_result = UATResult(**payload_uat)
-    assert uat_result.exit_code == 1
-    assert uat_result.screenshot_path == "tests/uat/artifacts/screenshot.png"
+    try:
+        valid_payload = {
+            "exit_code": 1,
+            "stderr": "test failed",
+            "screenshot_path": img_path,
+            "dom_trace_path": txt_path,
+        }
 
-    serialized_uat = uat_result.model_dump_json()
-    assert "screenshot.png" in serialized_uat
+        payload_uat: Any = valid_payload
+        uat_result = UATResult(**payload_uat)
+        assert uat_result.exit_code == 1
+        assert uat_result.screenshot_path == img_path
 
-    return uat_result, serialized_uat
+        serialized_uat = uat_result.model_dump_json()
+        assert img_path in serialized_uat
+
+        mo.md("✅ Scenario 01-New-2 Passed: UATResult instantiated properly.")
+        res = (uat_result, serialized_uat)
+    finally:
+        if Path(img_path).exists():
+            Path(img_path).unlink()
+        if Path(txt_path).exists():
+            Path(txt_path).unlink()
+
+    return res
 
 
 @app.cell
-def test_scenario_01_new_3() -> tuple[Any]:
+def test_scenario_01_new_3(mo: Any) -> tuple[Any]:
     # SCENARIO-01-3: CycleState Backward Compatibility
     # Expectation: Initializing state without UAT fields works and defaults correctly
     from src.state import CycleState
@@ -132,6 +155,7 @@ def test_scenario_01_new_3() -> tuple[Any]:
     assert legacy_state.uat_artifacts is None
     assert legacy_state.current_fix_plan is None
 
+    mo.md("✅ Scenario 01-New-3 Passed: Legacy states successfully load.")
     return (legacy_state,)
 
 

@@ -99,6 +99,25 @@ class CycleState(BaseModel):
     )
 
     # Validators
+    @field_validator("sandbox_artifacts", mode="before")
+    @classmethod
+    def validate_artifacts_safe_types(cls, v: dict[str, Any]) -> dict[str, Any]:
+        def validate_type(obj: Any) -> None:
+            if not isinstance(obj, (str, int, float, bool, type(None), list, dict)):
+                msg = f"Artifact contains invalid type: {type(obj)}"
+                raise TypeError(msg)
+            if isinstance(obj, dict):
+                for val in obj.values():
+                    validate_type(val)
+            elif isinstance(obj, list):
+                for item in obj:
+                    validate_type(item)
+
+        if v is not None:
+            for val in v.values():
+                validate_type(val)
+        return v
+
     @field_validator("current_auditor_index")
     @classmethod
     def validate_auditor_index(cls, v: int) -> int:

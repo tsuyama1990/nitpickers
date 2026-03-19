@@ -10,6 +10,6 @@ class FileModification(BaseModel):
 
 
 class FixPlan(BaseModel):
-    modifications: list[FileModification] = Field(...)
+    modifications: list[FileModification] = Field(..., min_length=1)
 
     model_config = ConfigDict(strict=True, extra="forbid")
