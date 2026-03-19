@@ -12,7 +12,7 @@ tests/uat/verify_cycle_01_domain_logic.py FF.                            [100%]
 =================================== FAILURES ===================================
 ____________________________ test_scenario_01_new_1 ____________________________
 
-self = Cell(_name='test_scenario_01_new_1', _cell=CellImpl(key=-7927821803030634157, code='import pytest\nfrom pydantic impor...dationError', 'FixPlan', 'mo'}, _test_allowed=True, _expected_signature=('FixPlan', 'mo', 'pytest', 'ValidationError'))
+self = Cell(_name='test_scenario_01_new_1', _cell=CellImpl(key=3614576474995819023, code='import pytest\nfrom pydantic import...ject at 0x7f8b96ca2b40>, _pytest_reserved={'mo', 'FixPlan'}, _test_allowed=True, _expected_signature=('FixPlan', 'mo'))
 
     @property
     def _is_coroutine(self) -> bool:
@@ -34,7 +34,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
     self._app._maybe_initialize()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <marimo._ast.app.App object at 0x7efc79ccd1c0>
+self = <marimo._ast.app.App object at 0x7f8b9784cfb0>
 
     def _maybe_initialize(self) -> None:
         if self._unparsable:
@@ -78,17 +78,17 @@ self = <marimo._ast.app.App object at 0x7efc79ccd1c0>
                     "This app can't be run because it has multiple "
                     f"definitions of the name {multiply_defined_names[0]}"
                 )
-E               marimo._ast.errors.MultipleDefinitionError: This app can't be run because it has multiple definitions of the name CycleState
+E               marimo._ast.errors.MultipleDefinitionError: This app can't be run because it has multiple definitions of the name FixPlan
 
 .venv/lib/python3.12/site-packages/marimo/_ast/app.py:601: MultipleDefinitionError
 ____________________________ test_scenario_01_new_2 ____________________________
 
-self = Cell(_name='test_scenario_01_new_2', _cell=CellImpl(key=-2528137945372041337, code='import tempfile\nfrom pathlib impo...Path', 'UATResult', 'tempfile', 'mo'}, _test_allowed=True, _expected_signature=('UATResult', 'mo', 'tempfile', 'Path'))
+self = Cell(_name='test_scenario_01_new_2', _cell=CellImpl(key=1667097944511193016, code='# SCENARIO-01-2: UAT Artifacts Inst... at 0x7f8b97295d60>, _pytest_reserved={'mo', 'UATResult'}, _test_allowed=True, _expected_signature=('UATResult', 'mo'))
 args = (), kwargs = {}
 TopLevelExtraction = <class 'marimo._ast.toplevel.TopLevelExtraction'>
 allowed_refs = {'ArithmeticError', 'AssertionError', 'AttributeError', 'BaseException', 'BaseExceptionGroup', 'BlockingIOError', ...}
-arg_names = ['Any', 'UATResult', 'mo'], argc = 3, call_argc = 4
-unexpected = set(), is_pytest = True
+arg_names = ['Any', 'UATResult', 'mo'], argc = 3, call_argc = 2
+unexpected = set(), is_pytest = True, actual_count = 0
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         from marimo._ast.toplevel import TopLevelExtraction
@@ -120,13 +120,72 @@ unexpected = set(), is_pytest = True
         )
         # Capture pytest case, where arguments don't match the references.
         if self._pytest_reserved - set(arg_names):
->           raise TypeError(
+            raise TypeError(
                 "A mismatch in expected argument names likely means you should "
                 "resave the notebook in the marimo editor."
             )
-E           TypeError: A mismatch in expected argument names likely means you should resave the notebook in the marimo editor.
 
-.venv/lib/python3.12/site-packages/marimo/_ast/cell.py:696: TypeError
+        actual_count = len(args) + len(kwargs)
+
+        mismatch_context = ""
+        if self._expected_signature is not None:
+            if tuple(arg_names) != self._expected_signature:
+                mismatch_context = (
+                    f"The signature of function ``{self._name}'': {self._expected_signature} "
+                    f"does not match the expected signature: {tuple(arg_names)}. "
+                    "A mismatch in arguments likely means you should "
+                    "resave the notebook in the marimo editor."
+                )
+
+        # If all the arguments are provided, then run as if it were a normal
+        # function call. An incorrect number of arguments will raise a
+        # TypeError (the same as a normal function call).
+        #
+        # pytest is an exception here, since it enables testing directly on
+        # notebooks, and the graph will be executed if needed.
+        if argc == call_argc and (
+            is_pytest
+            or (
+                all(name in call_args for name in arg_names)
+                and argc == actual_count
+            )
+        ):
+            # Function invoked successfully, but let the user know there is a
+            # mismatch in the signature.
+            if mismatch_context:
+                LOGGER.warning(mismatch_context)
+            # Note, run returns a tuple of (output, defs)-
+            # so stripped defs is required.
+            ret = self.run(**call_args)
+            if isinstance(ret, Awaitable):
+
+                async def await_and_return() -> Any:
+                    output, _ = await ret
+                    return output
+
+                return await_and_return()
+            else:
+                output, _ = ret
+            return output
+
+        if is_pytest:
+            call_str = mismatch_context
+        else:
+            await_str = "await " if self._is_coroutine else ""
+            mismatch_context += " Alternatively; " if mismatch_context else ""
+            call_str = (
+                f"{mismatch_context}Consider calling with `outputs, defs = "
+                f"{await_str}{self.name}.run()`."
+            )
+
+        were = "were" if actual_count != 1 else "was"
+>       raise TypeError(
+            f"{self.name}() takes {argc} positional arguments but "
+            f"{actual_count} {were} given. {call_str}"
+        )
+E       TypeError: test_scenario_01_new_2() takes 3 positional arguments but 0 were given. The signature of function ``test_scenario_01_new_2'': ('UATResult', 'mo') does not match the expected signature: ('Any', 'UATResult', 'mo'). A mismatch in arguments likely means you should resave the notebook in the marimo editor.
+
+.venv/lib/python3.12/site-packages/marimo/_ast/cell.py:755: TypeError
 =============================== warnings summary ===============================
 tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_3
   /app/.venv/lib/python3.12/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_3 returned <class 'marimo._output.md._md'>.
@@ -158,7 +217,7 @@ src/domain_models/refactor.py               6      0   100%
 src/domain_models/review.py                28      0   100%
 src/domain_models/spec.py                  26      0   100%
 src/domain_models/tracing.py               17      4    76%   25-29
-src/domain_models/uat_models.py            20      0   100%
+src/domain_models/uat_models.py            15      0   100%
 src/enums.py                               32      0   100%
 src/error_messages.py                       7      7     0%   4-18
 src/graph.py                               59     59     0%   1-166
@@ -216,10 +275,10 @@ src/tools.py                               21     21     0%   1-48
 src/utils.py                               72     72     0%   1-160
 src/validators.py                          41     41     0%   3-86
 ---------------------------------------------------------------------
-TOTAL                                    4322   3849    11%
+TOTAL                                    4317   3849    11%
 =========================== short test summary info ============================
 FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_1 - ma...
 FAILED tests/uat/verify_cycle_01_domain_logic.py::test_scenario_01_new_2 - Ty...
-==================== 2 failed, 4 passed, 1 warning in 4.73s ====================
+==================== 2 failed, 4 passed, 1 warning in 7.54s ====================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -13,13 +11,9 @@ class UATResult(BaseModel):
     @field_validator("screenshot_path", "dom_trace_path", "console_logs", mode="before")
     @classmethod
     def validate_path_not_empty(cls, v: str | None) -> str | None:
-        if v is not None:
-            if not v.strip():
-                msg = "Path cannot be empty if provided"
-                raise ValueError(msg)
-            if not Path(v).exists():
-                msg = f"File does not exist: {v}"
-                raise ValueError(msg)
+        if v is not None and not v.strip():
+            msg = "Path cannot be empty if provided"
+            raise ValueError(msg)
         return v
 
     model_config = ConfigDict(strict=True, extra="forbid")
