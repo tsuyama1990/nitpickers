@@ -81,6 +81,57 @@ async def test_get_sandbox_reuses_existing() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_sandbox_secure_install_cmd() -> None:
+    """Test that the install_cmd is safely parsed and executed."""
+
+    runner = SandboxRunner()
+
+    # Test valid command
+    with (
+        patch("src.sandbox.settings.sandbox.install_cmd", "pip install --no-cache-dir ruff"),
+        patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create,
+    ):
+        mock_sandbox = mock_create.return_value
+        await runner.get_sandbox()
+
+        # The install command should be the last command run
+        actual_calls = mock_sandbox.commands.run.mock_calls
+        install_call = actual_calls[-1]
+
+        assert install_call.args[0] == "pip install --no-cache-dir ruff"
+
+    # Reset the sandbox instance for the next test
+    runner.sandbox = None
+
+    # Test command with malicious shell injection
+    with (
+        patch("src.sandbox.settings.sandbox.install_cmd", "pip install ruff; echo 'hacked'"),
+        patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create,
+    ):
+        mock_sandbox = mock_create.return_value
+        await runner.get_sandbox()
+
+        # Find the actual install command call among all mock calls (including mkdir and tar)
+        # The install command is the last run call
+        actual_calls = mock_sandbox.commands.run.mock_calls
+        install_call = actual_calls[-1]
+
+        # Verify the command was executed safely with the semicolon escaped
+        assert install_call.args[0] == "pip install 'ruff;' echo hacked"
+
+    # Reset the sandbox instance for the next test
+    runner.sandbox = None
+
+    # Test invalid shlex format (unclosed quote)
+    with (
+        patch("src.sandbox.settings.sandbox.install_cmd", 'pip install "ruff'),
+        patch("src.sandbox.Sandbox.create", return_value=MagicMock()),
+        pytest.raises(ValueError, match="Invalid install_cmd configuration"),
+    ):
+        await runner.get_sandbox()
+
+
+@pytest.mark.asyncio
 async def test_sync_to_sandbox_success() -> None:
     """Test successful sync to sandbox."""
     runner = SandboxRunner()
