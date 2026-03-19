@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.domain_models.tracing import LangSmithConfig
+
 # Load environment variables from .env file
 # Priority: .ac_cdd/.env > .env (root)
 _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
@@ -242,6 +244,13 @@ class Settings(BaseSettings):
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
     ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
+    tracing: LangSmithConfig = Field(default_factory=LangSmithConfig)
+
+    @property
+    def tracing_service(self) -> "Any":
+        from src.services.tracing import TracingService
+
+        return TracingService(self.tracing)
 
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"

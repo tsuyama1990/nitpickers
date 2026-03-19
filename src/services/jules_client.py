@@ -3,6 +3,8 @@ import os
 import sys
 from typing import Any
 
+from src.domain_models.tracing import TracingMetadata
+
 try:
     import select
 except ImportError:
@@ -235,12 +237,20 @@ class JulesClient:
         )
 
         # Run graph
+        metadata = TracingMetadata(
+            session_id=f"jules-{session_name}", execution_type="jules_session"
+        )
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+
         config = RunnableConfig(
             configurable={"thread_id": f"jules-{session_name}"},
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            tags=tracing_config.get("tags", []),
+            metadata=tracing_config.get("metadata", {}),
         )
 
-        final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        with settings.tracing_service.trace_context():
+            final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
 
         # Handle final state
         # LangGraph may return dict or object
@@ -585,7 +595,11 @@ class JulesClient:
         return f"master-integrator-{uuid.uuid4().hex[:8]}"
 
     async def send_message_to_session(
-        self, session_id: str, message: str, message_history: list[dict[str, str]] | None = None, model: str | None = None
+        self,
+        session_id: str,
+        message: str,
+        message_history: list[dict[str, str]] | None = None,
+        model: str | None = None,
     ) -> str:
         """
         Sends a message to the stateful Master Integrator session.
@@ -599,6 +613,7 @@ class JulesClient:
         # Inject default model if none provided without hard-relying strictly on settings globally inside the method
         if not model:
             from src.config import settings
+
             model = settings.reviewer.smart_model
 
         try:

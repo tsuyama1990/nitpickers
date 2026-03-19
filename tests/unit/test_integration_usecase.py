@@ -12,6 +12,7 @@ from src.state import IntegrationState
 def repo_path(tmp_path: Path) -> Path:
     return tmp_path
 
+
 @pytest.fixture
 def mock_jules() -> AsyncMock:
     jules = AsyncMock()
@@ -20,8 +21,10 @@ def mock_jules() -> AsyncMock:
     # To fix the pydantic validation error:
     # MagicMock for sync methods, AsyncMock for async ones.
     from unittest.mock import MagicMock
+
     jules.create_master_integrator_session = MagicMock(return_value="test-session-id")
     return jules
+
 
 @pytest.mark.asyncio
 async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMock) -> None:
@@ -34,7 +37,7 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMoc
         file_path=file_path,
         conflict_markers=["<<<<<<< HEAD", "=======", ">>>>>>> branch"],
         resolution_attempts=0,
-        resolved=False
+        resolved=False,
     )
     state = IntegrationState(unresolved_conflicts=[item])
 
@@ -50,6 +53,7 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: AsyncMoc
     assert new_state.unresolved_conflicts[0].resolution_attempts == 1
     assert full_path.read_text() == "clean_code"
 
+
 @pytest.mark.asyncio
 async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: AsyncMock) -> None:
     # Setup conflict file
@@ -61,7 +65,7 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Async
         file_path=file_path,
         conflict_markers=["<<<<<<< HEAD", "=======", ">>>>>>> branch"],
         resolution_attempts=0,
-        resolved=False
+        resolved=False,
     )
     state = IntegrationState(unresolved_conflicts=[item])
 
@@ -70,7 +74,7 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Async
     # Mock LLM returning bad code on first try, clean code on second
     mock_jules.send_message_to_session.side_effect = [
         "```python\n<<<<<<< HEAD\nbad\n=======\n```",
-        "```python\nclean_code\n```"
+        "```python\nclean_code\n```",
     ]
 
     new_state = await usecase.run_integration_loop(state, repo_path)
@@ -80,8 +84,11 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Async
     assert mock_jules.send_message_to_session.call_count == 2
     assert full_path.read_text() == "clean_code"
 
+
 @pytest.mark.asyncio
-async def test_integration_usecase_max_retries_exceeded(repo_path: Path, mock_jules: AsyncMock) -> None:
+async def test_integration_usecase_max_retries_exceeded(
+    repo_path: Path, mock_jules: AsyncMock
+) -> None:
     # Setup conflict file
     file_path = "fileA.py"
     full_path = repo_path / file_path
@@ -91,7 +98,7 @@ async def test_integration_usecase_max_retries_exceeded(repo_path: Path, mock_ju
         file_path=file_path,
         conflict_markers=["<<<<<<< HEAD", "=======", ">>>>>>> branch"],
         resolution_attempts=0,
-        resolved=False
+        resolved=False,
     )
     state = IntegrationState(unresolved_conflicts=[item])
 

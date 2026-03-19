@@ -110,6 +110,7 @@ class ConflictManager:
         # or fall back to an inline prompt.
         try:
             from src.config import settings
+
             prompt_template = settings.get_prompt_content("MASTER_INTEGRATOR_PROMPT.md")
         except Exception:
             prompt_template = ""

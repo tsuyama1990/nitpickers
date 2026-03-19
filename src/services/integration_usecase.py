@@ -13,7 +13,9 @@ class MaxRetriesExceededError(Exception):
 
 
 class IntegrationUsecase:
-    def __init__(self, jules_client: JulesClient | None = None, max_retries: int | None = None) -> None:
+    def __init__(
+        self, jules_client: JulesClient | None = None, max_retries: int | None = None
+    ) -> None:
         self.jules = jules_client or JulesClient()
         self.conflict_manager = ConflictManager()
         self.file_ops = FilePatcher()
@@ -23,11 +25,14 @@ class IntegrationUsecase:
         else:
             try:
                 from src.config import settings
+
                 self.max_retries = settings.max_audit_retries + 1
             except ImportError:
                 self.max_retries = 3
 
-    async def run_integration_loop(self, state: IntegrationState, repo_path: Path) -> IntegrationState:
+    async def run_integration_loop(
+        self, state: IntegrationState, repo_path: Path
+    ) -> IntegrationState:
         """
         Runs the Master Integrator loop.
         Sends unresolved conflicts sequentially to the stateful Jules session.
@@ -53,7 +58,9 @@ class IntegrationUsecase:
 
         return state
 
-    async def _resolve_single_file(self, session_id: str, item: ConflictRegistryItem, repo_path: Path) -> None:
+    async def _resolve_single_file(
+        self, session_id: str, item: ConflictRegistryItem, repo_path: Path
+    ) -> None:
         max_retries = self.max_retries
         # message history for this file context inside the session.
         # we can just use the global session, but for specific files, we might need a fresh context
@@ -65,10 +72,14 @@ class IntegrationUsecase:
 
         while item.resolution_attempts < max_retries:
             item.resolution_attempts += 1
-            logger.info(f"Resolving {item.file_path} (Attempt {item.resolution_attempts}/{max_retries})")
+            logger.info(
+                f"Resolving {item.file_path} (Attempt {item.resolution_attempts}/{max_retries})"
+            )
 
             # Send to Jules
-            response_code = await self.jules.send_message_to_session(session_id, prompt, message_history)
+            response_code = await self.jules.send_message_to_session(
+                session_id, prompt, message_history
+            )
 
             # Extract code block if any
             clean_code = self._extract_code_block(response_code)
@@ -97,6 +108,7 @@ class IntegrationUsecase:
     def _extract_code_block(self, response: str) -> str:
         """Extracts python/markdown code block if present."""
         import re
+
         match = re.search(r"```(?:\w+\n)?(.*?)```", response, re.DOTALL)
         if match:
             return match.group(1).strip()

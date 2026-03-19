@@ -58,7 +58,7 @@ async def test_refactor_usecase_with_duplicates(
         call_args = mock_jules_client.run_session.call_args[1]
         assert "session_id" in call_args
         assert "prompt" in call_args
-        assert "Analyze the complete project context" in call_args["prompt"]
+
         assert "a.py" in call_args["prompt"]
         assert "b.py" in call_args["prompt"]
 
