@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -40,23 +40,25 @@ def test_observability_config_empty_key() -> None:
 
 @patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_success() -> None:
-    with patch("src.services.workflow.ServiceContainer.default"):
-        with patch("src.config.Settings.validate_api_keys", return_value=None):
-            service = WorkflowService()
-            # Should not raise any exception
-            service.verify_environment_and_observability()
+    with (
+        patch("src.services.workflow.ServiceContainer.default"),
+        patch("src.config.Settings.validate_api_keys", return_value=None),
+    ):
+        service = WorkflowService()
+        # Should not raise any exception
+        service.verify_environment_and_observability()
 
 
 @patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "false", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_failure_tracing() -> None:
-    with patch("src.services.workflow.ServiceContainer.default"):
-        with patch("src.config.Settings.validate_api_keys", return_value=None):
-            service = WorkflowService()
-            with pytest.raises(SystemExit):
-                service.verify_environment_and_observability()
+    with (
+        patch("src.services.workflow.ServiceContainer.default"),
+        patch("src.config.Settings.validate_api_keys", return_value=None),
+    ):
+        service = WorkflowService()
+        with pytest.raises(SystemExit):
+            service.verify_environment_and_observability()
 
-
-from pathlib import Path
 
 @patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_spec_dependency_success(tmp_path: Path) -> None:

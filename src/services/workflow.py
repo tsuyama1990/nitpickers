@@ -164,8 +164,7 @@ class WorkflowService:
             if spec_path.exists():
                 content = spec_path.read_text(encoding="utf-8")
                 # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
-                known_secrets = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY"]
-                for secret in known_secrets:
+                for secret in settings.known_implicit_secrets:
                     if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.environ.get(secret):
                         console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
                         console.print(

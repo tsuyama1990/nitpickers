@@ -228,6 +228,7 @@ class Settings(BaseSettings):
     node_sandbox_evaluate: str = "sandbox_evaluate"
     node_coder_critic: str = "coder_critic"
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
+    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
