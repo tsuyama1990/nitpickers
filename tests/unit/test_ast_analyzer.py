@@ -103,3 +103,25 @@ def test_ast_analyzer_no_duplicates(tmp_path: Path) -> None:
 
     analyzer = ASTAnalyzer(base_dir=tmp_path)
     assert len(analyzer.find_duplicates()) == 0
+
+
+def test_ast_analyzer_parse_error(tmp_path: Path) -> None:
+    """Test AST analyzer gracefully handles files with syntax errors."""
+    file_a = tmp_path / "invalid.py"
+
+    # Missing colon in function definition
+    code = textwrap.dedent("""
+        def broken_function()
+            print("No colon")
+    """)
+
+    file_a.write_text(code)
+
+    analyzer = ASTAnalyzer(base_dir=tmp_path)
+
+    # Test _parse_file directly
+    assert analyzer._parse_file(file_a) is None
+
+    # Test that these methods gracefully handle the unparseable file
+    assert len(analyzer.find_duplicates()) == 0
+    assert len(analyzer.find_complex_functions()) == 0
