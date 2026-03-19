@@ -30,7 +30,6 @@ def setup_models() -> tuple[Any, ...]:
 
 @app.cell
 def scenario_01_01(CycleState: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
-
     # Scenario ID 01-01: Backward Compatible State Initialization
     state = CycleState(cycle_id="legacy-session")
 
@@ -87,7 +86,7 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
 
 
 @app.cell
-def test_scenario_01_new_1(FixPlan: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
+def test_scenario_01_new_1(mo: Any) -> tuple[Any, ...]:
     import pytest
     from pydantic import ValidationError
 
@@ -108,12 +107,13 @@ def test_scenario_01_new_1(FixPlan: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N
         FixPlan(modifications=[])
     assert "List should have at least 1 item" in str(exc_empty.value)
 
-    mo.md("✅ Scenario 01-New-1 Passed: Malformed FixPlan payload rejected.")
     return exc, exc_empty
 
 
 @app.cell
-def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, ...]:  # noqa: N803
+def test_scenario_01_new_2(mo: Any) -> tuple[Any, ...]:
+    from src.domain_models import UATResult
+
     # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
     # Expectation: Mock paths are parsed correctly and serialization preserves structure
 
@@ -136,7 +136,7 @@ def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, ...]:  # noqa: N803
 
 
 @app.cell
-def test_scenario_01_new_3(CycleState: Any, mo: Any) -> tuple[Any]:  # noqa: N803
+def test_scenario_01_new_3(CycleState: Any) -> tuple[Any]:  # noqa: N803
     # SCENARIO-01-3: CycleState Backward Compatibility
     # Expectation: Initializing state without UAT fields works and defaults correctly
 
@@ -146,7 +146,6 @@ def test_scenario_01_new_3(CycleState: Any, mo: Any) -> tuple[Any]:  # noqa: N80
     assert legacy_state.uat_artifacts is None
     assert legacy_state.current_fix_plan is None
 
-    mo.md("✅ Scenario 01-New-3 Passed: Legacy states successfully load.")
     return (legacy_state,)
 
 
