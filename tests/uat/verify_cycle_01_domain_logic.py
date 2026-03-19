@@ -113,7 +113,7 @@ def test_scenario_01_new_1(FixPlan: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N
 
 
 @app.cell
-def test_scenario_01_new_2(UATResult: Any, mo: Any) -> tuple[Any, ...]:  # noqa: N803
+def test_scenario_01_new_2(UATResult: Any) -> tuple[Any, ...]:  # noqa: N803
     # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
     # Expectation: Mock paths are parsed correctly and serialization preserves structure
 
@@ -131,8 +131,6 @@ def test_scenario_01_new_2(UATResult: Any, mo: Any) -> tuple[Any, ...]:  # noqa:
 
     serialized_uat = uat_result.model_dump_json()
     assert "screenshot.png" in serialized_uat
-
-    mo.md("✅ Scenario 01-New-2 Passed: UATResult instantiated properly.")
 
     return uat_result, serialized_uat
 
