@@ -9,6 +9,7 @@ from rich.panel import Panel
 
 from src.config import settings
 from src.domain_models import CycleManifest
+from src.domain_models.observability_config import ObservabilityConfig
 from src.domain_models.tracing import TracingMetadata
 from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
@@ -126,6 +127,60 @@ class WorkflowService:
             await self._run_single_cycle(cycle_id, resume, auto, start_iter, project_session_id)
         finally:
             await self.builder.cleanup()
+
+    def verify_environment_and_observability(self) -> None:
+        """
+        Validates observability parameters and checks explicitly/implicitly required
+        dependencies based on environment variables and the local configuration.
+        Implements the Phase 0 Gatekeeper pattern.
+        """
+        console.rule("[bold red]Phase 0: Environment & Observability Verification[/bold red]")
+        try:
+            # Pydantic schema enforcing invariants
+            import os
+            ObservabilityConfig(
+                langchain_tracing_v2=os.environ.get("LANGCHAIN_TRACING_V2", ""),
+                langchain_api_key=os.environ.get("LANGCHAIN_API_KEY", ""),
+                langchain_project=os.environ.get("LANGCHAIN_PROJECT", ""),
+            )
+        except Exception as e:
+            console.print("[bold red]Observability check failed![/bold red]")
+            console.print(f"[red]{e!s}[/red]")
+            console.print(
+                "[yellow]Please configure LANGCHAIN_TRACING_V2=true, LANGCHAIN_API_KEY, "
+                "and LANGCHAIN_PROJECT in your .env file.[/yellow]"
+            )
+            import sys
+            sys.exit(1)
+
+        # Implicit dependency scan via SPEC documents
+        try:
+            import re
+            docs_dir = settings.paths.documents_dir
+            if not docs_dir.exists():
+                docs_dir = Path.cwd() / "dev_documents"
+
+            spec_path = docs_dir / "system_prompts" / "SPEC.md"
+            if spec_path.exists():
+                content = spec_path.read_text(encoding="utf-8")
+                # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
+                known_secrets = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY"]
+                for secret in known_secrets:
+                    if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.environ.get(secret):
+                        console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
+                        console.print(
+                            f"[yellow]The specification file references '{secret}', "
+                            f"but it was not found in the environment. Please configure it.[/yellow]"
+                        )
+                        import sys
+                        sys.exit(1)
+        except SystemExit:
+            raise
+        except Exception as e:
+            logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
+
+        console.print("[green]Environment & Observability verified successfully.[/green]")
+
 
     async def _run_all_cycles(
         self,

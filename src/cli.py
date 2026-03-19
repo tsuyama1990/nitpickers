@@ -32,6 +32,10 @@ def run_cycle(
 ) -> None:
     """Run one or all development cycles."""
     service = WorkflowService()
+
+    # Pre-flight environment check
+    service.verify_environment_and_observability()
+
     asyncio.run(
         service.run_cycle(
             cycle_id=cycle_id,

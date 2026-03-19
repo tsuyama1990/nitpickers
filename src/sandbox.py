@@ -83,24 +83,19 @@ class SandboxRunner:
             await self._sync_to_sandbox(self.sandbox)
 
             if settings.sandbox.install_cmd:
-                self.sandbox.commands.run(
-                    settings.sandbox.install_cmd, timeout=settings.sandbox.timeout
-                )
+                try:
+                    # Parse and re-join to safely escape potential command injection vectors
+                    parsed_cmd = shlex.split(settings.sandbox.install_cmd)
+                    safe_install_cmd = shlex.join(parsed_cmd)
+                except ValueError as e:
+                    msg = f"Invalid install_cmd configuration: {e}"
+                    raise ValueError(msg) from e
 
-        safe_cwd = shlex.quote(self.cwd)
-        self.sandbox.commands.run(f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout)
-        await self._sync_to_sandbox(self.sandbox)
+                self.sandbox.commands.run(safe_install_cmd, timeout=settings.sandbox.timeout)
 
-        if settings.sandbox.install_cmd:
-            try:
-                # Parse and re-join to safely escape potential command injection vectors
-                parsed_cmd = shlex.split(settings.sandbox.install_cmd)
-                safe_install_cmd = shlex.join(parsed_cmd)
-            except ValueError as e:
-                msg = f"Invalid install_cmd configuration: {e}"
-                raise ValueError(msg) from e
-
-            self.sandbox.commands.run(safe_install_cmd, timeout=settings.sandbox.timeout)
+            safe_cwd = shlex.quote(self.cwd)
+            self.sandbox.commands.run(f"mkdir -p {safe_cwd} || true", timeout=settings.sandbox.timeout)
+            await self._sync_to_sandbox(self.sandbox)
 
     async def run_command(
         self, cmd: list[str], check: bool = False, env: dict[str, str] | None = None
