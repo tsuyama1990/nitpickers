@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -44,4 +44,7 @@ class ProjectManifest(BaseModel):
         default=None, description="Active QA/Tutorial Generation Session ID"
     )
     cycles: list[CycleManifest] = Field(default_factory=list)
+    unresolved_conflicts: list[dict[str, Any]] = Field(
+        default_factory=list, description="Serialized ConflictRegistryItem logs"
+    )
     last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))

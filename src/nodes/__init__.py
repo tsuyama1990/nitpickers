@@ -9,6 +9,7 @@ from .routers import (
     check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
+    route_coder_critic,
     route_committee,
     route_qa,
     route_uat,

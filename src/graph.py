@@ -54,12 +54,14 @@ class GraphBuilder:
         """Create the graph for the Coder/Auditor phase (run-cycle)."""
         workflow = StateGraph(CycleState)
 
+        from src.config import settings
+
         workflow.add_node("coder_session", self.nodes.coder_session_node)
-        workflow.add_node("sandbox_evaluate", self.nodes.sandbox_evaluate_node)
+        workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
         workflow.add_node("committee_manager", self.nodes.committee_manager_node)
-        workflow.add_node("coder_critic", self.nodes.coder_critic_node)
-        workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
+        workflow.add_node(settings.node_coder_critic, self.nodes.coder_critic_node)
+        workflow.add_node(settings.node_uat_evaluate, self.nodes.uat_evaluate_node)
 
         workflow.add_edge(START, "coder_session")
 
@@ -68,9 +70,9 @@ class GraphBuilder:
             "coder_session",
             self.nodes.check_coder_outcome,
             {
-                "sandbox_evaluate": "sandbox_evaluate",
+                settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
                 FlowStatus.FAILED.value: END,
-                FlowStatus.COMPLETED.value: "uat_evaluate",
+                settings.node_uat_evaluate: settings.node_uat_evaluate,
                 FlowStatus.CODER_RETRY.value: "coder_session",
             },
         )
@@ -79,7 +81,7 @@ class GraphBuilder:
         from src.nodes.routers import route_sandbox_evaluate
 
         workflow.add_conditional_edges(
-            "sandbox_evaluate",
+            settings.node_sandbox_evaluate,
             route_sandbox_evaluate,
             {
                 "auditor": "auditor",
@@ -96,7 +98,7 @@ class GraphBuilder:
             "committee_manager",
             self.nodes.route_committee,
             {
-                "uat_evaluate": "coder_critic",  # Route to coder_critic on approval instead
+                settings.node_coder_critic: settings.node_coder_critic,
                 "auditor": "auditor",
                 "coder_session": "coder_session",
                 "failed": END,
@@ -105,17 +107,17 @@ class GraphBuilder:
 
         # Conditional edge from coder_critic
         workflow.add_conditional_edges(
-            "coder_critic",
+            settings.node_coder_critic,
             self.nodes.route_coder_critic,
             {
-                "uat_evaluate": "uat_evaluate",
                 "coder_session": "coder_session",
+                settings.node_uat_evaluate: settings.node_uat_evaluate,
             },
         )
 
         # Conditional edge from uat_evaluate for Refactoring Phase
         workflow.add_conditional_edges(
-            "uat_evaluate",
+            settings.node_uat_evaluate,
             self.nodes.route_uat,
             {
                 "coder_session": "coder_session",

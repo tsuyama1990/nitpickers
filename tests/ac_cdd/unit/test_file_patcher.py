@@ -16,7 +16,7 @@ def test_apply_changes_create(patcher: FilePatcher) -> None:
     ops = [FileCreate(path="new_file.py", content="print('hello')")]
 
     with patch("pathlib.Path.write_text") as mock_write:
-        results = patcher.apply_changes(ops, dry_run=False)
+        results = patcher.apply_changes(ops, dry_run=False)  # type: ignore[arg-type]
 
         assert len(results) == 1
         assert results[0].success
@@ -33,7 +33,7 @@ def test_apply_changes_patch_success(patcher: FilePatcher) -> None:
         patch("pathlib.Path.write_text") as mock_write,
         patch("pathlib.Path.exists", return_value=True),
     ):
-        results = patcher.apply_changes(ops, dry_run=False)
+        results = patcher.apply_changes(ops, dry_run=False)  # type: ignore[arg-type]
 
         assert len(results) == 1
         assert results[0].success
@@ -45,7 +45,7 @@ def test_apply_changes_dry_run(patcher: FilePatcher) -> None:
     ops = [FileCreate(path="new_file.py", content="print('hello')")]
 
     with patch("pathlib.Path.write_text") as mock_write:
-        results = patcher.apply_changes(ops, dry_run=True)
+        results = patcher.apply_changes(ops, dry_run=True)  # type: ignore[arg-type]
 
         assert len(results) == 1
         assert results[0].success
