@@ -77,7 +77,7 @@ class SandboxRunner:
 
         if self.sandbox:
             self.sandbox.commands.run(
-                f"mkdir -p {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
+                shlex.join(["mkdir", "-p", self.cwd]), timeout=settings.sandbox.timeout
             )
             await self._sync_to_sandbox(self.sandbox)
 
@@ -93,7 +93,7 @@ class SandboxRunner:
                 self.sandbox.commands.run(safe_install_cmd, timeout=settings.sandbox.timeout)
 
             self.sandbox.commands.run(
-                f"mkdir -p {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
+                shlex.join(["mkdir", "-p", self.cwd]), timeout=settings.sandbox.timeout
             )
             await self._sync_to_sandbox(self.sandbox)
 
@@ -209,7 +209,7 @@ class SandboxRunner:
         import shlex
 
         sandbox.commands.run(
-            f"tar -xzf {shlex.quote(remote_tar_path)} -C {shlex.quote(self.cwd)}", timeout=settings.sandbox.timeout
+            shlex.join(["tar", "-xzf", remote_tar_path, "-C", self.cwd]), timeout=settings.sandbox.timeout
         )
         logger.info("Synced files to sandbox via tarball.")
         self._last_sync_hash = current_hash

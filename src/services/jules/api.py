@@ -19,7 +19,7 @@ class JulesApiClient:
     BASE_URL = settings.jules.base_url
 
     def __init__(self, api_key: str | None = None) -> None:
-        self.api_key = api_key or settings.JULES_API_KEY
+        self.api_key: str | None = api_key or settings.JULES_API_KEY
         if not self.api_key:
             load_dotenv()
             self.api_key = os.getenv("JULES_API_KEY") or os.getenv("GOOGLE_API_KEY")

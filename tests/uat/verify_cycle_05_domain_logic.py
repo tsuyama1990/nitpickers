@@ -1,9 +1,9 @@
 from src.enums import FlowStatus
-from src.nodes.coder_critic import route_coder_critic
+from src.nodes.routers import route_coder_critic
 from src.state import CycleState
 
 
-def test_route_coder_critic_routing_rules():
+def test_route_coder_critic_routing_rules() -> None:
     """
     Scenario ID 05-02 & 05-03 Routing rules:
     - If status is COMPLETED, route to uat_evaluate.
