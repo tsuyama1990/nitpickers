@@ -78,5 +78,60 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
     return (res,)
 
 
+@app.cell
+def test_scenario_01_new_1() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    from src.domain_models import FixPlan
+
+    # SCENARIO-01-1: The stateless Auditor generates a malformed JSON response
+    # Expectation: System immediately raises a ValidationError preventing bad data
+    malformed_payload = {"modifications": [{"filepath": "src/app.py", "explanation": "fix bug"}]}
+
+    with pytest.raises(ValidationError) as exc:
+        FixPlan(**malformed_payload)  # type: ignore[arg-type]
+
+    assert "diff_block" in str(exc.value)
+
+
+@app.cell
+def test_scenario_01_new_2() -> tuple[Any, str]:
+    from src.domain_models import UATResult
+
+    # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
+    # Expectation: Mock paths are parsed correctly and serialization preserves structure
+    valid_payload = {
+        "exit_code": 1,
+        "stderr": "test failed",
+        "screenshot_path": "tests/uat/artifacts/screenshot.png",
+        "dom_trace_path": "tests/uat/artifacts/trace.txt",
+    }
+
+    result = UATResult(**valid_payload)  # type: ignore[arg-type]
+    assert result.exit_code == 1
+    assert result.screenshot_path == "tests/uat/artifacts/screenshot.png"
+
+    serialized = result.model_dump_json()
+    assert "screenshot.png" in serialized
+
+    return result, serialized
+
+
+@app.cell
+def test_scenario_01_new_3() -> tuple[Any]:
+    from src.state import CycleState
+
+    # SCENARIO-01-3: CycleState Backward Compatibility
+    # Expectation: Initializing state without UAT fields works and defaults correctly
+    legacy_state = CycleState(cycle_id="legacy-cycle")
+
+    assert legacy_state.uat_exit_code == 0
+    assert legacy_state.uat_artifacts is None
+    assert legacy_state.current_fix_plan is None
+
+    return (legacy_state,)
+
+
 if __name__ == "__main__":
     app.run()

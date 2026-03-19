@@ -8,7 +8,9 @@ from .domain_models import (
     ConflictRegistryItem,
     CyclePlan,
     FileOperation,
+    FixPlan,
     UatAnalysis,
+    UATResult,
 )
 from .enums import FlowStatus, WorkPhase
 
@@ -50,6 +52,11 @@ class CycleState(BaseModel):
     test_exit_code: int | None = None
     uat_analysis: UatAnalysis | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
+
+    # UAT State
+    uat_exit_code: int = 0
+    uat_artifacts: UATResult | None = None
+    current_fix_plan: FixPlan | None = None
     conflict_status: FlowStatus | None = None
     concurrent_dependencies: list[str] = Field(default_factory=list)
     tdd_phase: Literal["red", "green"] | None = Field(default=None)

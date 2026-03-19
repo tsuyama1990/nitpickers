@@ -9,8 +9,8 @@ An AI-native development environment featuring a robust, fully automated User Ac
 ## Key Features
 
 - **Mechanical Gatekeeping**: Automatically blocks code that fails strict linting (`ruff`), typing (`mypy`), or behavior constraints before any PR is generated.
-- **Dynamic Multi-Modal UAT**: Employs Playwright in the Outer Loop to capture deterministic screenshots and DOM traces on UI failure, sending them to Vision LLMs.
-- **Surgical Self-Healing**: Utilizing a Stateless Auditor (OpenRouter) to provide precise, Pydantic-validated JSON Fix Plans to correct errors without context fatigue.
+- **Dynamic Multi-Modal UAT**: Employs Playwright in the Outer Loop to capture deterministic screenshots and DOM traces on UI failure, sending them to Vision LLMs. Models explicitly ensure correct paths are passed deterministically to validators.
+- **Surgical Self-Healing**: Utilizing a Stateless Auditor (OpenRouter) to provide precise, Pydantic-validated JSON Fix Plans (explicitly verifying paths, snippets, and replacements) to correct errors without context fatigue.
 - **Total Observability**: Deep integration with LangSmith tracks complex node routing, visualizes State dictionary mutations, and logs raw LLM inputs seamlessly.
 
 ## Architecture Overview
@@ -105,6 +105,7 @@ uv run python src/cli.py run 01
 │   ├── nodes/              # LangGraph orchestration nodes (Worker, Auditor)
 │   └── services/           # ProcessRunner and dynamic Execution UseCases
 ├── tests/                  # Pytest hooks (conftest.py) and assertions
+│   └── uat/                # Behavior driven dynamic UI Validation logic using Marimo
 └── pyproject.toml          # Strict Ruff and Mypy configurations
 ```
 
