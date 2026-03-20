@@ -76,6 +76,9 @@ class GitCheckoutMixin(BaseGitManager):
         Gets the base branch name for a given PR URL.
         Useful for determining the correct diff target.
         """
+        from src.config import settings
+
+        default_branch = settings.DEFAULT_BASE_BRANCH
         try:
             # gh pr view <url> --json baseRefName -q .baseRefName
             stdout, _, _, _ = await self.runner.run_command(
@@ -85,11 +88,13 @@ class GitCheckoutMixin(BaseGitManager):
             base_branch = str(stdout).strip()
             if base_branch:
                 return base_branch
-            logger.warning(f"Could not determine base branch for PR {pr_url}, defaulting to main")
-            return "main"  # noqa: TRY300
+            logger.warning(
+                f"Could not determine base branch for PR {pr_url}, defaulting to {default_branch}"
+            )
+            return default_branch  # noqa: TRY300
         except Exception as e:
             logger.warning(f"Failed to get PR base branch: {e}")
-            return "main"
+            return default_branch
 
     async def checkout_branch(self, branch_name: str, force: bool = False) -> None:
         """Checks out an existing branch."""
@@ -137,12 +142,19 @@ class GitCheckoutMixin(BaseGitManager):
         logger.info(f"Pushing branch {branch} to origin...")
         await self._run_git(["push", "-u", "origin", branch])
 
-    async def get_diff(self, target_branch: str = "main") -> str:
+    async def get_diff(self, target_branch: str | None = None) -> str:
         """Returns the diff between HEAD and target branch."""
+        from src.config import settings
+
+        target_branch = target_branch or settings.DEFAULT_BASE_BRANCH
         return await self._run_git(["diff", f"{target_branch}...HEAD"])
 
-    async def get_changed_files(self, base_branch: str = "main") -> list[str]:
+    async def get_changed_files(self, base_branch: str | None = None) -> list[str]:
         """Returns a list of unique file paths that have changed."""
+        from src.config import settings
+
+        base_branch = base_branch or settings.DEFAULT_BASE_BRANCH
+
         files = set()
         with contextlib.suppress(Exception):
             out = await self._run_git(["diff", "--name-only", f"{base_branch}...HEAD"], check=False)

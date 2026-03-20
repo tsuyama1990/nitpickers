@@ -98,8 +98,12 @@ class GitBranchingMixin(BaseGitManager):
 
         return integration_branch
 
-    async def create_feature_branch(self, branch_name: str, from_branch: str = "main") -> str:
+    async def create_feature_branch(self, branch_name: str, from_branch: str | None = None) -> str:
         """Creates and checks out a new feature branch from the specified base branch."""
+        from src.config import settings
+
+        from_branch = from_branch or settings.DEFAULT_BASE_BRANCH
+
         logger.info(f"Creating feature branch: {branch_name} from {from_branch}")
 
         await self._auto_commit_if_dirty()

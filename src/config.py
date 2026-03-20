@@ -90,6 +90,10 @@ class JulesConfig(BaseModel):
     max_plan_rejections: int = Field(
         default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
     )
+    request_timeout: float = Field(
+        default_factory=lambda: float(os.getenv("JULES_REQUEST_TIMEOUT", "30.0"))
+    )
+    page_size: int = Field(default_factory=lambda: int(os.getenv("JULES_PAGE_SIZE", "100")))
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -160,6 +164,9 @@ class SandboxConfig(BaseModel):
         ".auditignore",
         "README.md",
     ]
+    allowed_cwd_prefixes: list[str] = Field(
+        default_factory=lambda: os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/home/,/opt/").split(",")
+    )
     install_cmd: str = "pip install --no-cache-dir ruff"
     lint_check_cmd: list[str] = ["uv", "run", "ruff", "check", "--fix", "."]
     type_check_cmd: list[str] = ["uv", "run", "mypy", "src/"]
@@ -170,7 +177,8 @@ class ASTAnalyzerConfig(BaseModel):
     max_files: int = Field(default=10000, description="Maximum number of files to analyze")
     max_depth: int = Field(default=20, description="Maximum directory depth to search")
     max_file_size_bytes: int = Field(
-        default=10 * 1024 * 1024, description="Maximum file size to read (10MB)"
+        default_factory=lambda: int(os.getenv("AST_ANALYZER_MAX_FILE_SIZE_BYTES", "10485760")),
+        description="Maximum file size to read (10MB default)",
     )
 
 
@@ -228,9 +236,14 @@ class Settings(BaseSettings):
         description="E2B Sandbox API key",
     )
     MAX_RETRIES: int = 10
-    GRAPH_RECURSION_LIMIT: int = 2000
+    GRAPH_RECURSION_LIMIT: int = Field(
+        default_factory=lambda: int(os.getenv("GRAPH_RECURSION_LIMIT", "2000"))
+    )
     DUMMY_CYCLE_ID: str = "00"
 
+    DEFAULT_BASE_BRANCH: str = Field(
+        default_factory=lambda: os.getenv("DEFAULT_BASE_BRANCH", "main")
+    )
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 

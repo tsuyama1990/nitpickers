@@ -74,7 +74,7 @@ class JulesApiClient:
         url = f"{self.BASE_URL}/{endpoint}"
 
         try:
-            with httpx.Client(timeout=30.0) as client:
+            with httpx.Client(timeout=settings.jules.request_timeout) as client:
                 response = client.request(
                     method,
                     url,
@@ -117,7 +117,7 @@ class JulesApiClient:
         source: str,
         prompt: str,
         require_plan_approval: bool = False,
-        branch: str = "main",
+        branch: str | None = None,
         title: str | None = None,
         automation_mode: str = "AUTO_CREATE_PR",
     ) -> dict[str, Any]:
@@ -146,7 +146,7 @@ class JulesApiClient:
         try:
             while True:
                 endpoint = f"{session_id_path}/activities"
-                params = {"pageSize": "100"}
+                params = {"pageSize": str(settings.jules.page_size)}
                 if page_token:
                     params["pageToken"] = page_token
 

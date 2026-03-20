@@ -27,9 +27,13 @@ class SandboxRunner:
 
         # Sanitize and validate path strictly
         resolved_cwd = str(Path(cwd_to_use).resolve())
-        if not resolved_cwd.startswith("/home/") and not resolved_cwd.startswith("/opt/"):
-            msg = f"Invalid sandbox working directory: {resolved_cwd}"
+
+        allowed_prefixes = settings.sandbox.allowed_cwd_prefixes
+        if not any(resolved_cwd.startswith(prefix) for prefix in allowed_prefixes):
+            msg = f"Invalid sandbox working directory: {resolved_cwd}. Must start with one of {allowed_prefixes}"
             raise ValueError(msg)
+
+        # .resolve() handles traversal, but if there's any anomaly:
         if ".." in resolved_cwd:
             msg = "Directory traversal not allowed in sandbox working directory"
             raise ValueError(msg)

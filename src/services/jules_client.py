@@ -373,7 +373,9 @@ class JulesClient:
 
         async with httpx.AsyncClient() as client:
             try:
-                resp = await client.get(session_url, headers=self._get_headers(), timeout=10.0)
+                resp = await client.get(
+                    session_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+                )
                 resp.raise_for_status()
                 data = resp.json()
                 return str(data.get("state", "UNKNOWN"))
@@ -395,13 +397,17 @@ class JulesClient:
             try:
                 async with httpx.AsyncClient() as client:
                     session_resp = await client.get(
-                        session_url, headers=self._get_headers(), timeout=10.0
+                        session_url,
+                        headers=self._get_headers(),
+                        timeout=settings.jules.request_timeout,
                     )
                     if session_resp.status_code == httpx.codes.OK:
                         state = session_resp.json().get("state", "UNKNOWN")
 
                     act_url = f"{session_url}/activities?pageSize=100"
-                    act_resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+                    act_resp = await client.get(
+                        act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+                    )
                     if act_resp.status_code == httpx.codes.OK:
                         initial_acts = act_resp.json().get("activities", [])
             except Exception as e:
@@ -500,7 +506,9 @@ class JulesClient:
     ) -> int:
         act_url = f"{session_url}/activities"
         try:
-            resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+            resp = await client.get(
+                act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+            )
             if resp.status_code == httpx.codes.OK:
                 activities = resp.json().get("activities", [])
                 if len(activities) > last_count:
@@ -670,7 +678,9 @@ class JulesClient:
                     act_url = f"{session_url}/activities"
                     try:
                         act_resp = await client.get(
-                            act_url, headers=self._get_headers(), timeout=10.0
+                            act_url,
+                            headers=self._get_headers(),
+                            timeout=settings.jules.request_timeout,
                         )
                         if act_resp.status_code == httpx.codes.OK:
                             activities = act_resp.json().get("activities", [])
