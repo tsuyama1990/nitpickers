@@ -23,20 +23,25 @@ class LLMReviewer:
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
 
-    async def _validate_paths(self, target_files: dict[str, str], context_docs: dict[str, str]) -> str | None:
+    async def _validate_paths(
+        self, target_files: dict[str, str], context_docs: dict[str, str]
+    ) -> str | None:
         if not target_files:
             logger.warning("review_code called with empty target_files dictionary.")
             return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
 
+        import pathlib
+
         import anyio
 
-        cwd = await anyio.Path.cwd().resolve(strict=False)
+        cwd = await anyio.Path(pathlib.Path.cwd()).resolve(strict=False)
 
         async def _is_path_safe(p: str) -> bool:
             if ".." in p:
                 return False
             try:
-                resolved = await anyio.Path(p).resolve(strict=False)
+                p_path = anyio.Path(p)
+                resolved = await p_path.resolve(strict=False)
                 return resolved.is_relative_to(cwd)
             except Exception as e:
                 logger.debug(f"Path resolution failed for {p}: {e}")

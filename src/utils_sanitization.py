@@ -22,8 +22,8 @@ def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
 
     # Python's string.printable includes \x0b (vertical tab) and \x0c (form feed)
     # which we might want to drop as well just to be perfectly strict.
-    allowed_chars.discard('\x0b')
-    allowed_chars.discard('\x0c')
+    allowed_chars.discard("\x0b")
+    allowed_chars.discard("\x0c")
 
     # Reconstruct the string only with allowed characters
     safe_text = "".join(char for char in escaped if char in allowed_chars)

@@ -50,7 +50,7 @@ def _load_env() -> None:
             logging.warning(f"Ignoring environment variable with invalid key format: {key}")
             continue
 
-        if not any(key.startswith(prefix) for prefix in allowed_prefixes):
+        if not key.startswith(allowed_prefixes):
             logging.warning(f"Ignoring unauthorized environment variable: {key}")
             continue
 

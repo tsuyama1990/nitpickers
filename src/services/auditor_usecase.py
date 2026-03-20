@@ -44,8 +44,6 @@ class AuditorUseCase:
                     result[path_str] = await p.read_text(encoding="utf-8")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
-            else:
-                pass
         return result
 
     async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
@@ -125,8 +123,10 @@ class AuditorUseCase:
                                         "audit_result": state.audit_result,
                                         "last_audited_commit": last_audited,
                                     }
-                            except Exception:  # noqa: S110
-                                pass
+                            except Exception as e:
+                                console.print(
+                                    f"[dim]Failed to check Jules session status: {e}[/dim]"
+                                )
 
                         console.print(
                             "[bold yellow]Jules session complete. Proceeding with audit on same commit.[/bold yellow]"
