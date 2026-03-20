@@ -42,37 +42,42 @@ async def test_fix_permissions_traverses_all_files() -> None:
     # Mock data
     mock_root = MagicMock(spec=Path)
     mock_root.exists.return_value = True
-    mock_root.is_dir.return_value = True
+    mock_root.__str__.return_value = "/mock/root"
 
-    mock_file1 = MagicMock(spec=Path)
+    # mock Path(p).is_dir() to return True for root
+    mock_path_obj = MagicMock()
+    mock_path_obj.is_dir.return_value = True
+
+    mock_file1 = MagicMock()
+    mock_file1.path = "/mock/root/file1"
     mock_file1.is_dir.return_value = False
 
-    mock_dir1 = MagicMock(spec=Path)
+    mock_dir1 = MagicMock()
+    mock_dir1.path = "/mock/root/dir1"
     mock_dir1.is_dir.return_value = True
 
-    def rglob_side_effect(_pattern: str) -> Any:
-        return iter([mock_file1, mock_dir1])
-
-    mock_root.rglob.side_effect = rglob_side_effect
+    def scandir_side_effect(path: str) -> Any:
+        if path == "/mock/root":
+            return iter([mock_file1, mock_dir1])
+        return iter([])
 
     manager = PermissionManager()
 
     with (
         patch("os.chown"),
         patch("src.services.project_setup.permission_manager.logger"),
+        patch("src.services.project_setup.permission_manager.os.scandir") as mock_scandir,
+        patch("src.services.project_setup.permission_manager.os.chmod") as mock_chmod,
+        patch("src.services.project_setup.permission_manager.Path", return_value=mock_path_obj),
     ):
+        mock_scandir.side_effect = scandir_side_effect
         await manager.fix_permissions(mock_root)
 
-        assert mock_root.rglob.call_count == 2
+        assert mock_scandir.call_count >= 1
 
-        assert mock_root.chmod.call_count == 1
-        mock_root.chmod.assert_called_with(0o777)
-
-        assert mock_file1.chmod.call_count == 1
-        mock_file1.chmod.assert_called_with(0o666)
-
-        assert mock_dir1.chmod.call_count == 1
-        mock_dir1.chmod.assert_called_with(0o777)
+        mock_chmod.assert_any_call("/mock/root", 0o777)
+        mock_chmod.assert_any_call("/mock/root/file1", 0o666)
+        mock_chmod.assert_any_call("/mock/root/dir1", 0o777)
 
 
 @pytest.mark.asyncio
@@ -80,18 +85,22 @@ async def test_fix_permissions_handles_chown() -> None:
     """Test that chown is called when HOST_UID and HOST_GID are set."""
     mock_root = MagicMock(spec=Path)
     mock_root.exists.return_value = True
-    mock_root.is_dir.return_value = True
-    mock_root.rglob.return_value = iter([])
+    mock_root.__str__.return_value = "/mock/root"
+
+    mock_path_obj = MagicMock()
+    mock_path_obj.is_dir.return_value = True
 
     with (
         patch.dict(os.environ, {"HOST_UID": "1000", "HOST_GID": "1000"}),
         patch("os.chown") as mock_chown,
         patch("src.services.project_setup.permission_manager.logger"),
+        patch("src.services.project_setup.permission_manager.os.scandir", return_value=iter([])),
+        patch("src.services.project_setup.permission_manager.Path", return_value=mock_path_obj),
     ):
         manager = PermissionManager()
         await manager.fix_permissions(mock_root)
 
-        mock_chown.assert_any_call(mock_root, 1000, 1000)
+        mock_chown.assert_any_call("/mock/root", 1000, 1000)
 
 
 @pytest.mark.asyncio
