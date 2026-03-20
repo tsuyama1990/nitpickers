@@ -36,49 +36,29 @@ class SandboxEvaluatorNodes:
         try:
             timeout_limit = settings.sandbox.timeout
 
-            # 1. Run Linting (Ruff)
-            lint_cmd = ["uv", "run", "ruff", "check", "."]
-            l_out, l_err, l_code, l_timeout = await self.process_runner.run_command(
-                lint_cmd, check=False, timeout=timeout_limit
-            )
-            lint_result = VerificationResult(
-                command=" ".join(lint_cmd),
-                exit_code=l_code,
-                stdout=l_out,
-                stderr=l_err,
-                timeout_occurred=l_timeout,
-            )
+            commands = {
+                "lint": ["uv", "run", "ruff", "check", "."],
+                "type": ["uv", "run", "mypy", "."],
+                "test": ["uv", "run", "pytest"],
+            }
+            results = {}
 
-            # 2. Run Type Checking (Mypy)
-            type_cmd = ["uv", "run", "mypy", "."]
-            t_out, t_err, t_code, t_timeout = await self.process_runner.run_command(
-                type_cmd, check=False, timeout=timeout_limit
-            )
-            type_result = VerificationResult(
-                command=" ".join(type_cmd),
-                exit_code=t_code,
-                stdout=t_out,
-                stderr=t_err,
-                timeout_occurred=t_timeout,
-            )
-
-            # 3. Run Testing (Pytest)
-            test_cmd = ["uv", "run", "pytest"]
-            p_out, p_err, p_code, p_timeout = await self.process_runner.run_command(
-                test_cmd, check=False, timeout=timeout_limit
-            )
-            test_result = VerificationResult(
-                command=" ".join(test_cmd),
-                exit_code=p_code,
-                stdout=p_out,
-                stderr=p_err,
-                timeout_occurred=p_timeout,
-            )
+            for check_name, cmd in commands.items():
+                out, err, code, timeout_occurred = await self.process_runner.run_command(
+                    cmd, check=False, timeout=timeout_limit
+                )
+                results[check_name] = VerificationResult(
+                    command=" ".join(cmd),
+                    exit_code=code,
+                    stdout=out,
+                    stderr=err,
+                    timeout_occurred=timeout_occurred,
+                )
 
             report = StructuralGateReport(
-                lint_result=lint_result,
-                type_check_result=type_result,
-                test_result=test_result,
+                lint_result=results["lint"],
+                type_check_result=results["type"],
+                test_result=results["test"],
             )
 
             if not report.passed:
