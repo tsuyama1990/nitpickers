@@ -37,11 +37,18 @@ class UatUseCase:
 
         artifacts = []
 
+        import re
+
         # Scan for multi-modal artifacts if directory exists
         if artifacts_dir.exists() and artifacts_dir.is_dir():
             # We expect PNG screenshots and ZIP traces named like {test_id}.png / {test_id}_trace.zip
             for img_path in artifacts_dir.glob("*.png"):
                 base_name = img_path.stem
+                # Validate test_id to prevent path traversal
+                if not re.match(r"^[\w\.-]+$", base_name):
+                    logger.warning(f"Invalid artifact filename: {base_name}")
+                    continue
+
                 zip_path = artifacts_dir / f"{base_name}_trace.zip"
 
                 if img_path.exists():
@@ -80,6 +87,13 @@ class UatUseCase:
             msg = f"Unauthorized command binary: {cmd[0] if cmd else 'empty'}"
             raise ValueError(msg)
 
+        # Security: prevent argument injection via shell metacharacters
+        dangerous_chars = (";", "&", "|", "$", "`", "\n", "<", ">")
+        for arg in cmd:
+            if any(char in arg for char in dangerous_chars):
+                msg = f"Dangerous character detected in command argument: {arg}"
+                raise ValueError(msg)
+
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)
 
@@ -103,18 +117,23 @@ class UatUseCase:
         """Handles the logic when UAT passes, including auto-merging and phase transition."""
         # Auto-Merge Cycle PR
         pr_url = state.pr_url
+        import re
+
         if pr_url:
             if not settings.session.auto_merge_to_integration:
-                logger.info("Auto-merge to integration branch is disabled by policy. Skipping merge.")
+                logger.info(
+                    "Auto-merge to integration branch is disabled by policy. Skipping merge."
+                )
             else:
+                # Security: Validate the PR URL structure strictly
+                if not re.match(r"^https://github\.com/[\w.-]+/[\w.-]+/pull/\d+/?$", pr_url):
+                    msg = f"Invalid PR URL format: {pr_url}"
+                    logger.error(msg)
+                    return {"status": FlowStatus.FAILED, "error": msg}
+
                 parsed_url = urlparse(pr_url)
                 pr_number = parsed_url.path.strip("/").split("/")[-1]
-                if not pr_number.isdigit():
-                    logger.error(f"Extracted PR number '{pr_number}' is invalid (must be digits)")
-                    return {
-                        "status": FlowStatus.FAILED,
-                        "error": f"Invalid PR number format extracted from {pr_url}",
-                    }
+
                 try:
                     logger.info(f"Auto-merging Cycle PR #{pr_number}...")
                     await self.git.merge_pr(pr_number)

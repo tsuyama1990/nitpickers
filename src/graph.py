@@ -72,7 +72,7 @@ class GraphBuilder:
             "auditor_node",
             "committee_manager_node",
             "coder_critic_node",
-            "uat_evaluate_node"
+            "uat_evaluate_node",
         ]
         for n in required_nodes:
             if not getattr(self.nodes, n, None):
