@@ -133,6 +133,16 @@ class SandboxRunner:
             msg = f"Command '{base_cmd}' is not in the allowed whitelist."
             raise ValueError(msg)
 
+        import re
+
+        forbidden_chars = re.compile(r"[&|<>;$`\\]")
+        for arg in cmd:
+            if forbidden_chars.search(arg):
+                msg = (
+                    f"Command argument contains forbidden characters (shell injection risk): {arg}"
+                )
+                raise ValueError(msg)
+
     async def run_command(
         self, cmd: list[str], check: bool = False, env: dict[str, str] | None = None
     ) -> tuple[str, str, int]:
@@ -141,6 +151,8 @@ class SandboxRunner:
         Enforces a strict command whitelist to prevent execution of arbitrary, unsafe commands.
         """
         self._validate_command(cmd)
+
+        logger.info(f"Sandbox executing explicit command structure: {cmd}")
 
         max_retries = settings.sandbox.max_retries
         stdout = ""

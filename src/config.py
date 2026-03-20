@@ -39,8 +39,14 @@ def _detect_package_dir() -> str:
     # Use environment variable for configurable override, fallback to detection
     # This must use os.getenv as Settings is not initialized yet.
     env_pkg_dir = os.getenv("PACKAGE_DIR")
-    if env_pkg_dir and Path(env_pkg_dir).exists():
-        return env_pkg_dir
+    if env_pkg_dir:
+        try:
+            # Validate that the path is safely within the project workspace
+            resolved_pkg = Path(env_pkg_dir).resolve()
+            if resolved_pkg.exists() and resolved_pkg.is_relative_to(Path.cwd()):
+                return str(resolved_pkg)
+        except (ValueError, RuntimeError):
+            pass
 
     default_docker_path = os.getenv("DOCKER_SRC_PATH", "/opt/ac_cdd/src")
     docker_path = Path(default_docker_path)

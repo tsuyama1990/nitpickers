@@ -34,6 +34,22 @@ class GitMergingMixin(BaseGitManager):
         """Validates branch names to prevent command injection or unintended git behavior."""
         import re
 
+        if not branch_name:
+            msg = "Branch name cannot be empty"
+            raise ValueError(msg)
+
+        if len(branch_name) > 255:
+            msg = f"Branch name too long: {branch_name}"
+            raise ValueError(msg)
+
+        if ".." in branch_name:
+            msg = f"Branch name cannot contain path traversal sequences: {branch_name}"
+            raise ValueError(msg)
+
+        if branch_name.startswith("-"):
+            msg = f"Branch name cannot start with a hyphen: {branch_name}"
+            raise ValueError(msg)
+
         # Allow alphanumeric, -, _, /, but disallow starting with -, containing spaces, or control characters.
         if not re.match(r"^[a-zA-Z0-9_][a-zA-Z0-9_/-]*$", branch_name):
             msg = f"Invalid branch name format: {branch_name}"

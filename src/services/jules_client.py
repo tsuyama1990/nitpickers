@@ -251,7 +251,13 @@ class JulesClient:
             **tracing_config,  # type: ignore[typeddict-item]
         )
 
-        final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        try:
+            async with asyncio.timeout(self.timeout):
+                final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        except TimeoutError as e:
+            msg = f"Wait for completion exceeded global timeout of {self.timeout}s."
+            logger.error(msg)
+            raise JulesTimeoutError(msg) from e
 
         # Handle final state
         # LangGraph may return dict or object

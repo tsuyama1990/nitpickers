@@ -103,9 +103,27 @@ class WorkflowService:
                         project_session_id=session_id_val,
                     )
 
-        except Exception:
-            console.print("[bold red]Architect execution failed.[/bold red]")
+        except Exception as e:
+            console.print(f"[bold red]Architect execution failed: {e}[/bold red]")
             logger.exception("Architect execution failed")
+
+            # Rollback: Clean up any partial state
+            if "session_id_val" in locals() and "mgr" in locals():
+                try:
+                    logger.warning(
+                        f"Rolling back generated cycle plans for session {session_id_val}"
+                    )
+                    # A proper state cleanup would delete the generated state file or empty the cycle array
+                    manifest_to_rollback = mgr.load_manifest()
+                    if (
+                        manifest_to_rollback
+                        and manifest_to_rollback.project_session_id == session_id_val
+                    ):
+                        manifest_to_rollback.cycles = []
+                        mgr.save_manifest(manifest_to_rollback)
+                except Exception as rollback_err:
+                    logger.error(f"Failed to rollback after error: {rollback_err}")
+
             sys.exit(1)
         finally:
             await self.builder.cleanup()
