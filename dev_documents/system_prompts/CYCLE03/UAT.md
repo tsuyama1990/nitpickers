@@ -5,7 +5,7 @@
 | Scenario ID | Priority | Description |
 | :--- | :--- | :--- |
 | UAT-C03-01 | Critical | Verify the `Master Integrator` node securely pushes code and creates Pull Requests via the native GitHub MCP Write tools without utilizing legacy Python subprocesses. |
-| UAT-C03-02 | Critical | Verify the `Global Refactor` node securely dispatches and reconciles parallel agent fleets via the native Jules MCP Orchestration tools without legacy HTTP polling. |
+| UAT-C03-02 | Critical | Verify the `Global Refactor` node securely dispatches parallel agent fleets via the native Jules MCP Orchestration tools, and critically, applies sequential locks to reconcile incoming session diffs without race condition state corruption. |
 | UAT-C03-03 | High | Verify the Principle of Least Privilege by asserting that read-only nodes (e.g., `Auditor`) are mechanically blocked from accessing or invoking GitHub Write tools. |
 
 ## Behavior Definitions
@@ -18,13 +18,12 @@
 *   **AND** the node must subsequently invoke the `create_pull_request` tool
 *   **AND** the returned Pull Request URL must be parsed from the `ToolMessage` and correctly recorded in the updated `CycleState`.
 
-**Scenario UAT-C03-02: Native Fleet Dispatch and Session Reconciliation**
+**Scenario UAT-C03-02: Fleet Dispatch and Race Condition Reconciliation**
 *   **GIVEN** the `Global Refactor` node is initialized with the Jules Orchestration MCP tools bound (e.g., `create_session`, `review_changes`)
-*   **WHEN** the node receives a `CycleState` indicating a massive, repository-wide architectural refactoring requirement
-*   **THEN** the LLM must natively invoke the `create_session` tool
-*   **AND** the Jules MCP server must securely dispatch the parallel agent fleet
-*   **AND** upon completion, the Jules server must return the reconciled session diffs natively via a `ToolMessage`
-*   **AND** the session results must be successfully recorded into the `CycleState` without dropping execution context.
+*   **WHEN** the node dispatches a massive refactoring task resulting in multiple concurrent agents returning diffs simultaneously via the Jules MCP
+*   **THEN** the Jules server must return the array of session diffs natively via a `ToolMessage`
+*   **AND** the `Global Refactor` node must strictly parse these diffs sequentially utilizing Pydantic `FilePatch` models and merging locks
+*   **AND** the final, reconciled results must be securely written to the `CycleState` without file corruption or race conditions.
 
 **Scenario UAT-C03-03: Mechanical Enforcement of Least Privilege**
 *   **GIVEN** the analytical `Auditor` node is initialized within the LangGraph state machine requesting its toolset from the `McpClientManager`

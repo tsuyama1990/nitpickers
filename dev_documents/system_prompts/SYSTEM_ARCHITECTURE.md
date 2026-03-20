@@ -27,10 +27,10 @@ The new architecture adopts an "MCP Router" pattern. The core Python application
 
 **Core Components:**
 1.  **LangGraph State Machine (Existing):** The orchestrator defining the workflow transitions between the various agent roles (e.g., Architect -> Coder -> Sandbox Evaluator).
-2.  **MCP Client Manager (New):** A robust Python service responsible for managing the lifecycle, connection pooling, and tool discovery of the MCP servers via the Stdio transport layer. It acts as the bridge between the Python LangChain/LangGraph environment and the Node.js MCP servers.
+2.  **MCP Client Manager (New):** A robust, thread-safe Python service responsible for managing the asynchronous lifecycle, connection pooling, and tool discovery of the MCP servers via the Stdio transport layer. Crucially, it must implement an `async with` context manager pattern to aggressively terminate zombie Node.js processes if the LangGraph engine crashes unexpectedly. It acts as the definitive bridge between the Python LangChain/LangGraph environment and the Node.js MCP servers.
 3.  **GitHub MCP Server (`@modelcontextprotocol/server-github`):** Handles all version control operations. Bound specifically to nodes requiring repository context (Architect) or write capabilities (Master Integrator).
 4.  **E2B MCP Server (`@e2b/mcp-server`):** Manages ephemeral cloud sandboxing, bash command execution, and code evaluation. Bound to nodes like Sandbox Evaluator and QA.
-5.  **Jules MCP Server (`@google/jules-mcp`):** Orchestrates dynamic agent fleets and complex parallel session reconciliations. Bound to high-level orchestration nodes.
+5.  **Jules MCP Server (`@google/jules-mcp`):** Orchestrates dynamic agent fleets and complex parallel session reconciliations, enforcing sequential lock mechanisms on incoming session diffs to prevent race conditions during integration. Bound to high-level orchestration nodes.
 
 **Data Flow:**
 1.  The LangGraph engine transitions to an agent node (e.g., Coder).
@@ -44,6 +44,7 @@ The new architecture adopts an "MCP Router" pattern. The core Python application
 
 **Boundary Management and Separation of Concerns:**
 -   **Strict Principle of Least Privilege:** Read-only nodes (like the Architect) must only be bound to safe, read-only tools exposed by the MCP manager (e.g., `get_file_content`). Write-enabled nodes (like the Master Integrator) are the only entities permitted to bind destructive tools (e.g., `push_commit`). This enforces mechanical gates at the graph level.
+-   **Token Context Exhaustion Prevention:** The MCP Router architecture must mechanically prevent the LLM context window from being overloaded by massive external payloads (e.g., minified build artifacts or `package-lock.json`). The `McpClientManager` must implement an interception or middleware layer that wraps raw MCP tools (like `get_file_content`) to enforce line-number boundaries, chunking parameters, or hard token truncation limits before returning the `ToolMessage` to the LangGraph context.
 -   **Zero State Intermingling:** The MCP servers must remain completely stateless regarding the overarching 8-cycle business logic. They simply execute discrete commands. State persistence (like `project_state.json`) remains strictly within the domain of the existing Python `state_manager.py`.
 
 ```mermaid
@@ -110,7 +111,7 @@ When an agent needs to record an action, it still mutates the `CycleState`. The 
 
 **Key Invariants:**
 -   **Stateless Operations:** All MCP tool executions must be treated as stateless actions. The Python graph must not assume that the E2B sandbox retains state between independent agent turns unless explicitly managed by the graph's context.
--   **Fallback Gracefulness:** The `MCP Client Manager` must implement robust connection pooling and retry logic for the Stdio server initializations. If a sidecar fails to boot, the manager must raise a clear exception caught by the LangGraph error boundary, preventing silent failures.
+-   **Fallback Gracefulness:** The `MCP Client Manager` must implement robust connection pooling and retry logic for the Stdio server initializations. If a sidecar fails to boot, the manager must raise a clear exception caught by the LangGraph error boundary, preventing silent failures. Furthermore, standard JSON-RPC `mcp.ClientError` or `mcp.ServerError` responses must be natively wrapped in Pydantic `ToolExecutionError` models to provide deterministic schema validation before re-entering the LLM reasoning loop.
 
 ## Implementation Plan
 

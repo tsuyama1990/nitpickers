@@ -4,7 +4,7 @@
 
 | Scenario ID | Priority | Description |
 | :--- | :--- | :--- |
-| UAT-C01-01 | High | Verify the `McpClientManager` successfully initializes the `@e2b/mcp-server` process via Stdio and exposes the `run_code` and `execute_command` tools to the LangGraph node context. |
+| UAT-C01-01 | High | Verify the `McpClientManager` successfully initializes the `@e2b/mcp-server` process via an asynchronous Stdio connection pool, enforcing the `McpServerConfig` Pydantic schema constraints and ensuring `__aexit__` teardown hooks cleanly kill the `npx` child process upon unexpected errors. |
 | UAT-C01-02 | Critical | Verify the `Sandbox Evaluator` accurately executes a simple Python script in the E2B cloud using the MCP tool and retrieves the correct standard output without legacy API middleware. |
 | UAT-C01-03 | Critical | Verify that syntax errors or execution timeouts within the E2B cloud environment are accurately captured by the MCP server and mapped correctly into the `CycleState` error fields. |
 
