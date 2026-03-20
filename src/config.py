@@ -20,9 +20,6 @@ try:
         load_dotenv(_ac_cdd_env, override=True)
     elif _root_env.exists():
         load_dotenv(_root_env, override=True)
-    else:
-        # Prevent completely open unverified loading
-        load_dotenv(Path.cwd() / ".env")
 except Exception:
     logging.exception("Could not load dotenv")
 
@@ -34,33 +31,59 @@ PROMPT_FILENAME_MAP = {
 }
 
 
-def _detect_package_dir() -> str:
-    """Detects the main package directory."""
-    # Use environment variable for configurable override, fallback to detection
-    # This must use os.getenv as Settings is not initialized yet.
+def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
         try:
-            # Validate that the path is safely within the project workspace
             resolved_pkg = Path(env_pkg_dir).resolve()
             if resolved_pkg.exists() and resolved_pkg.is_relative_to(Path.cwd()):
                 return str(resolved_pkg)
         except (ValueError, RuntimeError):
             pass
+    return None
 
-    default_docker_path = os.getenv("DOCKER_SRC_PATH", "/opt/ac_cdd/src")
-    docker_path = Path(default_docker_path)
-    if docker_path.exists():
-        return str(docker_path)
+def _check_docker_src_path() -> str | None:
+    docker_src_path = os.getenv("DOCKER_SRC_PATH")
+    if docker_src_path:
+        docker_path = Path(docker_src_path)
+        if docker_path.exists():
+            return str(docker_path)
+    return None
 
-    default_src_path = os.getenv("DEV_SRC_PATH", "dev_src")
-    src_path = Path(default_src_path)
-    if src_path.exists():
-        for p in src_path.iterdir():
-            if p.is_dir() and (p / "__init__.py").exists():
-                return str(p)
+def _check_dev_src_path() -> str | None:
+    dev_src_path = os.getenv("DEV_SRC_PATH")
+    if dev_src_path:
+        src_path = Path(dev_src_path)
+        if src_path.exists():
+            for p in src_path.iterdir():
+                if p.is_dir() and (p / "__init__.py").exists():
+                    return str(p)
+    return None
 
-    return os.getenv("DEFAULT_SRC_DIR", f"{default_src_path}/src")
+def _detect_package_dir() -> str:
+    """Detects the main package directory."""
+    res = _check_env_pkg_dir()
+    if res:
+        return res
+
+    res = _check_docker_src_path()
+    if res:
+        return res
+
+    res = _check_dev_src_path()
+    if res:
+        return res
+
+    default_src_dir = os.getenv("DEFAULT_SRC_DIR")
+    if default_src_dir:
+        return default_src_dir
+
+    src_fallback = Path.cwd() / "src"
+    if src_fallback.exists() and src_fallback.is_dir():
+        return str(src_fallback)
+
+    msg = "Could not resolve package directory. Ensure PACKAGE_DIR, DEV_SRC_PATH, DOCKER_SRC_PATH, or DEFAULT_SRC_DIR is set and points to a valid Python package."
+    raise ValueError(msg)
 
 
 class PathsConfig(BaseModel):
