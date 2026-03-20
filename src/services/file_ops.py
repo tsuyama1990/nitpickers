@@ -110,17 +110,17 @@ class FilePatcher:
     def read_src_files(self, src_dir: str) -> str:
         """Reads python files in source directory, respecting .auditignore."""
         ignored_patterns = self._load_ignored_patterns()
-        content_str = ""
+        content_parts = []
         path = Path(src_dir)
         for p in path.rglob("*"):
             if not p.is_file() or self._is_path_ignored(p, ignored_patterns):
                 continue
             try:
                 file_content = p.read_text(encoding="utf-8")
-                content_str += f"\n=== {p} ===\n{file_content}"
+                content_parts.append(f"\n=== {p} ===\n{file_content}")
             except Exception as e:
                 logger.warning(f"Skipping {p}: {e}")
-        return content_str
+        return "".join(content_parts)
 
     def _load_ignored_patterns(self) -> set[str]:
         ignored = {"__pycache__", ".git", ".env", ".DS_Store", "*.pyc"}
