@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import marimo
 
 __generated_with = "0.11.0"
@@ -5,9 +7,7 @@ app = marimo.App(width="medium")
 
 
 @app.cell
-def _() -> tuple:
-    from pathlib import Path
-
+def _() -> tuple[Path, list[Path], list[Path], int, str, Path]:
     import pytest
 
     # Scenario 1: Multi-Modal Capture on Failure

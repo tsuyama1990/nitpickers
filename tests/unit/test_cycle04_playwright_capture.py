@@ -77,7 +77,7 @@ def test_pytest_runtest_makereport_hook_success(monkeypatch: pytest.MonkeyPatch)
 
     # In pytest, report objects often don't have all attributes by default
     class MockReport:
-        def __init__(self):
+        def __init__(self) -> None:
             self.when = "call"
             self.failed = False
 
