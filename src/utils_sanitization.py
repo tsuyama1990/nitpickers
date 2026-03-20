@@ -1,14 +1,10 @@
-import re
+import string
 
 
 def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
     """
-    Sanitizes arbitrary text before inclusion in LLM prompts.
-    Escapes dangerous markdown blocks to prevent prompt injection
-    and truncates to avoid token limits or overwhelming context.
-
-    Only allows basic printable text characters, newlines, and common symbols.
-    Filters out invisible control characters that might be used maliciously.
+    Sanitizes arbitrary text before inclusion in LLM prompts via a strict whitelist.
+    Only allows printable ASCII characters plus explicitly allowed whitespace.
     """
     if not content:
         return ""
@@ -19,21 +15,17 @@ def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
     # Escape markdown code blocks to prevent premature prompt closure
     escaped = truncated.replace("```", "\\`\\`\\`")
 
-    # Remove potentially dangerous ANSI escape codes and invisible control chars
-    # Allow newlines (\n, \r), tabs (\t)
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    no_ansi = ansi_escape.sub("", escaped)
+    # Define explicitly allowed characters (Whitelist)
+    # This automatically drops ANSI escapes, directional overrides, invisible zero-width
+    # chars, low ASCII control bytes, etc., without needing exhaustive blacklists.
+    allowed_chars = set(string.printable)
 
-    # Filter non-printable characters except standard whitespaces
-    # \x20-\x7E covers printable ASCII, \t\n\r covers standard whitespace
-    # We also strip low ascii controls and dangerous unicode controls (\x7f-\x9f)
-    control_chars = re.compile(r"[\x00-\x08\x0b\x0c\x0e\x0f\x10-\x19\x1a-\x1f\x7f-\x9f]")
+    # Python's string.printable includes \x0b (vertical tab) and \x0c (form feed)
+    # which we might want to drop as well just to be perfectly strict.
+    allowed_chars.discard('\x0b')
+    allowed_chars.discard('\x0c')
 
-    # Also strip unicode formatting characters that could be used for invisible prompt injection
-    # e.g., zero-width spaces, directional formatting
-    unicode_controls = re.compile(r"[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]")
-
-    safe_text = control_chars.sub("", no_ansi)
-    safe_text = unicode_controls.sub("", safe_text)
+    # Reconstruct the string only with allowed characters
+    safe_text = "".join(char for char in escaped if char in allowed_chars)
 
     return str(safe_text)

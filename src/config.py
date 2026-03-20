@@ -1,5 +1,7 @@
 import logging
 import os
+import re
+import urllib.parse
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -11,6 +13,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.domain_models.tracing import LangSmithConfig
 
 
+def _validate_env_value(k: str, v: str) -> bool:
+    if k.endswith("_URL"):
+        try:
+            parsed = urllib.parse.urlparse(v)
+            return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+        except Exception as e:
+            logging.debug(f"URL parsing failed for {k}: {e}")
+            return False
+    if k.endswith(("_KEY", "_TOKEN")):
+        return bool(re.match(r"^[A-Za-z0-9_\-\.\=]+$", v))
+    return bool(re.match(r"^[A-Za-z0-9_.:/\-\+~@,=]+$", v))
+
+
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
     """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
@@ -18,37 +33,37 @@ def _load_env() -> None:
 
     _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
 
-    if _ac_cdd_env.exists():
-        if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
-            msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
-            raise ValueError(msg)
+    if not _ac_cdd_env.exists():
+        return
 
-        import re
-        allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
-        safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
-        # Secure value pattern: Allow letters, numbers, standard punctuation used in URLs/Keys, no newlines/backticks/pipes/amps
-        safe_value_pattern = re.compile(r"^[A-Za-z0-9_.:/=\-\+~@]+$")
-        env_vars = dotenv_values(_ac_cdd_env)
+    if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
+        msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+        raise ValueError(msg)
 
-        safe_updates = {}
-        for key, value in env_vars.items():
-            if not key or not safe_key_pattern.match(key):
-                logging.warning(f"Ignoring environment variable with invalid key format: {key}")
+    allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
+    env_vars = dotenv_values(_ac_cdd_env)
+
+    safe_updates = {}
+    for key, value in env_vars.items():
+        if not key or not safe_key_pattern.match(key):
+            logging.warning(f"Ignoring environment variable with invalid key format: {key}")
+            continue
+
+        if not any(key.startswith(prefix) for prefix in allowed_prefixes):
+            logging.warning(f"Ignoring unauthorized environment variable: {key}")
+            continue
+
+        if value is not None:
+            if not _validate_env_value(key, value):
+                logging.warning(
+                    f"Ignoring environment variable {key} failed type-specific security validation."
+                )
                 continue
+            safe_updates[key] = value
 
-            if any(key.startswith(prefix) for prefix in allowed_prefixes):
-                if value is not None:
-                    if not safe_value_pattern.match(value):
-                        logging.warning(
-                            f"Ignoring environment variable {key} containing unsafe characters."
-                        )
-                        continue
-                    safe_updates[key] = value
-            else:
-                logging.warning(f"Ignoring unauthorized environment variable: {key}")
-
-        if safe_updates:
-            os.environ.update(safe_updates)
+    if safe_updates:
+        os.environ.update(safe_updates)
 
 
 _load_env()

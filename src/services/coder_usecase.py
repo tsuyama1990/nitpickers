@@ -143,9 +143,13 @@ class CoderUseCase:
     ) -> str:
         """Assemble the Jules instruction prompt, injecting feedback when retrying."""
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
-            instruction = settings.get_prompt_content(settings.template_files.post_audit_refactor_instruction)
+            instruction = settings.get_prompt_content(
+                settings.template_files.post_audit_refactor_instruction
+            )
         elif current_phase == WorkPhase.REFACTORING:
-            instruction = settings.get_prompt_content(settings.template_files.final_refactor_instruction)
+            instruction = settings.get_prompt_content(
+                settings.template_files.final_refactor_instruction
+            )
         else:
             instruction = settings.get_prompt_content(settings.template_files.coder_instruction)
 
@@ -187,7 +191,9 @@ class CoderUseCase:
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
         if not (
-            (is_retry_audit or is_retry_uat or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
+            (is_retry_audit or is_retry_uat or is_post_refactor)
+            and cycle_manifest
+            and cycle_manifest.jules_session_id
         ):
             return None
 
@@ -229,8 +235,7 @@ class CoderUseCase:
                 )
 
             return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id,
-                feedback_payload
+                cycle_manifest.jules_session_id, feedback_payload
             )
         return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
 
@@ -289,10 +294,14 @@ class CoderUseCase:
             "Invoking Coder Critic for self-reflection before Auditor review...[/bold cyan]"
         )
         try:
-            critic_instruction = settings.get_prompt_content(settings.template_files.coder_critic_instruction)
+            critic_instruction = settings.get_prompt_content(
+                settings.template_files.coder_critic_instruction
+            )
             if not critic_instruction:
                 console.print("[red]Failed to load Coder Critic instruction template.[/red]")
-                console.print("[yellow]Warning: Coder Critic template missing, skipping self-reflection...[/yellow]")
+                console.print(
+                    "[yellow]Warning: Coder Critic template missing, skipping self-reflection...[/yellow]"
+                )
                 return None
 
             critic_instruction = critic_instruction.replace("{{cycle_id}}", str(cycle_id))
@@ -321,7 +330,9 @@ class CoderUseCase:
         try:
             from src.utils_sanitization import sanitize_for_llm
 
-            feedback_template = settings.get_prompt_content(settings.template_files.audit_feedback_message)
+            feedback_template = settings.get_prompt_content(
+                settings.template_files.audit_feedback_message
+            )
             if not feedback_template:
                 feedback_template = "{{feedback}}"
 
@@ -341,7 +352,9 @@ class CoderUseCase:
             for attempt in range(max_retries):
                 await asyncio.sleep(wait_interval)
                 current_state = await self.jules.get_session_state(session_id)
-                console.print(f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]")
+                console.print(
+                    f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]"
+                )
 
                 if current_state in _ACTIVE_STATES:
                     state_transitioned = True
@@ -414,7 +427,9 @@ class CoderUseCase:
 
     def _build_feedback_injection(self, feedback: str, pr_url: str | None) -> str:
         """Build feedback injection block from template."""
-        template = str(settings.get_prompt_content(settings.template_files.audit_feedback_injection))
+        template = str(
+            settings.get_prompt_content(settings.template_files.audit_feedback_injection)
+        )
         if not template:
             template = "{{feedback}}"
         result = template.replace("{{feedback}}", feedback)

@@ -21,7 +21,11 @@ class AuditorUseCase:
     """
 
     def __init__(
-        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer, sandbox_runner: Any = None
+        self,
+        jules_client: JulesClient,
+        git_manager: GitManager,
+        llm_reviewer: LLMReviewer,
+        sandbox_runner: Any = None,
     ) -> None:
         self.jules = jules_client
         self.git = git_manager
@@ -58,7 +62,9 @@ class AuditorUseCase:
         instruction = settings.get_prompt_content(template_name)
         if not instruction and is_refactor_phase:
             # Fallback if someone hasn't created it yet
-            instruction = settings.get_prompt_content(settings.template_files.coder_critic_instruction)
+            instruction = settings.get_prompt_content(
+                settings.template_files.coder_critic_instruction
+            )
 
         if not instruction:
             instruction = "Review this code."
@@ -254,16 +260,20 @@ class AuditorUseCase:
             "last_audited_commit": new_last_audited_commit,
         }
 
+
 class UATAuditorUseCase:
     """
     Dedicated usecase for diagnosing and recovering from dynamic Sandbox/UAT Execution failures.
     Strictly follows the Single Responsibility Principle.
     """
+
     def __init__(self, llm_reviewer: LLMReviewer) -> None:
         self.llm_reviewer = llm_reviewer
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
-        console.print("[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]")
+        console.print(
+            "[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]"
+        )
 
         instruction = settings.get_prompt_content(settings.template_files.uat_auditor_instruction)
         if not instruction:

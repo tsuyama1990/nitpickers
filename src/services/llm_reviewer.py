@@ -23,6 +23,37 @@ class LLMReviewer:
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
 
+    async def _validate_paths(self, target_files: dict[str, str], context_docs: dict[str, str]) -> str | None:
+        if not target_files:
+            logger.warning("review_code called with empty target_files dictionary.")
+            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
+
+        import anyio
+
+        cwd = await anyio.Path.cwd().resolve(strict=False)
+
+        async def _is_path_safe(p: str) -> bool:
+            if ".." in p:
+                return False
+            try:
+                resolved = await anyio.Path(p).resolve(strict=False)
+                return resolved.is_relative_to(cwd)
+            except Exception as e:
+                logger.debug(f"Path resolution failed for {p}: {e}")
+                return False
+
+        for path in list(target_files.keys()):
+            if not await _is_path_safe(path):
+                logger.warning(f"review_code rejecting invalid target file path: {path}")
+                return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {path}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
+
+        for path in list(context_docs.keys()):
+            if not await _is_path_safe(path):
+                logger.warning(f"review_code rejecting invalid context doc path: {path}")
+                del context_docs[path]
+
+        return None
+
     async def review_code(
         self,
         target_files: dict[str, str],
@@ -34,25 +65,10 @@ class LLMReviewer:
         Sends file contents and instructions to the LLM for review.
         Validates the output strictly against the AuditorReport Pydantic schema.
         """
-        import re
-        safe_path_pattern = re.compile(r"^[A-Za-z0-9_/\.\-]+$")
 
-        # Validate target files
-        if not target_files:
-            logger.warning("review_code called with empty target_files dictionary.")
-            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
-
-        for path in list(target_files.keys()):
-            if ".." in path or not safe_path_pattern.match(path):
-                logger.warning(f"review_code rejecting invalid target file path: {path}")
-                return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {path}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
-
-        # Validate context docs
-        for path in list(context_docs.keys()):
-            if ".." in path or not safe_path_pattern.match(path):
-                logger.warning(f"review_code rejecting invalid context doc path: {path}")
-                # We can be slightly more lenient with context docs, just exclude them
-                del context_docs[path]
+        validation_error = await self._validate_paths(target_files, context_docs)
+        if validation_error:
+            return validation_error
 
         total_files = len(target_files) + len(context_docs)
         logger.info(
@@ -133,9 +149,7 @@ class LLMReviewer:
                     content_parts.append(
                         {
                             "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{encoded}"
-                            },
+                            "image_url": {"url": f"data:image/png;base64,{encoded}"},
                         }
                     )
                     safe_traceback = sanitize_for_llm(artifact.traceback)
@@ -177,14 +191,14 @@ class LLMReviewer:
                     return FixPlanSchema(
                         target_file="Unknown",
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        git_diff_patch="Please review the UAT logs manually and provide a fix."
+                        git_diff_patch="Please review the UAT logs manually and provide a fix.",
                     )
 
         # Unreachable but mypy needs it
         return FixPlanSchema(
             target_file="Unknown",
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            git_diff_patch="Please review the UAT logs manually."
+            git_diff_patch="Please review the UAT logs manually.",
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:

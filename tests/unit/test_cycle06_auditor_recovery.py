@@ -15,7 +15,7 @@ def test_fix_plan_schema_valid() -> None:
     data = {
         "target_file": "src/main.py",
         "defect_description": "The button class was misspelled in the test, but the code is correct.",
-        "git_diff_patch": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n- btn = page.locator('.btn-primary')\n+ btn = page.locator('.btn-submit')"
+        "git_diff_patch": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n- btn = page.locator('.btn-primary')\n+ btn = page.locator('.btn-submit')",
     }
     schema = FixPlanSchema(**data)
     assert schema.target_file == "src/main.py"
@@ -27,7 +27,7 @@ def test_fix_plan_schema_invalid_extra_field() -> None:
         "target_file": "src/main.py",
         "defect_description": "Fix it.",
         "git_diff_patch": "...",
-        "extra_field": "Should fail"
+        "extra_field": "Should fail",
     }
     with pytest.raises(ValidationError):
         FixPlanSchema(**data)
@@ -57,9 +57,15 @@ async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
 
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = '{"target_file": "src/main.py", "defect_description": "Test", "git_diff_patch": "patch"}'
+    mock_response.choices[
+        0
+    ].message.content = (
+        '{"target_file": "src/main.py", "defect_description": "Test", "git_diff_patch": "patch"}'
+    )
 
-    with patch("src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock) as mock_acompletion:
+    with patch(
+        "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock
+    ) as mock_acompletion:
         mock_acompletion.return_value = mock_response
 
         plan = await reviewer.diagnose_uat_failure(uat_state, "Instruction", "model-test")
@@ -98,9 +104,11 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
 
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = 'Invalid JSON String'
+    mock_response.choices[0].message.content = "Invalid JSON String"
 
-    with patch("src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock) as mock_acompletion:
+    with patch(
+        "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock
+    ) as mock_acompletion:
         mock_acompletion.return_value = mock_response
 
         plan = await reviewer.diagnose_uat_failure(uat_state, "Instruction", "model-test")
@@ -114,13 +122,12 @@ async def test_auditor_usecase_routing() -> None:
     mock_reviewer = MagicMock(spec=LLMReviewer)
 
     valid_plan = FixPlanSchema(
-        target_file="src/test.py",
-        defect_description="A bug",
-        git_diff_patch="patch"
+        target_file="src/test.py", defect_description="A bug", git_diff_patch="patch"
     )
     mock_reviewer.diagnose_uat_failure = AsyncMock(return_value=valid_plan)
 
     from src.services.auditor_usecase import UATAuditorUseCase
+
     usecase = UATAuditorUseCase(mock_reviewer)
 
     from src.state import UATState
@@ -129,13 +136,8 @@ async def test_auditor_usecase_routing() -> None:
         cycle_id="01",
         current_phase=WorkPhase.CODER,
         uat=UATState(
-            uat_execution_state=UatExecutionState(
-                exit_code=1,
-                stdout="",
-                stderr="",
-                artifacts=[]
-            )
-        )
+            uat_execution_state=UatExecutionState(exit_code=1, stdout="", stderr="", artifacts=[])
+        ),
     )
 
     result = await usecase.execute(state)
