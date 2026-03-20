@@ -3,6 +3,7 @@ from .config import DispatcherConfig
 from .critic import CriticResult
 from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
+from .fix_plan_schema import FixPlanSchema
 from .manifest import CycleManifest, ProjectManifest
 from .multimodal_artifact_schema import MultiModalArtifact
 from .observability_config import ObservabilityConfig
@@ -27,6 +28,7 @@ __all__ = [
     "FileCreate",
     "FileOperation",
     "FilePatch",
+    "FixPlanSchema",
     "GlobalRefactorResult",
     "MultiModalArtifact",
     "ObservabilityConfig",

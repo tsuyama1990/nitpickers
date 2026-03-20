@@ -157,6 +157,19 @@ class CoderUseCase:
                 last_audit.feedback, cycle_manifest.pr_url if cycle_manifest else None
             )
 
+        if state.status == FlowStatus.RETRY_FIX and state.current_fix_plan:
+            fix_plan_text = (
+                f"## Automated UAT Diagnostic Fix Plan\n"
+                f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
+                f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                f"Please implement these exact changes immediately."
+            )
+            instruction += "\n\n" + self._build_feedback_injection(
+                fix_plan_text, cycle_manifest.pr_url if cycle_manifest else None
+            )
+
         return str(instruction)
 
     async def _try_reuse_session(
@@ -165,12 +178,13 @@ class CoderUseCase:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
         cycle_id = state.cycle_id
         last_audit = state.audit_result
-        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed)
-        is_retry = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan
+        is_retry_audit = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
         if not (
-            (is_retry or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
+            (is_retry_audit or is_retry_uat or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
         ):
             return None
 
@@ -198,9 +212,22 @@ class CoderUseCase:
             }
 
         if cycle_manifest.jules_session_id is not None:
+            feedback_payload = ""
+            if is_retry_audit and last_audit and last_audit.feedback:
+                feedback_payload = last_audit.feedback
+            elif is_retry_uat and state.current_fix_plan:
+                feedback_payload = (
+                    f"## Automated UAT Diagnostic Fix Plan\n"
+                    f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                    f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                    f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
+                    f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                    f"Please implement these exact changes immediately."
+                )
+
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id,
-                last_audit.feedback if last_audit and last_audit.feedback else "",
+                feedback_payload
             )
         return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
 

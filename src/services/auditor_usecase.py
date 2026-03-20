@@ -100,6 +100,37 @@ class AuditorUseCase:
     async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
+
+        # Determine if this is a UAT failure diagnostic route
+        if state.uat_execution_state:
+            console.print("[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]")
+
+            instruction = settings.get_template("UAT_AUDITOR_INSTRUCTION.md").read_text()
+            instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
+            model = settings.reviewer.smart_model
+
+            try:
+                fix_plan = await self.llm_reviewer.diagnose_uat_failure(
+                    uat_state=state.uat_execution_state,
+                    instruction=instruction,
+                    model=model,
+                )
+            except Exception as e:
+                console.print(f"[bold red]Diagnostic Loop Failed: {e}[/bold red]")
+                return {"status": FlowStatus.REJECTED, "error": str(e)}
+            else:
+                # We do not approve, we bounce it back to the Coder via RETRY_FIX
+                # But we bypass the normal committee loop because this is an execution failure, not a code review failure
+                console.print(
+                    f"[bold green]Diagnostic complete. Fix plan formulated for: {fix_plan.target_file}[/bold green]"
+                )
+                return {
+                    "current_fix_plan": fix_plan,
+                    "status": FlowStatus.RETRY_FIX,
+                    "uat_execution_state": None,  # clear it so we don't loop
+                    "last_feedback_time": 0,  # bypass cooldowns if any
+                }
+
         is_refactor_phase = getattr(state, "current_phase", None) == WorkPhase.REFACTORING
         template_name = (
             "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md"
@@ -325,6 +356,13 @@ class AuditorUseCase:
         if not static_ok:
             console.print("[bold red]Static Analysis Failed. Extending feedback...[/bold red]")
             status = "rejected"
+            # Ensure we remove the passed flag if it somehow hallucinated it despite static checks failing
+            audit_feedback = audit_feedback.replace("-> REVIEW_PASSED", "-> REVIEW_FAILED")
+
+            # If the LLM returned something completely empty or just "NO ISSUES FOUND", inject the failed flag so the regex parser works
+            if "-> REVIEW_FAILED" not in audit_feedback:
+                audit_feedback = "-> REVIEW_FAILED\n\n" + audit_feedback
+
             audit_feedback += "\n\n# AUTOMATED CHECKS FAILED (MUST FIX)\n"
             audit_feedback += "The following static analysis errors were found. You MUST fix these before the code is accepted.\n"
             audit_feedback += static_log

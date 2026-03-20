@@ -1,7 +1,10 @@
+import base64
+
+import anyio
 import litellm
 from pydantic import ValidationError
 
-from src.domain_models import AuditorReport
+from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
 from src.utils import logger
 
 
@@ -74,6 +77,88 @@ class LLMReviewer:
                     return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
+
+    async def diagnose_uat_failure(
+        self,
+        uat_state: UatExecutionState,
+        instruction: str,
+        model: str,
+    ) -> FixPlanSchema:
+        """
+        Stateless diagnostic outer loop. Analyzes UAT execution logs and Multi-Modal artifacts
+        to provide a highly specific FixPlanSchema.
+        """
+        logger.info(f"LLMReviewer: starting UAT failure diagnosis using {model}")
+
+        content_parts: list[dict[str, str | dict[str, str]]] = [
+            {
+                "type": "text",
+                "text": f"{instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{uat_state.stdout}\n```\n\n## Stderr\n```\n{uat_state.stderr}\n```\n",
+            }
+        ]
+
+        # Attach multimodal artifacts
+        for artifact in uat_state.artifacts:
+            try:
+                img_path = anyio.Path(artifact.screenshot_path)
+                if await img_path.exists():
+                    img_data = await img_path.read_bytes()
+                    encoded = base64.b64encode(img_data).decode("utf-8")
+                    content_parts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{encoded}"
+                            },
+                        }
+                    )
+                    content_parts.append(
+                        {
+                            "type": "text",
+                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{artifact.traceback}\n```\n",
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
+
+        for attempt in range(3):
+            try:
+                response = await litellm.acompletion(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
+                        },
+                        {"role": "user", "content": content_parts},
+                    ],
+                    response_format=FixPlanSchema,
+                    temperature=0.0,
+                    max_tokens=8192,
+                )
+
+                content_str = response.choices[0].message.content
+                if not content_str:
+                    pass  # We'll just try again, it's inside the loop
+                else:
+                    return FixPlanSchema.model_validate_json(content_str)
+            except (ValidationError, Exception) as e:
+                logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
+                if attempt == 2:
+                    logger.error("diagnose_uat_failure failed completely after 3 attempts.")
+                    # Fallback schema to not break the pipeline entirely, though we ideally raise
+                    return FixPlanSchema(
+                        target_file="Unknown",
+                        defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
+                        git_diff_patch="Please review the UAT logs manually and provide a fix."
+                    )
+
+        # Unreachable but mypy needs it
+        return FixPlanSchema(
+            target_file="Unknown",
+            defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
+            git_diff_patch="Please review the UAT logs manually."
+        )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:
         """Converts the deeply nested AuditorReport Pydantic object into a clean Markdown string for the Coder."""

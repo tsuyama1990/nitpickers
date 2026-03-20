@@ -70,4 +70,4 @@ async def test_auditor_node_includes_static_errors() -> None:
     assert not audit_res.is_approved
     assert "AUTOMATED CHECKS FAILED" in audit_res.feedback
     assert "mypy failure" in audit_res.feedback
-    assert "NO ISSUES FOUND" in audit_res.feedback  # LLM text is still there
+    assert "NO ISSUES FOUND" in audit_res.feedback

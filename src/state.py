@@ -8,6 +8,7 @@ from .domain_models import (
     ConflictRegistryItem,
     CyclePlan,
     FileOperation,
+    FixPlanSchema,
     StructuralGateReport,
     UatAnalysis,
     UatExecutionState,
@@ -53,6 +54,7 @@ class CycleState(BaseModel):
     test_exit_code: int | None = None
     uat_analysis: UatAnalysis | None = None
     uat_execution_state: UatExecutionState | None = None
+    current_fix_plan: FixPlanSchema | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
     conflict_status: FlowStatus | None = None
     concurrent_dependencies: list[str] = Field(default_factory=list)
