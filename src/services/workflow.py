@@ -41,6 +41,7 @@ class WorkflowService:
     async def run_gen_cycles(
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
     ) -> None:
+        self.verify_environment_and_observability()
         with KeepAwake(reason="Generating Architecture and Cycles"):
             console.rule("[bold blue]Architect Phase: Generating Cycles[/bold blue]")
 
@@ -118,6 +119,7 @@ class WorkflowService:
         project_session_id: str | None,
         parallel: bool = False,
     ) -> None:
+        self.verify_environment_and_observability()
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
@@ -365,6 +367,7 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def start_session(self, prompt: str, audit_mode: bool, max_retries: int) -> None:
+        self.verify_environment_and_observability()
         console.rule("[bold magenta]Starting Jules Session[/bold magenta]")
 
         docs_dir = settings.paths.documents_dir
@@ -418,6 +421,7 @@ class WorkflowService:
         """
         QA Phase: Generate and verify tutorials based on FINAL_UAT.md.
         """
+        self.verify_environment_and_observability()
         console.rule("[bold cyan]QA Phase: Tutorial Generation[/bold cyan]")
 
         docs_dir = settings.paths.documents_dir
@@ -571,6 +575,7 @@ class WorkflowService:
             )
 
     async def finalize_session(self, project_session_id: str | None) -> None:
+        self.verify_environment_and_observability()
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
         ensure_api_key()
 
@@ -647,6 +652,7 @@ class WorkflowService:
         Archives current session artifacts to dev_documents/system_prompts_phaseNN
         and resets the state for the next phase safely.
         """
+        self.verify_environment_and_observability()
         from src.config import settings
 
         docs_dir = settings.paths.documents_dir

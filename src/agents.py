@@ -10,7 +10,6 @@ from src.config import settings
 from src.domain_models import (
     UatAnalysis,
 )
-from src.utils import logger
 
 
 def _load_file_content(filepath: str) -> str:
@@ -50,21 +49,6 @@ def _get_openrouter_api_key() -> str:
     api_key = settings.OPENROUTER_API_KEY.get_secret_value() or os.getenv("OPENROUTER_API_KEY")
     if api_key:
         return api_key
-
-    # Fallback: Manual .env parsing only if file exists
-    env_path = Path(".env")
-    if env_path.exists():
-        try:
-            content = env_path.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                if line.startswith("OPENROUTER_API_KEY="):
-                    parts = line.split("=", 1)
-                    if len(parts) > 1:
-                        candidate = parts[1].strip().strip('"').strip("'")
-                        if candidate:
-                            return candidate
-        except (OSError, UnicodeDecodeError) as e:
-            logger.debug(f"Failed to read .env for OpenRouter key: {e}")
 
     if settings.test_mode:
         return ""
