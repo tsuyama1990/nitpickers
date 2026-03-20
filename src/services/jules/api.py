@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -34,9 +33,10 @@ class JulesApiClient:
         self._api_key = str(self.api_key or "")
 
     def _try_load_key_from_env_file(self) -> None:
+        env_file_path = settings.paths.workspace_root / ".env"
         try:
-            if Path(".env").exists():
-                content = Path(".env").read_text()
+            if env_file_path.exists():
+                content = env_file_path.read_text()
                 for line in content.splitlines():
                     key_part = line.split("=", 1)[0].strip()
                     if key_part in ["JULES_API_KEY", "GOOGLE_API_KEY"]:
@@ -61,7 +61,7 @@ class JulesApiClient:
         """Returns headers specifically for making requests without exposing to logs easily."""
         return {
             "x-goog-api-key": self._api_key,
-            "Content-Type": "application/json",
+            "Content-Type": settings.jules.content_type,
         }
 
     def _request(
@@ -145,7 +145,7 @@ class JulesApiClient:
         page_token = ""
         try:
             while True:
-                endpoint = f"{session_id_path}/activities"
+                endpoint = f"{session_id_path}/{settings.jules.activities_path}"
                 params = {"pageSize": str(settings.jules.page_size)}
                 if page_token:
                     params["pageToken"] = page_token
@@ -174,8 +174,8 @@ class JulesApiClient:
         try:
             async with httpx.AsyncClient() as client:
                 while True:
-                    url = f"{self.BASE_URL}/{session_id_path}/activities"
-                    params = {"pageSize": "100"}
+                    url = f"{self.BASE_URL}/{session_id_path}/{settings.jules.activities_path}"
+                    params = {"pageSize": str(settings.jules.page_size)}
                     if page_token:
                         params["pageToken"] = page_token
 

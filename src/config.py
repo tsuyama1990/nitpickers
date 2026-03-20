@@ -42,17 +42,19 @@ def _detect_package_dir() -> str:
     if env_pkg_dir and Path(env_pkg_dir).exists():
         return env_pkg_dir
 
-    docker_path = Path("/opt/ac_cdd/src")
+    default_docker_path = os.getenv("DOCKER_SRC_PATH", "/opt/ac_cdd/src")
+    docker_path = Path(default_docker_path)
     if docker_path.exists():
         return str(docker_path)
 
-    src_path = Path("dev_src")
+    default_src_path = os.getenv("DEV_SRC_PATH", "dev_src")
+    src_path = Path(default_src_path)
     if src_path.exists():
         for p in src_path.iterdir():
             if p.is_dir() and (p / "__init__.py").exists():
                 return str(p)
 
-    return os.getenv("DEFAULT_SRC_DIR", "dev_src/src")
+    return os.getenv("DEFAULT_SRC_DIR", f"{default_src_path}/src")
 
 
 class PathsConfig(BaseModel):
@@ -77,6 +79,34 @@ class JulesConfig(BaseModel):
     executable: str = "jules"
     timeout_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+    )
+    content_type: str = Field(
+        default_factory=lambda: os.getenv("JULES_CONTENT_TYPE", "application/json")
+    )
+    success_state: str = Field(
+        default_factory=lambda: os.getenv("JULES_SUCCESS_STATE", "COMPLETED")
+    )
+    failure_state: str = Field(default_factory=lambda: os.getenv("JULES_FAILURE_STATE", "FAILED"))
+    activities_path: str = Field(
+        default_factory=lambda: os.getenv("JULES_ACTIVITIES_PATH", "activities")
+    )
+    send_message_action: str = Field(
+        default_factory=lambda: os.getenv("JULES_SEND_MESSAGE_ACTION", ":sendMessage")
+    )
+    pr_creation_template: str = Field(
+        default_factory=lambda: os.getenv("JULES_PR_CREATION_TEMPLATE", "PR_CREATION_REQUEST.md")
+    )
+    plan_generated_activity: str = Field(
+        default_factory=lambda: os.getenv("JULES_PLAN_GENERATED_ACTIVITY", "planGenerated")
+    )
+    master_integrator_prefix: str = Field(
+        default_factory=lambda: os.getenv("JULES_MASTER_INTEGRATOR_PREFIX", "master-integrator-")
+    )
+    progress_update_interval: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_PROGRESS_UPDATE_INTERVAL", "30"))
+    )
+    activity_polling_timeout: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_ACTIVITY_POLLING_TIMEOUT", "600"))
     )
     polling_interval_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
@@ -204,6 +234,9 @@ class ReviewerConfig(BaseSettings):
         default="openai:gpt-4o-mini",
         alias="AC_CDD_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
+    )
+    master_integrator_temperature: float = Field(
+        default_factory=lambda: float(os.getenv("REVIEWER_MASTER_INTEGRATOR_TEMPERATURE", "0.0"))
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
