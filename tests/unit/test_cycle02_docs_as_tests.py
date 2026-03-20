@@ -1,5 +1,5 @@
 import textwrap
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from _pytest.main import Session
@@ -37,7 +37,6 @@ def test_markdown_test_block_invalid() -> None:
 
 def test_pytest_collect_file_hook_mock() -> None:
     # A simplified mock test of how the hook would behave given a sample markdown
-    from tests.conftest import pytest_collect_file
 
     sample_md = textwrap.dedent(
         """
@@ -52,7 +51,6 @@ def test_pytest_collect_file_hook_mock() -> None:
     mock_parent.session = MagicMock(spec=Session)
 
     import pathlib
-    mock_path = pathlib.Path("ALL_SPEC.md")
 
     # Rather than relying on deep pytest node instantiations in the mock,
     # we can just test the custom collector manually
@@ -79,8 +77,9 @@ def test_pytest_collect_file_hook_mock() -> None:
                 m.name = name
                 m.block = block
                 return m
+
             mock_from_parent.side_effect = side_effect
-            items = list(collector.collect())  # type: ignore[call-arg, misc]
+            items = list(collector.collect())  # type: ignore[misc]
 
     assert len(items) == 1
     assert items[0].name == "test_uat-01"
