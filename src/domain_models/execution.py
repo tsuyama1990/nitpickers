@@ -25,6 +25,28 @@ class ConflictRegistryItem(BaseModel):
     resolved: bool = Field(default=False, description="Whether the conflict is resolved")
 
 
+from typing import Any
+
+
+class ToolExecutionErrorModel(BaseModel):
+    """Encapsulates tool execution protocol errors."""
+
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    message: str = Field(..., description="The error message from the tool protocol")
+    tool_name: str = Field(..., description="The name of the tool that failed")
+    code: int = Field(default=-1, description="Protocol error code or internal code")
+
+
+class ToolExecutionError(Exception):
+    def __init__(self, message: str, tool_name: str, code: int = -1):
+        self.data = ToolExecutionErrorModel(message=message, tool_name=tool_name, code=code)
+        self.message = message
+        self.tool_name = tool_name
+        self.code = code
+        super().__init__(message)
+
+
 class E2BExecutionResult(BaseModel):
     """Artifacts from dynamic sandbox execution."""
 

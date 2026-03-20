@@ -1,7 +1,7 @@
 from .architecture import SystemArchitecture
 from .config import DispatcherConfig
 from .critic import CriticResult
-from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis
+from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis, ToolExecutionError
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
 from .fix_plan_schema import FixPlanSchema
 from .manifest import CycleManifest, ProjectManifest

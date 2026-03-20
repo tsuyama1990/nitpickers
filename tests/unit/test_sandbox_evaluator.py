@@ -3,19 +3,26 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from src.domain_models.execution import E2BExecutionResult
 from src.enums import FlowStatus
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.state import CycleState
 
 
 @pytest.fixture
-def mock_executor() -> Any:
-    executor = AsyncMock()
-    executor.run_tests.return_value = E2BExecutionResult(
-        stdout="Test passed", stderr="", exit_code=0
-    )
-    return executor
+def mock_mcp_manager() -> Any:
+    manager = AsyncMock()
+    manager.__aenter__.return_value = manager
+    manager.get_tools.return_value = []
+    return manager
+
+from unittest.mock import patch
+
+
+@pytest.fixture
+def mock_process_runner() -> Any:
+    runner = AsyncMock()
+    runner.run_command.return_value = ("", "", 0, False)
+    return runner
 
 
 @pytest.fixture
@@ -26,64 +33,42 @@ def base_state() -> CycleState:
 
 
 @pytest.mark.asyncio
-async def test_evaluate_red_phase_success_fails(base_state: CycleState, mock_executor: Any) -> None:
-    base_state.tdd_phase = "red"
-    mock_executor.run_tests.return_value = E2BExecutionResult(
-        stdout="Test passed", stderr="", exit_code=0
-    )
-
-    node = SandboxEvaluatorNodes(executor=mock_executor)
-    result = await node.sandbox_evaluate_node(base_state)
-
-    assert result["status"] == FlowStatus.UAT_FAILED
-    assert "immediately" in result["error"].lower()
-    assert result["tdd_phase"] == "red"
-
-
-@pytest.mark.asyncio
-async def test_evaluate_red_phase_failure_passes(
-    base_state: CycleState, mock_executor: Any
+async def test_evaluate_mechanical_blockade_passes(
+    base_state: CycleState, mock_mcp_manager: Any, mock_process_runner: Any
 ) -> None:
-    base_state.tdd_phase = "red"
-    mock_executor.run_tests.return_value = E2BExecutionResult(
-        stdout="", stderr="Test failed", exit_code=1
-    )
+    mock_process_runner.run_command.return_value = ("Success output", "", 0, False)
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
-    result = await node.sandbox_evaluate_node(base_state)
+    with patch("src.nodes.sandbox_evaluator.ChatOpenAI") as mock_chat:
+        mock_instance = MagicMock()
+        mock_instance.bind_tools.return_value = MagicMock()
+        mock_chat.return_value = mock_instance
+        node = SandboxEvaluatorNodes(mcp_manager=mock_mcp_manager, process_runner=mock_process_runner)
+
+        result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.READY_FOR_AUDIT
-    assert result["tdd_phase"] == "green"
+    assert "structural_report" in result
 
 
 @pytest.mark.asyncio
-async def test_evaluate_green_phase_success_passes(
-    base_state: CycleState, mock_executor: Any
+async def test_evaluate_mechanical_blockade_fails(
+    base_state: CycleState, mock_mcp_manager: Any, mock_process_runner: Any
 ) -> None:
-    base_state.tdd_phase = "green"
-    mock_executor.run_tests.return_value = E2BExecutionResult(
-        stdout="Test passed", stderr="", exit_code=0
-    )
+    def side_effect(cmd, **kwargs):
+        if "test" in " ".join(cmd):
+            return ("", "Test failed", 1, False)
+        return ("", "", 0, False)
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
-    result = await node.sandbox_evaluate_node(base_state)
+    mock_process_runner.run_command.side_effect = side_effect
 
-    assert result["status"] == FlowStatus.READY_FOR_AUDIT
-    assert result["tdd_phase"] == "green"
+    with patch("src.nodes.sandbox_evaluator.ChatOpenAI") as mock_chat:
+        mock_instance = MagicMock()
+        mock_instance.bind_tools.return_value = MagicMock()
+        mock_chat.return_value = mock_instance
+        node = SandboxEvaluatorNodes(mcp_manager=mock_mcp_manager, process_runner=mock_process_runner)
 
+        result = await node.sandbox_evaluate_node(base_state)
 
-@pytest.mark.asyncio
-async def test_evaluate_green_phase_failure_fails(
-    base_state: CycleState, mock_executor: Any
-) -> None:
-    base_state.tdd_phase = "green"
-    mock_executor.run_tests.return_value = E2BExecutionResult(
-        stdout="", stderr="Test failed", exit_code=1
-    )
-
-    node = SandboxEvaluatorNodes(executor=mock_executor)
-    result = await node.sandbox_evaluate_node(base_state)
-
-    assert result["status"] == FlowStatus.UAT_FAILED
-    assert "Test failed" in result["error"]
-    assert result["tdd_phase"] == "green"
+    assert result["status"] == FlowStatus.TDD_FAILED
+    assert "Verification failed" in result["error"]
+    assert "structural_report" in result

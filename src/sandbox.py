@@ -124,6 +124,9 @@ class SandboxRunner:
             "echo",
             "pwd",
             "pip",
+            "test",
+            "tar",
+            "mkdir"
         ]
 
         if base_cmd in whitelist:

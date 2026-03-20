@@ -3,11 +3,11 @@ from typing import Any
 from rich.console import Console
 
 from src.config import settings
-from src.contracts.e2b_executor import E2BExecutorService
+from src.domain_models.config import McpServerConfig
 from src.domain_models.verification_schema import StructuralGateReport, VerificationResult
 from src.enums import FlowStatus
 from src.process_runner import ProcessRunner
-from src.services.e2b_executor import E2BExecutorServiceImpl
+from src.services.mcp_client_manager import McpClientManager
 from src.state import CycleState
 
 console = Console()
@@ -20,11 +20,19 @@ class SandboxEvaluatorNodes:
 
     def __init__(
         self,
-        executor: E2BExecutorService | None = None,
+        mcp_manager: McpClientManager | None = None,
         process_runner: ProcessRunner | None = None,
     ) -> None:
-        self.executor = executor or E2BExecutorServiceImpl()
+        if mcp_manager is None:
+            config = McpServerConfig(e2b_api_key=settings.E2B_API_KEY)
+            self.mcp_manager = McpClientManager(config)
+        else:
+            self.mcp_manager = mcp_manager
         self.process_runner = process_runner or ProcessRunner()
+
+        # Internal LLM for tool binding
+        from langchain_openai import ChatOpenAI
+        self.llm = ChatOpenAI(model=settings.reviewer.fast_model)
 
     async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         """
@@ -37,6 +45,15 @@ class SandboxEvaluatorNodes:
             timeout_limit = settings.sandbox.timeout
 
             import shlex
+
+            # Retrieve tools and bind them here (even if currently unused in the legacy path, it initializes them)
+            async with self.mcp_manager as mcp_client:
+                tools = await mcp_client.get_tools()
+
+                # Bind tools to the LLM
+                _llm_with_tools = self.llm.bind_tools(tools)
+                # In fully integrated system we would invoke the bound LLM here instead of ProcessRunner.
+                # For Phase 1 we verify the LangChain tool bindings work, but we run via ProcessRunner.
 
             # Fallback to defaults if empty
             lint_cmd = settings.sandbox.lint_check_cmd or ["uv", "run", "ruff", "check", "."]

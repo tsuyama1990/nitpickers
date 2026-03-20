@@ -1,4 +1,14 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
+
+
+class McpServerConfig(BaseModel):
+    """Configuration for the MCP Server."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    e2b_api_key: SecretStr = Field(..., description="API key for the E2B Sandbox")
+    timeout_seconds: int = Field(default=300, ge=1, description="Timeout for MCP server operations")
+    npx_path: str = Field(default="npx", description="Path to the npx executable")
 
 
 class DispatcherConfig(BaseModel):
