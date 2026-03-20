@@ -173,20 +173,30 @@ class ASTAnalyzerConfig(BaseModel):
     )
 
 
-class AgentsConfig(BaseModel):
-    auditor_model: str = "openai:gpt-4o"
-    qa_analyst_model: str = "openai:gpt-4o"
+class AgentsConfig(BaseSettings):
+    auditor_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_AUDITOR_MODEL",
+    )
+    qa_analyst_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_QA_ANALYST_MODEL",
+    )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
-class ReviewerConfig(BaseModel):
+class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
         default="openai:gpt-4o",
+        alias="AC_CDD_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
         default="openai:gpt-4o-mini",
+        alias="AC_CDD_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
 class SessionConfig(BaseModel):
@@ -204,9 +214,16 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str = Field(default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key")
-    OPENROUTER_API_KEY: str = Field(default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""), description="OpenRouter API key")
-    E2B_API_KEY: str = Field(default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key")
+    JULES_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key"
+    )
+    OPENROUTER_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""),
+        description="OpenRouter API key",
+    )
+    E2B_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key"
+    )
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000
     DUMMY_CYCLE_ID: str = "00"
@@ -227,7 +244,14 @@ class Settings(BaseSettings):
 
     # Graph Node Names
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
-    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
+    known_implicit_secrets: list[str] = [
+        "DATABASE_URL",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "E2B_API_KEY",
+        "JULES_API_KEY",
+        "OPENROUTER_API_KEY",
+    ]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -258,16 +282,25 @@ class Settings(BaseSettings):
     node_coder_critic: str = "coder_critic"
 
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default_factory=lambda: os.getenv("AUDITOR_MODEL_MODE", "fast")) # type: ignore
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default="fast", alias="AUDITOR_MODEL_MODE")
 
     test_mode: bool = Field(
-        default_factory=lambda: os.getenv("TEST_MODE", "false").lower() == "true",
-        description="Run in test mode with dummy keys and responses"
+        default=False,
+        alias="TEST_MODE",
+        description="Run in test mode with dummy keys and responses",
     )
     auto_approve: bool = Field(
-        default_factory=lambda: os.getenv("AUTO_APPROVE", "false").lower() == "true",
-        description="Auto approve AI decisions"
+        default=False, alias="AUTO_APPROVE", description="Auto approve AI decisions"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_booleans(cls, values: Any) -> Any:
+        if isinstance(values.get("TEST_MODE"), str):
+            values["TEST_MODE"] = values["TEST_MODE"].lower() == "true"
+        if isinstance(values.get("AUTO_APPROVE"), str):
+            values["AUTO_APPROVE"] = values["AUTO_APPROVE"].lower() == "true"
+        return values
 
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
@@ -280,6 +313,7 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
         import os
+
         from dotenv import load_dotenv
 
         load_dotenv()
@@ -311,7 +345,6 @@ class Settings(BaseSettings):
             self.tracing.tracing_enabled = False
 
         return self
-
 
     @property
     def current_session_id(self) -> str:
