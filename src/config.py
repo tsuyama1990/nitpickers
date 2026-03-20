@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain_models.tracing import LangSmithConfig
@@ -21,7 +21,8 @@ try:
     elif _root_env.exists():
         load_dotenv(_root_env, override=True)
     else:
-        load_dotenv()  # Try default locations
+        # Prevent completely open unverified loading
+        load_dotenv(Path.cwd() / ".env")
 except Exception:
     logging.exception("Could not load dotenv")
 
@@ -38,20 +39,28 @@ def _detect_package_dir() -> str:
     # Use environment variable for configurable override, fallback to detection
     # This must use os.getenv as Settings is not initialized yet.
     env_pkg_dir = os.getenv("PACKAGE_DIR")
-    if env_pkg_dir and Path(env_pkg_dir).exists():
-        return env_pkg_dir
+    if env_pkg_dir:
+        try:
+            # Validate that the path is safely within the project workspace
+            resolved_pkg = Path(env_pkg_dir).resolve()
+            if resolved_pkg.exists() and resolved_pkg.is_relative_to(Path.cwd()):
+                return str(resolved_pkg)
+        except (ValueError, RuntimeError):
+            pass
 
-    docker_path = Path("/opt/ac_cdd/src")
+    default_docker_path = os.getenv("DOCKER_SRC_PATH", "/opt/ac_cdd/src")
+    docker_path = Path(default_docker_path)
     if docker_path.exists():
         return str(docker_path)
 
-    src_path = Path("dev_src")
+    default_src_path = os.getenv("DEV_SRC_PATH", "dev_src")
+    src_path = Path(default_src_path)
     if src_path.exists():
         for p in src_path.iterdir():
             if p.is_dir() and (p / "__init__.py").exists():
                 return str(p)
 
-    return os.getenv("DEFAULT_SRC_DIR", "dev_src/src")
+    return os.getenv("DEFAULT_SRC_DIR", f"{default_src_path}/src")
 
 
 class PathsConfig(BaseModel):
@@ -77,6 +86,34 @@ class JulesConfig(BaseModel):
     timeout_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
     )
+    content_type: str = Field(
+        default_factory=lambda: os.getenv("JULES_CONTENT_TYPE", "application/json")
+    )
+    success_state: str = Field(
+        default_factory=lambda: os.getenv("JULES_SUCCESS_STATE", "COMPLETED")
+    )
+    failure_state: str = Field(default_factory=lambda: os.getenv("JULES_FAILURE_STATE", "FAILED"))
+    activities_path: str = Field(
+        default_factory=lambda: os.getenv("JULES_ACTIVITIES_PATH", "activities")
+    )
+    send_message_action: str = Field(
+        default_factory=lambda: os.getenv("JULES_SEND_MESSAGE_ACTION", ":sendMessage")
+    )
+    pr_creation_template: str = Field(
+        default_factory=lambda: os.getenv("JULES_PR_CREATION_TEMPLATE", "PR_CREATION_REQUEST.md")
+    )
+    plan_generated_activity: str = Field(
+        default_factory=lambda: os.getenv("JULES_PLAN_GENERATED_ACTIVITY", "planGenerated")
+    )
+    master_integrator_prefix: str = Field(
+        default_factory=lambda: os.getenv("JULES_MASTER_INTEGRATOR_PREFIX", "master-integrator-")
+    )
+    progress_update_interval: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_PROGRESS_UPDATE_INTERVAL", "30"))
+    )
+    activity_polling_timeout: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_ACTIVITY_POLLING_TIMEOUT", "600"))
+    )
     polling_interval_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
     )
@@ -89,6 +126,10 @@ class JulesConfig(BaseModel):
     max_plan_rejections: int = Field(
         default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
     )
+    request_timeout: float = Field(
+        default_factory=lambda: float(os.getenv("JULES_REQUEST_TIMEOUT", "30.0"))
+    )
+    page_size: int = Field(default_factory=lambda: int(os.getenv("JULES_PAGE_SIZE", "100")))
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -159,6 +200,9 @@ class SandboxConfig(BaseModel):
         ".auditignore",
         "README.md",
     ]
+    allowed_cwd_prefixes: list[str] = Field(
+        default_factory=lambda: os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/home/,/opt/").split(",")
+    )
     install_cmd: str = "pip install --no-cache-dir ruff"
     lint_check_cmd: list[str] = ["uv", "run", "ruff", "check", "--fix", "."]
     type_check_cmd: list[str] = ["uv", "run", "mypy", "src/"]
@@ -169,7 +213,8 @@ class ASTAnalyzerConfig(BaseModel):
     max_files: int = Field(default=10000, description="Maximum number of files to analyze")
     max_depth: int = Field(default=20, description="Maximum directory depth to search")
     max_file_size_bytes: int = Field(
-        default=10 * 1024 * 1024, description="Maximum file size to read (10MB)"
+        default_factory=lambda: int(os.getenv("AST_ANALYZER_MAX_FILE_SIZE_BYTES", "10485760")),
+        description="Maximum file size to read (10MB default)",
     )
 
 
@@ -196,6 +241,9 @@ class ReviewerConfig(BaseSettings):
         alias="AC_CDD_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
+    master_integrator_temperature: float = Field(
+        default_factory=lambda: float(os.getenv("REVIEWER_MASTER_INTEGRATOR_TEMPERATURE", "0.0"))
+    )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
@@ -214,13 +262,27 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str = Field(default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key")
-    OPENROUTER_API_KEY: str = Field(default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""), description="OpenRouter API key")
-    E2B_API_KEY: str = Field(default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key")
+    JULES_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("JULES_API_KEY", "")),
+        description="Google API key",
+    )
+    OPENROUTER_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("OPENROUTER_API_KEY", "")),
+        description="OpenRouter API key",
+    )
+    E2B_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("E2B_API_KEY", "")),
+        description="E2B Sandbox API key",
+    )
     MAX_RETRIES: int = 10
-    GRAPH_RECURSION_LIMIT: int = 2000
+    GRAPH_RECURSION_LIMIT: int = Field(
+        default_factory=lambda: int(os.getenv("GRAPH_RECURSION_LIMIT", "2000"))
+    )
     DUMMY_CYCLE_ID: str = "00"
 
+    DEFAULT_BASE_BRANCH: str = Field(
+        default_factory=lambda: os.getenv("DEFAULT_BASE_BRANCH", "main")
+    )
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 
@@ -237,7 +299,14 @@ class Settings(BaseSettings):
 
     # Graph Node Names
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
-    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
+    known_implicit_secrets: list[str] = [
+        "DATABASE_URL",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "E2B_API_KEY",
+        "JULES_API_KEY",
+        "OPENROUTER_API_KEY",
+    ]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -268,19 +337,15 @@ class Settings(BaseSettings):
     node_coder_critic: str = "coder_critic"
 
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(
-        default="fast", alias="AUDITOR_MODEL_MODE"
-    )
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default="fast", alias="AUDITOR_MODEL_MODE")
 
     test_mode: bool = Field(
         default=False,
         alias="TEST_MODE",
-        description="Run in test mode with dummy keys and responses"
+        description="Run in test mode with dummy keys and responses",
     )
     auto_approve: bool = Field(
-        default=False,
-        alias="AUTO_APPROVE",
-        description="Auto approve AI decisions"
+        default=False, alias="AUTO_APPROVE", description="Auto approve AI decisions"
     )
 
     @model_validator(mode="before")
@@ -303,10 +368,6 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
         import os
-
-        from dotenv import load_dotenv
-
-        load_dotenv()
 
         missing = []
         if not getattr(self, "test_mode", False):
@@ -335,7 +396,6 @@ class Settings(BaseSettings):
             self.tracing.tracing_enabled = False
 
         return self
-
 
     @property
     def current_session_id(self) -> str:

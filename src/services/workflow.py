@@ -41,6 +41,7 @@ class WorkflowService:
     async def run_gen_cycles(
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
     ) -> None:
+        self.verify_environment_and_observability()
         with KeepAwake(reason="Generating Architecture and Cycles"):
             console.rule("[bold blue]Architect Phase: Generating Cycles[/bold blue]")
 
@@ -102,9 +103,27 @@ class WorkflowService:
                         project_session_id=session_id_val,
                     )
 
-        except Exception:
-            console.print("[bold red]Architect execution failed.[/bold red]")
+        except Exception as e:
+            console.print(f"[bold red]Architect execution failed: {e}[/bold red]")
             logger.exception("Architect execution failed")
+
+            # Rollback: Clean up any partial state
+            if "session_id_val" in locals() and "mgr" in locals():
+                try:
+                    logger.warning(
+                        f"Rolling back generated cycle plans for session {session_id_val}"
+                    )
+                    # A proper state cleanup would delete the generated state file or empty the cycle array
+                    manifest_to_rollback = mgr.load_manifest()
+                    if (
+                        manifest_to_rollback
+                        and manifest_to_rollback.project_session_id == session_id_val
+                    ):
+                        manifest_to_rollback.cycles = []
+                        mgr.save_manifest(manifest_to_rollback)
+                except Exception as rollback_err:
+                    logger.error(f"Failed to rollback after error: {rollback_err}")
+
             sys.exit(1)
         finally:
             await self.builder.cleanup()
@@ -118,6 +137,7 @@ class WorkflowService:
         project_session_id: str | None,
         parallel: bool = False,
     ) -> None:
+        self.verify_environment_and_observability()
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
@@ -138,6 +158,7 @@ class WorkflowService:
         try:
             # Pydantic schema enforcing invariants
             import os
+
             ObservabilityConfig(
                 langchain_tracing_v2=os.getenv("LANGCHAIN_TRACING_V2", ""),
                 langchain_api_key=os.getenv("LANGCHAIN_API_KEY", ""),
@@ -151,11 +172,13 @@ class WorkflowService:
                 "and LANGCHAIN_PROJECT in your .env file.[/yellow]"
             )
             import sys
+
             sys.exit(1)
 
         # Implicit dependency scan via SPEC documents
         try:
             import re
+
             docs_dir = settings.paths.documents_dir
             if not docs_dir.exists():
                 docs_dir = Path.cwd() / "dev_documents"
@@ -165,13 +188,16 @@ class WorkflowService:
                 content = spec_path.read_text(encoding="utf-8")
                 # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
                 for secret in settings.known_implicit_secrets:
-                    if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.getenv(secret):
+                    if re.search(
+                        r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE
+                    ) and not os.getenv(secret):
                         console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
                         console.print(
                             f"[yellow]The specification file references '{secret}', "
                             f"but it was not found in the environment. Please configure it.[/yellow]"
                         )
                         import sys
+
                         sys.exit(1)
         except SystemExit:
             raise
@@ -179,7 +205,6 @@ class WorkflowService:
             logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
 
         console.print("[green]Environment & Observability verified successfully.[/green]")
-
 
     async def _run_all_cycles(
         self,
@@ -239,7 +264,79 @@ class WorkflowService:
         if auto:
             await self.finalize_session(project_session_id)
 
-    async def _run_single_cycle(  # noqa: PLR0915
+    def _check_cycle_completion(self, cycle_id: str) -> bool:
+        """Check if cycle is already completed."""
+        mgr = StateManager()
+        manifest = mgr.load_manifest()
+        if manifest:
+            cycle = next((c for c in manifest.cycles if c.id == cycle_id), None)
+            if cycle and cycle.status == "completed":
+                console.print(f"[yellow]Cycle {cycle_id} is already completed. Skipping.[/yellow]")
+                return True
+        return False
+
+    async def _checkout_feature_branch(self, fb: str | None) -> None:
+        """Check out the feature branch for the cycle."""
+        if fb:
+            logger.info(f"Checking out feature branch: {fb}")
+            try:
+                await self.git.checkout_branch(fb)
+                await self.git.pull_changes()
+                logger.info(f"Successfully checked out feature branch: {fb}")
+            except Exception as e:
+                logger.warning(f"Could not checkout feature branch: {e}")
+                logger.warning("Proceeding with current branch (may cause issues!)")
+        else:
+            logger.warning("No feature branch found in manifest. Using current branch.")
+
+    async def _execute_cycle_graph(
+        self,
+        cycle_id: str,
+        start_iter: int,
+        resume: bool,
+        pid: str | None,
+        fb: str | None,
+        ib: str | None,
+        planned_count: int,
+    ) -> None:
+        """Execute the cycle graph."""
+        graph = self.builder.build_coder_graph()
+        state = CycleState(
+            cycle_id=cycle_id,
+            iteration_count=start_iter,
+            resume_mode=resume,
+            project_session_id=pid,
+            feature_branch=fb,
+            integration_branch=ib,
+            planned_cycle_count=planned_count,
+        )
+
+        thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
+        metadata = TracingMetadata(
+            session_id=thread_id, execution_type="cycle_phase", git_branch=fb
+        )
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+
+        config = RunnableConfig(
+            configurable={"thread_id": thread_id},
+            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            **tracing_config,  # type: ignore[typeddict-item]
+        )
+        final_state = await graph.ainvoke(state, config)
+
+        if final_state.get("error"):
+            console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
+            sys.exit(1)
+
+        console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
+
+    def _update_cycle_status(self, cycle_id: str) -> None:
+        """Update cycle status to completed."""
+        mgr = StateManager()
+        if mgr.load_manifest():
+            mgr.update_cycle_state(cycle_id, status="completed")
+
+    async def _run_single_cycle(
         self,
         cycle_id: str,
         resume: bool,
@@ -247,19 +344,13 @@ class WorkflowService:
         start_iter: int,
         project_session_id: str | None,
     ) -> None:
-        # Check completion status before starting
-        mgr = StateManager()
-        manifest = mgr.load_manifest()
-        if manifest:
-            cycle = next((c for c in manifest.cycles if c.id == cycle_id), None)
-            if cycle and cycle.status == "completed":
-                console.print(f"[yellow]Cycle {cycle_id} is already completed. Skipping.[/yellow]")
-                return
+        if self._check_cycle_completion(cycle_id):
+            return
+
         with KeepAwake(reason=f"Running Implementation Cycle {cycle_id}"):
             console.rule(f"[bold green]Coder Phase: Cycle {cycle_id}[/bold green]")
 
         ensure_api_key()
-        graph = self.builder.build_coder_graph()
 
         try:
             if auto:
@@ -268,7 +359,6 @@ class WorkflowService:
             mgr = StateManager()
             manifest = mgr.load_manifest()
 
-            # Fallback if manifest doesn't exist (shouldn't happen in proper flow)
             pid = project_session_id
             ib = None
             if manifest:
@@ -278,55 +368,14 @@ class WorkflowService:
                 console.print("[red]No active session found. Run gen-cycles first.[/red]")
                 sys.exit(1)
 
-            # CRITICAL: Checkout feature branch before starting coder session
-            # This is the main development branch where all cycles accumulate
             fb = manifest.feature_branch if manifest else None
-            if fb:
-                logger.info(f"Checking out feature branch: {fb}")
-                git = self.git
-                try:
-                    await git.checkout_branch(fb)
-                    # Ensure we have latest changes (e.g. from Architecture PR merge)
-                    await git.pull_changes()
-                    logger.info(f"Successfully checked out feature branch: {fb}")
-                except Exception as e:
-                    logger.warning(f"Could not checkout feature branch: {e}")
-                    logger.warning("Proceeding with current branch (may cause issues!)")
-            else:
-                logger.warning("No feature branch found in manifest. Using current branch.")
+            await self._checkout_feature_branch(fb)
 
-            state = CycleState(
-                cycle_id=cycle_id,
-                iteration_count=start_iter,
-                resume_mode=resume,
-                project_session_id=pid,
-                feature_branch=fb,  # Main development branch
-                integration_branch=ib,  # For future finalize-session
-                planned_cycle_count=len(manifest.cycles) if manifest else 0,
+            planned_count = len(manifest.cycles) if manifest else 0
+            await self._execute_cycle_graph(
+                cycle_id, start_iter, resume, pid, fb, ib, planned_count
             )
-
-            thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
-            metadata = TracingMetadata(
-                session_id=thread_id, execution_type="cycle_phase", git_branch=fb
-            )
-            tracing_config = settings.tracing_service.get_run_config(metadata)
-
-            config = RunnableConfig(
-                configurable={"thread_id": thread_id},
-                recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                **tracing_config,  # type: ignore[typeddict-item]
-            )
-            final_state = await graph.ainvoke(state, config)
-
-            if final_state.get("error"):
-                console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
-                sys.exit(1)
-
-            console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
-
-            # Update status to completed
-            if manifest:
-                mgr.update_cycle_state(cycle_id, status="completed")
+            self._update_cycle_status(cycle_id)
 
         except Exception:
             console.print(f"[bold red]Cycle {cycle_id} execution failed.[/bold red]")
@@ -336,6 +385,7 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def start_session(self, prompt: str, audit_mode: bool, max_retries: int) -> None:
+        self.verify_environment_and_observability()
         console.rule("[bold magenta]Starting Jules Session[/bold magenta]")
 
         docs_dir = settings.paths.documents_dir
@@ -389,6 +439,7 @@ class WorkflowService:
         """
         QA Phase: Generate and verify tutorials based on FINAL_UAT.md.
         """
+        self.verify_environment_and_observability()
         console.rule("[bold cyan]QA Phase: Tutorial Generation[/bold cyan]")
 
         docs_dir = settings.paths.documents_dir
@@ -542,6 +593,7 @@ class WorkflowService:
             )
 
     async def finalize_session(self, project_session_id: str | None) -> None:
+        self.verify_environment_and_observability()
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
         ensure_api_key()
 
@@ -618,6 +670,7 @@ class WorkflowService:
         Archives current session artifacts to dev_documents/system_prompts_phaseNN
         and resets the state for the next phase safely.
         """
+        self.verify_environment_and_observability()
         from src.config import settings
 
         docs_dir = settings.paths.documents_dir

@@ -87,7 +87,7 @@ class JulesClient:
 
             self.plan_auditor = PlanAuditor()
 
-        api_key_to_use = settings.JULES_API_KEY or os.getenv("JULES_API_KEY")
+        api_key_to_use = settings.JULES_API_KEY.get_secret_value() or os.getenv("JULES_API_KEY")
         if not api_key_to_use and self.credentials:
             api_key_to_use = self.credentials.token
 
@@ -108,7 +108,7 @@ class JulesClient:
 
     def _get_headers(self) -> dict[str, str]:
         # Reuse headers from api_client + auth if needed
-        headers = self.api_client.headers.copy()
+        headers = self.api_client._get_headers()
 
         if self.credentials:
             if not self.credentials.valid:
@@ -251,7 +251,13 @@ class JulesClient:
             **tracing_config,  # type: ignore[typeddict-item]
         )
 
-        final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        try:
+            async with asyncio.timeout(self.timeout):
+                final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+        except TimeoutError as e:
+            msg = f"Wait for completion exceeded global timeout of {self.timeout}s."
+            logger.error(msg)
+            raise JulesTimeoutError(msg) from e
 
         # Handle final state
         # LangGraph may return dict or object
@@ -373,7 +379,9 @@ class JulesClient:
 
         async with httpx.AsyncClient() as client:
             try:
-                resp = await client.get(session_url, headers=self._get_headers(), timeout=10.0)
+                resp = await client.get(
+                    session_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+                )
                 resp.raise_for_status()
                 data = resp.json()
                 return str(data.get("state", "UNKNOWN"))
@@ -395,13 +403,17 @@ class JulesClient:
             try:
                 async with httpx.AsyncClient() as client:
                     session_resp = await client.get(
-                        session_url, headers=self._get_headers(), timeout=10.0
+                        session_url,
+                        headers=self._get_headers(),
+                        timeout=settings.jules.request_timeout,
                     )
                     if session_resp.status_code == httpx.codes.OK:
                         state = session_resp.json().get("state", "UNKNOWN")
 
                     act_url = f"{session_url}/activities?pageSize=100"
-                    act_resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+                    act_resp = await client.get(
+                        act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+                    )
                     if act_resp.status_code == httpx.codes.OK:
                         initial_acts = act_resp.json().get("activities", [])
             except Exception as e:
@@ -443,8 +455,7 @@ class JulesClient:
     async def _check_success_state(
         self, client: httpx.AsyncClient, session_url: str, data: dict[str, Any], state: str
     ) -> dict[str, Any] | None:
-        # Only COMPLETED state exists in Jules API (not SUCCEEDED)
-        if state != "COMPLETED":
+        if state != settings.jules.success_state:
             return None
 
         # Per Jules API spec, PR is only in session outputs (not in activities)
@@ -455,8 +466,7 @@ class JulesClient:
                     self.console.print(f"\n[bold green]PR Created: {pr_url}[/bold green]")
                     return {"pr_url": pr_url, "status": "success", "raw": data}
 
-        # If session is COMPLETED but no PR found, try to create PR manually
-        if state == "COMPLETED":
+        if state == settings.jules.success_state:
             self.console.print("[yellow]Session Completed but NO PR found.[/yellow]")
             self.console.print("[cyan]Attempting to create PR manually...[/cyan]")
 
@@ -475,7 +485,7 @@ class JulesClient:
         return None
 
     def _check_failure_state(self, data: dict[str, Any], state: str) -> None:
-        if state != "FAILED":
+        if state != settings.jules.failure_state:
             return
 
         # Check if PR was created despite failure (PR is in session outputs only)
@@ -498,9 +508,11 @@ class JulesClient:
     async def _log_activities_count(
         self, client: httpx.AsyncClient, session_url: str, last_count: int
     ) -> int:
-        act_url = f"{session_url}/activities"
+        act_url = f"{session_url}/{settings.jules.activities_path}"
         try:
-            resp = await client.get(act_url, headers=self._get_headers(), timeout=10.0)
+            resp = await client.get(
+                act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
+            )
             if resp.status_code == httpx.codes.OK:
                 activities = resp.json().get("activities", [])
                 if len(activities) > last_count:
@@ -534,7 +546,7 @@ class JulesClient:
         if not session_url.startswith("http"):
             session_url = self._get_session_url(session_url)
 
-        url = f"{session_url}:sendMessage"
+        url = f"{session_url}{settings.jules.send_message_action}"
         payload = {"prompt": content}
 
         async with httpx.AsyncClient() as client:
@@ -557,20 +569,30 @@ class JulesClient:
             session_id if session_id.startswith("sessions/") else f"sessions/{session_id}"
         )
         activities = await self.list_activities(session_id_path)
+        target_activity = settings.jules.plan_generated_activity
         for activity in activities:
-            if "planGenerated" in activity:
-                return dict(activity.get("planGenerated", {}))
+            if target_activity in activity:
+                return dict(activity.get(target_activity, {}))
         return None
 
     async def wait_for_activity_type(
-        self, session_id: str, target_type: str, timeout_seconds: int = 600, interval: int = 10
+        self,
+        session_id: str,
+        target_type: str,
+        timeout_seconds: int | None = None,
+        interval: int = 10,
     ) -> dict[str, Any] | None:
         """Polls for a specific activity type with timeout."""
         session_id_path = (
             session_id if session_id.startswith("sessions/") else f"sessions/{session_id}"
         )
+        timeout_to_use = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else settings.jules.activity_polling_timeout
+        )
         try:
-            async with asyncio.timeout(timeout_seconds):
+            async with asyncio.timeout(timeout_to_use):
                 while True:
                     activities = await self.list_activities(session_id_path)
                     for activity in activities:
@@ -593,7 +615,7 @@ class JulesClient:
         This session is entirely local (via litellm) and stateful,
         to resolve merge conflicts without spawning full Jules PR sessions.
         """
-        return f"master-integrator-{uuid.uuid4().hex[:8]}"
+        return f"{settings.jules.master_integrator_prefix}{uuid.uuid4().hex[:8]}"
 
     async def send_message_to_session(
         self,
@@ -621,7 +643,7 @@ class JulesClient:
             response = await litellm.acompletion(
                 model=model,
                 messages=messages,
-                temperature=0.0,
+                temperature=settings.reviewer.master_integrator_temperature,
                 metadata={"tags": ["master_integrator"], "session_id": session_id},
             )
         except Exception as e:
@@ -646,7 +668,7 @@ class JulesClient:
         try:
             self.console.print("[cyan]Sending message to Jules to commit and create PR...[/cyan]")
 
-            message = settings.get_template("PR_CREATION_REQUEST.md").read_text()
+            message = settings.get_template(settings.jules.pr_creation_template).read_text()
 
             await self._send_message(session_url, message)
 
@@ -667,10 +689,12 @@ class JulesClient:
                     elapsed += poll_interval
 
                     # Check for PR and new activities
-                    act_url = f"{session_url}/activities"
+                    act_url = f"{session_url}/{settings.jules.activities_path}"
                     try:
                         act_resp = await client.get(
-                            act_url, headers=self._get_headers(), timeout=10.0
+                            act_url,
+                            headers=self._get_headers(),
+                            timeout=settings.jules.request_timeout,
                         )
                         if act_resp.status_code == httpx.codes.OK:
                             activities = act_resp.json().get("activities", [])
@@ -695,7 +719,7 @@ class JulesClient:
                     except Exception as e:
                         logger.debug(f"Error checking for PR/activities: {e}")
 
-                    if elapsed % 30 == 0:  # Progress update every 30 seconds
+                    if elapsed % settings.jules.progress_update_interval == 0:
                         self.console.print(
                             f"[dim]Still waiting for PR... ({elapsed}/{max_wait}s elapsed)[/dim]"
                         )

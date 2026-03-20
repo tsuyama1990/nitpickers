@@ -11,7 +11,13 @@ class TestSessionStateValidation:
 
     @pytest.fixture
     def mock_client(self):  # type: ignore[no-untyped-def]
-        with patch.dict(os.environ, {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}), patch("src.config.Settings.validate_api_keys", return_value=None):
+        with (
+            patch.dict(
+                os.environ,
+                {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"},
+            ),
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+        ):
             client = JulesClient()
             client.api_client._request = MagicMock()  # type: ignore
             return client

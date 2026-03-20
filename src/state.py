@@ -8,6 +8,7 @@ from .domain_models import (
     ConflictRegistryItem,
     CyclePlan,
     FileOperation,
+    StructuralGateReport,
     UatAnalysis,
 )
 from .enums import FlowStatus, WorkPhase
@@ -46,6 +47,7 @@ class CycleState(BaseModel):
     qa_retry_count: int = 0
 
     # Test State
+    structural_report: StructuralGateReport | None = None
     test_logs: str = ""
     test_exit_code: int | None = None
     uat_analysis: UatAnalysis | None = None

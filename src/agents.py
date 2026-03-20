@@ -10,7 +10,6 @@ from src.config import settings
 from src.domain_models import (
     UatAnalysis,
 )
-from src.utils import logger
 
 
 def _load_file_content(filepath: str) -> str:
@@ -47,30 +46,15 @@ def _get_system_context() -> str:
 
 def _get_openrouter_api_key() -> str:
     """Retrieves OpenRouter API key with fallbacks."""
-    api_key = settings.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY")
+    api_key = settings.OPENROUTER_API_KEY.get_secret_value() or os.getenv("OPENROUTER_API_KEY")
     if api_key:
         return api_key
 
-    # Fallback: Manual .env parsing only if file exists
-    env_path = Path(".env")
-    if env_path.exists():
-        try:
-            content = env_path.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                if line.startswith("OPENROUTER_API_KEY="):
-                    parts = line.split("=", 1)
-                    if len(parts) > 1:
-                        candidate = parts[1].strip().strip('"').strip("'")
-                        if candidate:
-                            return candidate
-        except (OSError, UnicodeDecodeError) as e:
-            logger.debug(f"Failed to read .env for OpenRouter key: {e}")
+    if settings.test_mode:
+        return ""
 
-    logger.warning(
-        "OPENROUTER_API_KEY is not set. Using dummy key 'sk-dummy'. "
-        "This will fail if real API calls are attempted."
-    )
-    return "sk-dummy"
+    msg = "OPENROUTER_API_KEY is not set but is required for OpenRouter models."
+    raise ValueError(msg)
 
 
 def get_model(model_name: str) -> Model | str:
@@ -82,12 +66,16 @@ def get_model(model_name: str) -> Model | str:
         real_model_name = model_name.replace("openrouter/", "", 1)
         api_key = _get_openrouter_api_key()
 
-        # OpenAIChatModel requires env var for OpenRouter if using provider="openrouter"
-        os.environ["OPENROUTER_API_KEY"] = api_key
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        provider = OpenAIProvider(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
 
         return OpenAIChatModel(
             model_name=real_model_name,
-            provider="openrouter",
+            provider=provider,
         )
 
     # If gemini/ prefix exists, or just return the string (let PydanticAI handle it)
