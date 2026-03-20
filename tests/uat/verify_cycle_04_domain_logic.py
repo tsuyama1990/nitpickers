@@ -62,20 +62,29 @@ def _(UATCaptureResult: Any, TEST_FAILURE_CONTENT: str, EXPECTED_EXIT_CODE: Any)
         env["PYTHONPATH"] = str(pathlib.Path.cwd())
         env["PACKAGE_DIR"] = str(pathlib.Path.cwd())
 
-        # Set dummy keys explicitly for the pytest run inside the sandbox so the pydantic settings passes without failing
-        env["OPENAI_API_KEY"] = "dummy"
-        env["ANTHROPIC_API_KEY"] = "dummy"
-        env["GEMINI_API_KEY"] = "dummy"
-        env["OPENROUTER_API_KEY"] = "dummy"
-        env["JULES_API_KEY"] = "dummy"
-        env["E2B_API_KEY"] = "dummy"
+        import uuid
+
+        # Set random dummy keys explicitly for the pytest run inside the sandbox so the pydantic settings passes without failing
+        # These are random values for local test environments
+        env["OPENAI_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
+        env["ANTHROPIC_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
+        env["GEMINI_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
+        env["OPENROUTER_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
+        env["JULES_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
+        env["E2B_API_KEY"] = f"e2b-test-{uuid.uuid4().hex}"
         env["TEST_MODE"] = "True"
 
-        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        artifacts_dir.resolve().mkdir(parents=True, exist_ok=True)
 
         # Force the worker to use the same config values without getting tripped up by env path resolutions
-        process_res = subprocess.run(  # noqa: S603, PLW1510
-            [sys.executable, "-m", "pytest", *PYTEST_ARGS], cwd=str(pathlib.Path.cwd()), env=env
+        # Use shell=False securely passing args via list format
+        cwd_resolved = str(pathlib.Path.cwd().resolve())
+        process_res = subprocess.run(  # noqa: S603
+            [sys.executable, "-m", "pytest", *PYTEST_ARGS],
+            cwd=cwd_resolved,
+            env=env,
+            shell=False,
+            check=False
         )
         result = process_res.returncode
 

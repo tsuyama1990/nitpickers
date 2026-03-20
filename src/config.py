@@ -31,31 +31,45 @@ PROMPT_FILENAME_MAP = {
 }
 
 
+def _is_safe_path(p: Path) -> bool:
+    """Validates that a path does not contain traversal characters and is within expected bounds."""
+    try:
+        resolved = p.resolve()
+        # Accept if within cwd OR in a common safe root like /opt/
+        if resolved.is_relative_to(Path.cwd()):
+            return True
+
+        # We also allow /opt/ and /home/ configurations if strictly validated
+        allowed_prefixes = os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/opt/,/home/").split(",")
+        for prefix in allowed_prefixes:
+            if prefix and str(resolved).startswith(prefix):
+                return True
+    except (ValueError, RuntimeError):
+        pass
+    return False
+
 def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
-        try:
-            resolved_pkg = Path(env_pkg_dir).resolve()
-            if resolved_pkg.exists() and resolved_pkg.is_relative_to(Path.cwd()):
-                return str(resolved_pkg)
-        except (ValueError, RuntimeError):
-            pass
+        resolved_pkg = Path(env_pkg_dir)
+        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve().exists():
+            return str(resolved_pkg.resolve())
     return None
 
 def _check_docker_src_path() -> str | None:
     docker_src_path = os.getenv("DOCKER_SRC_PATH")
     if docker_src_path:
         docker_path = Path(docker_src_path)
-        if docker_path.exists():
-            return str(docker_path)
+        if _is_safe_path(docker_path) and docker_path.resolve().exists():
+            return str(docker_path.resolve())
     return None
 
 def _check_dev_src_path() -> str | None:
     dev_src_path = os.getenv("DEV_SRC_PATH")
     if dev_src_path:
         src_path = Path(dev_src_path)
-        if src_path.exists():
-            for p in src_path.iterdir():
+        if _is_safe_path(src_path) and src_path.resolve().exists():
+            for p in src_path.resolve().iterdir():
                 if p.is_dir() and (p / "__init__.py").exists():
                     return str(p)
     return None
@@ -76,7 +90,9 @@ def _detect_package_dir() -> str:
 
     default_src_dir = os.getenv("DEFAULT_SRC_DIR")
     if default_src_dir:
-        return default_src_dir
+        resolved = Path(default_src_dir)
+        if _is_safe_path(resolved) and resolved.resolve().exists():
+            return str(resolved.resolve())
 
     src_fallback = Path.cwd() / "src"
     if src_fallback.exists() and src_fallback.is_dir():
