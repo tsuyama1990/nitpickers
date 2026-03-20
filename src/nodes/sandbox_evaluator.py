@@ -36,10 +36,26 @@ class SandboxEvaluatorNodes:
         try:
             timeout_limit = settings.sandbox.timeout
 
+            import shlex
+
+            # Fallback to defaults if empty
+            lint_cmd = settings.sandbox.lint_check_cmd or ["uv", "run", "ruff", "check", "."]
+            type_cmd = settings.sandbox.type_check_cmd or ["uv", "run", "mypy", "."]
+
+            # `test_cmd` might be a string based on `SandboxConfig`
+            raw_test_cmd = settings.sandbox.test_cmd or "uv run pytest"
+            if isinstance(raw_test_cmd, str):
+                try:
+                    test_cmd = shlex.split(raw_test_cmd)
+                except ValueError:
+                    test_cmd = raw_test_cmd.split()
+            else:
+                test_cmd = raw_test_cmd
+
             commands = {
-                "lint": ["uv", "run", "ruff", "check", "."],
-                "type": ["uv", "run", "mypy", "."],
-                "test": ["uv", "run", "pytest"],
+                "lint": lint_cmd,
+                "type": type_cmd,
+                "test": test_cmd,
             }
             results = {}
 
