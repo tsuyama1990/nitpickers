@@ -10,21 +10,24 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain_models.tracing import LangSmithConfig
 
-# Load environment variables from .env file
-# Priority: .ac_cdd/.env > .env (root)
-_ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-_root_env = Path.cwd() / ".env"
 
-try:
-    if _ac_cdd_env.exists():
-        load_dotenv(_ac_cdd_env, override=True)
-    elif _root_env.exists():
-        load_dotenv(_root_env, override=True)
-    else:
-        # Prevent completely open unverified loading
-        load_dotenv(Path.cwd() / ".env")
-except Exception:
-    logging.exception("Could not load dotenv")
+# Load environment variables strictly from known safe environments
+def _load_env() -> None:
+    try:
+        # First priority: strict .ac_cdd environment block
+        _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+        # Optional root environment fallback, must be directly within cwd
+        _root_env = Path.cwd() / ".env"
+
+        if _ac_cdd_env.is_relative_to(Path.cwd()) and _ac_cdd_env.exists():
+            load_dotenv(_ac_cdd_env, override=True)
+        elif _root_env.is_relative_to(Path.cwd()) and _root_env.exists():
+            load_dotenv(_root_env, override=True)
+    except Exception:
+        logging.exception("Could not safely load dotenv")
+
+
+_load_env()
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -34,33 +37,79 @@ PROMPT_FILENAME_MAP = {
 }
 
 
-def _detect_package_dir() -> str:
-    """Detects the main package directory."""
-    # Use environment variable for configurable override, fallback to detection
-    # This must use os.getenv as Settings is not initialized yet.
+def _is_safe_path(p: Path) -> bool:
+    """Validates that a path does not contain traversal characters and is within expected bounds."""
+    try:
+        resolved = p.resolve()
+        # Accept if within cwd OR in a common safe root like /opt/
+        if resolved.is_relative_to(Path.cwd()):
+            return True
+
+        # We also allow /opt/ and /home/ configurations if strictly validated
+        allowed_prefixes = os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/opt/,/home/").split(",")
+        for prefix in allowed_prefixes:
+            if prefix and str(resolved).startswith(prefix):
+                return True
+    except (ValueError, RuntimeError):
+        pass
+    return False
+
+
+def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
-        try:
-            # Validate that the path is safely within the project workspace
-            resolved_pkg = Path(env_pkg_dir).resolve()
-            if resolved_pkg.exists() and resolved_pkg.is_relative_to(Path.cwd()):
-                return str(resolved_pkg)
-        except (ValueError, RuntimeError):
-            pass
+        resolved_pkg = Path(env_pkg_dir)
+        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve().exists():
+            return str(resolved_pkg.resolve())
+    return None
 
-    default_docker_path = os.getenv("DOCKER_SRC_PATH", "/opt/ac_cdd/src")
-    docker_path = Path(default_docker_path)
-    if docker_path.exists():
-        return str(docker_path)
 
-    default_src_path = os.getenv("DEV_SRC_PATH", "dev_src")
-    src_path = Path(default_src_path)
-    if src_path.exists():
-        for p in src_path.iterdir():
-            if p.is_dir() and (p / "__init__.py").exists():
-                return str(p)
+def _check_docker_src_path() -> str | None:
+    docker_src_path = os.getenv("DOCKER_SRC_PATH")
+    if docker_src_path:
+        docker_path = Path(docker_src_path)
+        if _is_safe_path(docker_path) and docker_path.resolve().exists():
+            return str(docker_path.resolve())
+    return None
 
-    return os.getenv("DEFAULT_SRC_DIR", f"{default_src_path}/src")
+
+def _check_dev_src_path() -> str | None:
+    dev_src_path = os.getenv("DEV_SRC_PATH")
+    if dev_src_path:
+        src_path = Path(dev_src_path)
+        if _is_safe_path(src_path) and src_path.resolve().exists():
+            for p in src_path.resolve().iterdir():
+                if p.is_dir() and (p / "__init__.py").exists():
+                    return str(p)
+    return None
+
+
+def _detect_package_dir() -> str:
+    """Detects the main package directory."""
+    res = _check_env_pkg_dir()
+    if res:
+        return res
+
+    res = _check_docker_src_path()
+    if res:
+        return res
+
+    res = _check_dev_src_path()
+    if res:
+        return res
+
+    default_src_dir = os.getenv("DEFAULT_SRC_DIR")
+    if default_src_dir:
+        resolved = Path(default_src_dir)
+        if _is_safe_path(resolved) and resolved.resolve().exists():
+            return str(resolved.resolve())
+
+    src_fallback = Path.cwd() / "src"
+    if src_fallback.exists() and src_fallback.is_dir():
+        return str(src_fallback)
+
+    msg = "Could not resolve package directory. Ensure PACKAGE_DIR, DEV_SRC_PATH, DOCKER_SRC_PATH, or DEFAULT_SRC_DIR is set and points to a valid Python package."
+    raise ValueError(msg)
 
 
 class PathsConfig(BaseModel):
@@ -68,6 +117,7 @@ class PathsConfig(BaseModel):
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
+    artifacts_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts")
     sessions_dir: str = ".jules/sessions"
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
     tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
@@ -180,6 +230,18 @@ class ToolsConfig(BaseModel):
     required_executables: list[str] = ["uv", "git"]
     conflict_codes: set[str] = Field(
         default_factory=lambda: {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
+    )
+
+
+class UATConfig(BaseModel):
+    playwright_args: list[str] = Field(
+        default_factory=lambda: [
+            "--browser=chromium",
+            "--tracing=on",
+            f"-c={Path.cwd() / 'pyproject.toml'}",
+            f"--confcutdir={Path.cwd()}",
+            f"--rootdir={Path.cwd()}",
+        ]
     )
 
 
@@ -319,6 +381,7 @@ class Settings(BaseSettings):
     paths: PathsConfig = Field(default_factory=PathsConfig)
     jules: JulesConfig = Field(default_factory=JulesConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
+    uat: UATConfig = Field(default_factory=UATConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
