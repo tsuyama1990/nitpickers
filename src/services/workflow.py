@@ -138,7 +138,6 @@ class WorkflowService:
         try:
             # Pydantic schema enforcing invariants
             import os
-
             ObservabilityConfig(
                 langchain_tracing_v2=os.getenv("LANGCHAIN_TRACING_V2", ""),
                 langchain_api_key=os.getenv("LANGCHAIN_API_KEY", ""),
@@ -152,13 +151,11 @@ class WorkflowService:
                 "and LANGCHAIN_PROJECT in your .env file.[/yellow]"
             )
             import sys
-
             sys.exit(1)
 
         # Implicit dependency scan via SPEC documents
         try:
             import re
-
             docs_dir = settings.paths.documents_dir
             if not docs_dir.exists():
                 docs_dir = Path.cwd() / "dev_documents"
@@ -168,16 +165,13 @@ class WorkflowService:
                 content = spec_path.read_text(encoding="utf-8")
                 # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
                 for secret in settings.known_implicit_secrets:
-                    if re.search(
-                        r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE
-                    ) and not os.getenv(secret):
+                    if re.search(r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE) and not os.getenv(secret):
                         console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
                         console.print(
                             f"[yellow]The specification file references '{secret}', "
                             f"but it was not found in the environment. Please configure it.[/yellow]"
                         )
                         import sys
-
                         sys.exit(1)
         except SystemExit:
             raise
@@ -185,6 +179,7 @@ class WorkflowService:
             logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
 
         console.print("[green]Environment & Observability verified successfully.[/green]")
+
 
     async def _run_all_cycles(
         self,

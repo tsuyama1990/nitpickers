@@ -38,19 +38,7 @@ def test_observability_config_empty_key() -> None:
         )
 
 
-@patch.dict(
-    os.environ,
-    {
-        "LANGCHAIN_TRACING_V2": "true",
-        "LANGCHAIN_API_KEY": "valid_key",
-        "LANGCHAIN_PROJECT": "test_proj",
-        "JULES_API_KEY": "mock",
-        "E2B_API_KEY": "mock",
-        "OPENROUTER_API_KEY": "mock",
-        "OPENAI_API_KEY": "mock",
-    },
-    clear=True,
-)
+@patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_success() -> None:
     with (
         patch("src.services.workflow.ServiceContainer.default"),
@@ -61,19 +49,7 @@ def test_verify_environment_success() -> None:
         service.verify_environment_and_observability()
 
 
-@patch.dict(
-    os.environ,
-    {
-        "LANGCHAIN_TRACING_V2": "false",
-        "LANGCHAIN_API_KEY": "valid_key",
-        "LANGCHAIN_PROJECT": "test_proj",
-        "JULES_API_KEY": "mock",
-        "E2B_API_KEY": "mock",
-        "OPENROUTER_API_KEY": "mock",
-        "OPENAI_API_KEY": "mock",
-    },
-    clear=True,
-)
+@patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "false", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_failure_tracing() -> None:
     with (
         patch("src.services.workflow.ServiceContainer.default"),
@@ -84,19 +60,7 @@ def test_verify_environment_failure_tracing() -> None:
             service.verify_environment_and_observability()
 
 
-@patch.dict(
-    os.environ,
-    {
-        "LANGCHAIN_TRACING_V2": "true",
-        "LANGCHAIN_API_KEY": "valid_key",
-        "LANGCHAIN_PROJECT": "test_proj",
-        "JULES_API_KEY": "mock",
-        "E2B_API_KEY": "mock",
-        "OPENROUTER_API_KEY": "mock",
-        "OPENAI_API_KEY": "mock",
-    },
-    clear=True,
-)
+@patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_spec_dependency_success(tmp_path: Path) -> None:
     # Setup a dummy spec document mentioning an implicit dependency
     spec_dir = tmp_path / "dev_documents" / "system_prompts"
@@ -104,29 +68,15 @@ def test_verify_environment_spec_dependency_success(tmp_path: Path) -> None:
     spec_file = spec_dir / "SPEC.md"
     spec_file.write_text("This feature requires DATABASE_URL to connect to the db.")
 
-    with (
-        patch("src.config.settings.paths.documents_dir", tmp_path / "dev_documents"),
-        patch.dict(os.environ, {"DATABASE_URL": "postgresql://user:pass@localhost:5432/db"}),
-        patch("src.services.workflow.ServiceContainer.default"),
-        patch("src.config.Settings.validate_api_keys", return_value=None),
-    ):
+    with patch(
+        "src.config.settings.paths.documents_dir", tmp_path / "dev_documents"
+    ), patch.dict(
+        os.environ, {"DATABASE_URL": "postgresql://user:pass@localhost:5432/db"}
+    ), patch("src.services.workflow.ServiceContainer.default"), patch("src.config.Settings.validate_api_keys", return_value=None):
         service = WorkflowService()
         service.verify_environment_and_observability()
 
-
-@patch.dict(
-    os.environ,
-    {
-        "LANGCHAIN_TRACING_V2": "true",
-        "LANGCHAIN_API_KEY": "valid_key",
-        "LANGCHAIN_PROJECT": "test_proj",
-        "JULES_API_KEY": "mock",
-        "E2B_API_KEY": "mock",
-        "OPENROUTER_API_KEY": "mock",
-        "OPENAI_API_KEY": "mock",
-    },
-    clear=True,
-)
+@patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": "valid_key", "LANGCHAIN_PROJECT": "test_proj", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock", "OPENROUTER_API_KEY": "mock", "OPENAI_API_KEY": "mock"}, clear=True)
 def test_verify_environment_spec_dependency_failure(tmp_path: Path) -> None:
     # Setup a dummy spec document mentioning an implicit dependency
     spec_dir = tmp_path / "dev_documents" / "system_prompts"
@@ -134,11 +84,9 @@ def test_verify_environment_spec_dependency_failure(tmp_path: Path) -> None:
     spec_file = spec_dir / "SPEC.md"
     spec_file.write_text("This feature requires DATABASE_URL to connect to the db.")
 
-    with (
-        patch("src.config.settings.paths.documents_dir", tmp_path / "dev_documents"),
-        patch("src.services.workflow.ServiceContainer.default"),
-        patch("src.config.Settings.validate_api_keys", return_value=None),
-    ):
+    with patch("src.config.settings.paths.documents_dir", tmp_path / "dev_documents"), \
+         patch("src.services.workflow.ServiceContainer.default"), \
+         patch("src.config.Settings.validate_api_keys", return_value=None):
         # Not providing DATABASE_URL
         service = WorkflowService()
         with pytest.raises(SystemExit):

@@ -9,7 +9,7 @@ An AI-native development environment based on a highly robust methodology design
 ## Key Features
 
 - **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
-- **Docs-as-Tests Integration:** Natively parse and execute `uat-scenario` code blocks directly from Markdown specifications (like `ALL_SPEC.md` and `README.md`) using standard Pytest commands, ensuring that your documentation is always an active, verifiable test suite.
+- **Docs-as-Tests Integration:** Natively parse and execute `uat-scenario` blocks directly from markdown specifications (`ALL_SPEC.md`), ensuring the implementation accurately reflects the documented requirements.
 - **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions.
 - **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent for autonomous remediation.
 - **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads, transforming the "Black Box" of agent execution into quantifiable, debuggable datasets.
@@ -89,15 +89,6 @@ Ensure the following tools are available on your system:
 ## Usage
 
 NITPICKERS operates primarily through its Command-Line Interface.
-
-### Docs-as-Tests Execution
-
-You can now run your markdown documentation directly as a test suite. Simply tag your Python code blocks with `uat-scenario` in your Markdown files (e.g., `ALL_SPEC.md` or `README.md`), and run:
-
-```bash
-uv run pytest ALL_SPEC.md
-```
-This will automatically parse, extract, and execute the tagged code blocks alongside your standard test suite.
 
 ### Generate Development Cycles (Phase 1)
 Parse your raw architectural documents into structured specifications and UAT plans.

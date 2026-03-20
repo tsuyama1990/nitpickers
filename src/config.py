@@ -72,33 +72,35 @@ class PathsConfig(BaseModel):
         return self
 
 
-
-class JulesConfig(BaseSettings):
+class JulesConfig(BaseModel):
     executable: str = "jules"
-    timeout_seconds: int = Field(default=7200, alias="JULES_TIMEOUT_SECONDS")
-    polling_interval_seconds: int = Field(default=120, alias="JULES_POLL_INTERVAL_SECONDS")
+    timeout_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+    )
+    polling_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
+    )
     base_url: str = Field(
-        default="https://jules.googleapis.com/v1alpha", alias="JULES_BASE_URL"
+        default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha")
     )
     wait_for_pr_timeout_seconds: int = Field(
-        default=900, alias="JULES_WAIT_FOR_PR_TIMEOUT_SECONDS"
+        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900"))
     )
-    max_plan_rejections: int = Field(default=2, alias="JULES_MAX_PLAN_REJECTIONS")
+    max_plan_rejections: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
+    )
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
-        default=1,
-        alias="JULES_MONITOR_BATCH_SIZE",
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", "1")),
         description="Number of polls per LangGraph node invocation (batch_size * monitor_poll_interval_seconds = seconds per step).",
     )
     monitor_poll_interval_seconds: int = Field(
-        default=30,
-        alias="JULES_MONITOR_POLL_INTERVAL_SECONDS",
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", "30")),
         description="Seconds between each poll within a monitor batch.",
     )
     stale_session_timeout_seconds: int = Field(
-        default=1800,
-        alias="JULES_STALE_SESSION_TIMEOUT_SECONDS",
+        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", "1800")),
         description=(
             "Seconds without a Jules state change before sending a nudge message. "
             "Jules sometimes enters a silent mode where IN_PROGRESS stays unchanged. "
@@ -107,37 +109,22 @@ class JulesConfig(BaseSettings):
         ),
     )
     max_stale_nudges: int = Field(
-        default=3,
-        alias="JULES_MAX_STALE_NUDGES",
+        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", "3")),
         description="Maximum number of nudge messages to send before giving up and raising a timeout.",
     )
 
     # Distress detection keywords - Jules sometimes completes but signals a problem in its last message
     distress_keywords: list[str] = Field(
-        default=[
-            "inconsistent", "cannot act", "faulty audit", "incorrect version",
-            "please manually", "blocked", "issue with", "reiterate",
-            "cannot proceed", "unable to complete", "needs your input"
-        ],
-        alias="JULES_DISTRESS_KEYWORDS",
+        default_factory=lambda: os.getenv(
+            "JULES_DISTRESS_KEYWORDS",
+            "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input",
+        ).split(","),
         description=(
             "Keywords in Jules' last agentMessaged activity that indicate it is stuck or "
             "needs help. NOTE: keep these specific - broad words like 'error' will fire on "
             "normal progress messages such as '3 errors were fixed'."
         ),
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _parse_distress_keywords(cls, values: Any) -> Any:
-        # BaseSettings can read list of strings from comma separated if configured properly,
-        # but to be safe and support standard comma-separated env vars:
-        kw = values.get("distress_keywords", values.get("JULES_DISTRESS_KEYWORDS"))
-        if isinstance(kw, str):
-            values["distress_keywords"] = [k.strip() for k in kw.split(",")]
-        return values
-
-    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
 class ToolsConfig(BaseModel):
@@ -186,20 +173,30 @@ class ASTAnalyzerConfig(BaseModel):
     )
 
 
-class AgentsConfig(BaseModel):
-    auditor_model: str = "openai:gpt-4o"
-    qa_analyst_model: str = "openai:gpt-4o"
+class AgentsConfig(BaseSettings):
+    auditor_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_AUDITOR_MODEL",
+    )
+    qa_analyst_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_QA_ANALYST_MODEL",
+    )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
-class ReviewerConfig(BaseModel):
+class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
         default="openai:gpt-4o",
+        alias="AC_CDD_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
         default="openai:gpt-4o-mini",
+        alias="AC_CDD_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
 class SessionConfig(BaseModel):
@@ -217,16 +214,9 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key"
-    )
-    OPENROUTER_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""),
-        description="OpenRouter API key",
-    )
-    E2B_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key"
-    )
+    JULES_API_KEY: str = Field(default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key")
+    OPENROUTER_API_KEY: str = Field(default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""), description="OpenRouter API key")
+    E2B_API_KEY: str = Field(default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key")
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000
     DUMMY_CYCLE_ID: str = "00"
@@ -247,14 +237,7 @@ class Settings(BaseSettings):
 
     # Graph Node Names
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
-    known_implicit_secrets: list[str] = [
-        "DATABASE_URL",
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "E2B_API_KEY",
-        "JULES_API_KEY",
-        "OPENROUTER_API_KEY",
-    ]
+    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -286,17 +269,28 @@ class Settings(BaseSettings):
 
     # Auditor model selection: "smart" or "fast"
     AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(
-        default_factory=lambda: os.getenv("AUDITOR_MODEL_MODE", "fast")  # type: ignore[arg-type]
+        default="fast", alias="AUDITOR_MODEL_MODE"
     )
 
     test_mode: bool = Field(
-        default_factory=lambda: os.getenv("TEST_MODE", "false").lower() == "true",
-        description="Run in test mode with dummy keys and responses",
+        default=False,
+        alias="TEST_MODE",
+        description="Run in test mode with dummy keys and responses"
     )
     auto_approve: bool = Field(
-        default_factory=lambda: os.getenv("AUTO_APPROVE", "false").lower() == "true",
-        description="Auto approve AI decisions",
+        default=False,
+        alias="AUTO_APPROVE",
+        description="Auto approve AI decisions"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_booleans(cls, values: Any) -> Any:
+        if isinstance(values.get("TEST_MODE"), str):
+            values["TEST_MODE"] = values["TEST_MODE"].lower() == "true"
+        if isinstance(values.get("AUTO_APPROVE"), str):
+            values["AUTO_APPROVE"] = values["AUTO_APPROVE"].lower() == "true"
+        return values
 
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
@@ -341,6 +335,7 @@ class Settings(BaseSettings):
             self.tracing.tracing_enabled = False
 
         return self
+
 
     @property
     def current_session_id(self) -> str:

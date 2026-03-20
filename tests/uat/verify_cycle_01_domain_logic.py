@@ -92,7 +92,7 @@ def scenario_01_observability_hard_stop(mo: Any) -> tuple[Any, ...]:
 
     try:
         res = subprocess.run(
-            ["uv", "run", "python", "-m", "src.cli", "run-cycle", "--id", "01"],  # noqa: S607
+            ["uv", "run", "python", "-m", "src.cli", "run-cycle", "--id", "01"], # noqa: S607
             env=env,
             capture_output=True,
             text=True,
@@ -122,7 +122,7 @@ def scenario_01_observability_success(mo: Any) -> tuple[Any, ...]:
     try:
         # Just running a mock or help command to ensure it doesn't fail on observability verification
         res = subprocess.run(
-            ["uv", "run", "python", "-m", "src.cli", "run-cycle", "--help"],  # noqa: S607
+            ["uv", "run", "python", "-m", "src.cli", "run-cycle", "--help"], # noqa: S607
             env=env,
             capture_output=True,
             text=True,
@@ -133,9 +133,7 @@ def scenario_01_observability_success(mo: Any) -> tuple[Any, ...]:
         msg = f"Success execution test failed: {e.stderr}"
         raise AssertionError(msg) from e
 
-    mo.md(
-        "✅ Scenario 2 Passed: CLI successful verification with configured observability parameters."
-    )
+    mo.md("✅ Scenario 2 Passed: CLI successful verification with configured observability parameters.")
     return (res,)
 
 

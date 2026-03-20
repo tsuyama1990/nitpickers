@@ -8,12 +8,7 @@ from src.services.llm_reviewer import LLMReviewer
 
 @pytest.fixture
 def reviewer() -> LLMReviewer:
-    with (
-        patch.dict(
-            os.environ, {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}
-        ),
-        patch("src.config.Settings.validate_api_keys", return_value=None),
-    ):
+    with patch.dict(os.environ, {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}), patch("src.config.Settings.validate_api_keys", return_value=None):
         return LLMReviewer()
 
 
