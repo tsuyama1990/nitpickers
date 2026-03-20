@@ -46,6 +46,17 @@ class TestSessionManager:
 
         assert manifest is None
 
+    @patch("src.services.git_ops.GitManager.read_state_file")
+    async def test_load_manifest_validation_error(
+        self, mock_read: AsyncMock, manager: SessionManager
+    ) -> None:
+        # Valid JSON but missing required fields for ProjectManifest
+        mock_read.return_value = '{"unexpected_field": "value"}'
+
+        manifest = await manager.load_manifest()
+
+        assert manifest is None
+
     @patch("src.services.git_ops.GitManager.save_state_file")
     async def test_save_manifest(self, mock_save: AsyncMock, manager: SessionManager) -> None:
         manifest = ProjectManifest(
