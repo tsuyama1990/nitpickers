@@ -92,6 +92,16 @@ class CycleState(BaseModel):
     requested_cycle_count: int | None = None  # User-requested cycle count from CLI
 
     # Validators
+    @field_validator("cycle_id")
+    @classmethod
+    def validate_cycle_id(cls, v: str) -> str:
+        import re
+
+        if not re.match(r"^\d{2}$", v):
+            msg = f"cycle_id '{v}' is invalid (must be exactly two digits, e.g., '01')"
+            raise ValueError(msg)
+        return v
+
     @field_validator("current_auditor_index")
     @classmethod
     def validate_auditor_index(cls, v: int) -> int:

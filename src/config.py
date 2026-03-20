@@ -13,7 +13,9 @@ from src.domain_models.tracing import LangSmithConfig
 
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
-    """Load configuration from a strict, single location."""
+    """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
+    load_dotenv(override=True)
+
     _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
 
     if _ac_cdd_env.exists():

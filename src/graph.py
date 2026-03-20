@@ -28,6 +28,10 @@ class GraphBuilder:
 
     def _create_architect_graph(self) -> StateGraph[CycleState]:
         """Create the graph for the Architect phase (gen-cycles)."""
+        if not self.nodes:
+            msg = "Graph nodes are not initialized"
+            raise ValueError(msg)
+
         workflow = StateGraph(CycleState)
 
         workflow.add_node("architect_session", self.nodes.architect_session_node)
@@ -52,6 +56,10 @@ class GraphBuilder:
 
     def _create_coder_graph(self) -> StateGraph[CycleState]:
         """Create the graph for the Coder/Auditor phase (run-cycle)."""
+        if not self.nodes:
+            msg = "Graph nodes are not initialized"
+            raise ValueError(msg)
+
         workflow = StateGraph(CycleState)
 
         from src.config import settings

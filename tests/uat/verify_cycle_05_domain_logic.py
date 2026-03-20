@@ -31,6 +31,7 @@ def run_routing_tests(
         Scenario ID 05-02 & 05-03 Routing rules:
         - If status is COMPLETED, route to end.
         - If status is UAT_FAILED, route to auditor.
+        - If status is START_REFACTOR, route to coder_session.
         """
         state_retry = CycleState(cycle_id="05", status=FlowStatus.UAT_FAILED)
         assert route_uat(state_retry) == "auditor"
