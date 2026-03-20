@@ -316,10 +316,13 @@ class CoderUseCase:
             )
 
             state_transitioned = False
-            for attempt in range(12):  # 12 * 5s = 60s
-                await asyncio.sleep(5)
+            max_retries = settings.jules.feedback_wait_retries
+            wait_interval = settings.jules.feedback_wait_interval_seconds
+
+            for attempt in range(max_retries):
+                await asyncio.sleep(wait_interval)
                 current_state = await self.jules.get_session_state(session_id)
-                console.print(f"[dim]State check ({attempt + 1}/12): {current_state}[/dim]")
+                console.print(f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]")
 
                 if current_state in _ACTIVE_STATES:
                     state_transitioned = True

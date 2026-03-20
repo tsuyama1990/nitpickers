@@ -59,7 +59,6 @@ class LLMReviewer:
                         },
                         {"role": "user", "content": prompt},
                     ],
-                    response_format=AuditorReport,
                     temperature=0.0,  # Deterministic output for reviews
                     max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
                 )

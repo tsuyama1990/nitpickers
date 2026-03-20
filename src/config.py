@@ -225,6 +225,12 @@ class JulesConfig(BaseModel):
     max_plan_rejections: int = Field(
         default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
     )
+    feedback_wait_retries: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_RETRIES", "12"))
+    )
+    feedback_wait_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_INTERVAL_SECONDS", "5"))
+    )
     request_timeout: float = Field(
         default_factory=lambda: float(os.getenv("JULES_REQUEST_TIMEOUT", "30.0"))
     )
@@ -264,6 +270,56 @@ class JulesConfig(BaseModel):
             "needs help. NOTE: keep these specific - broad words like 'error' will fire on "
             "normal progress messages such as '3 errors were fixed'."
         ),
+    )
+
+
+class AuditorConfig(BaseModel):
+    excluded_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "dev_src/",
+            "dev_documents/",
+            "tests/ac_cdd/",
+            ".github/",
+            "pyproject.toml",
+            "setup.py",
+            "setup.cfg",
+            "README.md",
+            "LICENSE",
+            ".gitignore",
+            "Dockerfile",
+            "docker-compose",
+            ".env",
+        ]
+    )
+    reviewable_extensions: set[str] = Field(
+        default_factory=lambda: {
+            ".py",
+            ".md",
+            ".toml",
+            ".json",
+            ".yaml",
+            ".yml",
+            ".txt",
+            ".sh",
+            ".html",
+            ".js",
+            ".css",
+            ".ts",
+        }
+    )
+    build_artifact_patterns: list[str] = Field(
+        default_factory=lambda: [
+            ".egg-info/",
+            "__pycache__/",
+            ".pyc",
+            ".pyo",
+            ".pyd",
+            "dist/",
+            "build/",
+            ".pytest_cache/",
+            ".mypy_cache/",
+            ".ruff_cache/",
+        ]
     )
 
 
@@ -435,6 +491,7 @@ class Settings(BaseSettings):
     uat: UATConfig = Field(default_factory=UATConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    auditor: AuditorConfig = Field(default_factory=AuditorConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
     ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
     tracing: LangSmithConfig = Field(default_factory=LangSmithConfig)

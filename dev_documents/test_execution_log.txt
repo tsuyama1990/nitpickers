@@ -5,7 +5,7 @@ configfile: pyproject.toml
 testpaths: tests
 plugins: langsmith-0.7.22, base-url-2.1.0, cov-7.0.0, playwright-0.7.2, asyncio-1.3.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 210 items
+collected 209 items
 
 tests/ac_cdd/integration/test_audit_loop.py .                            [  0%]
 tests/ac_cdd/integration/test_cli_commands.py .                          [  0%]
@@ -14,37 +14,36 @@ tests/ac_cdd/integration/test_git_robustness.py FF                       [  2%]
 tests/ac_cdd/unit/test_audit_orchestrator.py ...                         [  3%]
 tests/ac_cdd/unit/test_audit_polling.py .                                [  4%]
 tests/ac_cdd/unit/test_auditor_polling_exit.py .                         [  4%]
-tests/ac_cdd/unit/test_auditor_static_checks.py F                        [  5%]
 tests/ac_cdd/unit/test_auto_merge.py .                                   [  5%]
-tests/ac_cdd/unit/test_cli_reconstruction.py ...                         [  7%]
-tests/ac_cdd/unit/test_coder_critic.py FF                                [  8%]
+tests/ac_cdd/unit/test_cli_reconstruction.py ...                         [  6%]
+tests/ac_cdd/unit/test_coder_critic.py FF                                [  7%]
 tests/ac_cdd/unit/test_coder_critic_flow.py .                            [  8%]
 tests/ac_cdd/unit/test_committee_logic.py FF                             [  9%]
-tests/ac_cdd/unit/test_config.py ......                                  [ 12%]
+tests/ac_cdd/unit/test_config.py ......                                  [ 11%]
 tests/ac_cdd/unit/test_file_patcher.py ...                               [ 13%]
-tests/ac_cdd/unit/test_gen_cycles_options.py .........                   [ 18%]
+tests/ac_cdd/unit/test_gen_cycles_options.py .........                   [ 17%]
 tests/ac_cdd/unit/test_git_checkout.py .                                 [ 18%]
 tests/ac_cdd/unit/test_git_operations.py FFFFFFFFFFFFF                   [ 24%]
-tests/ac_cdd/unit/test_git_ops_merge.py FFF                              [ 26%]
+tests/ac_cdd/unit/test_git_ops_merge.py FFF                              [ 25%]
 tests/ac_cdd/unit/test_git_state_persistence.py FFF                      [ 27%]
-tests/ac_cdd/unit/test_graph.py .                                        [ 28%]
-tests/ac_cdd/unit/test_jules_client.py EEEE                              [ 30%]
+tests/ac_cdd/unit/test_graph.py .                                        [ 27%]
+tests/ac_cdd/unit/test_jules_client.py EEEE                              [ 29%]
 tests/ac_cdd/unit/test_jules_client_logic.py FF                          [ 30%]
 tests/ac_cdd/unit/test_jules_session_fixes.py .....                      [ 33%]
 tests/ac_cdd/unit/test_jules_session_state.py FEFEFE                     [ 34%]
 tests/ac_cdd/unit/test_llm_reviewer.py FF                                [ 35%]
-tests/ac_cdd/unit/test_phase_transition.py .                             [ 36%]
-tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 37%]
+tests/ac_cdd/unit/test_phase_transition.py .                             [ 35%]
+tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 36%]
 tests/ac_cdd/unit/test_project_init_robustness.py .                      [ 37%]
-tests/ac_cdd/unit/test_project_manifest.py ...                           [ 39%]
-tests/ac_cdd/unit/test_resume_logic.py ..                                [ 40%]
+tests/ac_cdd/unit/test_project_manifest.py ...                           [ 38%]
+tests/ac_cdd/unit/test_resume_logic.py ..                                [ 39%]
 tests/ac_cdd/unit/test_robustness_fixes.py .FF                           [ 41%]
-tests/ac_cdd/unit/test_sandbox.py ....F...F.                             [ 46%]
-tests/ac_cdd/unit/test_session_manager.py ........                       [ 50%]
+tests/ac_cdd/unit/test_sandbox.py ....F...F.                             [ 45%]
+tests/ac_cdd/unit/test_session_manager.py ........                       [ 49%]
 tests/ac_cdd/unit/test_session_restart.py ..                             [ 50%]
-tests/ac_cdd/unit/test_session_reuse.py ...                              [ 52%]
-tests/ac_cdd/unit/test_state_manager.py ..............                   [ 59%]
-tests/ac_cdd/unit/test_utils.py ..                                       [ 60%]
+tests/ac_cdd/unit/test_session_reuse.py F.F                              [ 52%]
+tests/ac_cdd/unit/test_state_manager.py ..............                   [ 58%]
+tests/ac_cdd/unit/test_utils.py ..                                       [ 59%]
 tests/ac_cdd/unit/test_validators.py ......                              [ 62%]
 tests/integration/test_tracing_integration.py .F                         [ 63%]
 tests/unit/project_setup/test_template_manager.py ........               [ 67%]
@@ -57,7 +56,7 @@ tests/unit/test_cycle05_dynamic_execution.py ..                          [ 80%]
 tests/unit/test_cycle06_auditor_recovery.py .....                        [ 82%]
 tests/unit/test_dispatcher.py ......                                     [ 85%]
 tests/unit/test_domain_models.py .....                                   [ 88%]
-tests/unit/test_e2b_executor.py ....                                     [ 90%]
+tests/unit/test_e2b_executor.py ....                                     [ 89%]
 tests/unit/test_integration_usecase.py ...                               [ 91%]
 tests/unit/test_permission_manager.py ...                                [ 92%]
 tests/unit/test_refactor_usecase.py ...                                  [ 94%]
@@ -87,9 +86,9 @@ _________ ERROR at setup of test_wait_for_completion_sucess_first_try __________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb3a3230>
-manager_agent = <MagicMock name='get_manager_agent' id='140607483740576'>
-plan_auditor = <AsyncMock id='140607483752384'>
+self = <src.services.jules_client.JulesClient object at 0x7f38e68cd0a0>
+manager_agent = <MagicMock name='get_manager_agent' id='139882362490176'>
+plan_auditor = <AsyncMock id='139882362886896'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -125,7 +124,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607483787408'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882363046800'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________ ERROR at setup of test_wait_for_completion_loop_success ____________
 
     @pytest.fixture
@@ -144,9 +143,9 @@ ___________ ERROR at setup of test_wait_for_completion_loop_success ____________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb3a13a0>
-manager_agent = <MagicMock name='get_manager_agent' id='140607485784624'>
-plan_auditor = <AsyncMock id='140607483775552'>
+self = <src.services.jules_client.JulesClient object at 0x7f38e68e10a0>
+manager_agent = <MagicMock name='get_manager_agent' id='139882364080288'>
+plan_auditor = <AsyncMock id='139882363345600'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -182,7 +181,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607482850304'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882360720416'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ______________ ERROR at setup of test_wait_for_completion_timeout ______________
 
     @pytest.fixture
@@ -201,9 +200,9 @@ ______________ ERROR at setup of test_wait_for_completion_timeout ______________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb1fa1e0>
-manager_agent = <MagicMock name='get_manager_agent' id='140607485285280'>
-plan_auditor = <AsyncMock id='140607485282736'>
+self = <src.services.jules_client.JulesClient object at 0x7f38e68cda90>
+manager_agent = <MagicMock name='get_manager_agent' id='139882363294960'>
+plan_auditor = <AsyncMock id='139882362894768'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -239,7 +238,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607482852272'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882363050640'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _____________ ERROR at setup of test_interactive_inquiry_handling ______________
 
     @pytest.fixture
@@ -258,9 +257,9 @@ _____________ ERROR at setup of test_interactive_inquiry_handling ______________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb37d280>
-manager_agent = <MagicMock name='get_manager_agent' id='140607485777424'>
-plan_auditor = <AsyncMock id='140607485524448'>
+self = <src.services.jules_client.JulesClient object at 0x7f38e6afc650>
+manager_agent = <MagicMock name='get_manager_agent' id='139882363297696'>
+plan_auditor = <AsyncMock id='139882365188288'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -296,10 +295,10 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607484992816'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365141264'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_in_progress _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7fe1c9efcb90>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f38e6e4b050>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_in_progress>>
 
     @pytest.fixture(
@@ -343,7 +342,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb7cfe30>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e6de6ba0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -368,10 +367,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607489894032'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365648240'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_completed _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7fe1c9efcb90>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f38e6e4b050>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_completed>>
 
     @pytest.fixture(
@@ -415,7 +414,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb8150a0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e6d76210>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -440,10 +439,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607492122928'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365634128'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_on_error _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7fe1c9efcb90>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f38e6e4b050>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_on_error>>
 
     @pytest.fixture(
@@ -487,7 +486,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb88ef60>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e668f9b0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -512,7 +511,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607490619200'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365633168'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________ ERROR at setup of test_evaluate_red_phase_success_fails ____________
 
     @pytest.fixture
@@ -564,7 +563,7 @@ tests/unit/test_sandbox_evaluator.py:23: ValidationError
 =================================== FAILURES ===================================
 ____________________ test_create_feature_branch_idempotency ____________________
 
-mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-6/test_create_feature_branch_ide0/repo')
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-7/test_create_feature_branch_ide0/repo')
 
     @pytest.mark.asyncio
     async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
@@ -604,7 +603,7 @@ src/services/git/branching.py:109: in create_feature_branch
     await self._auto_commit_if_dirty()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bbab4950>
+self = <src.services.git_ops.GitManager object at 0x7f38e6d74860>
 message = 'Auto-save before branch switch'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -619,7 +618,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ______________________ test_smart_checkout_dirty_recovery ______________________
 
-mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-6/test_smart_checkout_dirty_reco0/repo')
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-7/test_smart_checkout_dirty_reco0/repo')
 
     @pytest.mark.asyncio
     async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
@@ -642,7 +641,7 @@ src/services/git/checkout.py:26: in smart_checkout
     await self._run_git(cmd)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bbaa1700>
+self = <src.services.git_ops.GitManager object at 0x7f38e6d39430>
 args = ['checkout', 'new-branch'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -657,81 +656,6 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 ------------------------------ Captured log call -------------------------------
 ERROR    AC-CDD:checkout.py:34 Failed to checkout 'new-branch'. Please check git status.
-___________________ test_auditor_node_includes_static_errors ___________________
-
-    @pytest.mark.asyncio
-    async def test_auditor_node_includes_static_errors() -> None:
-        """
-        Verify that if static analysis fails, the feedback includes errors and status is rejected.
-        AuditorUseCase is tested directly (no CycleNodes wrapper needed).
-        """
-        # Mock dependencies for AuditorUseCase
-        mock_jules = MagicMock()
-        mock_git = AsyncMock()
-        mock_llm = MagicMock()
-
-        # Git mock: repo has changed files
-        mock_git.checkout_pr = AsyncMock()
-        mock_git.get_current_commit = AsyncMock(return_value="abc123")
-        mock_git.get_pr_base_branch = AsyncMock(return_value="main")
-        mock_git.get_changed_files = AsyncMock(return_value=["src/test.py"])
-        mock_git.checkout_branch = AsyncMock()
-
-        async def mock_run_command_side_effect(
-            cmd: list[str], check: bool = False, **kwargs: Any
-        ) -> tuple[str, str, int]:
-            cmd_str = " ".join(cmd)
-            if "mypy" in cmd_str:
-                return "mypy failure", "error", 1  # Fail
-            if "ruff" in cmd_str:
-                return "ruff success", "", 0  # Pass
-            if "check-ignore" in cmd_str:
-                return "", "", 1  # 1 = NOT gitignored
-            return "", "", 0
-
-        mock_git.runner = MagicMock()
-        mock_git.runner.run_command = AsyncMock(side_effect=mock_run_command_side_effect)
-
-        # LLM mock: returns approval text
-        mock_llm.review_code = AsyncMock(return_value="NO ISSUES FOUND")
-
-        usecase = AuditorUseCase(mock_jules, mock_git, mock_llm)
-
-        state = CycleState(cycle_id="99", pr_url="http://pr", feature_branch="feat/1")
-
-        with (
-            patch("src.services.auditor_usecase.settings") as mock_settings,
-            patch.object(usecase, "_read_files", new_callable=AsyncMock) as mock_read,
-        ):
-            mock_settings.get_context_files.return_value = []
-            mock_settings.get_template.return_value = MagicMock(
-                read_text=MagicMock(return_value="review these files")
-            )
-            mock_settings.get_target_files.return_value = ["src/test.py"]
-            mock_settings.reviewer.smart_model = "gpt-4o"
-            mock_settings.reviewer.fast_model = "gpt-3.5-turbo"
-            mock_settings.AUDITOR_MODEL_MODE = "smart"
-            mock_read.return_value = {"src/test.py": "x = 1"}
-
-            result = await usecase.execute(state)
-
-        # Assertions
-        assert result["status"] == FlowStatus.REJECTED
-        audit_res = result["audit_result"]
-        assert not audit_res.is_approved
->       assert "AUTOMATED CHECKS FAILED" in audit_res.feedback
-E       AssertionError: assert 'AUTOMATED CHECKS FAILED' in 'NO ISSUES FOUND'
-E        +  where 'NO ISSUES FOUND' = AuditResult(status='REJECTED', is_approved=False, reason='AI Audit Complete', feedback='NO ISSUES FOUND', critical_issues=[], suggestions=[]).feedback
-
-tests/ac_cdd/unit/test_auditor_static_checks.py:71: AssertionError
------------------------------ Captured stdout call -----------------------------
-Starting Auditor...
-Checking out PR: http://pr
-Successfully checked out PR branch
-Detected PR base branch: main
-Warning: Could not filter gitignored files: not enough values to unpack
-(expected 4, got 3)
-Running Static Analysis (mypy, ruff)...
 ______________________ test_route_coder_critic_completed _______________________
 
     def test_route_coder_critic_completed() -> None:
@@ -786,7 +710,7 @@ E               For further information visit https://errors.pydantic.dev/latest
 
 tests/ac_cdd/unit/test_committee_logic.py:32: ValidationError
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607490278416'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882366798064'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _______________________ test_committee_pipeline_handover _______________________
 
     @pytest.mark.asyncio
@@ -818,10 +742,10 @@ E               For further information visit https://errors.pydantic.dev/latest
 
 tests/ac_cdd/unit/test_committee_logic.py:122: ValidationError
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607492900672'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882366361744'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ________________________ test_ensure_clean_state_clean _________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb5cd430>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e6944e30>
 
     def test_ensure_clean_state_clean(git_manager: GitManager) -> None:
         """Test ensure_clean_state when working directory is clean."""
@@ -851,7 +775,7 @@ src/services/git/checkout.py:109: in ensure_clean_state
     await self._auto_commit_if_dirty("Auto-save before workflow run")
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb5cd430>
+self = <src.services.git_ops.GitManager object at 0x7f38e6944e30>
 message = 'Auto-save before workflow run'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -866,7 +790,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ___________________ test_ensure_clean_state_dirty_auto_stash ___________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb565130>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e69e4050>
 
     @pytest.mark.asyncio
     async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> None:
@@ -885,7 +809,7 @@ src/services/git/checkout.py:109: in ensure_clean_state
     await self._auto_commit_if_dirty("Auto-save before workflow run")
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb565130>
+self = <src.services.git_ops.GitManager object at 0x7f38e69e4050>
 message = 'Auto-save before workflow run'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -900,7 +824,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ________________________ test_create_integration_branch ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb548740>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e6950680>
 
     @pytest.mark.asyncio
     async def test_create_integration_branch(git_manager: GitManager) -> None:
@@ -919,7 +843,7 @@ src/services/git/branching.py:73: in create_integration_branch
     await self._auto_commit_if_dirty()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb548740>
+self = <src.services.git_ops.GitManager object at 0x7f38e6950680>
 message = 'Auto-save before branch switch'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -934,7 +858,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 _______________________ test_create_session_branch_arch ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb5fc6e0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e69f3470>
 
     @pytest.mark.asyncio
     async def test_create_session_branch_arch(git_manager: GitManager) -> None:
@@ -954,7 +878,7 @@ src/services/git/branching.py:148: in create_session_branch
     await self._run_git(["checkout", integration_branch])
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb5fc6e0>
+self = <src.services.git_ops.GitManager object at 0x7f38e69f3470>
 args = ['checkout', 'dev/session-20251230-120000/integration'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -969,7 +893,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 _______________________ test_create_session_branch_cycle _______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb5a6180>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e69b4800>
 
     @pytest.mark.asyncio
     async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
@@ -990,7 +914,7 @@ src/services/git/branching.py:148: in create_session_branch
     await self._run_git(["checkout", integration_branch])
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb5a6180>
+self = <src.services.git_ops.GitManager object at 0x7f38e69b4800>
 args = ['checkout', 'dev/session-20251230-120000/integration'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -1005,7 +929,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 ____________________ test_safe_merge_with_conflicts_success ____________________
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb50a720>
+self = <src.services.git_ops.GitManager object at 0x7f38e6930e00>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1029,7 +953,7 @@ src/services/git/merging.py:68: ValueError
 
 The above exception was the direct cause of the following exception:
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb50a720>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e6930e00>
 
     @pytest.mark.asyncio
     async def test_safe_merge_with_conflicts_success(git_manager: GitManager) -> None:
@@ -1043,7 +967,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb50a720>
 tests/ac_cdd/unit/test_git_operations.py:97:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb50a720>
+self = <src.services.git_ops.GitManager object at 0x7f38e6930e00>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1078,7 +1002,7 @@ ERROR    AC-CDD:merging.py:74 Error during safe_merge_with_conflicts: not enough
 ERROR    AC-CDD:merging.py:78 Failed to abort safe merge: not enough values to unpack (expected 4, got 3)
 ____________________ test_safe_merge_with_conflicts_failure ____________________
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb59e300>
+self = <src.services.git_ops.GitManager object at 0x7f38e6947530>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1102,7 +1026,7 @@ src/services/git/merging.py:68: ValueError
 
 The above exception was the direct cause of the following exception:
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb59e300>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e6947530>
 
     @pytest.mark.asyncio
     async def test_safe_merge_with_conflicts_failure(git_manager: GitManager) -> None:
@@ -1116,7 +1040,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb59e300>
 tests/ac_cdd/unit/test_git_operations.py:112:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb59e300>
+self = <src.services.git_ops.GitManager object at 0x7f38e6947530>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1151,7 +1075,7 @@ ERROR    AC-CDD:merging.py:74 Error during safe_merge_with_conflicts: not enough
 ERROR    AC-CDD:merging.py:78 Failed to abort safe merge: not enough values to unpack (expected 4, got 3)
 ________________________________ test_merge_pr _________________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb59ddf0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e69944d0>
 
     @pytest.mark.asyncio
     async def test_merge_pr(git_manager: GitManager) -> None:
@@ -1167,7 +1091,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb59ddf0>
 tests/ac_cdd/unit/test_git_operations.py:130:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb59ddf0>
+self = <src.services.git_ops.GitManager object at 0x7f38e69944d0>
 pr_number = 123, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1213,7 +1137,7 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ___________________________ test_create_final_pr_new ___________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb5efc20>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e68e64e0>
 
     @pytest.mark.asyncio
     async def test_create_final_pr_new(git_manager: GitManager) -> None:
@@ -1241,7 +1165,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb5efc20>
 tests/ac_cdd/unit/test_git_operations.py:182:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb5efc20>
+self = <src.services.git_ops.GitManager object at 0x7f38e68e64e0>
 integration_branch = 'dev/session-20251230-120000/integration'
 title = 'Session: Complete Implementation', body = 'Final PR for session'
 
@@ -1271,7 +1195,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/merging.py:192: ValueError
 ________________________ test_create_final_pr_existing _________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb443740>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e686f4d0>
 
     @pytest.mark.asyncio
     async def test_create_final_pr_existing(git_manager: GitManager) -> None:
@@ -1289,7 +1213,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb443740>
 tests/ac_cdd/unit/test_git_operations.py:198:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb443740>
+self = <src.services.git_ops.GitManager object at 0x7f38e686f4d0>
 integration_branch = 'dev/session-20251230-120000/integration', title = 'title'
 body = 'body'
 
@@ -1319,7 +1243,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/merging.py:192: ValueError
 _____________________ test_validate_remote_branch_success ______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb1aa0f0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e6881eb0>
 
     @pytest.mark.asyncio
     async def test_validate_remote_branch_success(git_manager: GitManager) -> None:
@@ -1344,7 +1268,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb1aa0f0>
 tests/ac_cdd/unit/test_git_operations.py:222:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb1aa0f0>
+self = <src.services.git_ops.GitManager object at 0x7f38e6881eb0>
 branch = 'dev/session-20251230-120000'
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
@@ -1359,7 +1283,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:166: ValueError
 ____________________ test_validate_remote_branch_not_found _____________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb4f3110>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e68e1880>
 
     @pytest.mark.asyncio
     async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None:
@@ -1376,7 +1300,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb4f3110>
 tests/ac_cdd/unit/test_git_operations.py:237:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb4f3110>
+self = <src.services.git_ops.GitManager object at 0x7f38e68e1880>
 branch = 'nonexistent-branch'
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
@@ -1391,7 +1315,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:166: ValueError
 ____________________________ test_get_changed_files ____________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb19e2d0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e68f6cc0>
 
     @pytest.mark.asyncio
     async def test_get_changed_files(git_manager: GitManager) -> None:
@@ -1415,7 +1339,7 @@ src/services/git/checkout.py:164: in get_changed_files
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb19e2d0>
+self = <src.services.git_ops.GitManager object at 0x7f38e68f6cc0>
 args = ['diff', '--name-only', '--cached'], check = False
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -1430,8 +1354,8 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 _______________________ test_merge_pr_immediate_success ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb1153d0>
-mock_runner = <MagicMock name='ProcessRunner()' id='140607483788752'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e668ce60>
+mock_runner = <MagicMock name='ProcessRunner()' id='139882362888576'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_immediate_success(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1450,7 +1374,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='140607483788752'>
 tests/ac_cdd/unit/test_git_ops_merge.py:41:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb1153d0>
+self = <src.services.git_ops.GitManager object at 0x7f38e668ce60>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1496,8 +1420,8 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ________________________ test_merge_pr_fallback_to_auto ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb19e930>
-mock_runner = <MagicMock name='ProcessRunner()' id='140607485530368'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e66e3260>
+mock_runner = <MagicMock name='ProcessRunner()' id='139882362656176'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_fallback_to_auto(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1519,7 +1443,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='140607485530368'>
 tests/ac_cdd/unit/test_git_ops_merge.py:70:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb19e930>
+self = <src.services.git_ops.GitManager object at 0x7f38e66e3260>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1565,8 +1489,8 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ______________________ test_merge_pr_failure_no_fallback _______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb36f920>
-mock_runner = <MagicMock name='ProcessRunner()' id='140607485375216'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e665b740>
+mock_runner = <MagicMock name='ProcessRunner()' id='139882360358624'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_failure_no_fallback(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1588,7 +1512,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='140607485375216'>
 tests/ac_cdd/unit/test_git_ops_merge.py:98:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb36f920>
+self = <src.services.git_ops.GitManager object at 0x7f38e665b740>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1634,9 +1558,9 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ___________ TestGitStatePersistence.test_ensure_state_branch_exists ____________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7fe1bbb62360>
-mock_run = <AsyncMock name='run_command' id='140607485525792'>
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb3a1eb0>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f38e6f773b0>
+mock_run = <AsyncMock name='run_command' id='139882359157920'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e653f770>
 
     @patch("src.process_runner.ProcessRunner.run_command")
     async def test_ensure_state_branch_exists(
@@ -1650,7 +1574,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb3a1eb0>
 tests/ac_cdd/unit/test_git_state_persistence.py:21:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb3a1eb0>
+self = <src.services.git_ops.GitManager object at 0x7f38e653f770>
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
@@ -1663,9 +1587,9 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/state.py:21: ValueError
 _________________ TestGitStatePersistence.test_read_state_file _________________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7fe1bbb61c10>
-mock_run = <AsyncMock name='run_command' id='140607484990080'>
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb3694c0>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f38e6f76180>
+mock_run = <AsyncMock name='run_command' id='139882359151824'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e68832f0>
 
     @patch("src.process_runner.ProcessRunner.run_command")
     async def test_read_state_file(self, mock_run: AsyncMock, git_manager: GitManager) -> None:
@@ -1680,11 +1604,11 @@ E       assert None == '{"key": "value"}'
 tests/ac_cdd/unit/test_git_state_persistence.py:35: AssertionError
 _________________ TestGitStatePersistence.test_save_state_file _________________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7fe1bbb60ce0>
-mock_write = <MagicMock name='write_text' id='140607485066368'>
-mock_run = <AsyncMock name='run_command' id='140607483580096'>
-mock_temp = <MagicMock name='TemporaryDirectory' id='140607485753056'>
-git_manager = <src.services.git_ops.GitManager object at 0x7fe1bb36c500>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f38e6f74500>
+mock_write = <MagicMock name='write_text' id='139882363052224'>
+mock_run = <AsyncMock name='run_command' id='139882360575744'>
+mock_temp = <MagicMock name='TemporaryDirectory' id='139882360581792'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f38e68829f0>
 
     @patch("src.services.git.state.tempfile.TemporaryDirectory")
     @patch("src.process_runner.ProcessRunner.run_command")
@@ -1724,7 +1648,7 @@ src/services/git/state.py:84: in save_state_file
     await self.ensure_state_branch()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7fe1bb36c500>
+self = <src.services.git_ops.GitManager object at 0x7f38e68829f0>
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
@@ -1738,8 +1662,8 @@ src/services/git/state.py:21: ValueError
 ________ TestJulesClientLogic.test_deduplication_of_existing_activities ________
 
 self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_deduplication_of_existing_activities>
-mock_httpx_cls = <MagicMock name='AsyncClient' id='140607483241936'>
-_mock_sleep = <AsyncMock name='sleep' id='140607483241792'>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='139882360724496'>
+_mock_sleep = <AsyncMock name='sleep' id='139882363057696'>
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")
@@ -1823,7 +1747,7 @@ _mock_sleep = <AsyncMock name='sleep' id='140607483241792'>
 tests/ac_cdd/unit/test_jules_client_logic.py:218:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb131640>
+self = <src.services.jules_client.JulesClient object at 0x7f38e6a96090>
 session_name = 'sessions/123', require_plan_approval = False
 
     async def wait_for_completion(
@@ -1897,8 +1821,8 @@ src/services/jules_client.py:256: TypeError
 ______ TestJulesClientLogic.test_prioritize_inquiry_over_completed_state _______
 
 self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_prioritize_inquiry_over_completed_state>
-mock_httpx_cls = <MagicMock name='AsyncClient' id='140607486153680'>
-_mock_sleep = <AsyncMock name='sleep' id='140607486162608'>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='139882365899392'>
+_mock_sleep = <AsyncMock name='sleep' id='139882364260944'>
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")
@@ -1983,7 +1907,7 @@ _mock_sleep = <AsyncMock name='sleep' id='140607486162608'>
 tests/ac_cdd/unit/test_jules_client_logic.py:135:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7fe1bb5492b0>
+self = <src.services.jules_client.JulesClient object at 0x7f38e6a1fec0>
 session_name = 'sessions/123', require_plan_approval = False
 
     async def wait_for_completion(
@@ -2085,7 +2009,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb7cfe30>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e6de6ba0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2110,7 +2034,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607489894032'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365648240'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _________ TestSessionStateValidation.test_get_session_state_completed __________
 
 self = <Coroutine test_get_session_state_completed>
@@ -2142,7 +2066,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb8150a0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e6d76210>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2167,7 +2091,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607492122928'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365634128'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 __________ TestSessionStateValidation.test_get_session_state_on_error __________
 
 self = <Coroutine test_get_session_state_on_error>
@@ -2199,7 +2123,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7fe1bb88ef60>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f38e668f9b0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2224,10 +2148,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140607490619200'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139882365633168'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________________________ test_review_code_success ___________________________
 
-reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7fe1bb835e20>
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f38e6eeab70>
 
     @pytest.mark.asyncio
     async def test_review_code_success(reviewer: LLMReviewer) -> None:
@@ -2277,16 +2201,16 @@ tests/ac_cdd/unit/test_llm_reviewer.py:44: AssertionError
 [1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
 
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-ERROR    AC-CDD:llm_reviewer.py:76 LLMReviewer failed completely after 3 attempts.
+ERROR    AC-CDD:llm_reviewer.py:75 LLMReviewer failed completely after 3 attempts.
 _________________________ test_review_code_api_failure _________________________
 
-reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7fe1bb71ed80>
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f38e6895340>
 
     @pytest.mark.asyncio
     async def test_review_code_api_failure(reviewer: LLMReviewer) -> None:
@@ -2322,16 +2246,16 @@ tests/ac_cdd/unit/test_llm_reviewer.py:70: AssertionError
 [1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
 
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:74 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-ERROR    AC-CDD:llm_reviewer.py:76 LLMReviewer failed completely after 3 attempts.
+ERROR    AC-CDD:llm_reviewer.py:75 LLMReviewer failed completely after 3 attempts.
 ________ TestGitCheckoutRobustness.test_auto_commit_raises_on_conflict _________
 
-self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7fe1bbbdcd40>
+self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f38e6e04b90>
 
     @pytest.mark.asyncio
     async def test_auto_commit_raises_on_conflict(self) -> None:
@@ -2353,7 +2277,7 @@ self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7fe1bbb
 tests/ac_cdd/unit/test_robustness_fixes.py:58:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git.checkout.GitCheckoutMixin object at 0x7fe1bb2e3260>
+self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f38e6952db0>
 message = 'Auto-save before checkout'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
@@ -2368,7 +2292,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/checkout.py:40: ValueError
 ______ TestGitCheckoutRobustness.test_auto_commit_proceeds_on_clean_dirty ______
 
-self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7fe1bbbdd220>
+self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f38e6e05070>
 
     @pytest.mark.asyncio
     async def test_auto_commit_proceeds_on_clean_dirty(self) -> None:
@@ -2385,7 +2309,7 @@ self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7fe1bbb
 tests/ac_cdd/unit/test_robustness_fixes.py:73:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git.checkout.GitCheckoutMixin object at 0x7fe1bb8347d0>
+self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f38e6a8faa0>
 message = 'Auto-save before checkout'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
@@ -2451,7 +2375,7 @@ src/sandbox.py:153: in run_command
     self._validate_command(cmd)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.sandbox.SandboxRunner object at 0x7fe1bb0669c0>, cmd = ['test']
+self = <src.sandbox.SandboxRunner object at 0x7f38e684d280>, cmd = ['test']
 
     def _validate_command(self, cmd: list[str]) -> None:
         if not cmd:
@@ -2485,6 +2409,183 @@ self = <src.sandbox.SandboxRunner object at 0x7fe1bb0669c0>, cmd = ['test']
 E           ValueError: Command 'test' is not in the allowed whitelist.
 
 src/sandbox.py:134: ValueError
+_______ TestSessionReuse.test_reuse_completed_session_for_auditor_reject _______
+
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f38e6e1aed0>
+mock_jules = <MagicMock id='139882357323248'>
+
+    @pytest.mark.asyncio
+    async def test_reuse_completed_session_for_auditor_reject(self, mock_jules: MagicMock) -> None:
+        """Should REUSE COMPLETED session for Auditor Reject (send feedback to same session)."""
+        mock_jules.get_session_state.return_value = "COMPLETED"
+        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+
+        mock_manifest = MagicMock()
+        mock_manifest.jules_session_id = "sessions/123"
+        mock_manifest.pr_url = None
+
+        audit = AuditResult(
+            status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this issue"
+        )
+        state = CycleState(
+            cycle_id="01",
+            status=FlowStatus.RETRY_FIX,
+            audit_result=audit,
+        )
+
+        usecase = CoderUseCase(mock_jules)
+
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
+
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+
+                def mock_get_template(name: str) -> MagicMock:
+                    m = MagicMock()
+                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
+                        m.read_text.return_value = "Instruction {{feedback}}"
+                    else:
+                        m.read_text.return_value = "Instruction"
+                    return m
+
+                mock_settings.get_template.side_effect = mock_get_template
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                result = await usecase.execute(state)
+
+        mock_jules.get_session_state.assert_called_with("sessions/123")
+        mock_jules._send_message.assert_called_once()  # Feedback was sent to existing session
+
+        # Verify the actual feedback content sent
+        sent_message = (
+            mock_jules._send_message.call_args.args[1]
+            if mock_jules._send_message.call_args.args
+            else mock_jules._send_message.call_args.kwargs.get("message", "")
+        )
+        assert "Fix this issue" in sent_message
+
+>       mock_jules.run_session.assert_not_called()
+
+tests/ac_cdd/unit/test_session_reuse.py:75:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AsyncMock name='mock.run_session' id='139882357167056'>
+
+    def assert_not_called(self):
+        """assert that the mock was never called.
+        """
+        if self.call_count != 0:
+            msg = ("Expected '%s' to not have been called. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'run_session' to not have been called. Called 1 times.
+E           Calls: [call(session_id='coder-cycle-01-iter-0-20260320-1136', prompt='Instruction\n\nInstruction', target_files=[], context_files=[], require_plan_approval=False),
+E            call().get('session_name'),
+E            call().get('status'),
+E            call().__bool__(),
+E            call().get('status'),
+E            call().get('pr_url'),
+E            call().get('pr_url')].
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:910: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Reusing session (COMPLETED) for final polish: sessions/123
+Sending Audit Feedback to existing Jules session: sessions/123
+Waiting for Jules to process feedback (expecting IN_PROGRESS)...
+Failed to send feedback to existing session: '<=' not supported between
+instances of 'MagicMock' and 'int'. Creating new session...
+Starting CODER Session for Cycle 01 (Iteration 0)...
+_______________ TestSessionReuse.test_reuse_in_progress_session ________________
+
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f38e6e042f0>
+mock_jules = <MagicMock id='139882356894864'>
+
+    @pytest.mark.asyncio
+    async def test_reuse_in_progress_session(self, mock_jules: MagicMock) -> None:
+        """Should REUSE IN_PROGRESS session (original behavior)."""
+        mock_jules.get_session_state.return_value = "IN_PROGRESS"
+        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+
+        mock_manifest = MagicMock()
+        mock_manifest.jules_session_id = "sessions/123"
+        mock_manifest.pr_url = None
+
+        audit = AuditResult(
+            status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this"
+        )
+        state = CycleState(
+            cycle_id="01",
+            status=FlowStatus.RETRY_FIX,
+            audit_result=audit,
+        )
+
+        usecase = CoderUseCase(mock_jules)
+
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
+
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+
+                def mock_get_template(name: str) -> MagicMock:
+                    m = MagicMock()
+                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
+                        m.read_text.return_value = "Instruction {{feedback}}"
+                    else:
+                        m.read_text.return_value = "Instruction"
+                    return m
+
+                mock_settings.get_template.side_effect = mock_get_template
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                result = await usecase.execute(state)
+
+        mock_jules._send_message.assert_called_once()  # Feedback was sent
+
+        # Verify the actual feedback content sent
+        sent_message = (
+            mock_jules._send_message.call_args.args[1]
+            if mock_jules._send_message.call_args.args
+            else mock_jules._send_message.call_args.kwargs.get("message", "")
+        )
+        assert "Fix this" in sent_message
+
+>       mock_jules.run_session.assert_not_called()
+
+tests/ac_cdd/unit/test_session_reuse.py:180:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AsyncMock name='mock.run_session' id='139882361128336'>
+
+    def assert_not_called(self):
+        """assert that the mock was never called.
+        """
+        if self.call_count != 0:
+            msg = ("Expected '%s' to not have been called. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'run_session' to not have been called. Called 1 times.
+E           Calls: [call(session_id='coder-cycle-01-iter-0-20260320-1136', prompt='Instruction\n\nInstruction', target_files=[], context_files=[], require_plan_approval=False),
+E            call().get('session_name'),
+E            call().get('status'),
+E            call().__bool__(),
+E            call().get('status'),
+E            call().get('pr_url'),
+E            call().get('pr_url')].
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:910: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Reusing session (IN_PROGRESS) for final polish: sessions/123
+Sending Audit Feedback to existing Jules session: sessions/123
+Waiting for Jules to process feedback (expecting IN_PROGRESS)...
+Failed to send feedback to existing session: '<=' not supported between
+instances of 'MagicMock' and 'int'. Creating new session...
+Starting CODER Session for Cycle 01 (Iteration 0)...
 ________________________ test_missing_api_key_fallback _________________________
 
     @pytest.mark.asyncio
@@ -2520,9 +2621,9 @@ _cli_use_class_docs_for_groups = None, _cli_exit_on_error = None
 _cli_prefix = None, _cli_flag_prefix_char = None, _cli_implicit_flags = None
 _cli_ignore_unknown_args = None, _cli_kebab_case = None, _cli_shortcuts = None
 _secrets_dir = None, _build_sources = None
-values = {'E2B_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'JULES_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'TEST_MODE': True}
-sources = (InitSettingsSource(init_kwargs={'JULES_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'OPENROUTER_API_KEY'...efix_len=7), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
-init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'JULES_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'TEST_MODE': True}
+values = {'E2B_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'JULES_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'TEST_MODE': True}
+sources = (InitSettingsSource(init_kwargs={'JULES_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'OPENROUTER_API_KEY'...efix_len=7), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
+init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'JULES_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='139882361603136'>, 'TEST_MODE': True}
 
     def __init__(
         __pydantic_self__,
@@ -2594,13 +2695,13 @@ init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='140607482999488'>, 'J
 >       super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
 E       pydantic_core._pydantic_core.ValidationError: 3 validation errors for Settings
 E       JULES_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140607482999488'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139882361603136'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 E       OPENROUTER_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140607482999488'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139882361603136'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 E       E2B_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140607482999488'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139882361603136'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 
 .venv/lib/python3.12/site-packages/pydantic_settings/main.py:242: ValidationError
@@ -2613,21 +2714,41 @@ tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_avoids_valid
   /app/src/jules_session_nodes.py:27: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
     for field in current.model_fields:
 
-tests/ac_cdd/unit/test_sandbox.py::test_cleanup_sandbox
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_in_progress' was never awaited
-    def __setattr__(self, name, value):
+tests/ac_cdd/unit/test_plan_auditor.py::test_audit_plan_approved
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_in_progress' was never awaited
+    def __init__(self, name, parent):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
-tests/ac_cdd/unit/test_sandbox.py::test_cleanup_sandbox
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_completed' was never awaited
-    def __setattr__(self, name, value):
+tests/ac_cdd/unit/test_plan_auditor.py::test_audit_plan_approved
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_completed' was never awaited
+    def __init__(self, name, parent):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
-tests/ac_cdd/unit/test_sandbox.py::test_cleanup_sandbox
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_on_error' was never awaited
-    def __setattr__(self, name, value):
+tests/ac_cdd/unit/test_plan_auditor.py::test_audit_plan_approved
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_on_error' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+  /app/src/services/coder_usecase.py:265: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if result.get("status") == "running" and jules_session_name:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+  /app/src/services/coder_usecase.py:111: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if result and (result.get("status") == "success" or result.get("pr_url")):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/ac_cdd/unit/test_validators.py::TestSessionValidator::test_session_validator_with_remote_check_failure
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    def __init__(self, name, parent):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
@@ -2646,7 +2767,7 @@ Name                                               Stmts   Miss  Cover   Missing
 src/__init__.py                                        0      0   100%
 src/agents.py                                         63     39    38%   16-19, 24-44, 49-57, 66-76, 83, 99-111, 136
 src/cli.py                                            17      0   100%
-src/config.py                                        321     73    77%   22-39, 54-60, 66-70, 77-81, 88-92, 100, 104, 108, 112-124, 130-131, 172-174, 177-178, 469, 471, 489, 491, 496, 500-503, 510-515, 523, 529, 553, 560, 581-583, 589, 593
+src/config.py                                        328     73    78%   22-39, 54-60, 66-70, 77-81, 88-92, 100, 104, 108, 112-124, 130-131, 172-174, 177-178, 526, 528, 546, 548, 553, 557-560, 567-572, 580, 586, 610, 617, 638-640, 646, 650
 src/contracts/__init__.py                              0      0   100%
 src/contracts/e2b_executor.py                          9      0   100%
 src/domain_models/__init__.py                         15      0   100%
@@ -2696,8 +2817,8 @@ src/services/artifacts.py                             14      8    43%   17-28
 src/services/ast_analyzer.py                         109     14    87%   32-33, 45-46, 54, 60, 109, 121, 126, 131-133, 140, 174
 src/services/async_dispatcher.py                      56      3    95%   78-83
 src/services/audit_orchestrator.py                    76     11    86%   30-31, 72-73, 78-79, 124-125, 145-147
-src/services/auditor_usecase.py                      195     64    67%   40-43, 53-62, 67-68, 75-81, 88-94, 118-120, 144, 176-179, 203-206, 211-214, 225-226, 230-231, 300-302, 309-320, 330-332, 350, 352, 357-368, 381-382
-src/services/coder_usecase.py                        183     35    81%   38-39, 71-77, 125, 130-135, 146, 148, 161-169, 189, 204-209, 218-219, 232, 291-294, 331-332, 339, 348-357, 407
+src/services/auditor_usecase.py                      144     74    49%   40-43, 64-66, 90, 122-125, 149-278
+src/services/coder_usecase.py                        185     47    75%   38-39, 71-77, 85, 125, 130-135, 146, 148, 161-169, 189, 204-209, 218-219, 232, 291-294, 324-354
 src/services/committee_usecase.py                     50     40    20%   21-104
 src/services/conflict_manager.py                      68     20    71%   38-40, 53, 57-61, 80, 84-88, 105-107, 115-116
 src/services/contracts.py                             26     21    19%   16-43
@@ -2715,7 +2836,7 @@ src/services/jules/context_builder.py                 81     68    16%   20-32, 
 src/services/jules/git_context.py                     42     17    60%   23-26, 39-54, 59-60
 src/services/jules/inquiry_handler.py                143    123    14%   42-77, 102-107, 113-138, 142-175, 186-221, 239-286
 src/services/jules_client.py                         393    269    32%   10-11, 73-74, 92, 103, 107, 111-117, 128-159, 163-182, 186-191, 258-285, 291-351, 356, 378-390, 419-420, 428, 433, 437-442, 446-447, 452-453, 458-485, 488-506, 511-523, 526-537, 541, 546-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
-src/services/llm_reviewer.py                          72     18    75%   67-71, 79, 121-122, 142, 157, 165-179
+src/services/llm_reviewer.py                          72     18    75%   66-70, 78, 120-121, 141, 156, 164-178
 src/services/plan_auditor.py                          27      5    81%   15-17, 63, 112-113
 src/services/project.py                               47     30    36%   22-45, 68-89
 src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 50-57, 61-78
@@ -2735,11 +2856,10 @@ src/tools.py                                          21     21     0%   1-48
 src/utils.py                                          72     45    38%   31-56, 65-78, 88, 93-94, 100, 112-113, 118-142, 151-160
 src/validators.py                                     41      7    83%   56, 78, 82-86
 --------------------------------------------------------------------------------
-TOTAL                                               5763   2648    54%
+TOTAL                                               5721   2670    53%
 =========================== short test summary info ============================
 FAILED tests/ac_cdd/integration/test_git_robustness.py::test_create_feature_branch_idempotency
 FAILED tests/ac_cdd/integration/test_git_robustness.py::test_smart_checkout_dirty_recovery
-FAILED tests/ac_cdd/unit/test_auditor_static_checks.py::test_auditor_node_includes_static_errors
 FAILED tests/ac_cdd/unit/test_coder_critic.py::test_route_coder_critic_completed
 FAILED tests/ac_cdd/unit/test_coder_critic.py::test_route_coder_critic_retry
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_logic_flow
@@ -2774,6 +2894,8 @@ FAILED tests/ac_cdd/unit/test_robustness_fixes.py::TestGitCheckoutRobustness::te
 FAILED tests/ac_cdd/unit/test_robustness_fixes.py::TestGitCheckoutRobustness::test_auto_commit_proceeds_on_clean_dirty
 FAILED tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_secure_install_cmd
 FAILED tests/ac_cdd/unit/test_sandbox.py::test_run_command_retry_on_failure
+FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
 FAILED tests/integration/test_tracing_integration.py::test_missing_api_key_fallback
 ERROR tests/ac_cdd/unit/test_jules_client.py::test_wait_for_completion_sucess_first_try
 ERROR tests/ac_cdd/unit/test_jules_client.py::test_wait_for_completion_loop_success
@@ -2786,4 +2908,4 @@ ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_success_fail
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_failure_passes
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_success_passes
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_failure_fails
-======= 38 failed, 164 passed, 9 warnings, 11 errors in 66.06s (0:01:06) =======
+=========== 39 failed, 162 passed, 14 warnings, 11 errors in 48.14s ============

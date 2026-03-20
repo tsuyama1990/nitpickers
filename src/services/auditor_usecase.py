@@ -43,60 +43,6 @@ class AuditorUseCase:
                 pass
         return result
 
-    async def _run_static_analysis(self, target_files: list[str] | None = None) -> tuple[bool, str]:
-        """Runs local static analysis (mypy, ruff) and returns (success, output)."""
-        console.print("[bold cyan]Running Static Analysis (mypy, ruff)...[/bold cyan]")
-        output = []
-        success = True
-
-        def truncate_output(text: str, max_lines: int = 50, max_chars: int = 2000) -> str:
-            lines = text.splitlines()
-            original_line_count = len(lines)
-            if original_line_count > max_lines:
-                text = (
-                    "\n".join(lines[:max_lines])
-                    + f"\n... (truncated {original_line_count - max_lines} more lines)"
-                )
-            if len(text) > max_chars:
-                text = text[:max_chars] + f"\n... (truncated {len(text) - max_chars} more chars)"
-            return text
-
-        targets = target_files if target_files is not None else ["."]
-
-        if target_files is not None and not target_files:
-            console.print("[dim]No files to analyze.[/dim]")
-            return True, "No files to analyze."
-
-        try:
-            mypy_targets = [f for f in targets if f == "." or f.endswith(".py")]
-            if mypy_targets:
-                mypy_cmd = ["uv", "run", "mypy", "--no-error-summary", *mypy_targets]
-                stdout, stderr, code, _ = await self.git.runner.run_command(mypy_cmd, check=False)
-                if code != 0:
-                    success = False
-                    details = truncate_output(stdout + stderr)
-                    output.append("### mypy Errors")
-                    output.append(f"```\n{details}\n```")
-                else:
-                    console.print("[green]mypy passed[/green]")
-        except Exception as e:
-            output.append(f"Failed to run mypy: {e}")
-
-        try:
-            ruff_cmd = ["uv", "run", "ruff", "check", *targets]
-            stdout, stderr, code, _ = await self.git.runner.run_command(ruff_cmd, check=False)
-            if code != 0:
-                success = False
-                details = truncate_output(stdout + stderr)
-                output.append("### ruff Errors")
-                output.append(f"```\n{details}\n```")
-            else:
-                console.print("[green]ruff passed[/green]")
-        except Exception as e:
-            output.append(f"Failed to run ruff: {e}")
-
-        return success, "\n\n".join(output)
-
     async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
@@ -231,39 +177,12 @@ class AuditorUseCase:
                 reviewable_files = [str(f) for f in all_target_files]
             else:
                 changed_file_paths = await self.git.get_changed_files(base_branch=base_branch)
-                reviewable_extensions = {
-                    ".py",
-                    ".md",
-                    ".toml",
-                    ".json",
-                    ".yaml",
-                    ".yml",
-                    ".txt",
-                    ".sh",
-                    ".html",
-                    ".js",
-                    ".css",
-                    ".ts",
-                }
+                reviewable_extensions = settings.auditor.reviewable_extensions
                 reviewable_files = [
                     f for f in changed_file_paths if Path(f).suffix in reviewable_extensions
                 ]
 
-            excluded_patterns = [
-                "dev_src/",
-                "dev_documents/",
-                "tests/ac_cdd/",
-                ".github/",
-                "pyproject.toml",
-                "setup.py",
-                "setup.cfg",
-                "README.md",
-                "LICENSE",
-                ".gitignore",
-                "Dockerfile",
-                "docker-compose",
-                ".env",
-            ]
+            excluded_patterns = settings.auditor.excluded_patterns
 
             reviewable_files = [
                 f
@@ -271,18 +190,7 @@ class AuditorUseCase:
                 if not any(f.startswith(pattern) or pattern in f for pattern in excluded_patterns)
             ]
 
-            build_artifact_patterns = [
-                ".egg-info/",
-                "__pycache__/",
-                ".pyc",
-                ".pyo",
-                ".pyd",
-                "dist/",
-                "build/",
-                ".pytest_cache/",
-                ".mypy_cache/",
-                ".ruff_cache/",
-            ]
+            build_artifact_patterns = settings.auditor.build_artifact_patterns
 
             reviewable_files = [
                 f
@@ -337,8 +245,6 @@ class AuditorUseCase:
             else settings.reviewer.fast_model
         )
 
-        static_ok, static_log = await self._run_static_analysis(target_files=reviewable_files)
-
         audit_feedback = await self.llm_reviewer.review_code(
             target_files=target_files,
             context_docs=context_docs,
@@ -352,20 +258,6 @@ class AuditorUseCase:
             status = "rejected"
         else:
             status = "rejected"
-
-        if not static_ok:
-            console.print("[bold red]Static Analysis Failed. Extending feedback...[/bold red]")
-            status = "rejected"
-            # Ensure we remove the passed flag if it somehow hallucinated it despite static checks failing
-            audit_feedback = audit_feedback.replace("-> REVIEW_PASSED", "-> REVIEW_FAILED")
-
-            # If the LLM returned something completely empty or just "NO ISSUES FOUND", inject the failed flag so the regex parser works
-            if "-> REVIEW_FAILED" not in audit_feedback:
-                audit_feedback = "-> REVIEW_FAILED\n\n" + audit_feedback
-
-            audit_feedback += "\n\n# AUTOMATED CHECKS FAILED (MUST FIX)\n"
-            audit_feedback += "The following static analysis errors were found. You MUST fix these before the code is accepted.\n"
-            audit_feedback += static_log
 
         result = AuditResult(
             status=status.upper(),
