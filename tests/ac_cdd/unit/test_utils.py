@@ -1,10 +1,8 @@
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from src.utils import get_command_prefix
 
-
-from unittest.mock import MagicMock
 
 @patch("pathlib.Path.exists")
 @patch("pathlib.Path.open")

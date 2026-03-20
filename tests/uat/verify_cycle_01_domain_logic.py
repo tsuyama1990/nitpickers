@@ -15,10 +15,17 @@ def setup_imports() -> tuple[Any, ...]:
 
 @app.cell
 def setup_models() -> tuple[Any, ...]:
-    from src.domain_models import ConflictRegistryItem, E2BExecutionResult
+    from src.domain_models import ConflictRegistryItem, E2BExecutionResult, FixPlan, UATResult
     from src.state import CycleState, IntegrationState
 
-    return ConflictRegistryItem, CycleState, E2BExecutionResult, IntegrationState
+    return (
+        ConflictRegistryItem,
+        CycleState,
+        E2BExecutionResult,
+        IntegrationState,
+        FixPlan,
+        UATResult,
+    )
 
 
 @app.cell
@@ -76,6 +83,70 @@ def scenario_01_03(mo: Any) -> tuple[Any, ...]:
 
     mo.md("✅ Scenario 01-03 Passed: CLI executes successfully via `src.cli:app`.")
     return (res,)
+
+
+@app.cell
+def test_scenario_01_new_1(mo: Any) -> tuple[Any, ...]:
+    import pytest
+    from pydantic import ValidationError
+
+    from src.domain_models import FixPlan
+
+    # SCENARIO-01-1: The stateless Auditor generates a malformed JSON response
+    # Expectation: System immediately raises a ValidationError preventing bad data
+    malformed_payload = {"modifications": [{"filepath": "src/app.py", "explanation": "fix bug"}]}
+    payload: Any = malformed_payload
+
+    with pytest.raises(ValidationError) as exc:
+        FixPlan(**payload)
+
+    assert "diff_block" in str(exc.value)
+
+    # test empty list as well
+    with pytest.raises(ValidationError) as exc_empty:
+        FixPlan(modifications=[])
+    assert "List should have at least 1 item" in str(exc_empty.value)
+
+    return exc, exc_empty
+
+
+@app.cell
+def test_scenario_01_new_2(mo: Any) -> tuple[Any, ...]:
+    from src.domain_models import UATResult
+
+    # SCENARIO-01-2: UAT Artifacts Instantiation and Serialization
+    # Expectation: Mock paths are parsed correctly and serialization preserves structure
+
+    valid_payload = {
+        "exit_code": 1,
+        "stderr": "test failed",
+        "screenshot_path": "tests/uat/artifacts/screenshot.png",
+        "dom_trace_path": "tests/uat/artifacts/trace.txt",
+    }
+
+    payload_uat: Any = valid_payload
+    uat_result = UATResult(**payload_uat)
+    assert uat_result.exit_code == 1
+    assert uat_result.screenshot_path == "tests/uat/artifacts/screenshot.png"
+
+    serialized_uat = uat_result.model_dump_json()
+    assert "screenshot.png" in serialized_uat
+
+    return uat_result, serialized_uat
+
+
+@app.cell
+def test_scenario_01_new_3(CycleState: Any) -> tuple[Any]:  # noqa: N803
+    # SCENARIO-01-3: CycleState Backward Compatibility
+    # Expectation: Initializing state without UAT fields works and defaults correctly
+
+    legacy_state = CycleState(cycle_id="legacy-cycle")
+
+    assert legacy_state.uat_exit_code == 0
+    assert legacy_state.uat_artifacts is None
+    assert legacy_state.current_fix_plan is None
+
+    return (legacy_state,)
 
 
 if __name__ == "__main__":
