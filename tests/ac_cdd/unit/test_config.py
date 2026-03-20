@@ -36,7 +36,7 @@ def test_config_env_vars_loaded(mock_env: Any) -> None:
 def test_config_defaults() -> None:
     """Test default values without env overrides."""
     # Clean env for this test
-    with patch.dict(os.environ, {"JULES_API_KEY": "dummy", "E2B_API_KEY": "dummy"}, clear=True):
+    with patch.dict(os.environ, {"JULES_API_KEY": "dummy", "E2B_API_KEY": "dummy", "OPENROUTER_API_KEY": "dummy"}, clear=True):
         local_settings = Settings()
         assert local_settings.reviewer.smart_model == "openai:gpt-4o"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")

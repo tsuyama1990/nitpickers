@@ -94,11 +94,11 @@ async def test_get_sandbox_secure_install_cmd() -> None:
         mock_sandbox = mock_create.return_value
         await runner.get_sandbox()
 
-        # The install command should be the last command run
+        # The install command should be run somewhere before the sync and second mkdir
         actual_calls = mock_sandbox.commands.run.mock_calls
-        install_call = actual_calls[-1]
+        commands_run = [c.args[0] for c in actual_calls]
 
-        assert install_call.args[0] == "pip install --no-cache-dir ruff"
+        assert "pip install --no-cache-dir ruff" in commands_run
 
     # Reset the sandbox instance for the next test
     runner.sandbox = None

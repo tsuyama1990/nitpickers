@@ -4,6 +4,7 @@ from .critic import CriticResult
 from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, UatAnalysis
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
 from .manifest import CycleManifest, ProjectManifest
+from .observability_config import ObservabilityConfig
 from .refactor import GlobalRefactorResult
 from .review import AuditorReport, AuditResult, PlanAuditResult, ReviewIssue
 from .spec import CyclePlan, Feature, StructuredSpec, TechnicalConstraint
@@ -24,6 +25,7 @@ __all__ = [
     "FileOperation",
     "FilePatch",
     "GlobalRefactorResult",
+    "ObservabilityConfig",
     "PlanAuditResult",
     "ProjectManifest",
     "ReviewIssue",

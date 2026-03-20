@@ -12,6 +12,8 @@ def mock_client() -> Generator[JulesClient, None, None]:
     # Use dummy key to pass init
     with (
         patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"),
+        patch("src.config.Settings.validate_api_keys", return_value=None),
+        patch.dict("os.environ", {"OPENAI_API_KEY": "mock_key"}),
         patch("src.services.jules_client.get_manager_agent") as mock_agent,
     ):
         mock_auditor = AsyncMock()

@@ -80,7 +80,7 @@ Ensure the following tools are available on your system:
    uv sync
    ```
 
-3. Configure your environment variables:
+3. Configure your environment variables. The Gatekeeper explicitly requires LangSmith to be configured before any execution will start:
    ```bash
    cp .env.example .env
    # Edit .env and populate your API keys and LangSmith variables.
@@ -90,32 +90,26 @@ Ensure the following tools are available on your system:
 
 NITPICKERS operates primarily through its Command-Line Interface.
 
-### Quick Start
-
-To generate the architecture and execute the full cycle-based development flow automatically:
-
+### Generate Development Cycles (Phase 1)
+Parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
-uv run python src/cli.py generate 6 --auto-run
+uv run python -m src.cli gen-cycles
 ```
 
-### Manual Execution
+### Run a Specific Cycle (Phase 2 & 3)
+Execute a specific development cycle (e.g., `01`) defined by the manifest. The system will automatically verify your environment configuration, build the schemas, write tests, and implement logic within the E2B sandbox.
+```bash
+uv run python -m src.cli run-cycle --id 01
+```
 
-If you prefer to step through the cycles:
+### Finalize & Refactor
+```bash
+uv run python -m src.cli finalize-session
+```
 
-1. **Architecture & Cycle Generation**
-   ```bash
-   uv run python src/cli.py generate 6
-   ```
+## Troubleshooting
 
-2. **Execute a Specific Cycle**
-   ```bash
-   uv run python src/cli.py run 01
-   ```
-
-3. **Finalize & Refactor**
-   ```bash
-   uv run python src/cli.py finalize
-   ```
+- **Hard Stop during execution:** If the execution halts with an "Environment & Observability Verification" error, ensure your `.env` is correctly populated with `LANGCHAIN_TRACING_V2=true` and valid LangSmith keys.
 
 ## Development Workflow
 

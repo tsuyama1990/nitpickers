@@ -36,6 +36,7 @@ PROMPT_FILENAME_MAP = {
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
     # Use environment variable for configurable override, fallback to detection
+    # This must use os.getenv as Settings is not initialized yet.
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir and Path(env_pkg_dir).exists():
         return env_pkg_dir
@@ -151,6 +152,7 @@ class SandboxConfig(BaseModel):
     max_retries: int = 3
     command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
+    sandbox_env_cleanup: list[str] = ["UV_PROJECT_ENVIRONMENT"]
     files_to_sync: list[str] = [
         "pyproject.toml",
         "uv.lock",
@@ -202,12 +204,12 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str | None = Field(default=None, description="Google API key")
-    OPENROUTER_API_KEY: str | None = None
+    JULES_API_KEY: str = Field(default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key")
+    OPENROUTER_API_KEY: str = Field(default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""), description="OpenRouter API key")
+    E2B_API_KEY: str = Field(default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key")
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000
     DUMMY_CYCLE_ID: str = "00"
-    E2B_API_KEY: str | None = Field(default=None, description="E2B Sandbox API key")
 
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
@@ -224,10 +226,8 @@ class Settings(BaseSettings):
     max_audit_retries: int = 2
 
     # Graph Node Names
-    node_uat_evaluate: str = "uat_evaluate"
-    node_sandbox_evaluate: str = "sandbox_evaluate"
-    node_coder_critic: str = "coder_critic"
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
+    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -252,13 +252,22 @@ class Settings(BaseSettings):
 
         return TracingService(self.tracing)
 
+    # Graph Node Names
+    node_uat_evaluate: str = "uat_evaluate"
+    node_sandbox_evaluate: str = "sandbox_evaluate"
+    node_coder_critic: str = "coder_critic"
+
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default_factory=lambda: os.getenv("AUDITOR_MODEL_MODE", "fast")) # type: ignore
 
     test_mode: bool = Field(
-        default=False, description="Run in test mode with dummy keys and responses"
+        default_factory=lambda: os.getenv("TEST_MODE", "false").lower() == "true",
+        description="Run in test mode with dummy keys and responses"
     )
-    auto_approve: bool = Field(default=False, description="Auto approve AI decisions")
+    auto_approve: bool = Field(
+        default_factory=lambda: os.getenv("AUTO_APPROVE", "false").lower() == "true",
+        description="Auto approve AI decisions"
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
@@ -270,21 +279,28 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        import os
+        from dotenv import load_dotenv
+
+        load_dotenv()
+
         missing = []
         if not getattr(self, "test_mode", False):
-            if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
+            if not self.JULES_API_KEY:
                 missing.append("JULES_API_KEY")
-            if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
+            if not self.E2B_API_KEY:
                 missing.append("E2B_API_KEY")
-        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+            if not self.OPENROUTER_API_KEY:
+                missing.append("OPENROUTER_API_KEY")
+
+        if missing and not os.environ.get("PYTEST_CURRENT_TEST"):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
             msg = f"Missing required environment variables: {', '.join(missing)}"
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration
-        env_enabled = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-        tracing_enabled = self.tracing.tracing_enabled or env_enabled
-        api_key = self.tracing.api_key or os.environ.get("LANGCHAIN_API_KEY")
+        tracing_enabled = self.tracing.tracing_enabled
+        api_key = self.tracing.api_key
 
         if tracing_enabled and not api_key:
             logging.warning(
@@ -296,31 +312,6 @@ class Settings(BaseSettings):
 
         return self
 
-    @model_validator(mode="before")
-    @classmethod
-    def load_legacy_env_vars(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Inject legacy/global env vars if missing from structured data."""
-        smart = os.getenv("SMART_MODEL")
-        fast = os.getenv("FAST_MODEL")
-
-        for key in ["JULES_API_KEY", "OPENROUTER_API_KEY", "E2B_API_KEY"]:
-            if not data.get(key) and os.getenv(key):
-                data[key] = os.getenv(key)
-
-        if smart or fast:
-            data.setdefault("agents", {})
-            if isinstance(data["agents"], dict) and smart:
-                data["agents"].setdefault("auditor_model", smart)
-                data["agents"].setdefault("qa_analyst_model", smart)
-
-            data.setdefault("reviewer", {})
-            if isinstance(data["reviewer"], dict):
-                if smart:
-                    data["reviewer"].setdefault("smart_model", smart)
-                if fast:
-                    data["reviewer"].setdefault("fast_model", fast)
-
-        return data
 
     @property
     def current_session_id(self) -> str:
