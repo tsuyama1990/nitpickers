@@ -56,35 +56,36 @@ def _(UATCaptureResult: Any, TEST_FAILURE_CONTENT: str, EXPECTED_EXIT_CODE: Any)
         import os
         import subprocess
         import sys
-
-        env = os.environ.copy()
-        # Ensure pytest finds the root config
-        env["PYTHONPATH"] = str(pathlib.Path.cwd())
-        env["PACKAGE_DIR"] = str(pathlib.Path.cwd())
-
         import uuid
 
-        # Set random dummy keys explicitly for the pytest run inside the sandbox so the pydantic settings passes without failing
-        # These are random values for local test environments
-        env["OPENAI_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
-        env["ANTHROPIC_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
-        env["GEMINI_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
-        env["OPENROUTER_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
-        env["JULES_API_KEY"] = f"sk-test-{uuid.uuid4().hex}"
-        env["E2B_API_KEY"] = f"e2b-test-{uuid.uuid4().hex}"
-        env["TEST_MODE"] = "True"
+        # Provide a clean base environment isolated from outer overrides,
+        # but keep paths strictly relative to the verified cwd to prevent injections.
+        cwd_resolved = str(pathlib.Path.cwd().resolve())
+
+        isolated_env = {
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONPATH": cwd_resolved,
+            "PACKAGE_DIR": cwd_resolved,
+            "TEST_MODE": "True",
+            "OPENAI_API_KEY": f"sk-test-{uuid.uuid4().hex}",
+            "ANTHROPIC_API_KEY": f"sk-test-{uuid.uuid4().hex}",
+            "GEMINI_API_KEY": f"sk-test-{uuid.uuid4().hex}",
+            "OPENROUTER_API_KEY": f"sk-test-{uuid.uuid4().hex}",
+            "JULES_API_KEY": f"sk-test-{uuid.uuid4().hex}",
+            "E2B_API_KEY": f"e2b-test-{uuid.uuid4().hex}",
+            "LANGCHAIN_TRACING_V2": "false",
+        }
 
         artifacts_dir.resolve().mkdir(parents=True, exist_ok=True)
 
         # Force the worker to use the same config values without getting tripped up by env path resolutions
         # Use shell=False securely passing args via list format
-        cwd_resolved = str(pathlib.Path.cwd().resolve())
         process_res = subprocess.run(  # noqa: S603
             [sys.executable, "-m", "pytest", *PYTEST_ARGS],
             cwd=cwd_resolved,
-            env=env,
+            env=isolated_env,
             shell=False,
-            check=False
+            check=False,
         )
         result = process_res.returncode
 

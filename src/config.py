@@ -10,18 +10,24 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain_models.tracing import LangSmithConfig
 
-# Load environment variables from .env file
-# Priority: .ac_cdd/.env > .env (root)
-_ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-_root_env = Path.cwd() / ".env"
 
-try:
-    if _ac_cdd_env.exists():
-        load_dotenv(_ac_cdd_env, override=True)
-    elif _root_env.exists():
-        load_dotenv(_root_env, override=True)
-except Exception:
-    logging.exception("Could not load dotenv")
+# Load environment variables strictly from known safe environments
+def _load_env() -> None:
+    try:
+        # First priority: strict .ac_cdd environment block
+        _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+        # Optional root environment fallback, must be directly within cwd
+        _root_env = Path.cwd() / ".env"
+
+        if _ac_cdd_env.is_relative_to(Path.cwd()) and _ac_cdd_env.exists():
+            load_dotenv(_ac_cdd_env, override=True)
+        elif _root_env.is_relative_to(Path.cwd()) and _root_env.exists():
+            load_dotenv(_root_env, override=True)
+    except Exception:
+        logging.exception("Could not safely load dotenv")
+
+
+_load_env()
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -48,6 +54,7 @@ def _is_safe_path(p: Path) -> bool:
         pass
     return False
 
+
 def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
@@ -56,6 +63,7 @@ def _check_env_pkg_dir() -> str | None:
             return str(resolved_pkg.resolve())
     return None
 
+
 def _check_docker_src_path() -> str | None:
     docker_src_path = os.getenv("DOCKER_SRC_PATH")
     if docker_src_path:
@@ -63,6 +71,7 @@ def _check_docker_src_path() -> str | None:
         if _is_safe_path(docker_path) and docker_path.resolve().exists():
             return str(docker_path.resolve())
     return None
+
 
 def _check_dev_src_path() -> str | None:
     dev_src_path = os.getenv("DEV_SRC_PATH")
@@ -73,6 +82,7 @@ def _check_dev_src_path() -> str | None:
                 if p.is_dir() and (p / "__init__.py").exists():
                     return str(p)
     return None
+
 
 def _detect_package_dir() -> str:
     """Detects the main package directory."""

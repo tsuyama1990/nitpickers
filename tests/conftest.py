@@ -73,6 +73,7 @@ def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set dummy API keys and models before any tests run, to prevent pydantic-ai from complaining
     during module import and inspection without leaking to the global environment."""
     import uuid
+
     # Set random strings for mock validation so no credentials can be leaked.
     monkeypatch.setenv("OPENAI_API_KEY", f"sk-test-{uuid.uuid4().hex}")
     monkeypatch.setenv("ANTHROPIC_API_KEY", f"sk-test-{uuid.uuid4().hex}")
