@@ -214,9 +214,16 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str = Field(default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key")
-    OPENROUTER_API_KEY: str = Field(default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""), description="OpenRouter API key")
-    E2B_API_KEY: str = Field(default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key")
+    JULES_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key"
+    )
+    OPENROUTER_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""),
+        description="OpenRouter API key",
+    )
+    E2B_API_KEY: str = Field(
+        default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key"
+    )
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000
     DUMMY_CYCLE_ID: str = "00"
@@ -237,7 +244,14 @@ class Settings(BaseSettings):
 
     # Graph Node Names
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
-    known_implicit_secrets: list[str] = ["DATABASE_URL", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "E2B_API_KEY", "JULES_API_KEY", "OPENROUTER_API_KEY"]
+    known_implicit_secrets: list[str] = [
+        "DATABASE_URL",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "E2B_API_KEY",
+        "JULES_API_KEY",
+        "OPENROUTER_API_KEY",
+    ]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -268,19 +282,15 @@ class Settings(BaseSettings):
     node_coder_critic: str = "coder_critic"
 
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(
-        default="fast", alias="AUDITOR_MODEL_MODE"
-    )
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default="fast", alias="AUDITOR_MODEL_MODE")
 
     test_mode: bool = Field(
         default=False,
         alias="TEST_MODE",
-        description="Run in test mode with dummy keys and responses"
+        description="Run in test mode with dummy keys and responses",
     )
     auto_approve: bool = Field(
-        default=False,
-        alias="AUTO_APPROVE",
-        description="Auto approve AI decisions"
+        default=False, alias="AUTO_APPROVE", description="Auto approve AI decisions"
     )
 
     @model_validator(mode="before")
@@ -335,7 +345,6 @@ class Settings(BaseSettings):
             self.tracing.tracing_enabled = False
 
         return self
-
 
     @property
     def current_session_id(self) -> str:

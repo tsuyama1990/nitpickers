@@ -15,8 +15,8 @@ def dummy_node(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def create_mock_graph() -> CompiledStateGraph[Any, Any, Any]:
-    builder: StateGraph = StateGraph(dict) # type: ignore
-    builder.add_node("dummy", dummy_node) # type: ignore
+    builder: StateGraph = StateGraph(dict)  # type: ignore
+    builder.add_node("dummy", dummy_node)  # type: ignore
     builder.add_edge(START, "dummy")
     builder.add_edge("dummy", END)
     return builder.compile()
@@ -53,7 +53,9 @@ async def test_missing_api_key_fallback() -> None:
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
         patch("logging.warning") as mock_logger,
     ):
-        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", OPENROUTER_API_KEY="dummy", TEST_MODE=True)
+        settings = Settings(
+            JULES_API_KEY="dummy", E2B_API_KEY="dummy", OPENROUTER_API_KEY="dummy", TEST_MODE=True
+        )
         assert settings.tracing.tracing_enabled is False
         assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
 

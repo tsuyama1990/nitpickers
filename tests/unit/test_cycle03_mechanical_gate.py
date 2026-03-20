@@ -1,7 +1,6 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
-from pydantic import ValidationError
 
 from src.domain_models.verification_schema import StructuralGateReport, VerificationResult
 from src.enums import FlowStatus
@@ -39,11 +38,12 @@ def test_structural_gate_report_passed_property() -> None:
 
 def test_structural_gate_report_get_failure_report() -> None:
     pass_res = VerificationResult(command="pytest", exit_code=0, stdout="ok", stderr="")
-    fail_lint = VerificationResult(
-        command="ruff", exit_code=1, stdout="", stderr="lint error"
-    )
+    fail_lint = VerificationResult(command="ruff", exit_code=1, stdout="", stderr="lint error")
     fail_type = VerificationResult(
-        command="mypy", exit_code=1, stdout="type error stdout", stderr=""  # Test stdout fallback
+        command="mypy",
+        exit_code=1,
+        stdout="type error stdout",
+        stderr="",  # Test stdout fallback
     )
 
     report = StructuralGateReport(
@@ -64,7 +64,6 @@ def test_structural_gate_report_get_failure_report() -> None:
 @pytest.mark.asyncio
 async def test_sandbox_evaluator_all_pass() -> None:
     mock_runner = AsyncMock(spec=ProcessRunner)
-    # Return (stdout, stderr, exit_code)
     mock_runner.run_command.return_value = ("ok", "", 0)
 
     node = SandboxEvaluatorNodes(process_runner=mock_runner)

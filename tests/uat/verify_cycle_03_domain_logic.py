@@ -1,3 +1,5 @@
+from typing import Any
+
 import marimo
 
 __generated_with = "0.10.14"
@@ -5,7 +7,7 @@ app = marimo.App(width="medium")
 
 
 @app.cell
-def _() -> tuple[()]:
+def _() -> tuple[Any, ...]:
     import asyncio
     import os
     from unittest.mock import AsyncMock
@@ -45,18 +47,26 @@ def _() -> tuple[()]:
     assert not _report.lint_result.passed
 
     print("Scenario 1 Passed: Mechanical gatekeeper blocked execution on linting failure.")  # noqa: T201
-    return (SandboxEvaluatorNodes, ProcessRunner, CycleState, FlowStatus, StructuralGateReport, asyncio, AsyncMock)
+    return (
+        SandboxEvaluatorNodes,
+        ProcessRunner,
+        CycleState,
+        FlowStatus,
+        StructuralGateReport,
+        asyncio,
+        AsyncMock,
+    )
 
 
 @app.cell
 def _(
-    CycleState: type,
-    FlowStatus: type,
-    ProcessRunner: type,
-    SandboxEvaluatorNodes: type,
-    StructuralGateReport: type,
-    asyncio: type,
-    AsyncMock: type,
+    CycleState: Any,  # noqa: N803
+    FlowStatus: Any,  # noqa: N803
+    ProcessRunner: Any,  # noqa: N803
+    SandboxEvaluatorNodes: Any,  # noqa: N803
+    StructuralGateReport: Any,  # noqa: N803
+    asyncio: Any,
+    AsyncMock: Any,  # noqa: N803
 ) -> tuple[()]:
     # Scenario 2: Dynamic Unit Test Blockade (Pytest failure)
     print("\n--- Running Scenario 2: Dynamic Unit Test Blockade ---")  # noqa: T201
@@ -72,7 +82,7 @@ def _(
     _node2 = SandboxEvaluatorNodes(process_runner=_mock_runner2)
     _state2 = CycleState(cycle_id="03_scenario2")
 
-    _result2 = asyncio.run(_node2.sandbox_evaluate_node(_state2)) # type: ignore
+    _result2 = asyncio.run(_node2.sandbox_evaluate_node(_state2))
 
     assert _result2["status"] == FlowStatus.TDD_FAILED
     _report2 = _result2["structural_report"]

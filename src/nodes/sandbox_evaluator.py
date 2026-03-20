@@ -61,7 +61,9 @@ class SandboxEvaluatorNodes:
             )
 
             if not report.passed:
-                console.print("[bold red]Mechanical Blockade Enforced: Structural failure detected.[/bold red]")
+                console.print(
+                    "[bold red]Mechanical Blockade Enforced: Structural failure detected.[/bold red]"
+                )
                 error_trace = report.get_failure_report()
 
                 return {

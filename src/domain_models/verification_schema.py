@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -37,11 +36,7 @@ class StructuralGateReport(BaseModel):
     @property
     def passed(self) -> bool:
         """Returns True if all underlying verification checks passed."""
-        return (
-            self.lint_result.passed
-            and self.type_check_result.passed
-            and self.test_result.passed
-        )
+        return self.lint_result.passed and self.type_check_result.passed and self.test_result.passed
 
     def get_failure_report(self) -> str:
         """

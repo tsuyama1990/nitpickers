@@ -208,7 +208,8 @@ class SandboxRunner:
         import shlex
 
         sandbox.commands.run(
-            shlex.join(["tar", "-xzf", remote_tar_path, "-C", self.cwd]), timeout=settings.sandbox.timeout
+            shlex.join(["tar", "-xzf", remote_tar_path, "-C", self.cwd]),
+            timeout=settings.sandbox.timeout,
         )
         logger.info("Synced files to sandbox via tarball.")
         self._last_sync_hash = current_hash
