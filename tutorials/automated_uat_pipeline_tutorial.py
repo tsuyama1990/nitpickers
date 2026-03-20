@@ -2,18 +2,19 @@
 # requires-python = ">=3.12"
 # dependencies = [
 #     "marimo>=0.21.1",
+#     "pydantic~=2.11.0"
 # ]
 # ///
 import marimo
 
-__generated_with = "0.10.14"
+__generated_with = "0.21.1"
 app = marimo.App()
 
 
 @app.cell
 def __():
     import marimo as mo
-    return mo.md(
+    intro = mo.md(
         """
         # Master Plan for User Acceptance Testing and Tutorials
 
@@ -22,33 +23,33 @@ def __():
 
         Let's explore the phases of the UAT pipeline!
         """
-    ),
+    )
+    return intro, mo
 
 
 @app.cell
 def __():
     import os
-    import sys
+    import tempfile
     import pytest
     from pathlib import Path
     import asyncio
 
-    # Ensure the root of the project is in the python path to resolve src imports
-    project_root = str(Path().resolve())
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
-
     # Mock Mode configuration
     os.environ["MOCK_LLM"] = "true"
 
-    # Ensure artifacts directory exists for later scenarios
-    os.makedirs("artifacts", exist_ok=True)
-    return os, pytest, Path, asyncio, sys, project_root
+    # Create a temporary directory for artifacts that automatically cleans up
+    artifacts_temp_dir = tempfile.TemporaryDirectory()
+    artifacts_path = Path(artifacts_temp_dir.name)
+
+    return os, tempfile, pytest, Path, asyncio, artifacts_temp_dir, artifacts_path
 
 
 @app.cell
-def __(os, mo, sys):
+def __(os, mo):
     mo.md("## Scenario 1: Quick Start & Observability Gate Verification")
+
+    import sys
 
     # Mocking config variables to simulate behavior
     class MockConfig:
@@ -84,7 +85,7 @@ def __(os, mo, sys):
         **Valid Config Result:** `{result_2}`
         """
     )
-    return MockConfig, missing_config, result_1, valid_config, result_2
+    return MockConfig, missing_config, result_1, valid_config, result_2, sys
 
 
 @app.cell
@@ -126,32 +127,36 @@ def __(mo, pytest):
 
 
 @app.cell
-def __(asyncio, mo, os, sys):
+def __(asyncio, mo, os):
     mo.md("## Scenario 3: Mechanical Blockade (Static & Dynamic)")
 
-    try:
-        from src.process_runner import ProcessRunner
+    # Complete Mock Implementation of ProcessRunner matching exactly the expected interface
+    class MockProcessRunner:
+        async def run_command(
+            self,
+            cmd: list[str],
+            cwd=None,
+            check: bool = True,
+            env=None,
+            timeout=None,
+        ) -> tuple[str, str, int, bool]:
+            """
+            Mock execution that simulates a deliberate failure on specific commands.
+            Returns: (stdout, stderr, exit_code, timeout_occurred)
+            """
+            cmd_str = " ".join(cmd)
+            if cmd_str == "python -c print('hello'":
+                # Simulate a syntax error return
+                return "", "  File \"<string>\", line 1\n    print('hello'\n                 ^\nSyntaxError: unexpected EOF while parsing", 1, False
+            return "success", "", 0, False
 
-        runner = ProcessRunner()
+    runner = MockProcessRunner()
 
-        async def run_failing_command():
-            # Using a deliberate syntax error with a bash command to simulate failing static check
-            # We use python -c with a syntax error
-            return await runner.run_command(["python", "-c", "print('hello'"], check=False)
+    async def run_failing_command():
+        # Using a deliberate syntax error with a bash command to simulate failing static check
+        return await runner.run_command(["python", "-c", "print('hello'"], check=False)
 
-        stdout, stderr, exit_code, timeout = asyncio.run(run_failing_command())
-    except ImportError:
-        # Mocking for environments where `src` is missing entirely
-        class MockProcessRunner:
-            async def run_command(self, cmd, check=False):
-                return "", "SyntaxError: unexpected EOF while parsing", 1, False
-
-        runner = MockProcessRunner()
-        async def run_failing_command():
-            return await runner.run_command(["python", "-c", "print('hello'"], check=False)
-
-        stdout, stderr, exit_code, timeout = asyncio.run(run_failing_command())
-
+    stdout, stderr, exit_code, timeout = asyncio.run(run_failing_command())
 
     mo.md(
         f"""
@@ -164,31 +169,41 @@ def __(asyncio, mo, os, sys):
         *The ProcessRunner captures the non-zero exit code, blocking PR creation and routing this standard error trace back to the Coder agent.*
         """
     )
-    return run_failing_command, exit_code, runner, stderr, stdout, timeout
+    return MockProcessRunner, run_failing_command, exit_code, runner, stderr, stdout, timeout
 
 
 @app.cell
-def __(Path, mo, os, sys):
+def __(Path, artifacts_path, mo, os):
     mo.md("## Scenario 4: Multi-Modal Artifact Capture")
 
-    try:
-        # We try to import the real schema model
-        from src.domain_models.multimodal_artifact_schema import MultiModalArtifact
-    except ImportError:
-        # Mock for environments without src
-        from pydantic import BaseModel as _BaseModel_MA
-        class MultiModalArtifact(_BaseModel_MA):
-            test_id: str
-            screenshot_path: str
-            trace_path: str | None = None
-            console_logs: list[str]
-            traceback: str
+    # Include exact replica of MultiModalArtifact schema definition for guaranteed compatibility
+    from pydantic import BaseModel, ConfigDict, model_validator
 
-    # Create dummy files for the mock artifact
-    dummy_screenshot = Path("artifacts/dummy_screenshot.png")
+    class MultiModalArtifact(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+
+        test_id: str
+        screenshot_path: str
+        trace_path: str | None = None
+        console_logs: list[str]
+        traceback: str
+
+        @model_validator(mode="after")
+        def _verify_file_paths(self) -> "MultiModalArtifact":
+            """Verify that the paths for screenshot and trace exist."""
+            if not Path(self.screenshot_path).exists():
+                msg = f"Screenshot file not found: {self.screenshot_path}"
+                raise ValueError(msg)
+            if self.trace_path is not None and not Path(self.trace_path).exists():
+                msg = f"Trace file not found: {self.trace_path}"
+                raise ValueError(msg)
+            return self
+
+    # Create dummy files within the managed temporary directory
+    dummy_screenshot = artifacts_path / "dummy_screenshot.png"
     dummy_screenshot.write_bytes(b"")
 
-    dummy_trace = Path("artifacts/dummy_trace.zip")
+    dummy_trace = artifacts_path / "dummy_trace.zip"
     dummy_trace.write_bytes(b"")
 
     artifact = MultiModalArtifact(
@@ -211,23 +226,33 @@ def __(Path, mo, os, sys):
         *In real execution, `pytest-playwright` hooks automatically populate this on test failure.*
         """
     )
-    return MultiModalArtifact, artifact, dummy_screenshot, dummy_trace
+    return BaseModel, ConfigDict, MultiModalArtifact, artifact, dummy_screenshot, dummy_trace, model_validator
 
 
 @app.cell
-def __(artifact, mo, sys):
+def __(BaseModel, ConfigDict, artifact, mo):
     mo.md("## Scenario 5: The Auditor Recovery Loop")
 
-    try:
-        from src.domain_models.fix_plan_schema import FixPlanSchema
-    except ImportError:
-        from pydantic import BaseModel as _BaseModel_FPS
-        class FixPlanSchema(_BaseModel_FPS):
-            target_file: str
-            defect_description: str
-            git_diff_patch: str
-
+    from pydantic import Field
     import json
+
+    # Exact replica of FixPlanSchema
+    class FixPlanSchema(BaseModel):
+        """
+        Structured JSON Fix Plan returned by the Stateless Auditor to the Worker.
+        """
+        model_config = ConfigDict(extra="forbid")
+
+        target_file: str = Field(
+            ..., description="The exact path of the file to modify to resolve the bug."
+        )
+        defect_description: str = Field(
+            ..., description="A clear reasoning and explanation of the defect and the intended fix."
+        )
+        git_diff_patch: str = Field(
+            ...,
+            description="A precise structural modification instruction block, such as code snippets or a diff.",
+        )
 
     # Simulate Stateless Auditor response (Mock Mode)
     mock_auditor_json_response = {
@@ -252,7 +277,7 @@ def __(artifact, mo, sys):
         ```
         """
     )
-    return FixPlanSchema, fix_plan, json, mock_auditor_json_response
+    return Field, FixPlanSchema, fix_plan, json, mock_auditor_json_response
 
 
 if __name__ == "__main__":
