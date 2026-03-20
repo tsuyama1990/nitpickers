@@ -26,6 +26,14 @@ def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
 
     # Filter non-printable characters except standard whitespaces
     # \x20-\x7E covers printable ASCII, \t\n\r covers standard whitespace
-    # We also want to keep standard unicode printables so we just strip low ascii controls
-    control_chars = re.compile(r"[\x00-\x08\x0b\x0c\x0e\x0f\x10-\x19\x1a-\x1f]")
-    return str(control_chars.sub("", no_ansi))
+    # We also strip low ascii controls and dangerous unicode controls (\x7f-\x9f)
+    control_chars = re.compile(r"[\x00-\x08\x0b\x0c\x0e\x0f\x10-\x19\x1a-\x1f\x7f-\x9f]")
+
+    # Also strip unicode formatting characters that could be used for invisible prompt injection
+    # e.g., zero-width spaces, directional formatting
+    unicode_controls = re.compile(r"[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]")
+
+    safe_text = control_chars.sub("", no_ansi)
+    safe_text = unicode_controls.sub("", safe_text)
+
+    return str(safe_text)

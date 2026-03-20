@@ -74,6 +74,12 @@ class CycleState(BaseModel):
     # Required fields
     cycle_id: str
 
+    @field_validator("cycle_id")
+    @classmethod
+    def do_validate_cycle_id(cls, v: str) -> str:
+        from src.state_validators import validate_cycle_id
+        return validate_cycle_id(v)
+
     # Composed Sub-States (using default factories to auto-initialize)
     committee: CommitteeState = Field(default_factory=CommitteeState)
     session: SessionPersistenceState = Field(default_factory=SessionPersistenceState)
@@ -208,13 +214,6 @@ class CycleState(BaseModel):
     @test_logs.setter
     def test_logs(self, value: str) -> None:
         self.test.test_logs = value
-
-    # Validators
-    @field_validator("cycle_id")
-    @classmethod
-    def do_validate_cycle_id(cls, v: str) -> str:
-        from src.state_validators import validate_cycle_id
-        return validate_cycle_id(v)
 
     def get(self, item: str, default: Any = None) -> Any:
         return getattr(self, item, default)

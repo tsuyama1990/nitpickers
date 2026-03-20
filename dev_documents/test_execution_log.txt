@@ -12,7 +12,7 @@ tests/ac_cdd/integration/test_cli_commands.py .                          [  0%]
 tests/ac_cdd/integration/test_end_to_end_workflow.py .                   [  1%]
 tests/ac_cdd/integration/test_git_robustness.py FF                       [  2%]
 tests/ac_cdd/unit/test_audit_orchestrator.py ...                         [  3%]
-tests/ac_cdd/unit/test_audit_polling.py .                                [  4%]
+tests/ac_cdd/unit/test_audit_polling.py F                                [  4%]
 tests/ac_cdd/unit/test_auditor_polling_exit.py .                         [  4%]
 tests/ac_cdd/unit/test_auto_merge.py .                                   [  5%]
 tests/ac_cdd/unit/test_cli_reconstruction.py ...                         [  6%]
@@ -21,7 +21,7 @@ tests/ac_cdd/unit/test_coder_critic_flow.py .                            [  8%]
 tests/ac_cdd/unit/test_committee_logic.py FF                             [  9%]
 tests/ac_cdd/unit/test_config.py ......                                  [ 11%]
 tests/ac_cdd/unit/test_file_patcher.py ...                               [ 13%]
-tests/ac_cdd/unit/test_gen_cycles_options.py .........                   [ 17%]
+tests/ac_cdd/unit/test_gen_cycles_options.py FFFFFFFFF                   [ 17%]
 tests/ac_cdd/unit/test_git_checkout.py .                                 [ 18%]
 tests/ac_cdd/unit/test_git_operations.py FFFFFFFFFFFFF                   [ 24%]
 tests/ac_cdd/unit/test_git_ops_merge.py FFF                              [ 25%]
@@ -36,11 +36,11 @@ tests/ac_cdd/unit/test_phase_transition.py .                             [ 35%]
 tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 36%]
 tests/ac_cdd/unit/test_project_init_robustness.py .                      [ 37%]
 tests/ac_cdd/unit/test_project_manifest.py ...                           [ 38%]
-tests/ac_cdd/unit/test_resume_logic.py ..                                [ 39%]
+tests/ac_cdd/unit/test_resume_logic.py FF                                [ 39%]
 tests/ac_cdd/unit/test_robustness_fixes.py .FF                           [ 41%]
 tests/ac_cdd/unit/test_sandbox.py ....F...F.                             [ 45%]
 tests/ac_cdd/unit/test_session_manager.py ........                       [ 49%]
-tests/ac_cdd/unit/test_session_restart.py ..                             [ 50%]
+tests/ac_cdd/unit/test_session_restart.py FF                             [ 50%]
 tests/ac_cdd/unit/test_session_reuse.py FFF                              [ 52%]
 tests/ac_cdd/unit/test_state_manager.py ..............                   [ 58%]
 tests/ac_cdd/unit/test_utils.py ..                                       [ 59%]
@@ -52,7 +52,7 @@ tests/unit/test_conflict.py ...                                          [ 70%]
 tests/unit/test_cycle01_observability.py .......                         [ 74%]
 tests/unit/test_cycle03_mechanical_gate.py ......                        [ 77%]
 tests/unit/test_cycle04_playwright_capture.py .....                      [ 79%]
-tests/unit/test_cycle05_dynamic_execution.py ..                          [ 80%]
+tests/unit/test_cycle05_dynamic_execution.py F.                          [ 80%]
 tests/unit/test_cycle06_auditor_recovery.py .....                        [ 82%]
 tests/unit/test_dispatcher.py ......                                     [ 85%]
 tests/unit/test_domain_models.py .....                                   [ 88%]
@@ -86,9 +86,9 @@ _________ ERROR at setup of test_wait_for_completion_sucess_first_try __________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808dd4890>
-manager_agent = <MagicMock name='get_manager_agent' id='139741204258288'>
-plan_auditor = <AsyncMock id='139741204261360'>
+self = <src.services.jules_client.JulesClient object at 0x7f98bdfa46b0>
+manager_agent = <MagicMock name='get_manager_agent' id='140294002305712'>
+plan_auditor = <AsyncMock id='140294002295872'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -124,7 +124,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741204135376'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998496032'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________ ERROR at setup of test_wait_for_completion_loop_success ____________
 
     @pytest.fixture
@@ -143,9 +143,9 @@ ___________ ERROR at setup of test_wait_for_completion_loop_success ____________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808b19f70>
-manager_agent = <MagicMock name='get_manager_agent' id='139741205489584'>
-plan_auditor = <AsyncMock id='139741201801024'>
+self = <src.services.jules_client.JulesClient object at 0x7f98bdf80440>
+manager_agent = <MagicMock name='get_manager_agent' id='140294002477920'>
+plan_auditor = <AsyncMock id='140293998904336'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -181,7 +181,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741201985280'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998413968'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ______________ ERROR at setup of test_wait_for_completion_timeout ______________
 
     @pytest.fixture
@@ -200,9 +200,9 @@ ______________ ERROR at setup of test_wait_for_completion_timeout ______________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808dd4c80>
-manager_agent = <MagicMock name='get_manager_agent' id='139741202966544'>
-plan_auditor = <AsyncMock id='139741202970432'>
+self = <src.services.jules_client.JulesClient object at 0x7f98bdf08bc0>
+manager_agent = <MagicMock name='get_manager_agent' id='140293998414928'>
+plan_auditor = <AsyncMock id='140293998419968'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -238,7 +238,7 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741205484112'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998915088'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _____________ ERROR at setup of test_interactive_inquiry_handling ______________
 
     @pytest.fixture
@@ -257,9 +257,9 @@ _____________ ERROR at setup of test_interactive_inquiry_handling ______________
 tests/ac_cdd/unit/test_jules_client.py:20:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808b51430>
-manager_agent = <MagicMock name='get_manager_agent' id='139741205211488'>
-plan_auditor = <AsyncMock id='139741201793104'>
+self = <src.services.jules_client.JulesClient object at 0x7f98be2ef410>
+manager_agent = <MagicMock name='get_manager_agent' id='140293999366256'>
+plan_auditor = <AsyncMock id='140293999377632'>
 
     def __init__(self, manager_agent: Any | None = None, plan_auditor: Any | None = None) -> None:
         self.project_id = settings.GCP_PROJECT_ID
@@ -295,10 +295,10 @@ E       AttributeError: 'str' object has no attribute 'get_secret_value'
 
 src/services/jules_client.py:90: AttributeError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741205169168'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140294000480272'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_in_progress _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f18094f6c60>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f98be45fef0>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_in_progress>>
 
     @pytest.fixture(
@@ -342,7 +342,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f180909d520>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98bdde61e0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -367,10 +367,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741209964000'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997113808'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_completed _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f18094f6c60>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f98be45fef0>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_completed>>
 
     @pytest.fixture(
@@ -414,7 +414,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f18093ab9e0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98bdfd2570>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -439,10 +439,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741207903888'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998552240'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _ ERROR at teardown of TestSessionStateValidation.test_get_session_state_on_error _
 
-event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f18094f6c60>
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f98be45fef0>
 request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_on_error>>
 
     @pytest.fixture(
@@ -486,7 +486,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f18092e08f0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98be036120>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -511,7 +511,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741209114528'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997323536'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________ ERROR at setup of test_evaluate_red_phase_success_fails ____________
 
     @pytest.fixture
@@ -563,7 +563,7 @@ tests/unit/test_sandbox_evaluator.py:23: ValidationError
 =================================== FAILURES ===================================
 ____________________ test_create_feature_branch_idempotency ____________________
 
-mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-9/test_create_feature_branch_ide0/repo')
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-14/test_create_feature_branch_ide0/repo')
 
     @pytest.mark.asyncio
     async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
@@ -603,7 +603,7 @@ src/services/git/branching.py:109: in create_feature_branch
     await self._auto_commit_if_dirty()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f18093c3fe0>
+self = <src.services.git_ops.GitManager object at 0x7f98be313ef0>
 message = 'Auto-save before branch switch'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -618,7 +618,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ______________________ test_smart_checkout_dirty_recovery ______________________
 
-mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-9/test_smart_checkout_dirty_reco0/repo')
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-14/test_smart_checkout_dirty_reco0/repo')
 
     @pytest.mark.asyncio
     async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
@@ -641,7 +641,7 @@ src/services/git/checkout.py:26: in smart_checkout
     await self._run_git(cmd)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f18093caae0>
+self = <src.services.git_ops.GitManager object at 0x7f98be323860>
 args = ['checkout', 'new-branch'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -656,6 +656,53 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 ------------------------------ Captured log call -------------------------------
 ERROR    AC-CDD:checkout.py:34 Failed to checkout 'new-branch'. Please check git status.
+______________ TestAuditPolling.test_audit_polling_pulls_changes _______________
+
+self = <unit.test_audit_polling.TestAuditPolling object at 0x7f98be56e6f0>
+
+    @pytest.mark.asyncio
+    async def test_audit_polling_pulls_changes(self) -> None:
+        """
+        Verifies that when the auditor detects the same commit that was already audited,
+        and Jules is still running, it returns 'WAITING_FOR_JULES' to let LangGraph loop.
+        """
+        mock_jules = MagicMock()
+        mock_git = AsyncMock()
+        mock_llm = MagicMock()
+
+        # Git: current commit matches the already-audited commit
+        mock_git.checkout_pr = AsyncMock()
+        mock_git.get_current_commit = AsyncMock(return_value="commit_A")
+        mock_git.get_pr_base_branch = AsyncMock(return_value="main")
+        mock_git.get_changed_files = AsyncMock(return_value=["file.py"])
+
+        # Jules is still in progress (active, non-terminal state)
+        mock_jules.get_session_state = AsyncMock(return_value="IN_PROGRESS")
+
+        usecase = AuditorUseCase(mock_jules, mock_git, mock_llm)
+
+>       state = CycleState(
+            cycle_id="99",
+            pr_url="https://github.com/org/repo/pull/123",
+            last_audited_commit="commit_A",
+            feature_branch="feature/branch",
+            jules_session_name="sessions/123",
+        )
+E       pydantic_core._pydantic_core.ValidationError: 4 validation errors for CycleState
+E       pr_url
+E         Extra inputs are not permitted [type=extra_forbidden, input_value='https://github.com/org/repo/pull/123', input_type=str]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E       last_audited_commit
+E         Extra inputs are not permitted [type=extra_forbidden, input_value='commit_A', input_type=str]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E       feature_branch
+E         Extra inputs are not permitted [type=extra_forbidden, input_value='feature/branch', input_type=str]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E       jules_session_name
+E         Extra inputs are not permitted [type=extra_forbidden, input_value='sessions/123', input_type=str]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_audit_polling.py:34: ValidationError
 ______________________ test_route_coder_critic_completed _______________________
 
     def test_route_coder_critic_completed() -> None:
@@ -703,14 +750,20 @@ __________________________ test_committee_logic_flow ___________________________
             # Auditor 1: Approved
 >           state = CycleState(cycle_id="1", current_auditor_index=1, current_auditor_review_count=1)
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           pydantic_core._pydantic_core.ValidationError: 3 validation errors for CycleState
 E           cycle_id
 E             Value error, cycle_id '1' is invalid (must be exactly two digits, e.g., '01') [type=value_error, input_value='1', input_type=str]
 E               For further information visit https://errors.pydantic.dev/latest/v/value_error
+E           current_auditor_index
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E           current_auditor_review_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
 
 tests/ac_cdd/unit/test_committee_logic.py:32: ValidationError
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741208247760'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140294001350688'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _______________________ test_committee_pipeline_handover _______________________
 
     @pytest.mark.asyncio
@@ -735,17 +788,417 @@ _______________________ test_committee_pipeline_handover _______________________
                 current_auditor_review_count=1,
                 iteration_count=0,
             )
-E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           pydantic_core._pydantic_core.ValidationError: 4 validation errors for CycleState
 E           cycle_id
 E             Value error, cycle_id 'handover-1' is invalid (must be exactly two digits, e.g., '01') [type=value_error, input_value='handover-1', input_type=str]
 E               For further information visit https://errors.pydantic.dev/latest/v/value_error
+E           current_auditor_index
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E           current_auditor_review_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E           iteration_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=0, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
 
 tests/ac_cdd/unit/test_committee_logic.py:122: ValidationError
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741210819376'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140294000665824'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+__________ TestGenCyclesCountOption.test_state_propagation_with_count __________
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be597b30>
+
+    def test_state_propagation_with_count(self) -> None:
+        """Test that requested_cycle_count is correctly stored in CycleState."""
+        # Test with count specified
+>       state = CycleState(cycle_id="00", requested_cycle_count=3)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       requested_cycle_count
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=3, input_type=int]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:18: ValidationError
+________ TestGenCyclesCountOption.test_state_propagation_without_count _________
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be597f80>
+
+    def test_state_propagation_without_count(self) -> None:
+        """Test that requested_cycle_count defaults to None when not specified."""
+        # Test without count (default behavior)
+        state = CycleState(cycle_id="00")
+>       assert state.requested_cycle_count is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:26:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = CycleState(cycle_id='00', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'requested_cycle_count'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'CycleState' object has no attribute 'requested_cycle_count'. Did you mean: 'planned_cycle_count'?
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
+__________ TestGenCyclesCountOption.test_prompt_injection_with_count ___________
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be5ac440>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-14/test_prompt_injection_with_cou0')
+
+    @pytest.mark.asyncio
+    async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
+        """Test that architect_session_node injects constraint when count is specified."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        # Create a temporary instruction file
+        instruction_content = "Original architect instruction."
+
+        # Mock settings.get_template to return our test content
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            # Create CycleNodes instance
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+            # Create state with requested_cycle_count
+>           state = CycleState(cycle_id="00", requested_cycle_count=5)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:61: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293999434432'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_______ TestGenCyclesCountOption.test_prompt_no_injection_without_count ________
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be5ac980>
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-14/test_prompt_no_injection_witho0')
+
+    @pytest.mark.asyncio
+    async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
+        """Test that architect_session_node does NOT inject constraint when count is not specified."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        # Create a temporary instruction file
+        instruction_content = "Original architect instruction."
+
+        # Mock settings.get_template to return our test content
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            # Create CycleNodes instance
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+            # Create state WITHOUT requested_cycle_count
+            # BUT: CycleState defaults planned_cycle_count to 5 (from definition in state.py)
+            # So if we want NO injection, we must explicitly set planned_cycle_count to None if allowed
+            # or check that it uses planned_cycle_count logic.
+            # In updated graph_nodes.py logic:
+            # if requested_cycle_count: use it
+            # elif planned_cycle_count: use it
+
+            # If we want to test "no constraint", we need both to be None.
+>           state = CycleState(cycle_id="00", requested_cycle_count=None, planned_cycle_count=None)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 2 validation errors for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E           planned_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=None, input_type=NoneType]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:118: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140294000470944'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_______ TestGenCyclesCountOption.test_prompt_injection_various_counts[1] _______
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be5ace90>
+count_value = 1
+
+    @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
+    @pytest.mark.asyncio
+    async def test_prompt_injection_various_counts(self, count_value: int) -> None:
+        """Test that the correct count value is injected for various inputs."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        instruction_content = "Test instruction."
+
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+>           state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:164: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997483296'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_______ TestGenCyclesCountOption.test_prompt_injection_various_counts[2] _______
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be5ad190>
+count_value = 2
+
+    @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
+    @pytest.mark.asyncio
+    async def test_prompt_injection_various_counts(self, count_value: int) -> None:
+        """Test that the correct count value is injected for various inputs."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        instruction_content = "Test instruction."
+
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+>           state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=2, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:164: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997859600'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_______ TestGenCyclesCountOption.test_prompt_injection_various_counts[3] _______
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be597d70>
+count_value = 3
+
+    @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
+    @pytest.mark.asyncio
+    async def test_prompt_injection_various_counts(self, count_value: int) -> None:
+        """Test that the correct count value is injected for various inputs."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        instruction_content = "Test instruction."
+
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+>           state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=3, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:164: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997856960'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_______ TestGenCyclesCountOption.test_prompt_injection_various_counts[5] _______
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be597d40>
+count_value = 5
+
+    @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
+    @pytest.mark.asyncio
+    async def test_prompt_injection_various_counts(self, count_value: int) -> None:
+        """Test that the correct count value is injected for various inputs."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        instruction_content = "Test instruction."
+
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+>           state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=5, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:164: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998269680'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+______ TestGenCyclesCountOption.test_prompt_injection_various_counts[10] _______
+
+self = <unit.test_gen_cycles_options.TestGenCyclesCountOption object at 0x7f98be597dd0>
+count_value = 10
+
+    @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
+    @pytest.mark.asyncio
+    async def test_prompt_injection_various_counts(self, count_value: int) -> None:
+        """Test that the correct count value is injected for various inputs."""
+        # Setup mocks
+        mock_sandbox = MagicMock()
+        mock_jules = AsyncMock()
+        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+
+        instruction_content = "Test instruction."
+
+        with (
+            patch("src.nodes.architect.settings") as mock_settings,
+            patch("src.services.git_ops.GitManager") as mock_git_cls,
+            patch("src.nodes.architect.ProjectManager"),
+        ):
+            # Configure GitManager mock instance
+            mock_git_instance = mock_git_cls.return_value
+            mock_git_instance.create_feature_branch = AsyncMock()
+            mock_git_instance.merge_pr = AsyncMock()
+
+            mock_template = MagicMock()
+            mock_template.read_text.return_value = instruction_content
+            mock_settings.get_template.return_value = mock_template
+            mock_settings.get_context_files.return_value = []
+
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            nodes._architect.git = mock_git_instance
+
+>           state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E           requested_cycle_count
+E             Extra inputs are not permitted [type=extra_forbidden, input_value=10, input_type=int]
+E               For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_gen_cycles_options.py:164: ValidationError
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998742800'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ________________________ test_ensure_clean_state_clean _________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e4d5b0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdf0b080>
 
     def test_ensure_clean_state_clean(git_manager: GitManager) -> None:
         """Test ensure_clean_state when working directory is clean."""
@@ -775,7 +1228,7 @@ src/services/git/checkout.py:109: in ensure_clean_state
     await self._auto_commit_if_dirty("Auto-save before workflow run")
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e4d5b0>
+self = <src.services.git_ops.GitManager object at 0x7f98bdf0b080>
 message = 'Auto-save before workflow run'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -790,7 +1243,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ___________________ test_ensure_clean_state_dirty_auto_stash ___________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808fdce90>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdf0b020>
 
     @pytest.mark.asyncio
     async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> None:
@@ -809,7 +1262,7 @@ src/services/git/checkout.py:109: in ensure_clean_state
     await self._auto_commit_if_dirty("Auto-save before workflow run")
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808fdce90>
+self = <src.services.git_ops.GitManager object at 0x7f98bdf0b020>
 message = 'Auto-save before workflow run'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -824,7 +1277,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 ________________________ test_create_integration_branch ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e3a750>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdf0a480>
 
     @pytest.mark.asyncio
     async def test_create_integration_branch(git_manager: GitManager) -> None:
@@ -843,7 +1296,7 @@ src/services/git/branching.py:73: in create_integration_branch
     await self._auto_commit_if_dirty()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e3a750>
+self = <src.services.git_ops.GitManager object at 0x7f98bdf0a480>
 message = 'Auto-save before branch switch'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
@@ -858,7 +1311,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:43: ValueError
 _______________________ test_create_session_branch_arch ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e21220>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdeea330>
 
     @pytest.mark.asyncio
     async def test_create_session_branch_arch(git_manager: GitManager) -> None:
@@ -878,7 +1331,7 @@ src/services/git/branching.py:148: in create_session_branch
     await self._run_git(["checkout", integration_branch])
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e21220>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeea330>
 args = ['checkout', 'dev/session-20251230-120000/integration'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -893,7 +1346,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 _______________________ test_create_session_branch_cycle _______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e5ab10>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bded43b0>
 
     @pytest.mark.asyncio
     async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
@@ -914,7 +1367,7 @@ src/services/git/branching.py:148: in create_session_branch
     await self._run_git(["checkout", integration_branch])
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e5ab10>
+self = <src.services.git_ops.GitManager object at 0x7f98bded43b0>
 args = ['checkout', 'dev/session-20251230-120000/integration'], check = True
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -929,7 +1382,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 ____________________ test_safe_merge_with_conflicts_success ____________________
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e9db20>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeb4ce0>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -953,7 +1406,7 @@ src/services/git/merging.py:68: ValueError
 
 The above exception was the direct cause of the following exception:
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e9db20>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdeb4ce0>
 
     @pytest.mark.asyncio
     async def test_safe_merge_with_conflicts_success(git_manager: GitManager) -> None:
@@ -967,7 +1420,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808e9db20>
 tests/ac_cdd/unit/test_git_operations.py:97:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e9db20>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeb4ce0>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1002,7 +1455,7 @@ ERROR    AC-CDD:merging.py:74 Error during safe_merge_with_conflicts: not enough
 ERROR    AC-CDD:merging.py:78 Failed to abort safe merge: not enough values to unpack (expected 4, got 3)
 ____________________ test_safe_merge_with_conflicts_failure ____________________
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e58a70>
+self = <src.services.git_ops.GitManager object at 0x7f98bde25af0>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1026,7 +1479,7 @@ src/services/git/merging.py:68: ValueError
 
 The above exception was the direct cause of the following exception:
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e58a70>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bde25af0>
 
     @pytest.mark.asyncio
     async def test_safe_merge_with_conflicts_failure(git_manager: GitManager) -> None:
@@ -1040,7 +1493,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808e58a70>
 tests/ac_cdd/unit/test_git_operations.py:112:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e58a70>
+self = <src.services.git_ops.GitManager object at 0x7f98bde25af0>
 branch_name = 'feature-branch'
 
     async def safe_merge_with_conflicts(self, branch_name: str) -> bool:
@@ -1075,7 +1528,7 @@ ERROR    AC-CDD:merging.py:74 Error during safe_merge_with_conflicts: not enough
 ERROR    AC-CDD:merging.py:78 Failed to abort safe merge: not enough values to unpack (expected 4, got 3)
 ________________________________ test_merge_pr _________________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808e7a5a0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be03d4f0>
 
     @pytest.mark.asyncio
     async def test_merge_pr(git_manager: GitManager) -> None:
@@ -1091,7 +1544,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808e7a5a0>
 tests/ac_cdd/unit/test_git_operations.py:130:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808e7a5a0>
+self = <src.services.git_ops.GitManager object at 0x7f98be03d4f0>
 pr_number = 123, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1137,7 +1590,7 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ___________________________ test_create_final_pr_new ___________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b53380>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdeeb350>
 
     @pytest.mark.asyncio
     async def test_create_final_pr_new(git_manager: GitManager) -> None:
@@ -1165,7 +1618,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808b53380>
 tests/ac_cdd/unit/test_git_operations.py:182:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b53380>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeeb350>
 integration_branch = 'dev/session-20251230-120000/integration'
 title = 'Session: Complete Implementation', body = 'Final PR for session'
 
@@ -1195,7 +1648,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/merging.py:192: ValueError
 ________________________ test_create_final_pr_existing _________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b53140>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be02f200>
 
     @pytest.mark.asyncio
     async def test_create_final_pr_existing(git_manager: GitManager) -> None:
@@ -1213,7 +1666,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808b53140>
 tests/ac_cdd/unit/test_git_operations.py:198:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b53140>
+self = <src.services.git_ops.GitManager object at 0x7f98be02f200>
 integration_branch = 'dev/session-20251230-120000/integration', title = 'title'
 body = 'body'
 
@@ -1243,7 +1696,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/merging.py:192: ValueError
 _____________________ test_validate_remote_branch_success ______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b55c40>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdeab380>
 
     @pytest.mark.asyncio
     async def test_validate_remote_branch_success(git_manager: GitManager) -> None:
@@ -1268,7 +1721,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808b55c40>
 tests/ac_cdd/unit/test_git_operations.py:222:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b55c40>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeab380>
 branch = 'dev/session-20251230-120000'
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
@@ -1283,7 +1736,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:166: ValueError
 ____________________ test_validate_remote_branch_not_found _____________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b8a9f0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bdeaa000>
 
     @pytest.mark.asyncio
     async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None:
@@ -1300,7 +1753,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808b8a9f0>
 tests/ac_cdd/unit/test_git_operations.py:237:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b8a9f0>
+self = <src.services.git_ops.GitManager object at 0x7f98bdeaa000>
 branch = 'nonexistent-branch'
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
@@ -1315,7 +1768,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/branching.py:166: ValueError
 ____________________________ test_get_changed_files ____________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b44aa0>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be1222d0>
 
     @pytest.mark.asyncio
     async def test_get_changed_files(git_manager: GitManager) -> None:
@@ -1339,7 +1792,7 @@ src/services/git/checkout.py:164: in get_changed_files
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b44aa0>
+self = <src.services.git_ops.GitManager object at 0x7f98be1222d0>
 args = ['diff', '--name-only', '--cached'], check = False
 
     async def _run_git(self, args: list[str], check: bool = True) -> str:
@@ -1354,8 +1807,8 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/base.py:32: ValueError
 _______________________ test_merge_pr_immediate_success ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808dfb380>
-mock_runner = <MagicMock name='ProcessRunner()' id='139741204775904'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be02d6d0>
+mock_runner = <MagicMock name='ProcessRunner()' id='140294001614608'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_immediate_success(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1374,7 +1827,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='139741204775904'>
 tests/ac_cdd/unit/test_git_ops_merge.py:41:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808dfb380>
+self = <src.services.git_ops.GitManager object at 0x7f98be02d6d0>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1420,8 +1873,8 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ________________________ test_merge_pr_fallback_to_auto ________________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808d011f0>
-mock_runner = <MagicMock name='ProcessRunner()' id='139741201738896'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be309d60>
+mock_runner = <MagicMock name='ProcessRunner()' id='140294002641808'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_fallback_to_auto(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1443,7 +1896,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='139741201738896'>
 tests/ac_cdd/unit/test_git_ops_merge.py:70:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808d011f0>
+self = <src.services.git_ops.GitManager object at 0x7f98be309d60>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1489,8 +1942,8 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ______________________ test_merge_pr_failure_no_fallback _______________________
 
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808d87290>
-mock_runner = <MagicMock name='ProcessRunner()' id='139741202162528'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98bde31e50>
+mock_runner = <MagicMock name='ProcessRunner()' id='140294000897264'>
 
     @pytest.mark.asyncio
     async def test_merge_pr_failure_no_fallback(git_manager: GitManager, mock_runner: Any) -> None:
@@ -1512,7 +1965,7 @@ mock_runner = <MagicMock name='ProcessRunner()' id='139741202162528'>
 tests/ac_cdd/unit/test_git_ops_merge.py:98:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808d87290>
+self = <src.services.git_ops.GitManager object at 0x7f98bde31e50>
 pr_number = 36, method = 'squash'
 
     async def merge_pr(self, pr_number: int | str, method: str = "squash") -> None:
@@ -1558,9 +2011,9 @@ src/services/git/merging.py:158: ValueError
 WARNING  AC-CDD:merging.py:144 Failed to check/update PR draft status: not enough values to unpack (expected 4, got 3)
 ___________ TestGitStatePersistence.test_ensure_state_branch_exists ____________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f180945f080>
-mock_run = <AsyncMock name='run_command' id='139741204338768'>
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808d86db0>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f98be5ad520>
+mock_run = <AsyncMock name='run_command' id='140294001721072'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be255a90>
 
     @patch("src.process_runner.ProcessRunner.run_command")
     async def test_ensure_state_branch_exists(
@@ -1574,7 +2027,7 @@ git_manager = <src.services.git_ops.GitManager object at 0x7f1808d86db0>
 tests/ac_cdd/unit/test_git_state_persistence.py:21:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808d86db0>
+self = <src.services.git_ops.GitManager object at 0x7f98be255a90>
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
@@ -1587,9 +2040,9 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/state.py:21: ValueError
 _________________ TestGitStatePersistence.test_read_state_file _________________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f180945dca0>
-mock_run = <AsyncMock name='run_command' id='139741204120208'>
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808c32660>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f98be5af050>
+mock_run = <AsyncMock name='run_command' id='140294001161232'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be1a4590>
 
     @patch("src.process_runner.ProcessRunner.run_command")
     async def test_read_state_file(self, mock_run: AsyncMock, git_manager: GitManager) -> None:
@@ -1604,11 +2057,11 @@ E       assert None == '{"key": "value"}'
 tests/ac_cdd/unit/test_git_state_persistence.py:35: AssertionError
 _________________ TestGitStatePersistence.test_save_state_file _________________
 
-self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f180945d4f0>
-mock_write = <MagicMock name='write_text' id='139741204820816'>
-mock_run = <AsyncMock name='run_command' id='139741204818416'>
-mock_temp = <MagicMock name='TemporaryDirectory' id='139741204665344'>
-git_manager = <src.services.git_ops.GitManager object at 0x7f1808b089b0>
+self = <unit.test_git_state_persistence.TestGitStatePersistence object at 0x7f98be5c9910>
+mock_write = <MagicMock name='write_text' id='140294002236336'>
+mock_run = <AsyncMock name='run_command' id='140294002236048'>
+mock_temp = <MagicMock name='TemporaryDirectory' id='140294001350688'>
+git_manager = <src.services.git_ops.GitManager object at 0x7f98be1b5760>
 
     @patch("src.services.git.state.tempfile.TemporaryDirectory")
     @patch("src.process_runner.ProcessRunner.run_command")
@@ -1648,7 +2101,7 @@ src/services/git/state.py:84: in save_state_file
     await self.ensure_state_branch()
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git_ops.GitManager object at 0x7f1808b089b0>
+self = <src.services.git_ops.GitManager object at 0x7f98be1b5760>
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
@@ -1662,8 +2115,8 @@ src/services/git/state.py:21: ValueError
 ________ TestJulesClientLogic.test_deduplication_of_existing_activities ________
 
 self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_deduplication_of_existing_activities>
-mock_httpx_cls = <MagicMock name='AsyncClient' id='139741202263424'>
-_mock_sleep = <AsyncMock name='sleep' id='139741205104352'>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='140293999650064'>
+_mock_sleep = <AsyncMock name='sleep' id='140293999651936'>
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")
@@ -1747,7 +2200,7 @@ _mock_sleep = <AsyncMock name='sleep' id='139741205104352'>
 tests/ac_cdd/unit/test_jules_client_logic.py:218:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808dd7770>
+self = <src.services.jules_client.JulesClient object at 0x7f98bdf8a510>
 session_name = 'sessions/123', require_plan_approval = False
 
     async def wait_for_completion(
@@ -1821,8 +2274,8 @@ src/services/jules_client.py:256: TypeError
 ______ TestJulesClientLogic.test_prioritize_inquiry_over_completed_state _______
 
 self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_prioritize_inquiry_over_completed_state>
-mock_httpx_cls = <MagicMock name='AsyncClient' id='139741205209328'>
-_mock_sleep = <AsyncMock name='sleep' id='139741205203760'>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='140293996792432'>
+_mock_sleep = <AsyncMock name='sleep' id='140293996793776'>
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")
@@ -1907,7 +2360,7 @@ _mock_sleep = <AsyncMock name='sleep' id='139741205203760'>
 tests/ac_cdd/unit/test_jules_client_logic.py:135:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.jules_client.JulesClient object at 0x7f1808fab230>
+self = <src.services.jules_client.JulesClient object at 0x7f98bdd6fb30>
 session_name = 'sessions/123', require_plan_approval = False
 
     async def wait_for_completion(
@@ -2009,7 +2462,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f180909d520>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98bdde61e0>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2034,7 +2487,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741209964000'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997113808'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 _________ TestSessionStateValidation.test_get_session_state_completed __________
 
 self = <Coroutine test_get_session_state_completed>
@@ -2066,7 +2519,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f18093ab9e0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98bdfd2570>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2091,7 +2544,7 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741207903888'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293998552240'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 __________ TestSessionStateValidation.test_get_session_state_on_error __________
 
 self = <Coroutine test_get_session_state_on_error>
@@ -2123,7 +2576,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <selectors.EpollSelector object at 0x7f18092e08f0>, timeout = 0
+self = <selectors.EpollSelector object at 0x7f98be036120>, timeout = 0
 
     def select(self, timeout=None):
         if timeout is None:
@@ -2148,10 +2601,10 @@ E           OSError: [Errno 22] Invalid argument
 
 /home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
 ------------------------------ Captured log setup ------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139741209114528'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='140293997323536'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
 ___________________________ test_review_code_success ___________________________
 
-reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f18093a88f0>
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f98be2bcaa0>
 
     @pytest.mark.asyncio
     async def test_review_code_success(reviewer: LLMReviewer) -> None:
@@ -2201,16 +2654,16 @@ tests/ac_cdd/unit/test_llm_reviewer.py:44: AssertionError
 [1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
 
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-ERROR    AC-CDD:llm_reviewer.py:75 LLMReviewer failed completely after 3 attempts.
+ERROR    AC-CDD:llm_reviewer.py:95 LLMReviewer failed completely after 3 attempts.
 _________________________ test_review_code_api_failure _________________________
 
-reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f180917a5d0>
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f98be2ef890>
 
     @pytest.mark.asyncio
     async def test_review_code_api_failure(reviewer: LLMReviewer) -> None:
@@ -2246,16 +2699,77 @@ tests/ac_cdd/unit/test_llm_reviewer.py:70: AssertionError
 [1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
 
 ------------------------------ Captured log call -------------------------------
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-WARNING  AC-CDD:llm_reviewer.py:73 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+WARNING  AC-CDD:llm_reviewer.py:93 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
  Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
-ERROR    AC-CDD:llm_reviewer.py:75 LLMReviewer failed completely after 3 attempts.
+ERROR    AC-CDD:llm_reviewer.py:95 LLMReviewer failed completely after 3 attempts.
+____________________ TestResumeLogic.test_hot_resume_active ____________________
+
+self = <unit.test_resume_logic.TestResumeLogic object at 0x7f98be5eb3b0>
+mock_sm_cls = <MagicMock name='StateManager' id='140294001223024'>
+mock_jules = <MagicMock id='140294001768976'>
+
+    @patch("src.services.coder_usecase.StateManager")
+    async def test_hot_resume_active(self, mock_sm_cls: MagicMock, mock_jules: MagicMock) -> None:
+        """Test that CoderUseCase resumes if session ID exists in manifest."""
+        mock_mgr = mock_sm_cls.return_value
+        cycle = CycleManifest(id="01", jules_session_id="jules-existing-123")
+        mock_mgr.get_cycle = MagicMock(return_value=cycle)
+
+        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+
+        usecase = CoderUseCase(mock_jules)
+>       state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 2 validation errors for CycleState
+E       iteration_count
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E       resume_mode
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=True, input_type=bool]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_resume_logic.py:30: ValidationError
+___________ TestResumeLogic.test_fallback_to_new_session_and_persist ___________
+
+self = <unit.test_resume_logic.TestResumeLogic object at 0x7f98be420d70>
+mock_sm_cls = <MagicMock name='StateManager' id='140294001768208'>
+mock_jules = <MagicMock id='140294001844176'>
+
+    @patch("src.services.coder_usecase.StateManager")
+    async def test_fallback_to_new_session_and_persist(
+        self, mock_sm_cls: MagicMock, mock_jules: MagicMock
+    ) -> None:
+        """Test that if no session exists, a new one is started and immediately persisted."""
+        mock_mgr = mock_sm_cls.return_value
+        cycle = CycleManifest(id="01", jules_session_id=None)
+        mock_mgr.get_cycle = MagicMock(return_value=cycle)
+        mock_mgr.update_cycle_state = MagicMock()
+
+        mock_jules.run_session.return_value = {
+            "session_name": "jules-new-456",
+            "status": "success",
+            "pr_url": "http://pr-new",
+        }
+
+        usecase = CoderUseCase(mock_jules)
+>       state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 2 validation errors for CycleState
+E       iteration_count
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+E       resume_mode
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=True, input_type=bool]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_resume_logic.py:60: ValidationError
 ________ TestGitCheckoutRobustness.test_auto_commit_raises_on_conflict _________
 
-self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f18094cc8f0>
+self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f98be422270>
 
     @pytest.mark.asyncio
     async def test_auto_commit_raises_on_conflict(self) -> None:
@@ -2277,7 +2791,7 @@ self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f18094
 tests/ac_cdd/unit/test_robustness_fixes.py:58:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f180899ce00>
+self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f98be056ea0>
 message = 'Auto-save before checkout'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
@@ -2292,7 +2806,7 @@ E       ValueError: not enough values to unpack (expected 4, got 3)
 src/services/git/checkout.py:40: ValueError
 ______ TestGitCheckoutRobustness.test_auto_commit_proceeds_on_clean_dirty ______
 
-self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f18094ccdd0>
+self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f98be422750>
 
     @pytest.mark.asyncio
     async def test_auto_commit_proceeds_on_clean_dirty(self) -> None:
@@ -2309,7 +2823,7 @@ self = <unit.test_robustness_fixes.TestGitCheckoutRobustness object at 0x7f18094
 tests/ac_cdd/unit/test_robustness_fixes.py:73:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f18088710a0>
+self = <src.services.git.checkout.GitCheckoutMixin object at 0x7f98be13ffe0>
 message = 'Auto-save before checkout'
 
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
@@ -2375,7 +2889,7 @@ src/sandbox.py:153: in run_command
     self._validate_command(cmd)
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.sandbox.SandboxRunner object at 0x7f1809170710>, cmd = ['test']
+self = <src.sandbox.SandboxRunner object at 0x7f98be105fd0>, cmd = ['test']
 
     def _validate_command(self, cmd: list[str]) -> None:
         if not cmd:
@@ -2409,10 +2923,48 @@ self = <src.sandbox.SandboxRunner object at 0x7f1809170710>, cmd = ['test']
 E           ValueError: Command 'test' is not in the allowed whitelist.
 
 src/sandbox.py:134: ValueError
+______________ TestSessionRestart.test_session_restart_on_failure ______________
+
+self = <unit.test_session_restart.TestSessionRestart object at 0x7f98be43b6b0>
+mock_jules = <MagicMock id='140293991352704'>
+mock_manifest = <MagicMock id='140293991056544'>
+
+    @pytest.mark.asyncio
+    async def test_session_restart_on_failure(
+        self, mock_jules: MagicMock, mock_manifest: MagicMock
+    ) -> None:
+        """Should restart session when Jules fails, up to max_session_restarts."""
+>       state = CycleState(cycle_id="01", iteration_count=1)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       iteration_count
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_session_restart.py:35: ValidationError
+______________ TestSessionRestart.test_session_restart_max_limit _______________
+
+self = <unit.test_session_restart.TestSessionRestart object at 0x7f98be43bbc0>
+mock_jules = <MagicMock id='140293991683504'>
+mock_manifest = <MagicMock id='140293996974816'>
+
+    @pytest.mark.asyncio
+    async def test_session_restart_max_limit(
+        self, mock_jules: MagicMock, mock_manifest: MagicMock
+    ) -> None:
+        """Should fail after max_session_restarts attempts."""
+>       state = CycleState(cycle_id="01", iteration_count=1)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       iteration_count
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=1, input_type=int]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/ac_cdd/unit/test_session_restart.py:100: ValidationError
 _______ TestSessionReuse.test_reuse_completed_session_for_auditor_reject _______
 
-self = <unit.test_session_reuse.TestSessionReuse object at 0x7f18094eab70>
-mock_jules = <MagicMock id='139741204695760'>
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f98be458560>
+mock_jules = <MagicMock id='140293991382528'>
 
     @pytest.mark.asyncio
     async def test_reuse_completed_session_for_auditor_reject(self, mock_jules: MagicMock) -> None:
@@ -2427,57 +2979,21 @@ mock_jules = <MagicMock id='139741204695760'>
         audit = AuditResult(
             status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this issue"
         )
-        state = CycleState(
+>       state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
             audit_result=audit,
         )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       audit_result
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=AuditResult(status='REJEC...sues=[], suggestions=[]), input_type=AuditResult]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
 
-        usecase = CoderUseCase(mock_jules)
-
-        with patch("src.services.coder_usecase.StateManager") as MockManager:
-            instance = MockManager.return_value
-            instance.get_cycle.return_value = mock_manifest
-
-            with patch("src.services.coder_usecase.settings") as mock_settings:
-
-                def mock_get_template(name: str) -> MagicMock:
-                    m = MagicMock()
-                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
-                        m.read_text.return_value = "Instruction {{feedback}}"
-                    else:
-                        m.read_text.return_value = "Instruction"
-                    return m
-
-                mock_settings.get_template.side_effect = mock_get_template
-                mock_settings.get_target_files.return_value = []
-                mock_settings.get_context_files.return_value = []
-                result = await usecase.execute(state)
-
-        mock_jules.get_session_state.assert_called_with("sessions/123")
-        mock_jules._send_message.assert_called_once()  # Feedback was sent to existing session
-
-        # Verify the actual feedback content sent
-        sent_message = (
-            mock_jules._send_message.call_args.args[1]
-            if mock_jules._send_message.call_args.args
-            else mock_jules._send_message.call_args.kwargs.get("message", "")
-        )
->       assert "Fix this issue" in sent_message
-E       AssertionError: assert 'Fix this issue' in <MagicMock name='settings.get_prompt_content().replace()' id='139741205491888'>
-
-tests/ac_cdd/unit/test_session_reuse.py:73: AssertionError
------------------------------ Captured stdout call -----------------------------
-Reusing session (COMPLETED) for final polish: sessions/123
-Sending Audit Feedback to existing Jules session: sessions/123
-Waiting for Jules to process feedback (expecting IN_PROGRESS)...
-Failed to send feedback to existing session: '<=' not supported between
-instances of 'MagicMock' and 'int'. Creating new session...
-Starting CODER Session for Cycle 01 (Iteration 0)...
+tests/ac_cdd/unit/test_session_reuse.py:37: ValidationError
 ______________ TestSessionReuse.test_create_new_session_if_failed ______________
 
-self = <unit.test_session_reuse.TestSessionReuse object at 0x7f18094eb080>
-mock_jules = <MagicMock id='139741202436688'>
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f98be458a70>
+mock_jules = <MagicMock id='140293991168912'>
 
     @pytest.mark.asyncio
     async def test_create_new_session_if_failed(self, mock_jules: MagicMock) -> None:
@@ -2496,49 +3012,21 @@ mock_jules = <MagicMock id='139741202436688'>
         audit = AuditResult(
             status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this issue"
         )
-        state = CycleState(
+>       state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
             audit_result=audit,
         )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       audit_result
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=AuditResult(status='REJEC...sues=[], suggestions=[]), input_type=AuditResult]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
 
-        usecase = CoderUseCase(mock_jules)
-
-        with patch("src.services.coder_usecase.StateManager") as MockManager:
-            instance = MockManager.return_value
-            instance.get_cycle.return_value = mock_manifest
-
-            with patch("src.services.coder_usecase.settings") as mock_settings:
-
-                def mock_get_template(name: str) -> MagicMock:
-                    m = MagicMock()
-                    if name == "AUDIT_FEEDBACK_INJECTION.md":
-                        m.read_text.return_value = "# PREVIOUS AUDIT FEEDBACK (MUST FIX)\n\n{{feedback}}\n\n{{#pr_url}}\nPrevious PR: {{pr_url}}\n{{/pr_url}}"
-                    else:
-                        m.read_text.return_value = "Instruction"
-                    return m
-
-                mock_settings.get_template.side_effect = mock_get_template
-                mock_settings.get_target_files.return_value = []
-                mock_settings.get_context_files.return_value = []
-                await usecase.execute(state)
-
-        mock_jules.get_session_state.assert_called_with("sessions/123")
-        mock_jules._send_message.assert_not_called()  # Should NOT reuse FAILED session
-        mock_jules.run_session.assert_called()
-
-        prompt = mock_jules.run_session.call_args.kwargs["prompt"]
->       assert "Fix this issue" in prompt
-E       assert 'Fix this issue' in "<MagicMock name='settings.get_prompt_content().replace().__iadd__()' id='139741206836960'>"
-
-tests/ac_cdd/unit/test_session_reuse.py:127: AssertionError
------------------------------ Captured stdout call -----------------------------
-Session in unexpected/failed state (FAILED). Creating new session...
-Starting CODER Session for Cycle 01 (Iteration 0)...
+tests/ac_cdd/unit/test_session_reuse.py:95: ValidationError
 _______________ TestSessionReuse.test_reuse_in_progress_session ________________
 
-self = <unit.test_session_reuse.TestSessionReuse object at 0x7f18094cc1a0>
-mock_jules = <MagicMock id='139741206513040'>
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f98be43b680>
+mock_jules = <MagicMock id='140293991266976'>
 
     @pytest.mark.asyncio
     async def test_reuse_in_progress_session(self, mock_jules: MagicMock) -> None:
@@ -2553,52 +3041,24 @@ mock_jules = <MagicMock id='139741206513040'>
         audit = AuditResult(
             status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this"
         )
-        state = CycleState(
+>       state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
             audit_result=audit,
         )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       audit_result
+E         Extra inputs are not permitted [type=extra_forbidden, input_value=AuditResult(status='REJEC...sues=[], suggestions=[]), input_type=AuditResult]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
 
-        usecase = CoderUseCase(mock_jules)
-
-        with patch("src.services.coder_usecase.StateManager") as MockManager:
-            instance = MockManager.return_value
-            instance.get_cycle.return_value = mock_manifest
-
-            with patch("src.services.coder_usecase.settings") as mock_settings:
-
-                def mock_get_template(name: str) -> MagicMock:
-                    m = MagicMock()
-                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
-                        m.read_text.return_value = "Instruction {{feedback}}"
-                    else:
-                        m.read_text.return_value = "Instruction"
-                    return m
-
-                mock_settings.get_template.side_effect = mock_get_template
-                mock_settings.get_target_files.return_value = []
-                mock_settings.get_context_files.return_value = []
-                result = await usecase.execute(state)
-
-        mock_jules._send_message.assert_called_once()  # Feedback was sent
-
-        # Verify the actual feedback content sent
-        sent_message = (
-            mock_jules._send_message.call_args.args[1]
-            if mock_jules._send_message.call_args.args
-            else mock_jules._send_message.call_args.kwargs.get("message", "")
-        )
->       assert "Fix this" in sent_message
-E       AssertionError: assert 'Fix this' in <MagicMock name='settings.get_prompt_content().replace()' id='139741206373216'>
-
-tests/ac_cdd/unit/test_session_reuse.py:178: AssertionError
------------------------------ Captured stdout call -----------------------------
-Reusing session (IN_PROGRESS) for final polish: sessions/123
-Sending Audit Feedback to existing Jules session: sessions/123
-Waiting for Jules to process feedback (expecting IN_PROGRESS)...
-Failed to send feedback to existing session: '<=' not supported between
-instances of 'MagicMock' and 'int'. Creating new session...
-Starting CODER Session for Cycle 01 (Iteration 0)...
+tests/ac_cdd/unit/test_session_reuse.py:143: ValidationError
+------------------------------ Captured log setup ------------------------------
+ERROR    asyncio:base_events.py:1833 Task was destroyed but it is pending!
+task: <Task cancelling name='Task-143' coro=<TestSessionStateValidation.test_get_session_state_in_progress() running at /app/tests/ac_cdd/unit/test_jules_session_state.py:25> cb=[gather.<locals>._done_callback() at /home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/tasks.py:767]>
+ERROR    asyncio:base_events.py:1833 Task was destroyed but it is pending!
+task: <Task cancelling name='Task-144' coro=<TestSessionStateValidation.test_get_session_state_completed() running at /app/tests/ac_cdd/unit/test_jules_session_state.py:47> cb=[gather.<locals>._done_callback() at /home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/tasks.py:767]>
+ERROR    asyncio:base_events.py:1833 Task was destroyed but it is pending!
+task: <Task cancelling name='Task-145' coro=<TestSessionStateValidation.test_get_session_state_on_error() running at /app/tests/ac_cdd/unit/test_jules_session_state.py:63> cb=[gather.<locals>._done_callback() at /home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/tasks.py:767]>
 ________________________ test_missing_api_key_fallback _________________________
 
     @pytest.mark.asyncio
@@ -2634,9 +3094,9 @@ _cli_use_class_docs_for_groups = None, _cli_exit_on_error = None
 _cli_prefix = None, _cli_flag_prefix_char = None, _cli_implicit_flags = None
 _cli_ignore_unknown_args = None, _cli_kebab_case = None, _cli_shortcuts = None
 _secrets_dir = None, _build_sources = None
-values = {'E2B_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'JULES_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'TEST_MODE': True}
-sources = (InitSettingsSource(init_kwargs={'JULES_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'OPENROUTER_API_KEY'...efix_len=7), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
-init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'JULES_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'TEST_MODE': True}
+values = {'E2B_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'JULES_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'TEST_MODE': True}
+sources = (InitSettingsSource(init_kwargs={'JULES_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'OPENROUTER_API_KEY'...efix_len=7), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
+init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'JULES_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'OPENROUTER_API_KEY': <MagicMock name='mock()' id='140294002016176'>, 'TEST_MODE': True}
 
     def __init__(
         __pydantic_self__,
@@ -2708,16 +3168,43 @@ init_kwargs = {'E2B_API_KEY': <MagicMock name='mock()' id='139741201638048'>, 'J
 >       super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
 E       pydantic_core._pydantic_core.ValidationError: 3 validation errors for Settings
 E       JULES_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139741201638048'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140294002016176'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 E       OPENROUTER_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139741201638048'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140294002016176'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 E       E2B_API_KEY
-E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='139741201638048'>, input_type=MagicMock]
+E         Input should be a valid string [type=string_type, input_value=<MagicMock name='mock()' id='140294002016176'>, input_type=MagicMock]
 E           For further information visit https://errors.pydantic.dev/latest/v/string_type
 
 .venv/lib/python3.12/site-packages/pydantic_settings/main.py:242: ValidationError
+__________________ test_uat_usecase_dynamic_execution_success __________________
+
+mock_settings = <MagicMock name='settings' id='140294002233648'>
+mock_process_runner_cls = <MagicMock name='ProcessRunner' id='140294002237488'>
+mock_git_manager = <MagicMock spec='GitManager' id='140294002643008'>
+
+    @pytest.mark.asyncio
+    @patch("src.services.uat_usecase.ProcessRunner")
+    @patch("src.services.uat_usecase.settings")
+    async def test_uat_usecase_dynamic_execution_success(
+        mock_settings: MagicMock, mock_process_runner_cls: MagicMock, mock_git_manager: MagicMock
+    ) -> None:
+        # Setup
+        mock_process_runner = MagicMock()
+        mock_process_runner.run_command = AsyncMock(return_value=("pytest success", "", 0, False))
+        mock_process_runner_cls.return_value = mock_process_runner
+        mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
+
+>       state = CycleState(
+            cycle_id="01", current_phase=WorkPhase.CODER, pr_url="https://github.com/owner/repo/pull/1"
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       pr_url
+E         Extra inputs are not permitted [type=extra_forbidden, input_value='https://github.com/owner/repo/pull/1', input_type=str]
+E           For further information visit https://errors.pydantic.dev/latest/v/extra_forbidden
+
+tests/unit/test_cycle05_dynamic_execution.py:31: ValidationError
 =============================== warnings summary ===============================
 tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_batching
 tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_returns_early_on_change
@@ -2727,47 +3214,27 @@ tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_avoids_valid
   /app/src/jules_session_nodes.py:27: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
     for field in current.model_fields:
 
-tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_reuses_existing
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_in_progress' was never awaited
-    def __init__(self, name, parent):
-  Enable tracemalloc to get traceback where the object was allocated.
-  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
-
-tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_reuses_existing
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_completed' was never awaited
-    def __init__(self, name, parent):
-  Enable tracemalloc to get traceback where the object was allocated.
-  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
-
-tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_reuses_existing
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_on_error' was never awaited
-    def __init__(self, name, parent):
-  Enable tracemalloc to get traceback where the object was allocated.
-  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
-
-tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
 tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
-  /app/src/services/coder_usecase.py:268: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
-    if result.get("status") == "running" and jules_session_name:
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_in_progress' was never awaited
+    def __setattr__(self, name, value):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
-tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
 tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
-  /app/src/services/coder_usecase.py:111: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
-    if result and (result.get("status") == "success" or result.get("pr_url")):
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_completed' was never awaited
+    def __setattr__(self, name, value):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:769: RuntimeWarning: coroutine 'TestSessionStateValidation.test_get_session_state_on_error' was never awaited
+    def __setattr__(self, name, value):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
 tests/unit/test_e2b_executor.py::test_push_files
   /app/src/services/e2b_executor.py:24: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
     sandbox.files.write(remote_path, content)
-  Enable tracemalloc to get traceback where the object was allocated.
-  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
-
-tests/unit/test_permission_manager.py::test_fix_permissions_handles_chown
-  /home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:2217: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
-    def __init__(self, name, parent):
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
@@ -2780,7 +3247,7 @@ Name                                               Stmts   Miss  Cover   Missing
 src/__init__.py                                        0      0   100%
 src/agents.py                                         63     39    38%   16-19, 24-44, 49-57, 66-76, 83, 99-111, 136
 src/cli.py                                            17      0   100%
-src/config.py                                        346     81    77%   22-50, 65-71, 77-81, 88-92, 99-103, 111, 115, 119, 123-135, 141-142, 183-185, 188-189, 549, 551, 569, 571, 576, 580-583, 590-595, 603, 609, 633, 640, 661-663, 669, 673
+src/config.py                                        346     81    77%   22-51, 66-72, 78-82, 89-93, 100-104, 112, 116, 120, 124-136, 142-143, 184-186, 189-190, 550, 552, 570, 572, 577, 581-584, 591-596, 604, 610, 634, 641, 662-664, 670, 674
 src/contracts/__init__.py                              0      0   100%
 src/contracts/e2b_executor.py                          9      0   100%
 src/domain_models/__init__.py                         15      0   100%
@@ -2802,7 +3269,7 @@ src/domain_models/verification_schema.py              31      1    97%   57
 src/enums.py                                          32      0   100%
 src/error_messages.py                                  7      7     0%   4-18
 src/graph.py                                          76     53    30%   26-27, 31-61, 65-156, 159, 162, 166-191, 194
-src/graph_nodes.py                                    75     18    76%   78, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131
+src/graph_nodes.py                                    75     19    75%   75, 78, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113, 116, 119, 122, 125, 128, 131
 src/hash_utils.py                                     25      4    84%   15-16, 28-29
 src/interfaces.py                                      5      0   100%
 src/jules_session_graph.py                            45     20    56%   15-21, 28-30, 37-39, 46-52
@@ -2810,9 +3277,9 @@ src/jules_session_nodes.py                           328    209    36%   57-60, 
 src/jules_session_state.py                            46      3    93%   10-12
 src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
 src/nodes/__init__.py                                 10      0   100%
-src/nodes/architect.py                                97     61    37%   26-49, 73-75, 97-117, 127, 134-188
+src/nodes/architect.py                                97     83    14%   21-129, 134-188
 src/nodes/architect_critic.py                         33     23    30%   18-62
-src/nodes/auditor.py                                  11      3    73%   13-16
+src/nodes/auditor.py                                  14      6    57%   13-20
 src/nodes/coder.py                                     9      3    67%   11-14
 src/nodes/coder_critic.py                             42     32    24%   18-71
 src/nodes/committee.py                                 7      3    57%   8-11
@@ -2830,8 +3297,8 @@ src/services/artifacts.py                             14      8    43%   17-28
 src/services/ast_analyzer.py                         109     14    87%   32-33, 45-46, 54, 60, 109, 121, 126, 131-133, 140, 174
 src/services/async_dispatcher.py                      56      3    95%   78-83
 src/services/audit_orchestrator.py                    76     11    86%   30-31, 72-73, 78-79, 124-125, 145-147
-src/services/auditor_usecase.py                      147     76    48%   40-43, 56, 66-68, 92, 95, 126-129, 153-282
-src/services/coder_usecase.py                        195     53    73%   38-39, 71-77, 85, 125, 130-135, 146, 148, 153, 164-172, 192, 207-212, 221-222, 235, 290-292, 299-302, 320, 334-364, 410
+src/services/auditor_usecase.py                      154    120    22%   33-45, 49-251, 270, 275-276, 284-286
+src/services/coder_usecase.py                        200    174    13%   38-39, 48-135, 145-176, 182-235, 251-278, 287-309, 318-379, 389-413, 417-432
 src/services/committee_usecase.py                     50     40    20%   21-104
 src/services/conflict_manager.py                      68     20    71%   38-40, 53, 57-61, 80, 84-88, 105-107, 115-116
 src/services/contracts.py                             26     21    19%   16-43
@@ -2849,7 +3316,7 @@ src/services/jules/context_builder.py                 81     68    16%   20-32, 
 src/services/jules/git_context.py                     42     17    60%   23-26, 39-54, 59-60
 src/services/jules/inquiry_handler.py                143    123    14%   42-77, 102-107, 113-138, 142-175, 186-221, 239-286
 src/services/jules_client.py                         393    269    32%   10-11, 73-74, 92, 103, 107, 111-117, 128-159, 163-182, 186-191, 258-285, 291-351, 356, 378-390, 419-420, 428, 433, 437-442, 446-447, 452-453, 458-485, 488-506, 511-523, 526-537, 541, 546-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
-src/services/llm_reviewer.py                          75     18    76%   66-70, 78, 125-126, 146, 161, 169-183
+src/services/llm_reviewer.py                          90     24    73%   42-43, 47-48, 53-55, 86-90, 98, 148-149, 169, 184, 192-206
 src/services/plan_auditor.py                          27      5    81%   15-17, 63, 112-113
 src/services/project.py                               47     30    36%   22-45, 68-89
 src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 50-57, 61-78
@@ -2860,24 +3327,35 @@ src/services/refactor_usecase.py                      61      5    92%   85, 94,
 src/services/sandbox/sync.py                          31      0   100%
 src/services/self_critic_evaluator.py                 59     19    68%   16-17, 25, 27, 32-36, 41, 50, 57-65, 91, 98-100
 src/services/tracing.py                               12      0   100%
-src/services/uat_usecase.py                          100     27    73%   36-37, 54, 58-60, 71-72, 90-91, 111-112, 117-118, 149, 155-157, 166-168, 176-177, 184-186, 203-204
+src/services/uat_usecase.py                          100     48    52%   36-37, 54, 58-60, 71-72, 90-91, 111-112, 117-118, 136-137, 145-204
 src/services/workflow.py                             426    350    18%   44-129, 140-149, 184, 204-205, 217-265, 269-276, 280-290, 303-331, 335-337, 347-385, 388-436, 442-506, 509-526, 532-591, 596-666, 673-695, 698-709, 712-729, 732-756, 759-765, 768-770, 773-780
 src/session_manager.py                                65      7    89%   48-50, 70, 85-86, 105
-src/state.py                                          88      0   100%
+src/state.py                                         190     33    83%   26-27, 32-33, 118, 122, 125, 129, 132, 136, 139, 143, 146, 150, 153, 157, 160, 164, 167, 171, 174, 178, 181, 188, 192, 195, 199, 202, 206, 209, 213, 216, 219
 src/state_manager.py                                  94     25    73%   32-37, 55-57, 60-61, 89-91, 119, 193-211
-src/state_validators.py                               36     12    67%   19-20, 22-23, 30-31, 33-34, 45-46, 49-50
+src/state_validators.py                               36     18    50%   18-24, 29-35, 45-46, 49-50
 src/tools.py                                          21     21     0%   1-48
 src/utils.py                                          72     45    38%   31-56, 65-78, 88, 93-94, 100, 112-113, 118-142, 151-160
+src/utils_sanitization.py                             13      1    92%   14
 src/validators.py                                     41      7    83%   56, 78, 82-86
 --------------------------------------------------------------------------------
-TOTAL                                               5772   2686    53%
+TOTAL                                               5917   2944    50%
 =========================== short test summary info ============================
 FAILED tests/ac_cdd/integration/test_git_robustness.py::test_create_feature_branch_idempotency
 FAILED tests/ac_cdd/integration/test_git_robustness.py::test_smart_checkout_dirty_recovery
+FAILED tests/ac_cdd/unit/test_audit_polling.py::TestAuditPolling::test_audit_polling_pulls_changes
 FAILED tests/ac_cdd/unit/test_coder_critic.py::test_route_coder_critic_completed
 FAILED tests/ac_cdd/unit/test_coder_critic.py::test_route_coder_critic_retry
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_logic_flow
 FAILED tests/ac_cdd/unit/test_committee_logic.py::test_committee_pipeline_handover
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_state_propagation_with_count
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_state_propagation_without_count
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_with_count
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_no_injection_without_count
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_various_counts[1]
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_various_counts[2]
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_various_counts[3]
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_various_counts[5]
+FAILED tests/ac_cdd/unit/test_gen_cycles_options.py::TestGenCyclesCountOption::test_prompt_injection_various_counts[10]
 FAILED tests/ac_cdd/unit/test_git_operations.py::test_ensure_clean_state_clean
 FAILED tests/ac_cdd/unit/test_git_operations.py::test_ensure_clean_state_dirty_auto_stash
 FAILED tests/ac_cdd/unit/test_git_operations.py::test_create_integration_branch
@@ -2904,14 +3382,19 @@ FAILED tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation
 FAILED tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
 FAILED tests/ac_cdd/unit/test_llm_reviewer.py::test_review_code_success - Ass...
 FAILED tests/ac_cdd/unit/test_llm_reviewer.py::test_review_code_api_failure
+FAILED tests/ac_cdd/unit/test_resume_logic.py::TestResumeLogic::test_hot_resume_active
+FAILED tests/ac_cdd/unit/test_resume_logic.py::TestResumeLogic::test_fallback_to_new_session_and_persist
 FAILED tests/ac_cdd/unit/test_robustness_fixes.py::TestGitCheckoutRobustness::test_auto_commit_raises_on_conflict
 FAILED tests/ac_cdd/unit/test_robustness_fixes.py::TestGitCheckoutRobustness::test_auto_commit_proceeds_on_clean_dirty
 FAILED tests/ac_cdd/unit/test_sandbox.py::test_get_sandbox_secure_install_cmd
 FAILED tests/ac_cdd/unit/test_sandbox.py::test_run_command_retry_on_failure
+FAILED tests/ac_cdd/unit/test_session_restart.py::TestSessionRestart::test_session_restart_on_failure
+FAILED tests/ac_cdd/unit/test_session_restart.py::TestSessionRestart::test_session_restart_max_limit
 FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
 FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_create_new_session_if_failed
 FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
 FAILED tests/integration/test_tracing_integration.py::test_missing_api_key_fallback
+FAILED tests/unit/test_cycle05_dynamic_execution.py::test_uat_usecase_dynamic_execution_success
 ERROR tests/ac_cdd/unit/test_jules_client.py::test_wait_for_completion_sucess_first_try
 ERROR tests/ac_cdd/unit/test_jules_client.py::test_wait_for_completion_loop_success
 ERROR tests/ac_cdd/unit/test_jules_client.py::test_wait_for_completion_timeout
@@ -2923,4 +3406,4 @@ ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_success_fail
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_failure_passes
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_success_passes
 ERROR tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_failure_fails
-=========== 40 failed, 161 passed, 14 warnings, 11 errors in 54.88s ============
+============ 55 failed, 146 passed, 9 warnings, 11 errors in 50.24s ============

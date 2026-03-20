@@ -34,6 +34,26 @@ class LLMReviewer:
         Sends file contents and instructions to the LLM for review.
         Validates the output strictly against the AuditorReport Pydantic schema.
         """
+        import re
+        safe_path_pattern = re.compile(r"^[A-Za-z0-9_/\.\-]+$")
+
+        # Validate target files
+        if not target_files:
+            logger.warning("review_code called with empty target_files dictionary.")
+            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
+
+        for path in list(target_files.keys()):
+            if ".." in path or not safe_path_pattern.match(path):
+                logger.warning(f"review_code rejecting invalid target file path: {path}")
+                return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {path}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
+
+        # Validate context docs
+        for path in list(context_docs.keys()):
+            if ".." in path or not safe_path_pattern.match(path):
+                logger.warning(f"review_code rejecting invalid context doc path: {path}")
+                # We can be slightly more lenient with context docs, just exclude them
+                del context_docs[path]
+
         total_files = len(target_files) + len(context_docs)
         logger.info(
             f"LLMReviewer: preparing structured review for {total_files} files using model {model}"

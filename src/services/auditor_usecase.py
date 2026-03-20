@@ -21,11 +21,12 @@ class AuditorUseCase:
     """
 
     def __init__(
-        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer
+        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer, sandbox_runner: Any = None
     ) -> None:
         self.jules = jules_client
         self.git = git_manager
         self.llm_reviewer = llm_reviewer
+        self.sandbox = sandbox_runner
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""

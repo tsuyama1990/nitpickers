@@ -248,6 +248,10 @@ class CoderUseCase:
         Returns (jules_session_name, result_dict). The session_name is saved
         separately so it survives the wait_for_completion() result overwrite.
         """
+        if not re.match(r"^[A-Za-z0-9_-]+$", session_req_id):
+            msg = f"Invalid session_req_id format: {session_req_id}"
+            raise ValueError(msg)
+
         result = await self.jules.run_session(
             session_id=session_req_id,
             prompt=instruction,

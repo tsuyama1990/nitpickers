@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from src.domain_models import FixPlanSchema, MultiModalArtifact, UatExecutionState
 from src.enums import FlowStatus, WorkPhase
-from src.services.auditor_usecase import AuditorUseCase
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 
@@ -112,8 +111,6 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_auditor_usecase_routing() -> None:
-    mock_jules = MagicMock()
-    mock_git = MagicMock()
     mock_reviewer = MagicMock(spec=LLMReviewer)
 
     valid_plan = FixPlanSchema(
