@@ -143,11 +143,18 @@ class CoderUseCase:
     ) -> str:
         """Assemble the Jules instruction prompt, injecting feedback when retrying."""
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
-            instruction = settings.get_template("POST_AUDIT_REFACTOR_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(
+                settings.template_files.post_audit_refactor_instruction
+            )
         elif current_phase == WorkPhase.REFACTORING:
-            instruction = settings.get_template("FINAL_REFACTOR_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(
+                settings.template_files.final_refactor_instruction
+            )
         else:
-            instruction = settings.get_template("CODER_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(settings.template_files.coder_instruction)
+
+        if not instruction:
+            instruction = "Implement the requested changes."
 
         instruction = instruction.replace("{{cycle_id}}", str(cycle_id))
 
@@ -155,6 +162,19 @@ class CoderUseCase:
         if state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback:
             instruction += "\n\n" + self._build_feedback_injection(
                 last_audit.feedback, cycle_manifest.pr_url if cycle_manifest else None
+            )
+
+        if state.status == FlowStatus.RETRY_FIX and state.current_fix_plan:
+            fix_plan_text = (
+                f"## Automated UAT Diagnostic Fix Plan\n"
+                f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
+                f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                f"Please implement these exact changes immediately."
+            )
+            instruction += "\n\n" + self._build_feedback_injection(
+                fix_plan_text, cycle_manifest.pr_url if cycle_manifest else None
             )
 
         return str(instruction)
@@ -165,12 +185,15 @@ class CoderUseCase:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
         cycle_id = state.cycle_id
         last_audit = state.audit_result
-        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed)
-        is_retry = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan
+        is_retry_audit = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
         if not (
-            (is_retry or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
+            (is_retry_audit or is_retry_uat or is_post_refactor)
+            and cycle_manifest
+            and cycle_manifest.jules_session_id
         ):
             return None
 
@@ -198,9 +221,21 @@ class CoderUseCase:
             }
 
         if cycle_manifest.jules_session_id is not None:
+            feedback_payload = ""
+            if is_retry_audit and last_audit and last_audit.feedback:
+                feedback_payload = last_audit.feedback
+            elif is_retry_uat and state.current_fix_plan:
+                feedback_payload = (
+                    f"## Automated UAT Diagnostic Fix Plan\n"
+                    f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                    f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                    f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
+                    f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                    f"Please implement these exact changes immediately."
+                )
+
             return await self._send_audit_feedback_to_session(
-                cycle_manifest.jules_session_id,
-                last_audit.feedback if last_audit and last_audit.feedback else "",
+                cycle_manifest.jules_session_id, feedback_payload
             )
         return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
 
@@ -218,6 +253,10 @@ class CoderUseCase:
         Returns (jules_session_name, result_dict). The session_name is saved
         separately so it survives the wait_for_completion() result overwrite.
         """
+        if not re.match(r"^[A-Za-z0-9_-]+$", session_req_id):
+            msg = f"Invalid session_req_id format: {session_req_id}"
+            raise ValueError(msg)
+
         result = await self.jules.run_session(
             session_id=session_req_id,
             prompt=instruction,
@@ -255,7 +294,16 @@ class CoderUseCase:
             "Invoking Coder Critic for self-reflection before Auditor review...[/bold cyan]"
         )
         try:
-            critic_instruction = settings.get_template("CODER_CRITIC_INSTRUCTION.md").read_text()
+            critic_instruction = settings.get_prompt_content(
+                settings.template_files.coder_critic_instruction
+            )
+            if not critic_instruction:
+                console.print("[red]Failed to load Coder Critic instruction template.[/red]")
+                console.print(
+                    "[yellow]Warning: Coder Critic template missing, skipping self-reflection...[/yellow]"
+                )
+                return None
+
             critic_instruction = critic_instruction.replace("{{cycle_id}}", str(cycle_id))
 
             session_url = self.jules._get_session_url(jules_session_name)
@@ -280,8 +328,17 @@ class CoderUseCase:
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
         try:
-            feedback_template = settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text()
-            feedback_msg = feedback_template.replace("{{feedback}}", feedback)
+            from src.utils_sanitization import sanitize_for_llm
+
+            feedback_template = settings.get_prompt_content(
+                settings.template_files.audit_feedback_message
+            )
+            if not feedback_template:
+                feedback_template = "{{feedback}}"
+
+            safe_feedback = sanitize_for_llm(feedback)
+            feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
+
             await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
 
             console.print(
@@ -289,10 +346,15 @@ class CoderUseCase:
             )
 
             state_transitioned = False
-            for attempt in range(12):  # 12 * 5s = 60s
-                await asyncio.sleep(5)
+            max_retries = settings.jules.feedback_wait_retries
+            wait_interval = settings.jules.feedback_wait_interval_seconds
+
+            for attempt in range(max_retries):
+                await asyncio.sleep(wait_interval)
                 current_state = await self.jules.get_session_state(session_id)
-                console.print(f"[dim]State check ({attempt + 1}/12): {current_state}[/dim]")
+                console.print(
+                    f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]"
+                )
 
                 if current_state in _ACTIVE_STATES:
                     state_transitioned = True
@@ -365,7 +427,11 @@ class CoderUseCase:
 
     def _build_feedback_injection(self, feedback: str, pr_url: str | None) -> str:
         """Build feedback injection block from template."""
-        template = str(settings.get_template("AUDIT_FEEDBACK_INJECTION.md").read_text())
+        template = str(
+            settings.get_prompt_content(settings.template_files.audit_feedback_injection)
+        )
+        if not template:
+            template = "{{feedback}}"
         result = template.replace("{{feedback}}", feedback)
         if pr_url:
             result = str(

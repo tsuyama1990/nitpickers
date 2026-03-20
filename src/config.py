@@ -1,5 +1,7 @@
 import logging
 import os
+import re
+import urllib.parse
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -11,6 +13,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.domain_models.tracing import LangSmithConfig
 
 
+def _validate_env_value(k: str, v: str) -> bool:
+    if k.endswith("_URL"):
+        try:
+            parsed = urllib.parse.urlparse(v)
+            return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+        except Exception as e:
+            logging.debug(f"URL parsing failed for {k}: {e}")
+            return False
+    if k.endswith(("_KEY", "_TOKEN")):
+        return bool(re.match(r"^[A-Za-z0-9_\-\.\=]+$", v))
+    return bool(re.match(r"^[A-Za-z0-9_.:/\-\+~@,=]+$", v))
+
+
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
     """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
@@ -18,25 +33,37 @@ def _load_env() -> None:
 
     _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
 
-    if _ac_cdd_env.exists():
-        if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
-            msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
-            raise ValueError(msg)
+    if not _ac_cdd_env.exists():
+        return
 
-        allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
-        dangerous_chars = (";", "&", "|", "$", "`", "\n")
-        env_vars = dotenv_values(_ac_cdd_env)
-        for key, value in env_vars.items():
-            if any(key.startswith(prefix) for prefix in allowed_prefixes):
-                if value is not None:
-                    if any(char in value for char in dangerous_chars):
-                        logging.warning(
-                            f"Ignoring environment variable {key} containing dangerous shell characters."
-                        )
-                        continue
-                    os.environ[key] = value
-            else:
-                logging.warning(f"Ignoring unauthorized environment variable: {key}")
+    if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
+        msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+        raise ValueError(msg)
+
+    allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
+    env_vars = dotenv_values(_ac_cdd_env)
+
+    safe_updates = {}
+    for key, value in env_vars.items():
+        if not key or not safe_key_pattern.match(key):
+            logging.warning(f"Ignoring environment variable with invalid key format: {key}")
+            continue
+
+        if not key.startswith(allowed_prefixes):
+            logging.warning(f"Ignoring unauthorized environment variable: {key}")
+            continue
+
+        if value is not None:
+            if not _validate_env_value(key, value):
+                logging.warning(
+                    f"Ignoring environment variable {key} failed type-specific security validation."
+                )
+                continue
+            safe_updates[key] = value
+
+    if safe_updates:
+        os.environ.update(safe_updates)
 
 
 _load_env()
@@ -225,6 +252,12 @@ class JulesConfig(BaseModel):
     max_plan_rejections: int = Field(
         default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
     )
+    feedback_wait_retries: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_RETRIES", "12"))
+    )
+    feedback_wait_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_INTERVAL_SECONDS", "5"))
+    )
     request_timeout: float = Field(
         default_factory=lambda: float(os.getenv("JULES_REQUEST_TIMEOUT", "30.0"))
     )
@@ -265,6 +298,67 @@ class JulesConfig(BaseModel):
             "normal progress messages such as '3 errors were fixed'."
         ),
     )
+
+
+class AuditorConfig(BaseModel):
+    excluded_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "dev_src/",
+            "dev_documents/",
+            "tests/ac_cdd/",
+            ".github/",
+            "pyproject.toml",
+            "setup.py",
+            "setup.cfg",
+            "README.md",
+            "LICENSE",
+            ".gitignore",
+            "Dockerfile",
+            "docker-compose",
+            ".env",
+        ]
+    )
+    reviewable_extensions: set[str] = Field(
+        default_factory=lambda: {
+            ".py",
+            ".md",
+            ".toml",
+            ".json",
+            ".yaml",
+            ".yml",
+            ".txt",
+            ".sh",
+            ".html",
+            ".js",
+            ".css",
+            ".ts",
+        }
+    )
+    build_artifact_patterns: list[str] = Field(
+        default_factory=lambda: [
+            ".egg-info/",
+            "__pycache__/",
+            ".pyc",
+            ".pyo",
+            ".pyd",
+            "dist/",
+            "build/",
+            ".pytest_cache/",
+            ".mypy_cache/",
+            ".ruff_cache/",
+        ]
+    )
+
+
+class TemplatesConfig(BaseModel):
+    uat_auditor_instruction: str = "UAT_AUDITOR_INSTRUCTION.md"
+    post_audit_refactor_instruction: str = "POST_AUDIT_REFACTOR_INSTRUCTION.md"
+    final_refactor_instruction: str = "FINAL_REFACTOR_INSTRUCTION.md"
+    coder_instruction: str = "CODER_INSTRUCTION.md"
+    coder_critic_instruction: str = "CODER_CRITIC_INSTRUCTION.md"
+    audit_feedback_message: str = "AUDIT_FEEDBACK_MESSAGE.md"
+    audit_feedback_injection: str = "AUDIT_FEEDBACK_INJECTION.md"
+    architect_instruction: str = "ARCHITECT_INSTRUCTION.md"
 
 
 class ToolsConfig(BaseModel):
@@ -430,11 +524,13 @@ class Settings(BaseSettings):
 
     session: SessionConfig = Field(default_factory=SessionConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
+    template_files: TemplatesConfig = Field(default_factory=TemplatesConfig)
     jules: JulesConfig = Field(default_factory=JulesConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     uat: UATConfig = Field(default_factory=UATConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    auditor: AuditorConfig = Field(default_factory=AuditorConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
     ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
     tracing: LangSmithConfig = Field(default_factory=LangSmithConfig)
