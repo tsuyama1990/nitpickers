@@ -1,11 +1,10 @@
+from collections.abc import Callable
+from typing import Any
+
 import marimo
 
 __generated_with = "0.10.19"
 app = marimo.App(width="medium")
-
-
-from collections.abc import Callable
-from typing import Any
 
 
 @app.cell
