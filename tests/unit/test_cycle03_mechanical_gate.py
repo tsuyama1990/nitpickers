@@ -64,7 +64,7 @@ def test_structural_gate_report_get_failure_report() -> None:
 @pytest.mark.asyncio
 async def test_sandbox_evaluator_all_pass() -> None:
     mock_runner = AsyncMock(spec=ProcessRunner)
-    mock_runner.run_command.return_value = ("ok", "", 0)
+    mock_runner.run_command.return_value = ("ok", "", 0, False)
 
     node = SandboxEvaluatorNodes(process_runner=mock_runner)
     state = CycleState(cycle_id="01")
@@ -84,9 +84,9 @@ async def test_sandbox_evaluator_lint_fails() -> None:
 
     # First call (lint) fails, others pass
     mock_runner.run_command.side_effect = [
-        ("", "lint failed", 1),  # lint
-        ("ok", "", 0),  # mypy
-        ("ok", "", 0),  # pytest
+        ("", "lint failed", 1, False),  # lint
+        ("ok", "", 0, False),  # mypy
+        ("ok", "", 0, False),  # pytest
     ]
 
     node = SandboxEvaluatorNodes(process_runner=mock_runner)

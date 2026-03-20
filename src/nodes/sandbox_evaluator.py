@@ -2,6 +2,7 @@ from typing import Any
 
 from rich.console import Console
 
+from src.config import settings
 from src.contracts.e2b_executor import E2BExecutorService
 from src.domain_models.verification_schema import StructuralGateReport, VerificationResult
 from src.enums import FlowStatus
@@ -33,25 +34,45 @@ class SandboxEvaluatorNodes:
         console.print("[bold cyan]Running Mechanical Verification Blockade...[/bold cyan]")
 
         try:
+            timeout_limit = settings.sandbox.timeout
+
             # 1. Run Linting (Ruff)
             lint_cmd = ["uv", "run", "ruff", "check", "."]
-            l_out, l_err, l_code = await self.process_runner.run_command(lint_cmd, check=False)
+            l_out, l_err, l_code, l_timeout = await self.process_runner.run_command(
+                lint_cmd, check=False, timeout=timeout_limit
+            )
             lint_result = VerificationResult(
-                command=" ".join(lint_cmd), exit_code=l_code, stdout=l_out, stderr=l_err
+                command=" ".join(lint_cmd),
+                exit_code=l_code,
+                stdout=l_out,
+                stderr=l_err,
+                timeout_occurred=l_timeout,
             )
 
             # 2. Run Type Checking (Mypy)
             type_cmd = ["uv", "run", "mypy", "."]
-            t_out, t_err, t_code = await self.process_runner.run_command(type_cmd, check=False)
+            t_out, t_err, t_code, t_timeout = await self.process_runner.run_command(
+                type_cmd, check=False, timeout=timeout_limit
+            )
             type_result = VerificationResult(
-                command=" ".join(type_cmd), exit_code=t_code, stdout=t_out, stderr=t_err
+                command=" ".join(type_cmd),
+                exit_code=t_code,
+                stdout=t_out,
+                stderr=t_err,
+                timeout_occurred=t_timeout,
             )
 
             # 3. Run Testing (Pytest)
             test_cmd = ["uv", "run", "pytest"]
-            p_out, p_err, p_code = await self.process_runner.run_command(test_cmd, check=False)
+            p_out, p_err, p_code, p_timeout = await self.process_runner.run_command(
+                test_cmd, check=False, timeout=timeout_limit
+            )
             test_result = VerificationResult(
-                command=" ".join(test_cmd), exit_code=p_code, stdout=p_out, stderr=p_err
+                command=" ".join(test_cmd),
+                exit_code=p_code,
+                stdout=p_out,
+                stderr=p_err,
+                timeout_occurred=p_timeout,
             )
 
             report = StructuralGateReport(

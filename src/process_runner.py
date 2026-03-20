@@ -16,9 +16,11 @@ class ProcessRunner:
         cwd: Path | None = None,
         check: bool = True,
         env: dict[str, str] | None = None,
-    ) -> tuple[str, str, int]:
+        timeout: int | float | None = None,
+    ) -> tuple[str, str, int, bool]:
         """
         Executes a command asynchronously.
+        Returns: (stdout, stderr, exit_code, timeout_occurred)
         """
         cmd_str = " ".join(cmd)
         logger.debug(f"Running command: {cmd_str}")
@@ -31,7 +33,13 @@ class ProcessRunner:
                 cwd=cwd,
                 env=env,
             )
-            stdout, stderr = await process.communicate()
+            try:
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            except TimeoutError:
+                process.kill()
+                # Wait for it to actually terminate
+                await process.communicate()
+                return "", f"Command timed out after {timeout} seconds", -1, True
 
             stdout_str = stdout.decode().strip() if stdout else ""
             stderr_str = stderr.decode().strip() if stderr else ""
@@ -49,6 +57,6 @@ class ProcessRunner:
                 logger.debug(f"Command failed (expected) [{returncode}]: {cmd_str}")
         except Exception as e:
             logger.error(f"Execution failed for '{cmd_str}': {e}")
-            return "", str(e), -1
+            return "", str(e), -1, False
         else:
-            return stdout_str, stderr_str, returncode
+            return stdout_str, stderr_str, returncode, False

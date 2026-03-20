@@ -12,11 +12,12 @@ class VerificationResult(BaseModel):
     exit_code: int = Field(..., description="Integer exit code returned by the shell")
     stdout: str = Field(default="", description="Full standard output")
     stderr: str = Field(default="", description="Critical standard error traceback")
+    timeout_occurred: bool = Field(default=False, description="Whether the command timed out")
 
     @property
     def passed(self) -> bool:
-        """Returns True if the exit code is 0."""
-        return self.exit_code == 0
+        """Returns True if the exit code is 0 and no timeout occurred."""
+        return self.exit_code == 0 and not self.timeout_occurred
 
 
 class StructuralGateReport(BaseModel):
@@ -52,6 +53,8 @@ class StructuralGateReport(BaseModel):
             if not result.passed:
                 report_lines.append(f"--- {name} Failed ---")
                 report_lines.append(f"Command: {result.command}")
+                if result.timeout_occurred:
+                    report_lines.append("Reason: TIMEOUT OCCURRED")
                 report_lines.append(f"Exit Code: {result.exit_code}")
                 # Use stderr if available, fallback to stdout, else empty
                 err_msg = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()

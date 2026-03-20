@@ -71,7 +71,7 @@ class AuditorUseCase:
             mypy_targets = [f for f in targets if f == "." or f.endswith(".py")]
             if mypy_targets:
                 mypy_cmd = ["uv", "run", "mypy", "--no-error-summary", *mypy_targets]
-                stdout, stderr, code = await self.git.runner.run_command(mypy_cmd, check=False)
+                stdout, stderr, code, _ = await self.git.runner.run_command(mypy_cmd, check=False)
                 if code != 0:
                     success = False
                     details = truncate_output(stdout + stderr)
@@ -84,7 +84,7 @@ class AuditorUseCase:
 
         try:
             ruff_cmd = ["uv", "run", "ruff", "check", *targets]
-            stdout, stderr, code = await self.git.runner.run_command(ruff_cmd, check=False)
+            stdout, stderr, code, _ = await self.git.runner.run_command(ruff_cmd, check=False)
             if code != 0:
                 success = False
                 details = truncate_output(stdout + stderr)
@@ -263,7 +263,7 @@ class AuditorUseCase:
                 try:
                     filtered_files = []
                     for file_path in reviewable_files:
-                        _, _, code = await self.git.runner.run_command(
+                        _, _, code, _ = await self.git.runner.run_command(
                             ["git", "check-ignore", "-q", file_path], check=False
                         )
                         if code != 0:

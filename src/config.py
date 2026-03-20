@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain_models.tracing import LangSmithConfig
@@ -214,15 +214,17 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("JULES_API_KEY", ""), description="Google API key"
+    JULES_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("JULES_API_KEY", "")),
+        description="Google API key",
     )
-    OPENROUTER_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", ""),
+    OPENROUTER_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("OPENROUTER_API_KEY", "")),
         description="OpenRouter API key",
     )
-    E2B_API_KEY: str = Field(
-        default_factory=lambda: os.getenv("E2B_API_KEY", ""), description="E2B Sandbox API key"
+    E2B_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("E2B_API_KEY", "")),
+        description="E2B Sandbox API key",
     )
     MAX_RETRIES: int = 10
     GRAPH_RECURSION_LIMIT: int = 2000

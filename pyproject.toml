@@ -97,6 +97,7 @@ select = [
 ]
 
 ignore = [
+    "ASYNC109", # ASYNC109 Timeout argument warning in async functions
     "ANN101", # Type hint for self is unnecessary (deprecated)
     "ANN002", # Type hint for *args can be omitted
     "ANN003", # Type hint for **kwargs can be omitted

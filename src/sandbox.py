@@ -14,7 +14,7 @@ class SandboxRunner:
     """
 
     def __init__(self, sandbox_id: str | None = None, cwd: str | None = None) -> None:
-        self.api_key = settings.E2B_API_KEY
+        self.api_key = settings.E2B_API_KEY.get_secret_value()
         if self.api_key is None:
             msg = "E2B_API_KEY environment variable is not set"
             raise ValueError(msg)
@@ -114,8 +114,7 @@ class SandboxRunner:
                 sandbox = await self.get_sandbox()
                 await self._sync_to_sandbox(sandbox)
 
-                command_str = shlex.join(cmd)
-                logger.info(f"[Sandbox] Running (Attempt {attempt + 1}): {command_str}")
+                logger.info(f"[Sandbox] Running (Attempt {attempt + 1}): {cmd}")
 
                 # Build sandbox environment: start from caller-supplied env vars,
                 # then explicitly clear Docker-host-specific variables that must not
@@ -130,7 +129,7 @@ class SandboxRunner:
                         sandbox_env.pop(env_var)
 
                 exec_result = sandbox.commands.run(
-                    command_str, cwd=self.cwd, envs=sandbox_env, timeout=settings.sandbox.timeout
+                    cmd, cwd=self.cwd, envs=sandbox_env, timeout=settings.sandbox.timeout
                 )
                 stdout = exec_result.stdout
                 stderr = exec_result.stderr

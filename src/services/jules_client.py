@@ -87,7 +87,7 @@ class JulesClient:
 
             self.plan_auditor = PlanAuditor()
 
-        api_key_to_use = settings.JULES_API_KEY or os.getenv("JULES_API_KEY")
+        api_key_to_use = settings.JULES_API_KEY.get_secret_value() or os.getenv("JULES_API_KEY")
         if not api_key_to_use and self.credentials:
             api_key_to_use = self.credentials.token
 

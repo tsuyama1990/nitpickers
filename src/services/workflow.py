@@ -244,7 +244,79 @@ class WorkflowService:
         if auto:
             await self.finalize_session(project_session_id)
 
-    async def _run_single_cycle(  # noqa: PLR0915
+    def _check_cycle_completion(self, cycle_id: str) -> bool:
+        """Check if cycle is already completed."""
+        mgr = StateManager()
+        manifest = mgr.load_manifest()
+        if manifest:
+            cycle = next((c for c in manifest.cycles if c.id == cycle_id), None)
+            if cycle and cycle.status == "completed":
+                console.print(f"[yellow]Cycle {cycle_id} is already completed. Skipping.[/yellow]")
+                return True
+        return False
+
+    async def _checkout_feature_branch(self, fb: str | None) -> None:
+        """Check out the feature branch for the cycle."""
+        if fb:
+            logger.info(f"Checking out feature branch: {fb}")
+            try:
+                await self.git.checkout_branch(fb)
+                await self.git.pull_changes()
+                logger.info(f"Successfully checked out feature branch: {fb}")
+            except Exception as e:
+                logger.warning(f"Could not checkout feature branch: {e}")
+                logger.warning("Proceeding with current branch (may cause issues!)")
+        else:
+            logger.warning("No feature branch found in manifest. Using current branch.")
+
+    async def _execute_cycle_graph(
+        self,
+        cycle_id: str,
+        start_iter: int,
+        resume: bool,
+        pid: str | None,
+        fb: str | None,
+        ib: str | None,
+        planned_count: int,
+    ) -> None:
+        """Execute the cycle graph."""
+        graph = self.builder.build_coder_graph()
+        state = CycleState(
+            cycle_id=cycle_id,
+            iteration_count=start_iter,
+            resume_mode=resume,
+            project_session_id=pid,
+            feature_branch=fb,
+            integration_branch=ib,
+            planned_cycle_count=planned_count,
+        )
+
+        thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
+        metadata = TracingMetadata(
+            session_id=thread_id, execution_type="cycle_phase", git_branch=fb
+        )
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+
+        config = RunnableConfig(
+            configurable={"thread_id": thread_id},
+            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            **tracing_config,  # type: ignore[typeddict-item]
+        )
+        final_state = await graph.ainvoke(state, config)
+
+        if final_state.get("error"):
+            console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
+            sys.exit(1)
+
+        console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
+
+    def _update_cycle_status(self, cycle_id: str) -> None:
+        """Update cycle status to completed."""
+        mgr = StateManager()
+        if mgr.load_manifest():
+            mgr.update_cycle_state(cycle_id, status="completed")
+
+    async def _run_single_cycle(
         self,
         cycle_id: str,
         resume: bool,
@@ -252,19 +324,13 @@ class WorkflowService:
         start_iter: int,
         project_session_id: str | None,
     ) -> None:
-        # Check completion status before starting
-        mgr = StateManager()
-        manifest = mgr.load_manifest()
-        if manifest:
-            cycle = next((c for c in manifest.cycles if c.id == cycle_id), None)
-            if cycle and cycle.status == "completed":
-                console.print(f"[yellow]Cycle {cycle_id} is already completed. Skipping.[/yellow]")
-                return
+        if self._check_cycle_completion(cycle_id):
+            return
+
         with KeepAwake(reason=f"Running Implementation Cycle {cycle_id}"):
             console.rule(f"[bold green]Coder Phase: Cycle {cycle_id}[/bold green]")
 
         ensure_api_key()
-        graph = self.builder.build_coder_graph()
 
         try:
             if auto:
@@ -273,7 +339,6 @@ class WorkflowService:
             mgr = StateManager()
             manifest = mgr.load_manifest()
 
-            # Fallback if manifest doesn't exist (shouldn't happen in proper flow)
             pid = project_session_id
             ib = None
             if manifest:
@@ -283,55 +348,14 @@ class WorkflowService:
                 console.print("[red]No active session found. Run gen-cycles first.[/red]")
                 sys.exit(1)
 
-            # CRITICAL: Checkout feature branch before starting coder session
-            # This is the main development branch where all cycles accumulate
             fb = manifest.feature_branch if manifest else None
-            if fb:
-                logger.info(f"Checking out feature branch: {fb}")
-                git = self.git
-                try:
-                    await git.checkout_branch(fb)
-                    # Ensure we have latest changes (e.g. from Architecture PR merge)
-                    await git.pull_changes()
-                    logger.info(f"Successfully checked out feature branch: {fb}")
-                except Exception as e:
-                    logger.warning(f"Could not checkout feature branch: {e}")
-                    logger.warning("Proceeding with current branch (may cause issues!)")
-            else:
-                logger.warning("No feature branch found in manifest. Using current branch.")
+            await self._checkout_feature_branch(fb)
 
-            state = CycleState(
-                cycle_id=cycle_id,
-                iteration_count=start_iter,
-                resume_mode=resume,
-                project_session_id=pid,
-                feature_branch=fb,  # Main development branch
-                integration_branch=ib,  # For future finalize-session
-                planned_cycle_count=len(manifest.cycles) if manifest else 0,
+            planned_count = len(manifest.cycles) if manifest else 0
+            await self._execute_cycle_graph(
+                cycle_id, start_iter, resume, pid, fb, ib, planned_count
             )
-
-            thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
-            metadata = TracingMetadata(
-                session_id=thread_id, execution_type="cycle_phase", git_branch=fb
-            )
-            tracing_config = settings.tracing_service.get_run_config(metadata)
-
-            config = RunnableConfig(
-                configurable={"thread_id": thread_id},
-                recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-                **tracing_config,  # type: ignore[typeddict-item]
-            )
-            final_state = await graph.ainvoke(state, config)
-
-            if final_state.get("error"):
-                console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
-                sys.exit(1)
-
-            console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
-
-            # Update status to completed
-            if manifest:
-                mgr.update_cycle_state(cycle_id, status="completed")
+            self._update_cycle_status(cycle_id)
 
         except Exception:
             console.print(f"[bold red]Cycle {cycle_id} execution failed.[/bold red]")

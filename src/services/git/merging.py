@@ -38,7 +38,7 @@ class GitMergingMixin(BaseGitManager):
         """
         logger.info(f"Safely merging {branch_name} into current branch...")
 
-        _stdout, _stderr, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             ["git", "merge", "--no-commit", "--no-ff", branch_name],
             check=False,
         )
@@ -80,7 +80,7 @@ class GitMergingMixin(BaseGitManager):
 
         # 1. Check if Draft and mark ready if needed
         try:
-            stdout, _, code = await self.runner.run_command(
+            stdout, _, code, _ = await self.runner.run_command(
                 [self.gh_cmd, "pr", "view", pr, "--json", "isDraft", "--jq", ".isDraft"],
                 check=False,
             )
@@ -102,7 +102,7 @@ class GitMergingMixin(BaseGitManager):
             "--delete-branch",
         ]
 
-        stdout, stderr, code = await self.runner.run_command(cmd_immediate, check=False)
+        stdout, stderr, code, _ = await self.runner.run_command(cmd_immediate, check=False)
 
         if code == 0:
             logger.info(f"Successfully merged PR {pr} immediately")
@@ -120,7 +120,7 @@ class GitMergingMixin(BaseGitManager):
         if any(keyword in stderr.lower() for keyword in fallback_keywords):
             logger.info(f"Immediate merge failed ({stderr.strip()}). Attempting auto-merge...")
             cmd_auto = [self.gh_cmd, "pr", "merge", pr, f"--{method}", "--auto", "--delete-branch"]
-            _, stderr_auto, code_auto = await self.runner.run_command(cmd_auto, check=True)
+            _, stderr_auto, code_auto, _ = await self.runner.run_command(cmd_auto, check=True)
 
             if code_auto == 0:
                 logger.info(f"Successfully enabled auto-merge for PR {pr}")
@@ -136,7 +136,7 @@ class GitMergingMixin(BaseGitManager):
         """Creates final PR from integration branch to main."""
         logger.info(f"Creating final PR: {integration_branch} → main")
 
-        stdout, _, code = await self.runner.run_command(
+        stdout, _, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",
@@ -167,7 +167,7 @@ class GitMergingMixin(BaseGitManager):
 
         await self._run_git(["push"])
 
-        stdout, _, code = await self.runner.run_command(
+        stdout, _, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",

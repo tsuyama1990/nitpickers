@@ -47,7 +47,7 @@ def _get_system_context() -> str:
 
 def _get_openrouter_api_key() -> str:
     """Retrieves OpenRouter API key with fallbacks."""
-    api_key = settings.OPENROUTER_API_KEY or os.getenv("OPENROUTER_API_KEY")
+    api_key = settings.OPENROUTER_API_KEY.get_secret_value() or os.getenv("OPENROUTER_API_KEY")
     if api_key:
         return api_key
 

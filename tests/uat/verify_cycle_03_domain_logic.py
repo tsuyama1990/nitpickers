@@ -30,9 +30,9 @@ def _() -> tuple[Any, ...]:
     # Mock ProcessRunner to simulate Ruff failure
     _mock_runner = AsyncMock(spec=ProcessRunner)
     _mock_runner.run_command.side_effect = [
-        ("", "lint error: unused import", 1),  # Ruff fails
-        ("ok", "", 0),  # Mypy passes
-        ("ok", "", 0),  # Pytest passes
+        ("", "lint error: unused import", 1, False),  # Ruff fails
+        ("ok", "", 0, False),  # Mypy passes
+        ("ok", "", 0, False),  # Pytest passes
     ]
 
     _node = SandboxEvaluatorNodes(process_runner=_mock_runner)
@@ -74,9 +74,9 @@ def _(
     # Mock ProcessRunner to simulate Pytest failure
     _mock_runner2 = AsyncMock(spec=ProcessRunner)
     _mock_runner2.run_command.side_effect = [
-        ("ok", "", 0),  # Ruff passes
-        ("ok", "", 0),  # Mypy passes
-        ("", "AssertionError: expected True but got False", 1),  # Pytest fails
+        ("ok", "", 0, False),  # Ruff passes
+        ("ok", "", 0, False),  # Mypy passes
+        ("", "AssertionError: expected True but got False", 1, False),  # Pytest fails
     ]
 
     _node2 = SandboxEvaluatorNodes(process_runner=_mock_runner2)
