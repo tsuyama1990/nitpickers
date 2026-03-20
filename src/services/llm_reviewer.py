@@ -89,10 +89,14 @@ class LLMReviewer:
         """
         logger.info(f"LLMReviewer: starting UAT failure diagnosis using {model}")
 
+        # Basic sanitization to prevent unescaped markdown blocks closing the prompt early
+        safe_stdout = uat_state.stdout.replace("```", "\\`\\`\\`") if uat_state.stdout else ""
+        safe_stderr = uat_state.stderr.replace("```", "\\`\\`\\`") if uat_state.stderr else ""
+
         content_parts: list[dict[str, str | dict[str, str]]] = [
             {
                 "type": "text",
-                "text": f"{instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{uat_state.stdout}\n```\n\n## Stderr\n```\n{uat_state.stderr}\n```\n",
+                "text": f"{instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{safe_stdout}\n```\n\n## Stderr\n```\n{safe_stderr}\n```\n",
             }
         ]
 
@@ -111,10 +115,11 @@ class LLMReviewer:
                             },
                         }
                     )
+                    safe_traceback = artifact.traceback.replace("```", "\\`\\`\\`") if artifact.traceback else ""
                     content_parts.append(
                         {
                             "type": "text",
-                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{artifact.traceback}\n```\n",
+                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
                         }
                     )
             except Exception as e:

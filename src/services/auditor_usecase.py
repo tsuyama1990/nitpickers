@@ -51,7 +51,9 @@ class AuditorUseCase:
         if state.uat_execution_state:
             console.print("[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]")
 
-            instruction = settings.get_template("UAT_AUDITOR_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(settings.template_files.uat_auditor_instruction)
+            if not instruction:
+                instruction = "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
             instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
             model = settings.reviewer.smart_model
 
@@ -79,21 +81,23 @@ class AuditorUseCase:
 
         is_refactor_phase = getattr(state, "current_phase", None) == WorkPhase.REFACTORING
         template_name = (
-            "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md"
+            settings.template_files.final_refactor_instruction
             if is_refactor_phase
-            else "CODER_CRITIC_INSTRUCTION.md"
+            else settings.template_files.coder_critic_instruction
         )
 
-        template_path = settings.get_template(template_name)
-        if not template_path.exists() and is_refactor_phase:
+        instruction = settings.get_prompt_content(template_name)
+        if not instruction and is_refactor_phase:
             # Fallback if someone hasn't created it yet
-            template_path = settings.get_template("CODER_CRITIC_INSTRUCTION.md")
+            instruction = settings.get_prompt_content(settings.template_files.coder_critic_instruction)
 
-        instruction = template_path.read_text()
+        if not instruction:
+            instruction = "Review this code."
+
         instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
 
         context_paths = settings.get_context_files()
-        architect_instruction = settings.get_template("ARCHITECT_INSTRUCTION.md")
+        architect_instruction = settings.get_template(settings.template_files.architect_instruction)
         if architect_instruction.exists():
             context_paths.append(str(architect_instruction))
         context_docs = await self._read_files(context_paths)

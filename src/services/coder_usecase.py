@@ -143,11 +143,14 @@ class CoderUseCase:
     ) -> str:
         """Assemble the Jules instruction prompt, injecting feedback when retrying."""
         if state.status == FlowStatus.POST_AUDIT_REFACTOR:
-            instruction = settings.get_template("POST_AUDIT_REFACTOR_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(settings.template_files.post_audit_refactor_instruction)
         elif current_phase == WorkPhase.REFACTORING:
-            instruction = settings.get_template("FINAL_REFACTOR_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(settings.template_files.final_refactor_instruction)
         else:
-            instruction = settings.get_template("CODER_INSTRUCTION.md").read_text()
+            instruction = settings.get_prompt_content(settings.template_files.coder_instruction)
+
+        if not instruction:
+            instruction = "Implement the requested changes."
 
         instruction = instruction.replace("{{cycle_id}}", str(cycle_id))
 
@@ -282,7 +285,12 @@ class CoderUseCase:
             "Invoking Coder Critic for self-reflection before Auditor review...[/bold cyan]"
         )
         try:
-            critic_instruction = settings.get_template("CODER_CRITIC_INSTRUCTION.md").read_text()
+            critic_instruction = settings.get_prompt_content(settings.template_files.coder_critic_instruction)
+            if not critic_instruction:
+                console.print("[red]Failed to load Coder Critic instruction template.[/red]")
+                console.print("[yellow]Warning: Coder Critic template missing, skipping self-reflection...[/yellow]")
+                return None
+
             critic_instruction = critic_instruction.replace("{{cycle_id}}", str(cycle_id))
 
             session_url = self.jules._get_session_url(jules_session_name)
@@ -307,7 +315,9 @@ class CoderUseCase:
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
         try:
-            feedback_template = settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text()
+            feedback_template = settings.get_prompt_content(settings.template_files.audit_feedback_message)
+            if not feedback_template:
+                feedback_template = "{{feedback}}"
             feedback_msg = feedback_template.replace("{{feedback}}", feedback)
             await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
 
@@ -395,7 +405,9 @@ class CoderUseCase:
 
     def _build_feedback_injection(self, feedback: str, pr_url: str | None) -> str:
         """Build feedback injection block from template."""
-        template = str(settings.get_template("AUDIT_FEEDBACK_INJECTION.md").read_text())
+        template = str(settings.get_prompt_content(settings.template_files.audit_feedback_injection))
+        if not template:
+            template = "{{feedback}}"
         result = template.replace("{{feedback}}", feedback)
         if pr_url:
             result = str(

@@ -23,10 +23,18 @@ def _load_env() -> None:
             msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
             raise ValueError(msg)
 
+        import re
         allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
         dangerous_chars = (";", "&", "|", "$", "`", "\n")
+        safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
         env_vars = dotenv_values(_ac_cdd_env)
+
+        safe_updates = {}
         for key, value in env_vars.items():
+            if not key or not safe_key_pattern.match(key):
+                logging.warning(f"Ignoring environment variable with invalid key format: {key}")
+                continue
+
             if any(key.startswith(prefix) for prefix in allowed_prefixes):
                 if value is not None:
                     if any(char in value for char in dangerous_chars):
@@ -34,9 +42,12 @@ def _load_env() -> None:
                             f"Ignoring environment variable {key} containing dangerous shell characters."
                         )
                         continue
-                    os.environ[key] = value
+                    safe_updates[key] = value
             else:
                 logging.warning(f"Ignoring unauthorized environment variable: {key}")
+
+        if safe_updates:
+            os.environ.update(safe_updates)
 
 
 _load_env()
@@ -323,6 +334,17 @@ class AuditorConfig(BaseModel):
     )
 
 
+class TemplatesConfig(BaseModel):
+    uat_auditor_instruction: str = "UAT_AUDITOR_INSTRUCTION.md"
+    post_audit_refactor_instruction: str = "POST_AUDIT_REFACTOR_INSTRUCTION.md"
+    final_refactor_instruction: str = "FINAL_REFACTOR_INSTRUCTION.md"
+    coder_instruction: str = "CODER_INSTRUCTION.md"
+    coder_critic_instruction: str = "CODER_CRITIC_INSTRUCTION.md"
+    audit_feedback_message: str = "AUDIT_FEEDBACK_MESSAGE.md"
+    audit_feedback_injection: str = "AUDIT_FEEDBACK_INJECTION.md"
+    architect_instruction: str = "ARCHITECT_INSTRUCTION.md"
+
+
 class ToolsConfig(BaseModel):
     jules_cmd: str = "jules"
     gh_cmd: str = "gh"
@@ -486,6 +508,7 @@ class Settings(BaseSettings):
 
     session: SessionConfig = Field(default_factory=SessionConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
+    template_files: TemplatesConfig = Field(default_factory=TemplatesConfig)
     jules: JulesConfig = Field(default_factory=JulesConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     uat: UATConfig = Field(default_factory=UATConfig)

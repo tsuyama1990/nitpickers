@@ -2,7 +2,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from .config import settings
 from .domain_models import (
     AuditResult,
     ConflictRegistryItem,
@@ -96,35 +95,21 @@ class CycleState(BaseModel):
     # Validators
     @field_validator("cycle_id")
     @classmethod
-    def validate_cycle_id(cls, v: str) -> str:
-        import re
-
-        if not re.match(r"^\d{2}$", v):
-            msg = f"cycle_id '{v}' is invalid (must be exactly two digits, e.g., '01')"
-            raise ValueError(msg)
-        return v
+    def do_validate_cycle_id(cls, v: str) -> str:
+        from src.state_validators import validate_cycle_id
+        return validate_cycle_id(v)
 
     @field_validator("current_auditor_index")
     @classmethod
-    def validate_auditor_index(cls, v: int) -> int:
-        if v < 1:
-            msg = f"Auditor index {v} must be greater than or equal to 1"
-            raise ValueError(msg)
-        if v > settings.NUM_AUDITORS:
-            msg = f"Auditor index {v} exceeds NUM_AUDITORS={settings.NUM_AUDITORS}"
-            raise ValueError(msg)
-        return v
+    def do_validate_auditor_index(cls, v: int) -> int:
+        from src.state_validators import validate_auditor_index
+        return validate_auditor_index(v)
 
     @field_validator("current_auditor_review_count")
     @classmethod
-    def validate_review_count(cls, v: int) -> int:
-        if v < 1:
-            msg = f"Review count {v} must be greater than or equal to 1"
-            raise ValueError(msg)
-        if v > settings.REVIEWS_PER_AUDITOR:
-            msg = f"Review count {v} exceeds REVIEWS_PER_AUDITOR={settings.REVIEWS_PER_AUDITOR}"
-            raise ValueError(msg)
-        return v
+    def do_validate_review_count(cls, v: int) -> int:
+        from src.state_validators import validate_review_count
+        return validate_review_count(v)
 
     def get(self, item: str, default: Any = None) -> Any:
         return getattr(self, item, default)
@@ -137,18 +122,9 @@ class CycleState(BaseModel):
     langgraph_checkpoint: dict[str, Any] | None = None
 
     @model_validator(mode="after")
-    def _validate_state_consistency(self) -> "CycleState":
-        # Logical consistency cross-checks
-        if self.status == FlowStatus.COMPLETED and self.error is not None:
-            msg = "State status is COMPLETED but error field is not None"
-            raise ValueError(msg)
-
-        # Auditor index logical bounds
-        if self.current_auditor_index > settings.NUM_AUDITORS:
-            msg = f"Auditor index {self.current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
-            raise ValueError(msg)
-
-        return self
+    def do_validate_state_consistency(self) -> "CycleState":
+        from src.state_validators import validate_state_consistency
+        return validate_state_consistency(self) # type: ignore[no-any-return]
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
