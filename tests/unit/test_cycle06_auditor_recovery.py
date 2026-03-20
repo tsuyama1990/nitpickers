@@ -13,20 +13,28 @@ from src.state import CycleState
 
 def test_fix_plan_schema_valid() -> None:
     data = {
-        "target_file": "src/main.py",
         "defect_description": "The button class was misspelled in the test, but the code is correct.",
-        "git_diff_patch": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n- btn = page.locator('.btn-primary')\n+ btn = page.locator('.btn-submit')",
+        "patches": [
+            {
+                "target_file": "src/main.py",
+                "git_diff_patch": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n- btn = page.locator('.btn-primary')\n+ btn = page.locator('.btn-submit')",
+            }
+        ]
     }
     schema = FixPlanSchema(**data)
-    assert schema.target_file == "src/main.py"
+    assert schema.patches[0].target_file == "src/main.py"
     assert "misspelled" in schema.defect_description
 
 
 def test_fix_plan_schema_invalid_extra_field() -> None:
     data = {
-        "target_file": "src/main.py",
         "defect_description": "Fix it.",
-        "git_diff_patch": "...",
+        "patches": [
+            {
+                "target_file": "src/main.py",
+                "git_diff_patch": "...",
+            }
+        ],
         "extra_field": "Should fail",
     }
     with pytest.raises(ValidationError):
@@ -60,7 +68,7 @@ async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
     mock_response.choices[
         0
     ].message.content = (
-        '{"target_file": "src/main.py", "defect_description": "Test", "git_diff_patch": "patch"}'
+        '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
     )
 
     with patch(
@@ -70,9 +78,9 @@ async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
 
         plan = await reviewer.diagnose_uat_failure(uat_state, "Instruction", "model-test")
 
-        assert plan.target_file == "src/main.py"
+        assert plan.patches[0].target_file == "src/main.py"
         assert plan.defect_description == "Test"
-        assert plan.git_diff_patch == "patch"
+        assert plan.patches[0].git_diff_patch == "patch"
 
         # Verify base64 encoding was passed correctly
         call_args = mock_acompletion.call_args[1]
@@ -113,16 +121,17 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
 
         plan = await reviewer.diagnose_uat_failure(uat_state, "Instruction", "model-test")
 
-        assert plan.target_file == "Unknown"
+        assert plan.patches[0].target_file == "Unknown"
         assert "SYSTEM_ERROR" in plan.defect_description
 
 
 @pytest.mark.asyncio
 async def test_auditor_usecase_routing() -> None:
+    from src.domain_models.fix_plan_schema import FilePatch
     mock_reviewer = MagicMock(spec=LLMReviewer)
 
     valid_plan = FixPlanSchema(
-        target_file="src/test.py", defect_description="A bug", git_diff_patch="patch"
+        defect_description="A bug", patches=[FilePatch(target_file="src/test.py", git_diff_patch="patch")]
     )
     mock_reviewer.diagnose_uat_failure = AsyncMock(return_value=valid_plan)
 
@@ -145,3 +154,4 @@ async def test_auditor_usecase_routing() -> None:
     assert result["status"] == FlowStatus.RETRY_FIX
     assert result["current_fix_plan"] == valid_plan
     assert result["uat_execution_state"] is None
+    assert result["uat_retry_count"] == 1

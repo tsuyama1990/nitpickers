@@ -39,6 +39,16 @@ def pytest_runtest_makereport(
                 # Capture full-page screenshot
                 page.screenshot(path=str(screenshot_path), full_page=True, timeout=5000)
 
+                # Capture DOM / Accessibility Tree for the LLM
+                dom_snapshot_path = artifacts_dir / f"{safe_name}_dom.txt"
+                try:
+                    # The Accessibility tree is heavily compressed and perfect for LLMs
+                    a11y_snapshot = page.accessibility.snapshot()
+                    import json
+                    dom_snapshot_path.write_text(json.dumps(a11y_snapshot, indent=2))
+                except Exception as dom_err:
+                    dom_snapshot_path.write_text(f"DOM Capture Failed: {dom_err}")
+
                 # Stop tracing and export
                 if hasattr(page.context, "tracing"):
                     page.context.tracing.stop(path=str(trace_path))

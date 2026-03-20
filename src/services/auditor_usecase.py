@@ -297,12 +297,17 @@ class UATAuditorUseCase:
         else:
             # We do not approve, we bounce it back to the Coder via RETRY_FIX
             # But we bypass the normal committee loop because this is an execution failure, not a code review failure
+
+            # Increment retry count for the circuit breaker
+            state.uat_retry_count += 1
+
             console.print(
-                f"[bold green]Diagnostic complete. Fix plan formulated for: {fix_plan.target_file}[/bold green]"
+                f"[bold green]Diagnostic complete. Fix plan formulated with {len(fix_plan.patches)} patches.[/bold green]"
             )
             return {
                 "current_fix_plan": fix_plan,
                 "status": FlowStatus.RETRY_FIX,
                 "uat_execution_state": None,  # clear it so we don't loop
                 "last_feedback_time": 0,  # bypass cooldowns if any
+                "uat_retry_count": state.uat_retry_count,
             }

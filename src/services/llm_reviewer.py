@@ -194,16 +194,24 @@ class LLMReviewer:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
                     # Fallback schema to not break the pipeline entirely, though we ideally raise
                     return FixPlanSchema(
-                        target_file="Unknown",
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        git_diff_patch="Please review the UAT logs manually and provide a fix.",
+                        patches=[
+                            {
+                                "target_file": "Unknown",
+                                "git_diff_patch": "Please review the UAT logs manually and provide a fix."
+                            }
+                        ],
                     )
 
         # Unreachable but mypy needs it
         return FixPlanSchema(
-            target_file="Unknown",
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            git_diff_patch="Please review the UAT logs manually.",
+            patches=[
+                {
+                    "target_file": "Unknown",
+                    "git_diff_patch": "Please review the UAT logs manually."
+                }
+            ],
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:

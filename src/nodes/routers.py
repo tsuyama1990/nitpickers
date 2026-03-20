@@ -53,6 +53,12 @@ def route_uat(state: CycleState) -> str:
     if status == FlowStatus.COMPLETED:
         return "end"
     if status == FlowStatus.UAT_FAILED:
+        from src.utils import logger
+        retry_count = getattr(state, "uat_retry_count", 0)
+        max_retries = getattr(settings.uat, "max_retries", 3)
+        if retry_count >= max_retries:
+            logger.error(f"UAT Failed {retry_count} times. Halting to prevent infinite loop.")
+            return "failed"
         return "auditor"
     return "end"
 
