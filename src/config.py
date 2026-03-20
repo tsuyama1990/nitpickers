@@ -13,18 +13,14 @@ from src.domain_models.tracing import LangSmithConfig
 
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
-    try:
-        # First priority: strict .ac_cdd environment block
-        _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-        # Optional root environment fallback, must be directly within cwd
-        _root_env = Path.cwd() / ".env"
+    """Load configuration from a strict, single location."""
+    _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
 
-        if _ac_cdd_env.is_relative_to(Path.cwd()) and _ac_cdd_env.exists():
-            load_dotenv(_ac_cdd_env, override=True)
-        elif _root_env.is_relative_to(Path.cwd()) and _root_env.exists():
-            load_dotenv(_root_env, override=True)
-    except Exception:
-        logging.exception("Could not safely load dotenv")
+    if _ac_cdd_env.exists():
+        if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
+            msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+            raise ValueError(msg)
+        load_dotenv(_ac_cdd_env, override=True)
 
 
 _load_env()
@@ -41,15 +37,8 @@ def _is_safe_path(p: Path) -> bool:
     """Validates that a path does not contain traversal characters and is within expected bounds."""
     try:
         resolved = p.resolve()
-        # Accept if within cwd OR in a common safe root like /opt/
         if resolved.is_relative_to(Path.cwd()):
             return True
-
-        # We also allow /opt/ and /home/ configurations if strictly validated
-        allowed_prefixes = os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/opt/,/home/").split(",")
-        for prefix in allowed_prefixes:
-            if prefix and str(resolved).startswith(prefix):
-                return True
     except (ValueError, RuntimeError):
         pass
     return False
@@ -234,6 +223,7 @@ class ToolsConfig(BaseModel):
 
 
 class UATConfig(BaseModel):
+    test_cmd: str = Field(default="uv run pytest tests/uat/")
     playwright_args: list[str] = Field(
         default_factory=lambda: [
             "--browser=chromium",

@@ -25,7 +25,16 @@ class UatUseCase:
 
     def _scan_artifacts(self, stdout: str, stderr: str) -> list[MultiModalArtifact]:
         """Scans the artifacts directory for multi-modal artifacts."""
-        artifacts_dir = settings.paths.artifacts_dir.resolve()
+        artifacts_dir = settings.paths.artifacts_dir
+
+        if not artifacts_dir.exists() or artifacts_dir.is_symlink() or not artifacts_dir.is_dir():
+            return []
+
+        try:
+            artifacts_dir = artifacts_dir.resolve(strict=True)
+        except Exception as e:
+            logger.error(f"Failed to resolve artifacts directory path: {e}")
+            return []
 
         # Security: Prevent path traversal
         if not artifacts_dir.is_relative_to(Path.cwd()):
@@ -63,10 +72,13 @@ class UatUseCase:
         """Node for UAT Evaluation, Auto-Merge, and Refactoring Transition."""
         logger.info("Running UAT Evaluation...")
 
+        import shlex
+
         # Dynamic Execution using ProcessRunner
         runner = ProcessRunner()
         # Ensure we run the exact UAT tests folder with configurable browser args
-        cmd = ["uv", "run", "pytest", "tests/uat/", *settings.uat.playwright_args]
+        base_cmd = shlex.split(settings.uat.test_cmd)
+        cmd = [*base_cmd, *settings.uat.playwright_args]
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)
 

@@ -95,6 +95,9 @@ class CycleState(BaseModel):
     @field_validator("current_auditor_index")
     @classmethod
     def validate_auditor_index(cls, v: int) -> int:
+        if v < 1:
+            msg = f"Auditor index {v} must be greater than or equal to 1"
+            raise ValueError(msg)
         if v > settings.NUM_AUDITORS:
             msg = f"Auditor index {v} exceeds NUM_AUDITORS={settings.NUM_AUDITORS}"
             raise ValueError(msg)
@@ -103,6 +106,9 @@ class CycleState(BaseModel):
     @field_validator("current_auditor_review_count")
     @classmethod
     def validate_review_count(cls, v: int) -> int:
+        if v < 1:
+            msg = f"Review count {v} must be greater than or equal to 1"
+            raise ValueError(msg)
         if v > settings.REVIEWS_PER_AUDITOR:
             msg = f"Review count {v} exceeds REVIEWS_PER_AUDITOR={settings.REVIEWS_PER_AUDITOR}"
             raise ValueError(msg)

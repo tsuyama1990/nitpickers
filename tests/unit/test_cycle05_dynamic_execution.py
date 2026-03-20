@@ -25,6 +25,7 @@ async def test_uat_usecase_dynamic_execution_success(
     mock_process_runner = MagicMock()
     mock_process_runner.run_command = AsyncMock(return_value=("pytest success", "", 0, False))
     mock_process_runner_cls.return_value = mock_process_runner
+    mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
 
     state = CycleState(
         cycle_id="01", current_phase=WorkPhase.CODER, pr_url="http://github.com/pr/1"
@@ -58,20 +59,10 @@ async def test_uat_usecase_dynamic_execution_failure(
         return_value=("pytest fail", "error trace", 1, False)
     )
     mock_process_runner_cls.return_value = mock_process_runner
+    mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
 
     artifacts_dir = tmp_path / "artifacts"
     artifacts_dir.mkdir()
-
-    # The new path validation needs resolve() to be relative to cwd.
-    # We will mock the resolve() to return something relative to cwd or patch it.
-    mock_resolved = MagicMock()
-    mock_resolved.is_relative_to.return_value = True
-    mock_resolved.exists.return_value = True
-    mock_resolved.is_dir.return_value = True
-    mock_resolved.glob.side_effect = artifacts_dir.glob
-    mock_resolved.__truediv__.side_effect = artifacts_dir.__truediv__
-
-    mock_settings.paths.artifacts_dir.resolve.return_value = mock_resolved
 
     # Mock files
     png_file = artifacts_dir / "test_login.png"
@@ -82,6 +73,20 @@ async def test_uat_usecase_dynamic_execution_failure(
 
     # Return actual Path objects so iterdir/glob work properly if used
     mock_glob.return_value = [png_file]
+
+    # Use actual Path mock directly to bypass the new rigorous checks in uat_usecase.py
+    mock_dir = MagicMock(spec=Path)
+    mock_dir.exists.return_value = True
+    mock_dir.is_symlink.return_value = False
+    mock_dir.is_dir.return_value = True
+
+    mock_resolved = MagicMock(spec=Path)
+    mock_resolved.is_relative_to.return_value = True
+    mock_resolved.glob.return_value = [png_file]
+    mock_resolved.__truediv__.side_effect = artifacts_dir.__truediv__
+    mock_dir.resolve.return_value = mock_resolved
+
+    mock_settings.paths.artifacts_dir = mock_dir
 
     state = CycleState(cycle_id="01", current_phase=WorkPhase.CODER)
 
