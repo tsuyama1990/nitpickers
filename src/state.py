@@ -10,6 +10,7 @@ from .domain_models import (
     FileOperation,
     StructuralGateReport,
     UatAnalysis,
+    UatExecutionState,
 )
 from .enums import FlowStatus, WorkPhase
 
@@ -51,6 +52,7 @@ class CycleState(BaseModel):
     test_logs: str = ""
     test_exit_code: int | None = None
     uat_analysis: UatAnalysis | None = None
+    uat_execution_state: UatExecutionState | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
     conflict_status: FlowStatus | None = None
     concurrent_dependencies: list[str] = Field(default_factory=list)

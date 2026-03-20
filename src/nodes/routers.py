@@ -52,6 +52,8 @@ def route_uat(state: CycleState) -> str:
         return "coder_session"
     if status == FlowStatus.COMPLETED:
         return "end"
+    if status == FlowStatus.UAT_FAILED:
+        return "auditor"
     return "end"
 
 

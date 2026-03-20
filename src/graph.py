@@ -121,6 +121,7 @@ class GraphBuilder:
             self.nodes.route_uat,
             {
                 "coder_session": "coder_session",
+                "auditor": "auditor",
                 "end": END,
             },
         )

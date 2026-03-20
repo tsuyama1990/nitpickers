@@ -9,6 +9,7 @@ from .observability_config import ObservabilityConfig
 from .refactor import GlobalRefactorResult
 from .review import AuditorReport, AuditResult, PlanAuditResult, ReviewIssue
 from .spec import CyclePlan, Feature, StructuredSpec, TechnicalConstraint
+from .uat_execution_state import UatExecutionState
 from .verification_schema import StructuralGateReport, VerificationResult
 
 __all__ = [
@@ -37,5 +38,6 @@ __all__ = [
     "SystemArchitecture",
     "TechnicalConstraint",
     "UatAnalysis",
+    "UatExecutionState",
     "VerificationResult",
 ]
