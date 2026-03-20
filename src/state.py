@@ -68,6 +68,7 @@ class UATState(BaseModel):
     uat_execution_state: UatExecutionState | None = None
     current_fix_plan: FixPlanSchema | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
+    uat_retry_count: int = 0
 
 
 class ConfigurationState(BaseModel):
@@ -240,6 +241,14 @@ class CycleState(BaseModel):
         self.uat.current_fix_plan = value
 
     @property
+    def uat_retry_count(self) -> int:
+        return self.uat.uat_retry_count
+
+    @uat_retry_count.setter
+    def uat_retry_count(self, value: int) -> None:
+        self.uat.uat_retry_count = value
+
+    @property
     def requested_cycle_count(self) -> int | None:
         return self.config.requested_cycle_count
 
@@ -321,7 +330,13 @@ class CycleState(BaseModel):
                 "last_audited_commit",
             ],
             "test": ["structural_report", "test_logs", "test_exit_code", "tdd_phase"],
-            "uat": ["uat_analysis", "uat_execution_state", "current_fix_plan", "sandbox_artifacts"],
+            "uat": [
+                "uat_analysis",
+                "uat_execution_state",
+                "current_fix_plan",
+                "sandbox_artifacts",
+                "uat_retry_count",
+            ],
             "config": ["planned_cycle_count", "requested_cycle_count", "planned_cycles"],
         }
 

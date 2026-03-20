@@ -388,6 +388,8 @@ class UATConfig(BaseModel):
         ]
     )
     traceback_limit: int = Field(default=1000)
+    max_retries: int = Field(default=3)
+    db_reset_cmd: str | None = Field(default=None)
 
 
 class SandboxConfig(BaseModel):
