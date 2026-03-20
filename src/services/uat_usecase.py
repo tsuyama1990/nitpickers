@@ -45,18 +45,11 @@ class UatUseCase:
                 zip_path = artifacts_dir / f"{base_name}_trace.zip"
 
                 if img_path.exists():
-                    if not zip_path.exists():
-                        # Create empty trace file to satisfy schema validation if missing
-                        try:
-                            zip_path.write_bytes(b"")
-                        except Exception as e:
-                            logger.warning(f"Failed to create missing trace artifact: {e}")
-
                     try:
                         artifact = MultiModalArtifact(
                             test_id=base_name,
                             screenshot_path=str(img_path),
-                            trace_path=str(zip_path),
+                            trace_path=str(zip_path) if zip_path.exists() else None,
                             console_logs=[],
                             traceback=(
                                 stderr[-settings.uat.traceback_limit :]
@@ -80,6 +73,13 @@ class UatUseCase:
         # Ensure we run the exact UAT tests folder with configurable browser args
         base_cmd = shlex.split(settings.uat.test_cmd)
         cmd = [*base_cmd, *settings.uat.playwright_args]
+
+        # Security: whitelist allowed binaries to prevent command injection
+        allowed_binaries = ["uv", "pytest", "python"]
+        if not cmd or cmd[0] not in allowed_binaries:
+            msg = f"Unauthorized command binary: {cmd[0] if cmd else 'empty'}"
+            raise ValueError(msg)
+
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)
 
@@ -104,21 +104,24 @@ class UatUseCase:
         # Auto-Merge Cycle PR
         pr_url = state.pr_url
         if pr_url:
-            parsed_url = urlparse(pr_url)
-            pr_number = parsed_url.path.strip("/").split("/")[-1]
-            if not pr_number.isdigit():
-                logger.error(f"Extracted PR number '{pr_number}' is invalid (must be digits)")
-                return {
-                    "status": FlowStatus.FAILED,
-                    "error": f"Invalid PR number format extracted from {pr_url}",
-                }
-            try:
-                logger.info(f"Auto-merging Cycle PR #{pr_number}...")
-                await self.git.merge_pr(pr_number)
-                logger.info("Cycle PR merged successfully!")
-            except Exception as e:
-                logger.error(f"Failed to auto-merge Cycle PR: {e}")
-                return {"status": FlowStatus.FAILED, "error": str(e)}
+            if not settings.session.auto_merge_to_integration:
+                logger.info("Auto-merge to integration branch is disabled by policy. Skipping merge.")
+            else:
+                parsed_url = urlparse(pr_url)
+                pr_number = parsed_url.path.strip("/").split("/")[-1]
+                if not pr_number.isdigit():
+                    logger.error(f"Extracted PR number '{pr_number}' is invalid (must be digits)")
+                    return {
+                        "status": FlowStatus.FAILED,
+                        "error": f"Invalid PR number format extracted from {pr_url}",
+                    }
+                try:
+                    logger.info(f"Auto-merging Cycle PR #{pr_number}...")
+                    await self.git.merge_pr(pr_number)
+                    logger.info("Cycle PR merged successfully!")
+                except Exception as e:
+                    logger.error(f"Failed to auto-merge Cycle PR: {e}")
+                    return {"status": FlowStatus.FAILED, "error": str(e)}
 
         # Refactoring Phase Transition Logic
         current_phase = state.current_phase

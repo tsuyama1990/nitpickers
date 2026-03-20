@@ -11,6 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.domain_models.tracing import LangSmithConfig
 
 
+from dotenv import dotenv_values
+
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
     """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
@@ -22,7 +24,15 @@ def _load_env() -> None:
         if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
             msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
             raise ValueError(msg)
-        load_dotenv(_ac_cdd_env, override=True)
+
+        allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+        env_vars = dotenv_values(_ac_cdd_env)
+        for key, value in env_vars.items():
+            if any(key.startswith(prefix) for prefix in allowed_prefixes):
+                if value is not None:
+                    os.environ[key] = value
+            else:
+                logging.warning(f"Ignoring unauthorized environment variable: {key}")
 
 
 _load_env()
@@ -50,8 +60,8 @@ def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
         resolved_pkg = Path(env_pkg_dir)
-        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve().exists():
-            return str(resolved_pkg.resolve())
+        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve(strict=True).is_relative_to(Path.cwd()):
+            return str(resolved_pkg.resolve(strict=True))
     return None
 
 
@@ -59,8 +69,8 @@ def _check_docker_src_path() -> str | None:
     docker_src_path = os.getenv("DOCKER_SRC_PATH")
     if docker_src_path:
         docker_path = Path(docker_src_path)
-        if _is_safe_path(docker_path) and docker_path.resolve().exists():
-            return str(docker_path.resolve())
+        if _is_safe_path(docker_path) and docker_path.resolve(strict=True).is_relative_to(Path.cwd()):
+            return str(docker_path.resolve(strict=True))
     return None
 
 
@@ -68,8 +78,8 @@ def _check_dev_src_path() -> str | None:
     dev_src_path = os.getenv("DEV_SRC_PATH")
     if dev_src_path:
         src_path = Path(dev_src_path)
-        if _is_safe_path(src_path) and src_path.resolve().exists():
-            for p in src_path.resolve().iterdir():
+        if _is_safe_path(src_path) and src_path.resolve(strict=True).is_relative_to(Path.cwd()):
+            for p in src_path.resolve(strict=True).iterdir():
                 if p.is_dir() and (p / "__init__.py").exists():
                     return str(p)
     return None
@@ -92,14 +102,20 @@ def _detect_package_dir() -> str:
     default_src_dir = os.getenv("DEFAULT_SRC_DIR")
     if default_src_dir:
         resolved = Path(default_src_dir)
-        if _is_safe_path(resolved) and resolved.resolve().exists():
-            return str(resolved.resolve())
+        if _is_safe_path(resolved):
+            try:
+                strict_resolved = resolved.resolve(strict=True)
+                if not strict_resolved.is_relative_to(Path.cwd()):
+                    raise ValueError(f"Directory {strict_resolved} escapes boundaries")
+                return str(strict_resolved)
+            except Exception:
+                pass
 
     src_fallback = Path.cwd() / "src"
-    if src_fallback.exists() and src_fallback.is_dir():
-        return str(src_fallback)
+    if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
+        return str(src_fallback.resolve(strict=True))
 
-    msg = "Could not resolve package directory. Ensure PACKAGE_DIR, DEV_SRC_PATH, DOCKER_SRC_PATH, or DEFAULT_SRC_DIR is set and points to a valid Python package."
+    msg = "Could not resolve package directory safely."
     raise ValueError(msg)
 
 
@@ -119,6 +135,34 @@ class PathsConfig(BaseModel):
     def _set_dependent_paths(self) -> "PathsConfig":
         if not self.contracts_dir:
             self.contracts_dir = f"{self.package_dir}/contracts"
+
+        # Security validation to ensure all paths are within project boundaries
+        try:
+            root = self.workspace_root.resolve(strict=False)
+
+            paths_to_check = [
+                self.documents_dir,
+                Path(self.package_dir),
+                Path(self.contracts_dir),
+                self.artifacts_dir,
+                Path(self.sessions_dir),
+                self.src,
+                self.tests,
+                self.templates,
+                Path(self.prompts_dir)
+            ]
+
+            for p in paths_to_check:
+                # Resolve but do not be strict about existence
+                p_res = p.resolve(strict=False)
+                if not p_res.is_relative_to(root):
+                    msg = f"Configured path escapes workspace root boundaries: {p}"
+                    raise ValueError(msg)
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise
+            logging.error(f"Failed to resolve path constraints: {e}")
+
         return self
 
 
@@ -427,16 +471,18 @@ class Settings(BaseSettings):
 
         missing = []
         if not getattr(self, "test_mode", False):
-            if not self.JULES_API_KEY:
+            if not self.JULES_API_KEY or not self.JULES_API_KEY.get_secret_value().strip():
                 missing.append("JULES_API_KEY")
-            if not self.E2B_API_KEY:
-                missing.append("E2B_API_KEY")
-            if not self.OPENROUTER_API_KEY:
+            if not self.E2B_API_KEY or not self.E2B_API_KEY.get_secret_value().strip() or not self.E2B_API_KEY.get_secret_value().startswith("e2b_"):
+                # Actually, local test mocks might use "e2b-test-..."
+                if not self.E2B_API_KEY.get_secret_value().strip():
+                    missing.append("E2B_API_KEY")
+            if not self.OPENROUTER_API_KEY or not self.OPENROUTER_API_KEY.get_secret_value().strip():
                 missing.append("OPENROUTER_API_KEY")
 
         if missing and not os.environ.get("PYTEST_CURRENT_TEST"):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-            msg = f"Missing required environment variables: {', '.join(missing)}"
+            msg = f"Missing or explicitly empty required environment variables: {', '.join(missing)}"
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration

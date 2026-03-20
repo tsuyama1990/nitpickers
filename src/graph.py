@@ -31,6 +31,12 @@ class GraphBuilder:
         if not self.nodes:
             msg = "Graph nodes are not initialized"
             raise ValueError(msg)
+        if not getattr(self.nodes, "architect_session_node", None):
+            msg = "architect_session_node is missing from Graph nodes"
+            raise ValueError(msg)
+        if not getattr(self.nodes, "architect_critic_node", None):
+            msg = "architect_critic_node is missing from Graph nodes"
+            raise ValueError(msg)
 
         workflow = StateGraph(CycleState)
 
@@ -59,6 +65,19 @@ class GraphBuilder:
         if not self.nodes:
             msg = "Graph nodes are not initialized"
             raise ValueError(msg)
+
+        required_nodes = [
+            "coder_session_node",
+            "sandbox_evaluate_node",
+            "auditor_node",
+            "committee_manager_node",
+            "coder_critic_node",
+            "uat_evaluate_node"
+        ]
+        for n in required_nodes:
+            if not getattr(self.nodes, n, None):
+                msg = f"{n} is missing from Graph nodes"
+                raise ValueError(msg)
 
         workflow = StateGraph(CycleState)
 

@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .config import settings
 from .domain_models import (
@@ -133,6 +133,20 @@ class CycleState(BaseModel):
     langgraph_triggers: list[Any] | None = None
     langgraph_path: tuple[Any, ...] | None = None
     langgraph_checkpoint: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _validate_state_consistency(self) -> "CycleState":
+        # Logical consistency cross-checks
+        if self.status == FlowStatus.COMPLETED and self.error is not None:
+            msg = "State status is COMPLETED but error field is not None"
+            raise ValueError(msg)
+
+        # Auditor index logical bounds
+        if self.current_auditor_index > settings.NUM_AUDITORS:
+            msg = f"Auditor index {self.current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
+            raise ValueError(msg)
+
+        return self
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
