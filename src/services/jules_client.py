@@ -108,7 +108,7 @@ class JulesClient:
 
     def _get_headers(self) -> dict[str, str]:
         # Reuse headers from api_client + auth if needed
-        headers = self.api_client.headers.copy()
+        headers = self.api_client._get_headers()
 
         if self.credentials:
             if not self.credentials.valid:

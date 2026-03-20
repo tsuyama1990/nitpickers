@@ -1,5 +1,6 @@
 import io
 import shlex
+from pathlib import Path
 
 from e2b_code_interpreter import Sandbox
 
@@ -19,14 +20,21 @@ class SandboxRunner:
             msg = "E2B_API_KEY environment variable is not set"
             raise ValueError(msg)
 
-        self.cwd = cwd or settings.sandbox.cwd
-        if not self.cwd:
+        cwd_to_use = cwd or settings.sandbox.cwd
+        if not cwd_to_use:
             msg = "Working directory must be specified"
             raise ValueError(msg)
 
-        if not self.cwd.startswith("/home/") and not self.cwd.startswith("/opt/"):
-            msg = f"Invalid sandbox working directory: {self.cwd}"
+        # Sanitize and validate path strictly
+        resolved_cwd = str(Path(cwd_to_use).resolve())
+        if not resolved_cwd.startswith("/home/") and not resolved_cwd.startswith("/opt/"):
+            msg = f"Invalid sandbox working directory: {resolved_cwd}"
             raise ValueError(msg)
+        if ".." in resolved_cwd:
+            msg = "Directory traversal not allowed in sandbox working directory"
+            raise ValueError(msg)
+
+        self.cwd = resolved_cwd
 
         self.sandbox_id = sandbox_id
         self.sandbox: Sandbox | None = None
@@ -75,33 +83,61 @@ class SandboxRunner:
                     raise RuntimeError(msg) from e
 
         if self.sandbox:
-            self.sandbox.commands.run(
-                shlex.join(["mkdir", "-p", self.cwd]), timeout=settings.sandbox.timeout
-            )
+            self.sandbox.commands.run(["mkdir", "-p", self.cwd], timeout=settings.sandbox.timeout)
             await self._sync_to_sandbox(self.sandbox)
 
             if settings.sandbox.install_cmd:
                 try:
-                    # Parse and re-join to safely escape potential command injection vectors
+                    # Parse and pass as list to prevent shell injection via string eval
                     parsed_cmd = shlex.split(settings.sandbox.install_cmd)
-                    safe_install_cmd = shlex.join(parsed_cmd)
                 except ValueError as e:
                     msg = f"Invalid install_cmd configuration: {e}"
                     raise ValueError(msg) from e
 
-                self.sandbox.commands.run(safe_install_cmd, timeout=settings.sandbox.timeout)
+                self.sandbox.commands.run(parsed_cmd, timeout=settings.sandbox.timeout)
 
-            self.sandbox.commands.run(
-                shlex.join(["mkdir", "-p", self.cwd]), timeout=settings.sandbox.timeout
-            )
+            self.sandbox.commands.run(["mkdir", "-p", self.cwd], timeout=settings.sandbox.timeout)
             await self._sync_to_sandbox(self.sandbox)
+
+    def _validate_command(self, cmd: list[str]) -> None:
+        if not cmd:
+            msg = "Command cannot be empty"
+            raise ValueError(msg)
+
+        allowed = False
+        base_cmd = cmd[0]
+        # Command whitelist
+        whitelist = [
+            "pytest",
+            "uv",
+            "ruff",
+            "mypy",
+            "git",
+            "python",
+            "python3",
+            "ls",
+            "cat",
+            "echo",
+            "pwd",
+            "pip",
+        ]
+
+        if base_cmd in whitelist:
+            allowed = True
+
+        if not allowed:
+            msg = f"Command '{base_cmd}' is not in the allowed whitelist."
+            raise ValueError(msg)
 
     async def run_command(
         self, cmd: list[str], check: bool = False, env: dict[str, str] | None = None
     ) -> tuple[str, str, int]:
         """
         Runs a shell command in the sandbox with retry logic.
+        Enforces a strict command whitelist to prevent execution of arbitrary, unsafe commands.
         """
+        self._validate_command(cmd)
+
         max_retries = settings.sandbox.max_retries
         stdout = ""
         stderr = ""
@@ -204,10 +240,8 @@ class SandboxRunner:
 
         sandbox.files.write(remote_path=remote_tar_path, data=tar_buffer)
 
-        import shlex
-
         sandbox.commands.run(
-            shlex.join(["tar", "-xzf", remote_tar_path, "-C", self.cwd]),
+            ["tar", "-xzf", remote_tar_path, "-C", self.cwd],
             timeout=settings.sandbox.timeout,
         )
         logger.info("Synced files to sandbox via tarball.")

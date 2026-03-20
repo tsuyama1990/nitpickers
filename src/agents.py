@@ -66,11 +66,11 @@ def _get_openrouter_api_key() -> str:
         except (OSError, UnicodeDecodeError) as e:
             logger.debug(f"Failed to read .env for OpenRouter key: {e}")
 
-    logger.warning(
-        "OPENROUTER_API_KEY is not set. Using dummy key 'sk-dummy'. "
-        "This will fail if real API calls are attempted."
-    )
-    return "sk-dummy"
+    if settings.test_mode:
+        return ""
+
+    msg = "OPENROUTER_API_KEY is not set but is required for OpenRouter models."
+    raise ValueError(msg)
 
 
 def get_model(model_name: str) -> Model | str:
@@ -82,12 +82,16 @@ def get_model(model_name: str) -> Model | str:
         real_model_name = model_name.replace("openrouter/", "", 1)
         api_key = _get_openrouter_api_key()
 
-        # OpenAIChatModel requires env var for OpenRouter if using provider="openrouter"
-        os.environ["OPENROUTER_API_KEY"] = api_key
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        provider = OpenAIProvider(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
 
         return OpenAIChatModel(
             model_name=real_model_name,
-            provider="openrouter",
+            provider=provider,
         )
 
     # If gemini/ prefix exists, or just return the string (let PydanticAI handle it)

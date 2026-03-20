@@ -1,10 +1,9 @@
 import json
 import os
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
+import httpx
 from dotenv import load_dotenv
 
 from src.config import settings
@@ -30,10 +29,9 @@ class JulesApiClient:
         if not self.api_key:
             self._ensure_api_key_or_raise()
 
-        self.headers: dict[str, str] = {
-            "x-goog-api-key": str(self.api_key or ""),
-            "Content-Type": "application/json",
-        }
+        # We store the api key securely on the object.
+        # We will dynamically build headers in requests to prevent leak.
+        self._api_key = str(self.api_key or "")
 
     def _try_load_key_from_env_file(self) -> None:
         try:
@@ -59,24 +57,44 @@ class JulesApiClient:
         )
         raise ValueError(msg)
 
+    def _get_headers(self) -> dict[str, str]:
+        """Returns headers specifically for making requests without exposing to logs easily."""
+        return {
+            "x-goog-api-key": self._api_key,
+            "Content-Type": "application/json",
+        }
+
     def _request(
-        self, method: str, endpoint: str, data: dict[str, Any] | None = None
+        self,
+        method: str,
+        endpoint: str,
+        data: dict[str, Any] | None = None,
+        params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         url = f"{self.BASE_URL}/{endpoint}"
-        body = json.dumps(data).encode("utf-8") if data else None
-        req = urllib.request.Request(url, method=method, headers=self.headers, data=body)  # noqa: S310
 
         try:
-            with urllib.request.urlopen(req) as response:  # noqa: S310
-                resp_body = response.read().decode("utf-8")
+            with httpx.Client(timeout=30.0) as client:
+                response = client.request(
+                    method,
+                    url,
+                    headers=self._get_headers(),
+                    json=data,
+                    params=params,
+                )
+
+                response.raise_for_status()
+
+                resp_body = response.text
                 return dict(json.loads(resp_body)) if resp_body else {}
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
                 msg = f"404 Not Found: {url}"
                 raise JulesApiError(msg) from e
-            err_msg = e.read().decode("utf-8")
-            logger.error(f"Jules API Error {e.code}: {err_msg}")
-            emsg = f"API request failed: {e.code} {err_msg}"
+            err_msg = e.response.text
+            logger.error(f"Jules API Error {e.response.status_code}: {err_msg}")
+            emsg = f"API request failed: {e.response.status_code} {err_msg}"
             raise JulesApiError(emsg) from e
         except Exception as e:
             logger.error(f"Network Error: {e}")
@@ -127,11 +145,12 @@ class JulesApiClient:
         page_token = ""
         try:
             while True:
-                url = f"{session_id_path}/activities?pageSize=100"
+                endpoint = f"{session_id_path}/activities"
+                params = {"pageSize": "100"}
                 if page_token:
-                    url += f"&pageToken={page_token}"
+                    params["pageToken"] = page_token
 
-                resp = self._request("GET", url)
+                resp = self._request("GET", endpoint, params=params)
                 acts = list(resp.get("activities", []))
                 if not acts:
                     break
@@ -149,18 +168,20 @@ class JulesApiClient:
 
     async def list_activities_async(self, session_id_path: str) -> list[dict[str, Any]]:
         """Async version of list_activities using httpx to avoid blocking the event loop."""
-        import httpx
 
         all_activities: list[dict[str, Any]] = []
         page_token = ""
         try:
             async with httpx.AsyncClient() as client:
                 while True:
-                    url = f"{self.BASE_URL}/{session_id_path}/activities?pageSize=100"
+                    url = f"{self.BASE_URL}/{session_id_path}/activities"
+                    params = {"pageSize": "100"}
                     if page_token:
-                        url += f"&pageToken={page_token}"
+                        params["pageToken"] = page_token
 
-                    resp = await client.get(url, headers=self.headers, timeout=10.0)
+                    resp = await client.get(
+                        url, params=params, headers=self._get_headers(), timeout=10.0
+                    )
                     if resp.status_code != 200:
                         logger.warning(
                             f"list_activities_async: unexpected status {resp.status_code}"

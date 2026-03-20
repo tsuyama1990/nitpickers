@@ -21,7 +21,8 @@ try:
     elif _root_env.exists():
         load_dotenv(_root_env, override=True)
     else:
-        load_dotenv()  # Try default locations
+        # Prevent completely open unverified loading
+        load_dotenv(Path.cwd() / ".env")
 except Exception:
     logging.exception("Could not load dotenv")
 
@@ -315,10 +316,6 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
         import os
-
-        from dotenv import load_dotenv
-
-        load_dotenv()
 
         missing = []
         if not getattr(self, "test_mode", False):
