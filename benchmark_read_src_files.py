@@ -1,8 +1,9 @@
-import time
 import shutil
-import cProfile
+import time
 from pathlib import Path
+
 from src.services.file_ops import FilePatcher
+
 
 def setup_dummy_files(num_files=50000, lines_per_file=100, dest_dir="dummy_src"):
     path = Path(dest_dir)
