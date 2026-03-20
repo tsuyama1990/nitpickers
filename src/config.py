@@ -72,35 +72,46 @@ class PathsConfig(BaseModel):
         return self
 
 
+DEFAULT_JULES_TIMEOUT_SECONDS = "7200"
+DEFAULT_JULES_POLL_INTERVAL_SECONDS = "120"
+DEFAULT_JULES_WAIT_FOR_PR_TIMEOUT_SECONDS = "900"
+DEFAULT_JULES_MAX_PLAN_REJECTIONS = "2"
+DEFAULT_JULES_MONITOR_BATCH_SIZE = "1"
+DEFAULT_JULES_MONITOR_POLL_INTERVAL_SECONDS = "30"
+DEFAULT_JULES_STALE_SESSION_TIMEOUT_SECONDS = "1800"
+DEFAULT_JULES_MAX_STALE_NUDGES = "3"
+DEFAULT_JULES_DISTRESS_KEYWORDS = "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input"
+
+
 class JulesConfig(BaseModel):
     executable: str = "jules"
     timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", DEFAULT_JULES_TIMEOUT_SECONDS))
     )
     polling_interval_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
+        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", DEFAULT_JULES_POLL_INTERVAL_SECONDS))
     )
     base_url: str = Field(
         default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha")
     )
     wait_for_pr_timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", "900"))
+        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", DEFAULT_JULES_WAIT_FOR_PR_TIMEOUT_SECONDS))
     )
     max_plan_rejections: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
+        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", DEFAULT_JULES_MAX_PLAN_REJECTIONS))
     )
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", "1")),
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", DEFAULT_JULES_MONITOR_BATCH_SIZE)),
         description="Number of polls per LangGraph node invocation (batch_size * monitor_poll_interval_seconds = seconds per step).",
     )
     monitor_poll_interval_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", "30")),
+        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", DEFAULT_JULES_MONITOR_POLL_INTERVAL_SECONDS)),
         description="Seconds between each poll within a monitor batch.",
     )
     stale_session_timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", "1800")),
+        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", DEFAULT_JULES_STALE_SESSION_TIMEOUT_SECONDS)),
         description=(
             "Seconds without a Jules state change before sending a nudge message. "
             "Jules sometimes enters a silent mode where IN_PROGRESS stays unchanged. "
@@ -109,7 +120,7 @@ class JulesConfig(BaseModel):
         ),
     )
     max_stale_nudges: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", "3")),
+        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", DEFAULT_JULES_MAX_STALE_NUDGES)),
         description="Maximum number of nudge messages to send before giving up and raising a timeout.",
     )
 
@@ -117,7 +128,7 @@ class JulesConfig(BaseModel):
     distress_keywords: list[str] = Field(
         default_factory=lambda: os.getenv(
             "JULES_DISTRESS_KEYWORDS",
-            "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input",
+            DEFAULT_JULES_DISTRESS_KEYWORDS,
         ).split(","),
         description=(
             "Keywords in Jules' last agentMessaged activity that indicate it is stuck or "
