@@ -29,11 +29,12 @@ def __():
 
 @app.cell
 def __():
+    import asyncio
     import os
     import tempfile
-    import pytest
     from pathlib import Path
-    import asyncio
+
+    import pytest
 
     # Mock Mode configuration
     os.environ["MOCK_LLM"] = "true"
@@ -233,8 +234,9 @@ def __(Path, artifacts_path, mo, os):
 def __(BaseModel, ConfigDict, artifact, mo):
     mo.md("## Scenario 5: The Auditor Recovery Loop")
 
-    from pydantic import Field
     import json
+
+    from pydantic import Field
 
     # Exact replica of FixPlanSchema
     class FixPlanSchema(BaseModel):

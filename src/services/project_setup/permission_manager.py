@@ -1,6 +1,6 @@
-import itertools
 import os
 import pwd
+import typing
 from pathlib import Path
 
 from src.utils import logger
@@ -46,15 +46,31 @@ class PermissionManager:
                 except KeyError:
                     pass
 
+        def _walk(p: str) -> typing.Iterator[tuple[str, bool]]:
+            yield p, Path(p).is_dir()
+            try:
+                for entry in os.scandir(p):
+                    try:
+                        is_dir_no_sym = entry.is_dir(follow_symlinks=False)
+                        is_dir_with_sym = entry.is_dir(follow_symlinks=True)
+                    except OSError:
+                        continue
+                    if is_dir_no_sym:
+                        yield from _walk(entry.path)
+                    else:
+                        yield entry.path, is_dir_with_sym
+            except (PermissionError, OSError):
+                pass
+
         if uid is not None and gid is not None and uid != 0:
             try:
                 for path in paths:
                     if path.exists():
-                        for item in itertools.chain([path], path.rglob("*")):
+                        for item_path, _ in _walk(str(path)):
                             try:
-                                os.chown(item, uid, gid)
+                                os.chown(item_path, uid, gid)
                             except (PermissionError, OSError) as e:
-                                logger.debug(f"Could not fix ownership for {item}: {e}")
+                                logger.debug(f"Could not fix ownership for {item_path}: {e}")
                 logger.info(f"✓ Fixed file ownership for {target_user}")
             except Exception as e:
                 logger.debug(f"Could not chown: {e}")
@@ -62,14 +78,14 @@ class PermissionManager:
         try:
             for path in paths:
                 if path.exists():
-                    for item in itertools.chain([path], path.rglob("*")):
+                    for item_path, is_dir in _walk(str(path)):
                         try:
-                            if item.is_dir():
-                                item.chmod(0o777)
+                            if is_dir:
+                                os.chmod(item_path, 0o777)  # noqa: S103, PTH101
                             else:
-                                item.chmod(0o666)
+                                os.chmod(item_path, 0o666)  # noqa: S103, PTH101
                         except (PermissionError, OSError) as e:
-                            logger.debug(f"Could not relax permissions for {item}: {e}")
+                            logger.debug(f"Could not relax permissions for {item_path}: {e}")
             logger.debug("✓ Set permissive file permissions (rw-rw-rw-)")
         except Exception as e:
             logger.debug(f"Could not fix permissions via chmod: {e}")

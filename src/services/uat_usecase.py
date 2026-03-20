@@ -72,6 +72,7 @@ class UatUseCase:
                     continue
 
                 zip_path = artifacts_dir / f"{base_name}_trace.zip"
+                dom_path = artifacts_dir / f"{base_name}_dom.txt"
 
                 if img_path.exists():
                     try:
@@ -79,6 +80,7 @@ class UatUseCase:
                             test_id=base_name,
                             screenshot_path=str(img_path),
                             trace_path=str(zip_path) if zip_path.exists() else None,
+                            dom_snapshot_path=str(dom_path) if dom_path.exists() else None,
                             console_logs=[],
                             traceback=(
                                 stderr[-settings.uat.traceback_limit :]
@@ -116,6 +118,11 @@ class UatUseCase:
             if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
                 msg = f"Dangerous character detected in command argument: {arg}"
                 raise ValueError(msg)
+
+        # Ensure a clean state before executing dynamic UAT
+        if getattr(settings.uat, "db_reset_cmd", None):
+            logger.debug("Resetting sandbox database state...")
+            await runner.run_command(shlex.split(settings.uat.db_reset_cmd), check=True)
 
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)

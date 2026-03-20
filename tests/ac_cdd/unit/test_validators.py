@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.domain_models import ProjectManifest
-from src.validators import SessionValidator, ValidationError
+from src.validators import CompositeValidator, SessionValidator, ValidationError
 
 
 @pytest.mark.asyncio
@@ -87,3 +87,43 @@ class TestSessionValidator:
         validator = SessionValidator("s1", "dev/s1", check_remote=False)
         with pytest.raises(ValidationError):
             await validator.raise_if_invalid()
+
+
+@pytest.mark.asyncio
+class TestCompositeValidator:
+    async def test_composite_validator_empty(self) -> None:
+        validator = CompositeValidator([])
+        is_valid, err = await validator.validate()
+        assert is_valid
+        assert err == ""
+
+    async def test_composite_validator_all_pass(self) -> None:
+        mock_validator1 = AsyncMock()
+        mock_validator1.validate.return_value = (True, "")
+        mock_validator2 = AsyncMock()
+        mock_validator2.validate.return_value = (True, "")
+
+        validator = CompositeValidator([mock_validator1, mock_validator2])
+        is_valid, err = await validator.validate()
+
+        assert is_valid
+        assert err == ""
+        mock_validator1.validate.assert_awaited_once()
+        mock_validator2.validate.assert_awaited_once()
+
+    async def test_composite_validator_failure(self) -> None:
+        mock_validator1 = AsyncMock()
+        mock_validator1.validate.return_value = (True, "")
+        mock_validator2 = AsyncMock()
+        mock_validator2.validate.return_value = (False, "validator2 failed")
+        mock_validator3 = AsyncMock()
+        mock_validator3.validate.return_value = (False, "validator3 failed")
+
+        validator = CompositeValidator([mock_validator1, mock_validator2, mock_validator3])
+        is_valid, err = await validator.validate()
+
+        assert not is_valid
+        assert err == "validator2 failed"
+        mock_validator1.validate.assert_awaited_once()
+        mock_validator2.validate.assert_awaited_once()
+        mock_validator3.validate.assert_not_awaited()

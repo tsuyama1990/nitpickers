@@ -27,6 +27,7 @@ async def test_uat_usecase_dynamic_execution_success(
     mock_process_runner.run_command = AsyncMock(return_value=("pytest success", "", 0, False))
     mock_process_runner_cls.return_value = mock_process_runner
     mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
+    mock_settings.uat.db_reset_cmd = None
 
     state = CycleState(
         cycle_id="01", current_phase=WorkPhase.CODER
@@ -62,6 +63,7 @@ async def test_uat_usecase_dynamic_execution_failure(
     )
     mock_process_runner_cls.return_value = mock_process_runner
     mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
+    mock_settings.uat.db_reset_cmd = None
 
     artifacts_dir = tmp_path / "artifacts"
     artifacts_dir.mkdir()

@@ -20,7 +20,9 @@ def mock_executor() -> Any:
 
 @pytest.fixture
 def base_state() -> CycleState:
-    return CycleState(cycle_id="test_cycle", sandbox_id="test_sandbox_123")
+    state = CycleState(cycle_id="01")
+    state.sandbox_id = "test_sandbox_123"
+    return state
 
 
 @pytest.mark.asyncio

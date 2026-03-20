@@ -9,6 +9,7 @@ class MultiModalArtifact(BaseModel):
     test_id: str
     screenshot_path: str
     trace_path: str | None = None
+    dom_snapshot_path: str | None = None
     console_logs: list[str]
     traceback: str
 
@@ -20,5 +21,8 @@ class MultiModalArtifact(BaseModel):
             raise ValueError(msg)
         if self.trace_path is not None and not Path(self.trace_path).exists():
             msg = f"Trace file not found: {self.trace_path}"
+            raise ValueError(msg)
+        if self.dom_snapshot_path is not None and not Path(self.dom_snapshot_path).exists():
+            msg = f"DOM snapshot file not found: {self.dom_snapshot_path}"
             raise ValueError(msg)
         return self
