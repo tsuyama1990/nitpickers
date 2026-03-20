@@ -107,7 +107,7 @@ def test_pytest_runtest_makereport_hook_failure_with_page(
     artifacts_dir = screenshot.parent
 
     # Patch the artifacts dir inside conftest
-    monkeypatch.setattr(conftest, "ARTIFACTS_DIR", artifacts_dir)
+    monkeypatch.setattr(conftest.settings.paths, "artifacts_dir", artifacts_dir)
 
     mock_outcome = MagicMock()
     mock_report = MagicMock()

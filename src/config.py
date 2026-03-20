@@ -184,6 +184,18 @@ class ToolsConfig(BaseModel):
     )
 
 
+class UATConfig(BaseModel):
+    playwright_args: list[str] = Field(
+        default_factory=lambda: [
+            "--browser=chromium",
+            "--tracing=on",
+            f"-c={Path.cwd() / 'pyproject.toml'}",
+            f"--confcutdir={Path.cwd()}",
+            f"--rootdir={Path.cwd()}",
+        ]
+    )
+
+
 class SandboxConfig(BaseModel):
     """Configuration for E2B Sandbox execution"""
 
@@ -320,6 +332,7 @@ class Settings(BaseSettings):
     paths: PathsConfig = Field(default_factory=PathsConfig)
     jules: JulesConfig = Field(default_factory=JulesConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
+    uat: UATConfig = Field(default_factory=UATConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)

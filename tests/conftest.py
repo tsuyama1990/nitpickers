@@ -7,8 +7,6 @@ import pytest
 from src.config import settings
 from src.domain_models import MultiModalArtifact
 
-ARTIFACTS_DIR = settings.paths.artifacts_dir
-
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(
@@ -24,12 +22,13 @@ def pytest_runtest_makereport(
         page = getattr(item, "funcargs", {}).get("page")
         if page:
             # Ensure artifacts directory exists
-            ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+            artifacts_dir = settings.paths.artifacts_dir
+            artifacts_dir.mkdir(parents=True, exist_ok=True)
 
             # Create a safe filename based on the test nodeid
             safe_name = re.sub(r"[^\w\-_\.]", "_", item.nodeid)
-            screenshot_path = ARTIFACTS_DIR / f"{safe_name}.png"
-            trace_path = ARTIFACTS_DIR / f"{safe_name}_trace.zip"
+            screenshot_path = artifacts_dir / f"{safe_name}.png"
+            trace_path = artifacts_dir / f"{safe_name}_trace.zip"
 
             # Extract console logs if they were captured by the test
             # The developer must attach console messages to the page context,
