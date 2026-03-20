@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .config import settings
 from .domain_models import (
@@ -10,6 +10,7 @@ from .domain_models import (
     FileOperation,
     StructuralGateReport,
     UatAnalysis,
+    UatExecutionState,
 )
 from .enums import FlowStatus, WorkPhase
 
@@ -51,6 +52,7 @@ class CycleState(BaseModel):
     test_logs: str = ""
     test_exit_code: int | None = None
     uat_analysis: UatAnalysis | None = None
+    uat_execution_state: UatExecutionState | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
     conflict_status: FlowStatus | None = None
     concurrent_dependencies: list[str] = Field(default_factory=list)
@@ -90,9 +92,22 @@ class CycleState(BaseModel):
     requested_cycle_count: int | None = None  # User-requested cycle count from CLI
 
     # Validators
+    @field_validator("cycle_id")
+    @classmethod
+    def validate_cycle_id(cls, v: str) -> str:
+        import re
+
+        if not re.match(r"^\d{2}$", v):
+            msg = f"cycle_id '{v}' is invalid (must be exactly two digits, e.g., '01')"
+            raise ValueError(msg)
+        return v
+
     @field_validator("current_auditor_index")
     @classmethod
     def validate_auditor_index(cls, v: int) -> int:
+        if v < 1:
+            msg = f"Auditor index {v} must be greater than or equal to 1"
+            raise ValueError(msg)
         if v > settings.NUM_AUDITORS:
             msg = f"Auditor index {v} exceeds NUM_AUDITORS={settings.NUM_AUDITORS}"
             raise ValueError(msg)
@@ -101,6 +116,9 @@ class CycleState(BaseModel):
     @field_validator("current_auditor_review_count")
     @classmethod
     def validate_review_count(cls, v: int) -> int:
+        if v < 1:
+            msg = f"Review count {v} must be greater than or equal to 1"
+            raise ValueError(msg)
         if v > settings.REVIEWS_PER_AUDITOR:
             msg = f"Review count {v} exceeds REVIEWS_PER_AUDITOR={settings.REVIEWS_PER_AUDITOR}"
             raise ValueError(msg)
@@ -115,6 +133,20 @@ class CycleState(BaseModel):
     langgraph_triggers: list[Any] | None = None
     langgraph_path: tuple[Any, ...] | None = None
     langgraph_checkpoint: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def _validate_state_consistency(self) -> "CycleState":
+        # Logical consistency cross-checks
+        if self.status == FlowStatus.COMPLETED and self.error is not None:
+            msg = "State status is COMPLETED but error field is not None"
+            raise ValueError(msg)
+
+        # Auditor index logical bounds
+        if self.current_auditor_index > settings.NUM_AUDITORS:
+            msg = f"Auditor index {self.current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
+            raise ValueError(msg)
+
+        return self
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 

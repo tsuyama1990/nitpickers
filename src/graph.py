@@ -28,6 +28,16 @@ class GraphBuilder:
 
     def _create_architect_graph(self) -> StateGraph[CycleState]:
         """Create the graph for the Architect phase (gen-cycles)."""
+        if not self.nodes:
+            msg = "Graph nodes are not initialized"
+            raise ValueError(msg)
+        if not getattr(self.nodes, "architect_session_node", None):
+            msg = "architect_session_node is missing from Graph nodes"
+            raise ValueError(msg)
+        if not getattr(self.nodes, "architect_critic_node", None):
+            msg = "architect_critic_node is missing from Graph nodes"
+            raise ValueError(msg)
+
         workflow = StateGraph(CycleState)
 
         workflow.add_node("architect_session", self.nodes.architect_session_node)
@@ -52,6 +62,23 @@ class GraphBuilder:
 
     def _create_coder_graph(self) -> StateGraph[CycleState]:
         """Create the graph for the Coder/Auditor phase (run-cycle)."""
+        if not self.nodes:
+            msg = "Graph nodes are not initialized"
+            raise ValueError(msg)
+
+        required_nodes = [
+            "coder_session_node",
+            "sandbox_evaluate_node",
+            "auditor_node",
+            "committee_manager_node",
+            "coder_critic_node",
+            "uat_evaluate_node",
+        ]
+        for n in required_nodes:
+            if not getattr(self.nodes, n, None):
+                msg = f"{n} is missing from Graph nodes"
+                raise ValueError(msg)
+
         workflow = StateGraph(CycleState)
 
         from src.config import settings
@@ -121,6 +148,7 @@ class GraphBuilder:
             self.nodes.route_uat,
             {
                 "coder_session": "coder_session",
+                "auditor": "auditor",
                 "end": END,
             },
         )

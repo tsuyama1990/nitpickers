@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,18 +13,30 @@ from src.domain_models.tracing import LangSmithConfig
 
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
-    try:
-        # First priority: strict .ac_cdd environment block
-        _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-        # Optional root environment fallback, must be directly within cwd
-        _root_env = Path.cwd() / ".env"
+    """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
+    load_dotenv(override=True)
 
-        if _ac_cdd_env.is_relative_to(Path.cwd()) and _ac_cdd_env.exists():
-            load_dotenv(_ac_cdd_env, override=True)
-        elif _root_env.is_relative_to(Path.cwd()) and _root_env.exists():
-            load_dotenv(_root_env, override=True)
-    except Exception:
-        logging.exception("Could not safely load dotenv")
+    _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+
+    if _ac_cdd_env.exists():
+        if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
+            msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+            raise ValueError(msg)
+
+        allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+        dangerous_chars = (";", "&", "|", "$", "`", "\n")
+        env_vars = dotenv_values(_ac_cdd_env)
+        for key, value in env_vars.items():
+            if any(key.startswith(prefix) for prefix in allowed_prefixes):
+                if value is not None:
+                    if any(char in value for char in dangerous_chars):
+                        logging.warning(
+                            f"Ignoring environment variable {key} containing dangerous shell characters."
+                        )
+                        continue
+                    os.environ[key] = value
+            else:
+                logging.warning(f"Ignoring unauthorized environment variable: {key}")
 
 
 _load_env()
@@ -41,15 +53,8 @@ def _is_safe_path(p: Path) -> bool:
     """Validates that a path does not contain traversal characters and is within expected bounds."""
     try:
         resolved = p.resolve()
-        # Accept if within cwd OR in a common safe root like /opt/
         if resolved.is_relative_to(Path.cwd()):
             return True
-
-        # We also allow /opt/ and /home/ configurations if strictly validated
-        allowed_prefixes = os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/opt/,/home/").split(",")
-        for prefix in allowed_prefixes:
-            if prefix and str(resolved).startswith(prefix):
-                return True
     except (ValueError, RuntimeError):
         pass
     return False
@@ -59,8 +64,10 @@ def _check_env_pkg_dir() -> str | None:
     env_pkg_dir = os.getenv("PACKAGE_DIR")
     if env_pkg_dir:
         resolved_pkg = Path(env_pkg_dir)
-        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve().exists():
-            return str(resolved_pkg.resolve())
+        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve(strict=True).is_relative_to(
+            Path.cwd()
+        ):
+            return str(resolved_pkg.resolve(strict=True))
     return None
 
 
@@ -68,8 +75,10 @@ def _check_docker_src_path() -> str | None:
     docker_src_path = os.getenv("DOCKER_SRC_PATH")
     if docker_src_path:
         docker_path = Path(docker_src_path)
-        if _is_safe_path(docker_path) and docker_path.resolve().exists():
-            return str(docker_path.resolve())
+        if _is_safe_path(docker_path) and docker_path.resolve(strict=True).is_relative_to(
+            Path.cwd()
+        ):
+            return str(docker_path.resolve(strict=True))
     return None
 
 
@@ -77,8 +86,8 @@ def _check_dev_src_path() -> str | None:
     dev_src_path = os.getenv("DEV_SRC_PATH")
     if dev_src_path:
         src_path = Path(dev_src_path)
-        if _is_safe_path(src_path) and src_path.resolve().exists():
-            for p in src_path.resolve().iterdir():
+        if _is_safe_path(src_path) and src_path.resolve(strict=True).is_relative_to(Path.cwd()):
+            for p in src_path.resolve(strict=True).iterdir():
                 if p.is_dir() and (p / "__init__.py").exists():
                     return str(p)
     return None
@@ -101,14 +110,24 @@ def _detect_package_dir() -> str:
     default_src_dir = os.getenv("DEFAULT_SRC_DIR")
     if default_src_dir:
         resolved = Path(default_src_dir)
-        if _is_safe_path(resolved) and resolved.resolve().exists():
-            return str(resolved.resolve())
+        if _is_safe_path(resolved) and not resolved.is_symlink():
+            strict_resolved = None
+            try:
+                strict_resolved = resolved.resolve(strict=True)
+            except Exception as e:
+                logging.debug(f"Failed to resolve default src dir {resolved}: {e}")
+
+            if strict_resolved:
+                if not strict_resolved.is_relative_to(Path.cwd()):
+                    msg = f"Directory {strict_resolved} escapes boundaries"
+                    raise ValueError(msg)
+                return str(strict_resolved)
 
     src_fallback = Path.cwd() / "src"
-    if src_fallback.exists() and src_fallback.is_dir():
-        return str(src_fallback)
+    if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
+        return str(src_fallback.resolve(strict=True))
 
-    msg = "Could not resolve package directory. Ensure PACKAGE_DIR, DEV_SRC_PATH, DOCKER_SRC_PATH, or DEFAULT_SRC_DIR is set and points to a valid Python package."
+    msg = "Could not resolve package directory safely."
     raise ValueError(msg)
 
 
@@ -128,6 +147,36 @@ class PathsConfig(BaseModel):
     def _set_dependent_paths(self) -> "PathsConfig":
         if not self.contracts_dir:
             self.contracts_dir = f"{self.package_dir}/contracts"
+
+        # Security validation to ensure all paths are within project boundaries
+        root = self.workspace_root.resolve(strict=False)
+
+        paths_to_check = [
+            self.documents_dir,
+            Path(self.package_dir),
+            Path(self.contracts_dir),
+            self.artifacts_dir,
+            Path(self.sessions_dir),
+            self.src,
+            self.tests,
+            self.templates,
+            Path(self.prompts_dir),
+        ]
+
+        escaped_paths = []
+        for p in paths_to_check:
+            # Resolve but do not be strict about existence
+            try:
+                p_res = p.resolve(strict=False)
+                if not p_res.is_relative_to(root):
+                    escaped_paths.append(str(p))
+            except Exception as e:
+                logging.debug(f"Failed to check path {p}: {e}")
+
+        if escaped_paths:
+            msg = f"Configured paths escape workspace root boundaries: {escaped_paths}"
+            raise ValueError(msg)
+
         return self
 
 
@@ -234,6 +283,7 @@ class ToolsConfig(BaseModel):
 
 
 class UATConfig(BaseModel):
+    test_cmd: str = Field(default="uv run pytest tests/uat/")
     playwright_args: list[str] = Field(
         default_factory=lambda: [
             "--browser=chromium",
@@ -243,6 +293,7 @@ class UATConfig(BaseModel):
             f"--rootdir={Path.cwd()}",
         ]
     )
+    traceback_limit: int = Field(default=1000)
 
 
 class SandboxConfig(BaseModel):
@@ -434,16 +485,21 @@ class Settings(BaseSettings):
 
         missing = []
         if not getattr(self, "test_mode", False):
-            if not self.JULES_API_KEY:
+            if not self.JULES_API_KEY or not self.JULES_API_KEY.get_secret_value().strip():
                 missing.append("JULES_API_KEY")
-            if not self.E2B_API_KEY:
+            if not self.E2B_API_KEY or not self.E2B_API_KEY.get_secret_value().strip():
                 missing.append("E2B_API_KEY")
-            if not self.OPENROUTER_API_KEY:
+            if (
+                not self.OPENROUTER_API_KEY
+                or not self.OPENROUTER_API_KEY.get_secret_value().strip()
+            ):
                 missing.append("OPENROUTER_API_KEY")
 
         if missing and not os.environ.get("PYTEST_CURRENT_TEST"):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-            msg = f"Missing required environment variables: {', '.join(missing)}"
+            msg = (
+                f"Missing or explicitly empty required environment variables: {', '.join(missing)}"
+            )
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration

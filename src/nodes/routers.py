@@ -4,11 +4,11 @@ from src.state import CycleState
 
 
 def check_coder_outcome(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
         return str(FlowStatus.FAILED.value)
 
-    if state.get("final_fix", False):
+    if getattr(state, "final_fix", False):
         return str(FlowStatus.COMPLETED.value)
 
     if status == FlowStatus.CODER_RETRY:
@@ -19,7 +19,7 @@ def check_coder_outcome(state: CycleState) -> str:
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status == FlowStatus.READY_FOR_AUDIT:
         return "auditor"
     if status == FlowStatus.TDD_FAILED:
@@ -32,7 +32,7 @@ def check_audit_outcome(_state: CycleState) -> str:
 
 
 def route_committee(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status == FlowStatus.NEXT_AUDITOR:
         return "auditor"
     if status == FlowStatus.CYCLE_APPROVED:
@@ -47,23 +47,25 @@ def route_committee(state: CycleState) -> str:
 
 
 def route_uat(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status == FlowStatus.START_REFACTOR:
         return "coder_session"
     if status == FlowStatus.COMPLETED:
         return "end"
+    if status == FlowStatus.UAT_FAILED:
+        return "auditor"
     return "end"
 
 
 def route_coder_critic(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status == FlowStatus.CODER_RETRY:
         return "coder_session"
     return settings.node_uat_evaluate
 
 
 def route_qa(state: CycleState) -> str:
-    status = state.get("status")
+    status = getattr(state, "status", None)
     if status == FlowStatus.APPROVED:
         return "end"
     if status == FlowStatus.REJECTED:
