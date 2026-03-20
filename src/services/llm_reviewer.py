@@ -1,7 +1,10 @@
+import base64
+
+import anyio
 import litellm
 from pydantic import ValidationError
 
-from src.domain_models import AuditorReport
+from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
 from src.utils import logger
 
 
@@ -20,6 +23,42 @@ class LLMReviewer:
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
 
+    async def _validate_paths(
+        self, target_files: dict[str, str], context_docs: dict[str, str]
+    ) -> str | None:
+        if not target_files:
+            logger.warning("review_code called with empty target_files dictionary.")
+            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
+
+        import pathlib
+
+        import anyio
+
+        cwd = await anyio.Path(pathlib.Path.cwd()).resolve(strict=False)
+
+        async def _is_path_safe(p: str) -> bool:
+            if ".." in p:
+                return False
+            try:
+                p_path = anyio.Path(p)
+                resolved = await p_path.resolve(strict=False)
+                return resolved.is_relative_to(cwd)
+            except Exception as e:
+                logger.debug(f"Path resolution failed for {p}: {e}")
+                return False
+
+        for path in list(target_files.keys()):
+            if not await _is_path_safe(path):
+                logger.warning(f"review_code rejecting invalid target file path: {path}")
+                return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {path}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
+
+        for path in list(context_docs.keys()):
+            if not await _is_path_safe(path):
+                logger.warning(f"review_code rejecting invalid context doc path: {path}")
+                del context_docs[path]
+
+        return None
+
     async def review_code(
         self,
         target_files: dict[str, str],
@@ -31,6 +70,11 @@ class LLMReviewer:
         Sends file contents and instructions to the LLM for review.
         Validates the output strictly against the AuditorReport Pydantic schema.
         """
+
+        validation_error = await self._validate_paths(target_files, context_docs)
+        if validation_error:
+            return validation_error
+
         total_files = len(target_files) + len(context_docs)
         logger.info(
             f"LLMReviewer: preparing structured review for {total_files} files using model {model}"
@@ -56,7 +100,6 @@ class LLMReviewer:
                         },
                         {"role": "user", "content": prompt},
                     ],
-                    response_format=AuditorReport,
                     temperature=0.0,  # Deterministic output for reviews
                     max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
                 )
@@ -74,6 +117,94 @@ class LLMReviewer:
                     return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
+
+    async def diagnose_uat_failure(
+        self,
+        uat_state: UatExecutionState,
+        instruction: str,
+        model: str,
+    ) -> FixPlanSchema:
+        """
+        Stateless diagnostic outer loop. Analyzes UAT execution logs and Multi-Modal artifacts
+        to provide a highly specific FixPlanSchema.
+        """
+        logger.info(f"LLMReviewer: starting UAT failure diagnosis using {model}")
+
+        from src.utils_sanitization import sanitize_for_llm
+
+        # Robust sanitization to prevent prompt injection and handle API payloads securely
+        safe_stdout = sanitize_for_llm(uat_state.stdout)
+        safe_stderr = sanitize_for_llm(uat_state.stderr)
+        safe_instruction = sanitize_for_llm(instruction)
+
+        content_parts: list[dict[str, str | dict[str, str]]] = [
+            {
+                "type": "text",
+                "text": f"{safe_instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{safe_stdout}\n```\n\n## Stderr\n```\n{safe_stderr}\n```\n",
+            }
+        ]
+
+        # Attach multimodal artifacts
+        for artifact in uat_state.artifacts:
+            try:
+                img_path = anyio.Path(artifact.screenshot_path)
+                if await img_path.exists():
+                    img_data = await img_path.read_bytes()
+                    encoded = base64.b64encode(img_data).decode("utf-8")
+                    content_parts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{encoded}"},
+                        }
+                    )
+                    safe_traceback = sanitize_for_llm(artifact.traceback)
+                    content_parts.append(
+                        {
+                            "type": "text",
+                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
+
+        for attempt in range(3):
+            try:
+                response = await litellm.acompletion(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
+                        },
+                        {"role": "user", "content": content_parts},
+                    ],
+                    response_format=FixPlanSchema,
+                    temperature=0.0,
+                    max_tokens=8192,
+                )
+
+                content_str = response.choices[0].message.content
+                if not content_str:
+                    pass  # We'll just try again, it's inside the loop
+                else:
+                    return FixPlanSchema.model_validate_json(content_str)
+            except (ValidationError, Exception) as e:
+                logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
+                if attempt == 2:
+                    logger.error("diagnose_uat_failure failed completely after 3 attempts.")
+                    # Fallback schema to not break the pipeline entirely, though we ideally raise
+                    return FixPlanSchema(
+                        target_file="Unknown",
+                        defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
+                        git_diff_patch="Please review the UAT logs manually and provide a fix.",
+                    )
+
+        # Unreachable but mypy needs it
+        return FixPlanSchema(
+            target_file="Unknown",
+            defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
+            git_diff_patch="Please review the UAT logs manually.",
+        )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:
         """Converts the deeply nested AuditorReport Pydantic object into a clean Markdown string for the Coder."""

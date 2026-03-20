@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: langsmith-0.7.22, base-url-2.1.0, cov-7.0.0, playwright-0.7.2, asyncio-1.3.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 71 items
+
+tests/unit/project_setup/test_template_manager.py ........               [ 11%]
+tests/unit/test_ast_analyzer.py ....                                     [ 16%]
+tests/unit/test_conflict.py ...                                          [ 21%]
+tests/unit/test_cycle01_observability.py .......                         [ 30%]
+tests/unit/test_cycle03_mechanical_gate.py ......                        [ 39%]
+tests/unit/test_cycle04_playwright_capture.py .....                      [ 46%]
+tests/unit/test_cycle05_dynamic_execution.py ..                          [ 49%]
+tests/unit/test_dispatcher.py ......                                     [ 57%]
+tests/unit/test_domain_models.py .....                                   [ 64%]
+tests/unit/test_e2b_executor.py ....                                     [ 70%]
+tests/unit/test_integration_usecase.py ...                               [ 74%]
+tests/unit/test_permission_manager.py ...                                [ 78%]
+tests/unit/test_refactor_usecase.py ...                                  [ 83%]
+tests/unit/test_sandbox_evaluator.py

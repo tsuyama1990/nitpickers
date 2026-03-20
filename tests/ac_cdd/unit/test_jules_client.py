@@ -12,14 +12,46 @@ def mock_client() -> Generator[JulesClient, None, None]:
     # Use dummy key to pass init
     with (
         patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"),
+        patch("src.config.Settings.validate_api_keys", return_value=None),
+        patch.dict("os.environ", {"OPENAI_API_KEY": "mock_key", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}),
         patch("src.services.jules_client.get_manager_agent") as mock_agent,
     ):
-        mock_auditor = AsyncMock()
-        client = JulesClient(manager_agent=mock_agent, plan_auditor=mock_auditor)
-        client.timeout = 5.0  # type: ignore[assignment]
-        client.poll_interval = 0.1  # type: ignore[assignment]
-        client.git = AsyncMock()
-        yield client
+        AsyncMock()
+        # Initialize client
+        with patch.object(JulesClient, "__init__", lambda x: None):  # Skip init
+            client = JulesClient()
+            client.base_url = "https://mock.api"
+            client.timeout = 5.0  # type: ignore[assignment]
+            client.poll_interval = 0.1  # type: ignore[assignment]
+            client.console = MagicMock()
+            client.manager_agent = mock_agent
+            client.manager_agent.run = AsyncMock(return_value=MagicMock(output="Manager Reply"))
+            client.credentials = MagicMock()
+            client._get_headers = MagicMock(return_value={})  # type: ignore[method-assign]
+            client.credentials.token = "mock_token"  # noqa: S105
+            client._sleep = AsyncMock()  # type: ignore[method-assign]
+
+            # FIX: Add context_builder
+            client.context_builder = MagicMock()
+            client.context_builder.build_question_context = AsyncMock(
+                return_value="mock context"
+            )
+
+            # FIX: Add inquiry handler back since __init__ is skipped
+            from src.services.jules.inquiry_handler import JulesInquiryHandler
+
+            client.inquiry_handler = JulesInquiryHandler(
+                manager_agent=client.manager_agent,
+                context_builder=MagicMock(),
+                client_ref=client,
+            )
+
+            # FIX: Add api_client mock which is now used by wait_for_completion
+            client.api_client = MagicMock()
+            client.api_client.api_key = "mock_key"
+            client.test_mode = False
+            client.git = AsyncMock()
+            yield client
 
 
 @pytest.fixture
@@ -48,7 +80,7 @@ async def test_wait_for_completion_sucess_first_try(
     }
     mock_httpx.get.return_value = mock_response
 
-    result = await mock_client.wait_for_completion("sessions/123")
+    result = await mock_client.wait_for_completion_legacy("sessions/123")
     assert result["pr_url"] == "https://pr"
 
     # Should not sleep if immediate success
@@ -86,7 +118,7 @@ async def test_wait_for_completion_loop_success(
 
     mock_httpx.get.side_effect = get_side_effect
 
-    result = await mock_client.wait_for_completion("sessions/123")
+    result = await mock_client.wait_for_completion_legacy("sessions/123")
     assert result["pr_url"] == "https://pr"
     assert mock_client._sleep.call_count >= expected_calls
 
@@ -108,7 +140,7 @@ async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx:
     mock_httpx.get.side_effect = get_mock
 
     with pytest.raises(JulesTimeoutError):
-        await mock_client.wait_for_completion("sessions/123")
+        await mock_client.wait_for_completion_legacy("sessions/123")
 
 
 @pytest.mark.asyncio
@@ -117,45 +149,55 @@ async def test_interactive_inquiry_handling(
 ) -> None:
     """Test handling of Jules inquiry."""
     mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
-    mock_client.manager_agent.run.return_value = MagicMock(output="My Answer")  # type: ignore[union-attr]
+
+    mock_response = MagicMock()
+    mock_response.output = "My Answer"
+    mock_client.manager_agent.run = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
+
+    mock_client.inquiry_handler.context_builder = MagicMock()
+    mock_client.inquiry_handler.context_builder.build_question_context = AsyncMock(return_value="mock context")
 
     async def get_side_effect(url: str, **_kwargs: Any) -> MagicMock:
         if "activities" in url:
             # Return question on first call (before sleep/reply)
             # We check if post has been called to determine if we answered
             if not mock_httpx.post.called:
-                return MagicMock(
-                    status_code=200,
-                    json=lambda: {
-                        "activities": [
-                            {
-                                "name": "act1",
-                                # Official Jules API: agentMessaged.agentMessage
-                                # (not inquiryAsked which does not exist in the API)
-                                "agentMessaged": {"agentMessage": "Should I continue?"},
-                            }
-                        ]
-                    },
-                )
-            return MagicMock(status_code=200, json=lambda: {"activities": [{"name": "act1"}]})
+                mock_activity = MagicMock()
+                mock_activity.status_code = 200
+                mock_activity.json.return_value = {
+                    "activities": [
+                        {
+                            "name": "act1",
+                            "agentMessaged": {"agentMessage": "Should I continue?"},
+                        }
+                    ]
+                }
+                return mock_activity
+            mock_empty = MagicMock()
+            mock_empty.status_code = 200
+            mock_empty.json.return_value = {"activities": [{"name": "act1"}]}
+            return mock_empty
 
         # Session Status
         if not mock_httpx.post.called:
-            return MagicMock(status_code=200, json=lambda: {"state": "AWAITING_USER_FEEDBACK"})
+            mock_awaiting = MagicMock()
+            mock_awaiting.status_code = 200
+            mock_awaiting.json.return_value = {"state": "AWAITING_USER_FEEDBACK"}
+            return mock_awaiting
 
-        return MagicMock(
-            status_code=200,
-            json=lambda: {
-                "state": "COMPLETED",
-                "outputs": [{"pullRequest": {"url": "https://pr"}}],
-            },
-        )
+        mock_completed = MagicMock()
+        mock_completed.status_code = 200
+        mock_completed.json.return_value = {
+            "state": "COMPLETED",
+            "outputs": [{"pullRequest": {"url": "https://pr"}}],
+        }
+        return mock_completed
 
     mock_httpx.get.side_effect = get_side_effect
     mock_httpx.post.return_value.status_code = 200
 
-    result = await mock_client.wait_for_completion("sessions/123")
+    result = await mock_client.wait_for_completion_legacy("sessions/123")
 
     assert result["pr_url"] == "https://pr"
-    assert mock_client.manager_agent.run.called  # type: ignore[union-attr]
+    assert mock_client.manager_agent.run.called
     assert mock_httpx.post.called

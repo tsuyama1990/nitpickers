@@ -21,11 +21,16 @@ class AuditorUseCase:
     """
 
     def __init__(
-        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer
+        self,
+        jules_client: JulesClient,
+        git_manager: GitManager,
+        llm_reviewer: LLMReviewer,
+        sandbox_runner: Any = None,
     ) -> None:
         self.jules = jules_client
         self.git = git_manager
         self.llm_reviewer = llm_reviewer
+        self.sandbox = sandbox_runner
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
@@ -39,84 +44,33 @@ class AuditorUseCase:
                     result[path_str] = await p.read_text(encoding="utf-8")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
-            else:
-                pass
         return result
-
-    async def _run_static_analysis(self, target_files: list[str] | None = None) -> tuple[bool, str]:
-        """Runs local static analysis (mypy, ruff) and returns (success, output)."""
-        console.print("[bold cyan]Running Static Analysis (mypy, ruff)...[/bold cyan]")
-        output = []
-        success = True
-
-        def truncate_output(text: str, max_lines: int = 50, max_chars: int = 2000) -> str:
-            lines = text.splitlines()
-            original_line_count = len(lines)
-            if original_line_count > max_lines:
-                text = (
-                    "\n".join(lines[:max_lines])
-                    + f"\n... (truncated {original_line_count - max_lines} more lines)"
-                )
-            if len(text) > max_chars:
-                text = text[:max_chars] + f"\n... (truncated {len(text) - max_chars} more chars)"
-            return text
-
-        targets = target_files if target_files is not None else ["."]
-
-        if target_files is not None and not target_files:
-            console.print("[dim]No files to analyze.[/dim]")
-            return True, "No files to analyze."
-
-        try:
-            mypy_targets = [f for f in targets if f == "." or f.endswith(".py")]
-            if mypy_targets:
-                mypy_cmd = ["uv", "run", "mypy", "--no-error-summary", *mypy_targets]
-                stdout, stderr, code = await self.git.runner.run_command(mypy_cmd, check=False)
-                if code != 0:
-                    success = False
-                    details = truncate_output(stdout + stderr)
-                    output.append("### mypy Errors")
-                    output.append(f"```\n{details}\n```")
-                else:
-                    console.print("[green]mypy passed[/green]")
-        except Exception as e:
-            output.append(f"Failed to run mypy: {e}")
-
-        try:
-            ruff_cmd = ["uv", "run", "ruff", "check", *targets]
-            stdout, stderr, code = await self.git.runner.run_command(ruff_cmd, check=False)
-            if code != 0:
-                success = False
-                details = truncate_output(stdout + stderr)
-                output.append("### ruff Errors")
-                output.append(f"```\n{details}\n```")
-            else:
-                console.print("[green]ruff passed[/green]")
-        except Exception as e:
-            output.append(f"Failed to run ruff: {e}")
-
-        return success, "\n\n".join(output)
 
     async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
+
         is_refactor_phase = getattr(state, "current_phase", None) == WorkPhase.REFACTORING
         template_name = (
-            "FINAL_REFACTOR_AUDITOR_INSTRUCTION.md"
+            settings.template_files.final_refactor_instruction
             if is_refactor_phase
-            else "CODER_CRITIC_INSTRUCTION.md"
+            else settings.template_files.coder_critic_instruction
         )
 
-        template_path = settings.get_template(template_name)
-        if not template_path.exists() and is_refactor_phase:
+        instruction = settings.get_prompt_content(template_name)
+        if not instruction and is_refactor_phase:
             # Fallback if someone hasn't created it yet
-            template_path = settings.get_template("CODER_CRITIC_INSTRUCTION.md")
+            instruction = settings.get_prompt_content(
+                settings.template_files.coder_critic_instruction
+            )
 
-        instruction = template_path.read_text()
+        if not instruction:
+            instruction = "Review this code."
+
         instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
 
         context_paths = settings.get_context_files()
-        architect_instruction = settings.get_template("ARCHITECT_INSTRUCTION.md")
+        architect_instruction = settings.get_template(settings.template_files.architect_instruction)
         if architect_instruction.exists():
             context_paths.append(str(architect_instruction))
         context_docs = await self._read_files(context_paths)
@@ -169,8 +123,10 @@ class AuditorUseCase:
                                         "audit_result": state.audit_result,
                                         "last_audited_commit": last_audited,
                                     }
-                            except Exception:  # noqa: S110
-                                pass
+                            except Exception as e:
+                                console.print(
+                                    f"[dim]Failed to check Jules session status: {e}[/dim]"
+                                )
 
                         console.print(
                             "[bold yellow]Jules session complete. Proceeding with audit on same commit.[/bold yellow]"
@@ -200,39 +156,12 @@ class AuditorUseCase:
                 reviewable_files = [str(f) for f in all_target_files]
             else:
                 changed_file_paths = await self.git.get_changed_files(base_branch=base_branch)
-                reviewable_extensions = {
-                    ".py",
-                    ".md",
-                    ".toml",
-                    ".json",
-                    ".yaml",
-                    ".yml",
-                    ".txt",
-                    ".sh",
-                    ".html",
-                    ".js",
-                    ".css",
-                    ".ts",
-                }
+                reviewable_extensions = settings.auditor.reviewable_extensions
                 reviewable_files = [
                     f for f in changed_file_paths if Path(f).suffix in reviewable_extensions
                 ]
 
-            excluded_patterns = [
-                "dev_src/",
-                "dev_documents/",
-                "tests/ac_cdd/",
-                ".github/",
-                "pyproject.toml",
-                "setup.py",
-                "setup.cfg",
-                "README.md",
-                "LICENSE",
-                ".gitignore",
-                "Dockerfile",
-                "docker-compose",
-                ".env",
-            ]
+            excluded_patterns = settings.auditor.excluded_patterns
 
             reviewable_files = [
                 f
@@ -240,18 +169,7 @@ class AuditorUseCase:
                 if not any(f.startswith(pattern) or pattern in f for pattern in excluded_patterns)
             ]
 
-            build_artifact_patterns = [
-                ".egg-info/",
-                "__pycache__/",
-                ".pyc",
-                ".pyo",
-                ".pyd",
-                "dist/",
-                "build/",
-                ".pytest_cache/",
-                ".mypy_cache/",
-                ".ruff_cache/",
-            ]
+            build_artifact_patterns = settings.auditor.build_artifact_patterns
 
             reviewable_files = [
                 f
@@ -263,7 +181,7 @@ class AuditorUseCase:
                 try:
                     filtered_files = []
                     for file_path in reviewable_files:
-                        _, _, code = await self.git.runner.run_command(
+                        _stdout, _stderr, code, _ = await self.git.runner.run_command(
                             ["git", "check-ignore", "-q", file_path], check=False
                         )
                         if code != 0:
@@ -306,8 +224,6 @@ class AuditorUseCase:
             else settings.reviewer.fast_model
         )
 
-        static_ok, static_log = await self._run_static_analysis(target_files=reviewable_files)
-
         audit_feedback = await self.llm_reviewer.review_code(
             target_files=target_files,
             context_docs=context_docs,
@@ -321,13 +237,6 @@ class AuditorUseCase:
             status = "rejected"
         else:
             status = "rejected"
-
-        if not static_ok:
-            console.print("[bold red]Static Analysis Failed. Extending feedback...[/bold red]")
-            status = "rejected"
-            audit_feedback += "\n\n# AUTOMATED CHECKS FAILED (MUST FIX)\n"
-            audit_feedback += "The following static analysis errors were found. You MUST fix these before the code is accepted.\n"
-            audit_feedback += static_log
 
         result = AuditResult(
             status=status.upper(),
@@ -350,3 +259,50 @@ class AuditorUseCase:
             "status": status_enum,
             "last_audited_commit": new_last_audited_commit,
         }
+
+
+class UATAuditorUseCase:
+    """
+    Dedicated usecase for diagnosing and recovering from dynamic Sandbox/UAT Execution failures.
+    Strictly follows the Single Responsibility Principle.
+    """
+
+    def __init__(self, llm_reviewer: LLMReviewer) -> None:
+        self.llm_reviewer = llm_reviewer
+
+    async def execute(self, state: CycleState) -> dict[str, Any]:
+        console.print(
+            "[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]"
+        )
+
+        instruction = settings.get_prompt_content(settings.template_files.uat_auditor_instruction)
+        if not instruction:
+            instruction = "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
+        instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
+        model = settings.reviewer.smart_model
+
+        if not state.uat_execution_state:
+            msg = "UAT Execution state is required for UATAuditorUseCase"
+            raise ValueError(msg)
+
+        try:
+            fix_plan = await self.llm_reviewer.diagnose_uat_failure(
+                uat_state=state.uat_execution_state,
+                instruction=instruction,
+                model=model,
+            )
+        except Exception as e:
+            console.print(f"[bold red]Diagnostic Loop Failed: {e}[/bold red]")
+            return {"status": FlowStatus.REJECTED, "error": str(e)}
+        else:
+            # We do not approve, we bounce it back to the Coder via RETRY_FIX
+            # But we bypass the normal committee loop because this is an execution failure, not a code review failure
+            console.print(
+                f"[bold green]Diagnostic complete. Fix plan formulated for: {fix_plan.target_file}[/bold green]"
+            )
+            return {
+                "current_fix_plan": fix_plan,
+                "status": FlowStatus.RETRY_FIX,
+                "uat_execution_state": None,  # clear it so we don't loop
+                "last_feedback_time": 0,  # bypass cooldowns if any
+            }

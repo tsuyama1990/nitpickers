@@ -26,7 +26,7 @@ class ToolWrapper:
     ) -> subprocess.CompletedProcess[Any]:
         full_cmd = [self.command, *args]
 
-        stdout, stderr, returncode = await self.runner.run_command(full_cmd, check=check)
+        stdout, stderr, returncode, _ = await self.runner.run_command(full_cmd, check=check)
 
         if check and returncode != 0:
             raise subprocess.CalledProcessError(returncode, full_cmd, output=stdout, stderr=stderr)

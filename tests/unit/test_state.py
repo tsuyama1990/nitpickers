@@ -3,27 +3,28 @@ from src.state import CycleState, IntegrationState
 
 def test_cycle_state_backward_compatibility() -> None:
     # Test initialization without new fields works via defaults
-    state = CycleState(cycle_id="test_backward_compatible")
+    state = CycleState(cycle_id="01")
 
-    assert state.cycle_id == "test_backward_compatible"
-    assert state.sandbox_artifacts == {}
+    assert state.cycle_id == "01"
+    assert state.uat.sandbox_artifacts == {}
     assert state.conflict_status is None
     assert state.concurrent_dependencies == []
 
 
 def test_cycle_state_new_fields_assignment() -> None:
     from src.enums import FlowStatus
+    from src.state import UATState
 
     state = CycleState(
-        cycle_id="test_new_fields",
-        sandbox_artifacts={"coverage": "85%"},
+        cycle_id="02",
+        uat=UATState(sandbox_artifacts={"coverage": "85%"}),
         conflict_status=FlowStatus.CONFLICT_DETECTED,
-        concurrent_dependencies=["cycle_01", "cycle_02"],
+        concurrent_dependencies=["01", "03"],
     )
 
-    assert state.sandbox_artifacts == {"coverage": "85%"}
+    assert state.uat.sandbox_artifacts == {"coverage": "85%"}
     assert state.conflict_status == FlowStatus.CONFLICT_DETECTED
-    assert state.concurrent_dependencies == ["cycle_01", "cycle_02"]
+    assert state.concurrent_dependencies == ["01", "03"]
 
 
 def test_integration_state_initialization() -> None:

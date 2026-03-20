@@ -11,6 +11,14 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         self.auth_patcher = patch("google.auth.default", return_value=(MagicMock(), "test-project"))
         self.auth_patcher.start()
 
+        self.env_patcher = patch.dict("os.environ", {"OPENAI_API_KEY": "mock_key"})
+        self.env_patcher.start()
+        self.config_patcher = patch("src.config.Settings.validate_api_keys", return_value=None)
+        self.config_patcher.start()
+
+        self.mock_agent_patcher = patch("src.services.jules_client.get_manager_agent")
+        self.mock_agent_patcher.start()
+
         # Initialize client
         with patch.object(JulesClient, "__init__", lambda x: None):  # Skip init
             self.client = JulesClient()
@@ -47,6 +55,9 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
 
     def tearDown(self) -> None:
         self.auth_patcher.stop()
+        self.env_patcher.stop()
+        self.config_patcher.stop()
+        self.mock_agent_patcher.stop()
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")

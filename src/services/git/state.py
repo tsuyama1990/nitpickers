@@ -18,7 +18,7 @@ class GitStateMixin(BaseGitManager):
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", self.STATE_BRANCH_NAME], check=False
         )
         if code == 0:
@@ -29,7 +29,7 @@ class GitStateMixin(BaseGitManager):
             ["fetch", "origin", f"{self.STATE_BRANCH_NAME}:{self.STATE_BRANCH_NAME}"], check=False
         )
 
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", self.STATE_BRANCH_NAME], check=False
         )
         if code == 0:
@@ -44,12 +44,12 @@ class GitStateMixin(BaseGitManager):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await process.communicate(input=b"")
+            stdout_bytes, stderr_bytes = await process.communicate(input=b"")
             if process.returncode != 0:
-                err_msg = f"git mktree failed: {stderr.decode()}"
+                err_msg = f"git mktree failed: {stderr_bytes.decode()}"
                 raise RuntimeError(err_msg)
 
-            empty_tree = stdout.decode().strip()
+            empty_tree = stdout_bytes.decode().strip()
             process = await asyncio.create_subprocess_exec(
                 self.git_cmd,
                 "commit-tree",
@@ -59,12 +59,12 @@ class GitStateMixin(BaseGitManager):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await process.communicate()
+            stdout_bytes, stderr_bytes = await process.communicate()
             if process.returncode != 0:
-                err_msg = f"git commit-tree failed: {stderr.decode()}"
+                err_msg = f"git commit-tree failed: {stderr_bytes.decode()}"
                 raise RuntimeError(err_msg)
 
-            commit_hash = stdout.decode().strip()
+            commit_hash = stdout_bytes.decode().strip()
             await self._run_git(
                 ["update-ref", f"refs/heads/{self.STATE_BRANCH_NAME}", commit_hash], check=True
             )
@@ -72,7 +72,7 @@ class GitStateMixin(BaseGitManager):
     async def read_state_file(self, filename: str) -> str | None:
         """Reads a file from the state branch."""
         try:
-            content, _, code = await self.runner.run_command(
+            content, _stderr, code, _ = await self.runner.run_command(
                 [self.git_cmd, "show", f"{self.STATE_BRANCH_NAME}:{filename}"], check=False
             )
             return str(content) if code == 0 else None
@@ -99,7 +99,7 @@ class GitStateMixin(BaseGitManager):
                 file_path.write_text(content, encoding="utf-8")
                 await self._run_git(["-C", tmp_dir, "add", filename], check=True)
 
-                status, _, _ = await self.runner.run_command(
+                status, _stderr, _code, _ = await self.runner.run_command(
                     [self.git_cmd, "-C", tmp_dir, "status", "--porcelain"], check=False
                 )
                 if status.strip():

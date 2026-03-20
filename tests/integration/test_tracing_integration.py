@@ -1,20 +1,22 @@
 import os
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
 from src.domain_models.tracing import TracingMetadata
 
 
-def dummy_node(state: dict) -> dict:
+def dummy_node(state: dict[str, Any]) -> dict[str, Any]:
     return {"status": "success"}
 
 
-def create_mock_graph():
-    builder = StateGraph(dict)
-    builder.add_node("dummy", dummy_node)
+def create_mock_graph() -> CompiledStateGraph[Any, Any, Any]:
+    builder: StateGraph = StateGraph(dict)  # type: ignore
+    builder.add_node("dummy", dummy_node)  # type: ignore
     builder.add_edge(START, "dummy")
     builder.add_edge("dummy", END)
     return builder.compile()
@@ -30,7 +32,9 @@ async def test_graph_execution_with_context() -> None:
     )
 
     kwargs = metadata.to_langchain_kwargs()
-    config = RunnableConfig(tags=kwargs.get("tags"), metadata=kwargs.get("metadata"))
+    tags = kwargs.get("tags", [])
+    meta = kwargs.get("metadata", {})
+    config = RunnableConfig(tags=tags, metadata=meta)
 
     graph = create_mock_graph()
 
@@ -49,7 +53,14 @@ async def test_missing_api_key_fallback() -> None:
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
         patch("logging.warning") as mock_logger,
     ):
-        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", test_mode=True)
+        from pydantic import SecretStr
+
+        settings = Settings(
+            JULES_API_KEY=SecretStr("dummy"),
+            E2B_API_KEY=SecretStr("dummy"),
+            OPENROUTER_API_KEY=SecretStr("dummy"),
+            TEST_MODE=True,
+        )
         assert settings.tracing.tracing_enabled is False
         assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
 

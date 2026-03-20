@@ -39,16 +39,16 @@ def test_tracing_metadata_no_branch() -> None:
 
 def test_tracing_service_is_enabled() -> None:
     with patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "false"}):
-        config = LangSmithConfig(tracing_enabled=False)
+        config = LangSmithConfig(LANGCHAIN_TRACING_V2=False)
         config.tracing_enabled = True
         service = TracingService(config)
         assert service.is_enabled is True
 
-        config = LangSmithConfig(tracing_enabled=False)
+        config = LangSmithConfig(LANGCHAIN_TRACING_V2=False)
         service = TracingService(config)
         assert service.is_enabled is False
 
     with patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true"}):
-        config = LangSmithConfig(tracing_enabled=False)
+        config = LangSmithConfig(LANGCHAIN_TRACING_V2=False)
         service = TracingService(config)
         assert service.is_enabled is True

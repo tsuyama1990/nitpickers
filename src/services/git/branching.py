@@ -24,7 +24,7 @@ class GitBranchingMixin(BaseGitManager):
         logger.info(f"Switching to branch {branch_name}...")
 
         # Check if branch exists
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
 
@@ -40,7 +40,7 @@ class GitBranchingMixin(BaseGitManager):
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
         """Automatically commits changes if the working directory is dirty."""
         # Check for uncommitted changes
-        stdout, _, _ = await self.runner.run_command(
+        stdout, _stderr, _code, _ = await self.runner.run_command(
             [self.git_cmd, "status", "--porcelain"], check=False
         )
         if stdout.strip():
@@ -75,7 +75,7 @@ class GitBranchingMixin(BaseGitManager):
         await self._run_git(["checkout", "main"])
         await self._run_git(["pull"])
 
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", integration_branch], check=False
         )
 
@@ -98,8 +98,12 @@ class GitBranchingMixin(BaseGitManager):
 
         return integration_branch
 
-    async def create_feature_branch(self, branch_name: str, from_branch: str = "main") -> str:
+    async def create_feature_branch(self, branch_name: str, from_branch: str | None = None) -> str:
         """Creates and checks out a new feature branch from the specified base branch."""
+        from src.config import settings
+
+        from_branch = from_branch or settings.DEFAULT_BASE_BRANCH
+
         logger.info(f"Creating feature branch: {branch_name} from {from_branch}")
 
         await self._auto_commit_if_dirty()
@@ -110,7 +114,7 @@ class GitBranchingMixin(BaseGitManager):
 
         # Create or checkout the new branch
         # Check if exists first
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
         if code == 0:
@@ -144,7 +148,7 @@ class GitBranchingMixin(BaseGitManager):
         await self._run_git(["checkout", integration_branch])
         await self._run_git(["pull"])
 
-        _, _, code = await self.runner.run_command(
+        _stdout, _stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
 
@@ -159,7 +163,7 @@ class GitBranchingMixin(BaseGitManager):
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
         """Validate that branch exists on remote and is up-to-date."""
-        stdout, _, code = await self.runner.run_command(
+        stdout, _stderr, code, _ = await self.runner.run_command(
             ["git", "ls-remote", "--heads", "origin", branch],
             check=False,
         )

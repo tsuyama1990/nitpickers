@@ -15,7 +15,8 @@ class TestGenCyclesCountOption:
     def test_state_propagation_with_count(self) -> None:
         """Test that requested_cycle_count is correctly stored in CycleState."""
         # Test with count specified
-        state = CycleState(cycle_id="00", requested_cycle_count=3)
+        state = CycleState(cycle_id="00")
+        state.requested_cycle_count = 3
         assert state.requested_cycle_count == 3
         assert state.get("requested_cycle_count") == 3
 
@@ -58,7 +59,8 @@ class TestGenCyclesCountOption:
             nodes._architect.git = mock_git_instance
 
             # Create state with requested_cycle_count
-            state = CycleState(cycle_id="00", requested_cycle_count=5)
+            state = CycleState(cycle_id="00")
+            state.requested_cycle_count = 5
 
             # Execute the node
             await nodes.architect_session_node(state)
@@ -115,7 +117,9 @@ class TestGenCyclesCountOption:
             # elif planned_cycle_count: use it
 
             # If we want to test "no constraint", we need both to be None.
-            state = CycleState(cycle_id="00", requested_cycle_count=None, planned_cycle_count=None)
+            state = CycleState(cycle_id="00")
+            state.requested_cycle_count = None
+            state.planned_cycle_count = None
 
             # Execute the node
             await nodes.architect_session_node(state)
@@ -161,7 +165,8 @@ class TestGenCyclesCountOption:
             nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
             nodes._architect.git = mock_git_instance
 
-            state = CycleState(cycle_id="00", requested_cycle_count=count_value)
+            state = CycleState(cycle_id="00")
+            state.requested_cycle_count = count_value
 
             await nodes.architect_session_node(state)
 

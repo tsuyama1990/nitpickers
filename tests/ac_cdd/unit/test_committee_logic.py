@@ -9,7 +9,7 @@ from src.state import CycleState
 
 
 @pytest.mark.asyncio
-async def test_committee_logic_flow() -> None:
+async def test_committee_logic_flow() -> None:  # noqa: PLR0915
     # Mock settings
     mock_settings = MagicMock()
     mock_settings.NUM_AUDITORS = 3
@@ -29,7 +29,9 @@ async def test_committee_logic_flow() -> None:
 
         # --- Scenario 1: All Approved (Happy Path) ---
         # Auditor 1: Approved
-        state = CycleState(cycle_id="1", current_auditor_index=1, current_auditor_review_count=1)
+        state = CycleState(cycle_id="01")
+        state.current_auditor_index = 1
+        state.current_auditor_review_count = 1
         state.audit_result = AuditResult(
             status="APPROVED", is_approved=True, reason="OK", feedback="LGTM"
         )
@@ -40,7 +42,7 @@ async def test_committee_logic_flow() -> None:
         assert res["current_auditor_review_count"] == 1
 
         # Check routing
-        route = nodes.route_committee(CycleState(cycle_id="r", status=FlowStatus.NEXT_AUDITOR))
+        route = nodes.route_committee(CycleState(cycle_id="01", status=FlowStatus.NEXT_AUDITOR))
         assert route == "auditor"
 
         # Auditor 2: Approved
@@ -59,14 +61,15 @@ async def test_committee_logic_flow() -> None:
 
         # In previous cycle, committee manager returned POST_AUDIT_REFACTOR or CYCLE_APPROVED?
         # Let's fix this test by checking POST_AUDIT_REFACTOR to coder_session and CYCLE_APPROVED to coder_critic
-        route = nodes.route_committee(CycleState(cycle_id="r", status=FlowStatus.CYCLE_APPROVED))
+        route = nodes.route_committee(CycleState(cycle_id="01", status=FlowStatus.CYCLE_APPROVED))
         assert route == settings.node_coder_critic
 
         # --- Scenario 2: Rejected & Retry (Loop Back) ---
         # Auditor 2: Rejected (Attempt 1 of 2)
-        state = CycleState(
-            cycle_id="2", current_auditor_index=2, current_auditor_review_count=1, iteration_count=5
-        )
+        state = CycleState(cycle_id="02")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 1
+        state.iteration_count = 5
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Issues found", feedback="Fix this"
         )
@@ -76,17 +79,15 @@ async def test_committee_logic_flow() -> None:
         assert res["current_auditor_review_count"] == 2
         assert res["iteration_count"] == 6  # Should increment iteration
 
-        route = nodes.route_committee(CycleState(cycle_id="r", status=FlowStatus.RETRY_FIX))
+        route = nodes.route_committee(CycleState(cycle_id="01", status=FlowStatus.RETRY_FIX))
         assert route == "coder_session"
 
         # --- Scenario 3: Max Retries Exceeded (Pipeline Handover) ---
         # Auditor 2: Rejected (Attempt 2 of 2) -> Should move to Auditor 3
-        state = CycleState(
-            cycle_id="3",
-            current_auditor_index=2,
-            current_auditor_review_count=2,
-            iteration_count=10,
-        )
+        state = CycleState(cycle_id="03")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 2
+        state.iteration_count = 10
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Still bad", feedback="Still broken"
         )
@@ -99,7 +100,7 @@ async def test_committee_logic_flow() -> None:
         assert res["current_auditor_review_count"] == 1
         assert res["iteration_count"] == 11
 
-        route = nodes.route_committee(CycleState(cycle_id="r", status=FlowStatus.RETRY_FIX))
+        route = nodes.route_committee(CycleState(cycle_id="01", status=FlowStatus.RETRY_FIX))
         assert route == "coder_session"
 
 
@@ -119,12 +120,10 @@ async def test_committee_pipeline_handover() -> None:
         nodes = CycleNodes(sandbox, jules)
 
         # Scenario 1: Auditor 1 (Rev 1/Limit) → Reject → Handover to Auditor 2
-        state = CycleState(
-            cycle_id="handover-1",
-            current_auditor_index=1,
-            current_auditor_review_count=1,
-            iteration_count=0,
-        )
+        state = CycleState(cycle_id="01")
+        state.current_auditor_index = 1
+        state.current_auditor_review_count = 1
+        state.iteration_count = 0
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Issues found", feedback="Fix these issues"
         )
@@ -139,12 +138,10 @@ async def test_committee_pipeline_handover() -> None:
         assert "final_fix" not in res or res.get("final_fix") is False
 
         # Scenario 2: Auditor 2 (Rev 1/Limit) → Reject → Final Fix
-        state = CycleState(
-            cycle_id="handover-2",
-            current_auditor_index=2,
-            current_auditor_review_count=1,
-            iteration_count=1,
-        )
+        state = CycleState(cycle_id="02")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 1
+        state.iteration_count = 1
         state.audit_result = AuditResult(
             status="REJECTED",
             is_approved=False,
@@ -160,6 +157,6 @@ async def test_committee_pipeline_handover() -> None:
         assert res["iteration_count"] == 2
 
         # Verify check_coder_outcome returns "completed" for final_fix
-        state_with_final_fix = CycleState(cycle_id="test", final_fix=True)
+        state_with_final_fix = CycleState(cycle_id="01", final_fix=True)
         outcome = nodes.check_coder_outcome(state_with_final_fix)
         assert outcome in {"sandbox_evaluate", FlowStatus.COMPLETED.value, "uat_evaluate"}

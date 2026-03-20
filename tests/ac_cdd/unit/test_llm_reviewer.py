@@ -1,3 +1,4 @@
+import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -7,7 +8,13 @@ from src.services.llm_reviewer import LLMReviewer
 
 @pytest.fixture
 def reviewer() -> LLMReviewer:
-    return LLMReviewer()
+    with (
+        patch.dict(
+            os.environ, {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}
+        ),
+        patch("src.config.Settings.validate_api_keys", return_value=None),
+    ):
+        return LLMReviewer()
 
 
 @pytest.mark.asyncio

@@ -1,29 +1,72 @@
 import logging
 import os
+import re
+import urllib.parse
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from dotenv import load_dotenv
-from pydantic import BaseModel, Field, model_validator
+from dotenv import dotenv_values, load_dotenv
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.domain_models.tracing import LangSmithConfig
 
-# Load environment variables from .env file
-# Priority: .ac_cdd/.env > .env (root)
-_ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
-_root_env = Path.cwd() / ".env"
 
-try:
-    if _ac_cdd_env.exists():
-        load_dotenv(_ac_cdd_env, override=True)
-    elif _root_env.exists():
-        load_dotenv(_root_env, override=True)
-    else:
-        load_dotenv()  # Try default locations
-except Exception:
-    logging.exception("Could not load dotenv")
+def _validate_env_value(k: str, v: str) -> bool:
+    if k.endswith("_URL"):
+        try:
+            parsed = urllib.parse.urlparse(v)
+            return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+        except Exception as e:
+            logging.debug(f"URL parsing failed for {k}: {e}")
+            return False
+    if k.endswith(("_KEY", "_TOKEN")):
+        return bool(re.match(r"^[A-Za-z0-9_\-\.\=]+$", v))
+    return bool(re.match(r"^[A-Za-z0-9_.:/\-\+~@,=]+$", v))
+
+
+# Load environment variables strictly from known safe environments
+def _load_env() -> None:
+    """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
+    load_dotenv(override=True)
+
+    _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+
+    if not _ac_cdd_env.exists():
+        return
+
+    if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
+        msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+        raise ValueError(msg)
+
+    allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
+    env_vars = dotenv_values(_ac_cdd_env)
+
+    safe_updates = {}
+    for key, value in env_vars.items():
+        if not key or not safe_key_pattern.match(key):
+            logging.warning(f"Ignoring environment variable with invalid key format: {key}")
+            continue
+
+        if not key.startswith(allowed_prefixes):
+            logging.warning(f"Ignoring unauthorized environment variable: {key}")
+            continue
+
+        if value is not None:
+            if not _validate_env_value(key, value):
+                logging.warning(
+                    f"Ignoring environment variable {key} failed type-specific security validation."
+                )
+                continue
+            safe_updates[key] = value
+
+    if safe_updates:
+        os.environ.update(safe_updates)
+
+
+_load_env()
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -33,24 +76,86 @@ PROMPT_FILENAME_MAP = {
 }
 
 
+def _is_safe_path(p: Path) -> bool:
+    """Validates that a path does not contain traversal characters and is within expected bounds."""
+    try:
+        resolved = p.resolve()
+        if resolved.is_relative_to(Path.cwd()):
+            return True
+    except (ValueError, RuntimeError):
+        pass
+    return False
+
+
+def _check_env_pkg_dir() -> str | None:
+    env_pkg_dir = os.getenv("PACKAGE_DIR")
+    if env_pkg_dir:
+        resolved_pkg = Path(env_pkg_dir)
+        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve(strict=True).is_relative_to(
+            Path.cwd()
+        ):
+            return str(resolved_pkg.resolve(strict=True))
+    return None
+
+
+def _check_docker_src_path() -> str | None:
+    docker_src_path = os.getenv("DOCKER_SRC_PATH")
+    if docker_src_path:
+        docker_path = Path(docker_src_path)
+        if _is_safe_path(docker_path) and docker_path.resolve(strict=True).is_relative_to(
+            Path.cwd()
+        ):
+            return str(docker_path.resolve(strict=True))
+    return None
+
+
+def _check_dev_src_path() -> str | None:
+    dev_src_path = os.getenv("DEV_SRC_PATH")
+    if dev_src_path:
+        src_path = Path(dev_src_path)
+        if _is_safe_path(src_path) and src_path.resolve(strict=True).is_relative_to(Path.cwd()):
+            for p in src_path.resolve(strict=True).iterdir():
+                if p.is_dir() and (p / "__init__.py").exists():
+                    return str(p)
+    return None
+
+
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
-    # Use environment variable for configurable override, fallback to detection
-    env_pkg_dir = os.getenv("PACKAGE_DIR")
-    if env_pkg_dir and Path(env_pkg_dir).exists():
-        return env_pkg_dir
+    res = _check_env_pkg_dir()
+    if res:
+        return res
 
-    docker_path = Path("/opt/ac_cdd/src")
-    if docker_path.exists():
-        return str(docker_path)
+    res = _check_docker_src_path()
+    if res:
+        return res
 
-    src_path = Path("dev_src")
-    if src_path.exists():
-        for p in src_path.iterdir():
-            if p.is_dir() and (p / "__init__.py").exists():
-                return str(p)
+    res = _check_dev_src_path()
+    if res:
+        return res
 
-    return os.getenv("DEFAULT_SRC_DIR", "dev_src/src")
+    default_src_dir = os.getenv("DEFAULT_SRC_DIR")
+    if default_src_dir:
+        resolved = Path(default_src_dir)
+        if _is_safe_path(resolved) and not resolved.is_symlink():
+            strict_resolved = None
+            try:
+                strict_resolved = resolved.resolve(strict=True)
+            except Exception as e:
+                logging.debug(f"Failed to resolve default src dir {resolved}: {e}")
+
+            if strict_resolved:
+                if not strict_resolved.is_relative_to(Path.cwd()):
+                    msg = f"Directory {strict_resolved} escapes boundaries"
+                    raise ValueError(msg)
+                return str(strict_resolved)
+
+    src_fallback = Path.cwd() / "src"
+    if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
+        return str(src_fallback.resolve(strict=True))
+
+    msg = "Could not resolve package directory safely."
+    raise ValueError(msg)
 
 
 class PathsConfig(BaseModel):
@@ -58,6 +163,7 @@ class PathsConfig(BaseModel):
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
+    artifacts_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts")
     sessions_dir: str = ".jules/sessions"
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
     tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
@@ -68,6 +174,36 @@ class PathsConfig(BaseModel):
     def _set_dependent_paths(self) -> "PathsConfig":
         if not self.contracts_dir:
             self.contracts_dir = f"{self.package_dir}/contracts"
+
+        # Security validation to ensure all paths are within project boundaries
+        root = self.workspace_root.resolve(strict=False)
+
+        paths_to_check = [
+            self.documents_dir,
+            Path(self.package_dir),
+            Path(self.contracts_dir),
+            self.artifacts_dir,
+            Path(self.sessions_dir),
+            self.src,
+            self.tests,
+            self.templates,
+            Path(self.prompts_dir),
+        ]
+
+        escaped_paths = []
+        for p in paths_to_check:
+            # Resolve but do not be strict about existence
+            try:
+                p_res = p.resolve(strict=False)
+                if not p_res.is_relative_to(root):
+                    escaped_paths.append(str(p))
+            except Exception as e:
+                logging.debug(f"Failed to check path {p}: {e}")
+
+        if escaped_paths:
+            msg = f"Configured paths escape workspace root boundaries: {escaped_paths}"
+            raise ValueError(msg)
+
         return self
 
 
@@ -75,6 +211,34 @@ class JulesConfig(BaseModel):
     executable: str = "jules"
     timeout_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", "7200"))
+    )
+    content_type: str = Field(
+        default_factory=lambda: os.getenv("JULES_CONTENT_TYPE", "application/json")
+    )
+    success_state: str = Field(
+        default_factory=lambda: os.getenv("JULES_SUCCESS_STATE", "COMPLETED")
+    )
+    failure_state: str = Field(default_factory=lambda: os.getenv("JULES_FAILURE_STATE", "FAILED"))
+    activities_path: str = Field(
+        default_factory=lambda: os.getenv("JULES_ACTIVITIES_PATH", "activities")
+    )
+    send_message_action: str = Field(
+        default_factory=lambda: os.getenv("JULES_SEND_MESSAGE_ACTION", ":sendMessage")
+    )
+    pr_creation_template: str = Field(
+        default_factory=lambda: os.getenv("JULES_PR_CREATION_TEMPLATE", "PR_CREATION_REQUEST.md")
+    )
+    plan_generated_activity: str = Field(
+        default_factory=lambda: os.getenv("JULES_PLAN_GENERATED_ACTIVITY", "planGenerated")
+    )
+    master_integrator_prefix: str = Field(
+        default_factory=lambda: os.getenv("JULES_MASTER_INTEGRATOR_PREFIX", "master-integrator-")
+    )
+    progress_update_interval: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_PROGRESS_UPDATE_INTERVAL", "30"))
+    )
+    activity_polling_timeout: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_ACTIVITY_POLLING_TIMEOUT", "600"))
     )
     polling_interval_seconds: int = Field(
         default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", "120"))
@@ -88,6 +252,16 @@ class JulesConfig(BaseModel):
     max_plan_rejections: int = Field(
         default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", "2"))
     )
+    feedback_wait_retries: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_RETRIES", "12"))
+    )
+    feedback_wait_interval_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("JULES_FEEDBACK_WAIT_INTERVAL_SECONDS", "5"))
+    )
+    request_timeout: float = Field(
+        default_factory=lambda: float(os.getenv("JULES_REQUEST_TIMEOUT", "30.0"))
+    )
+    page_size: int = Field(default_factory=lambda: int(os.getenv("JULES_PAGE_SIZE", "100")))
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
@@ -126,6 +300,67 @@ class JulesConfig(BaseModel):
     )
 
 
+class AuditorConfig(BaseModel):
+    excluded_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "dev_src/",
+            "dev_documents/",
+            "tests/ac_cdd/",
+            ".github/",
+            "pyproject.toml",
+            "setup.py",
+            "setup.cfg",
+            "README.md",
+            "LICENSE",
+            ".gitignore",
+            "Dockerfile",
+            "docker-compose",
+            ".env",
+        ]
+    )
+    reviewable_extensions: set[str] = Field(
+        default_factory=lambda: {
+            ".py",
+            ".md",
+            ".toml",
+            ".json",
+            ".yaml",
+            ".yml",
+            ".txt",
+            ".sh",
+            ".html",
+            ".js",
+            ".css",
+            ".ts",
+        }
+    )
+    build_artifact_patterns: list[str] = Field(
+        default_factory=lambda: [
+            ".egg-info/",
+            "__pycache__/",
+            ".pyc",
+            ".pyo",
+            ".pyd",
+            "dist/",
+            "build/",
+            ".pytest_cache/",
+            ".mypy_cache/",
+            ".ruff_cache/",
+        ]
+    )
+
+
+class TemplatesConfig(BaseModel):
+    uat_auditor_instruction: str = "UAT_AUDITOR_INSTRUCTION.md"
+    post_audit_refactor_instruction: str = "POST_AUDIT_REFACTOR_INSTRUCTION.md"
+    final_refactor_instruction: str = "FINAL_REFACTOR_INSTRUCTION.md"
+    coder_instruction: str = "CODER_INSTRUCTION.md"
+    coder_critic_instruction: str = "CODER_CRITIC_INSTRUCTION.md"
+    audit_feedback_message: str = "AUDIT_FEEDBACK_MESSAGE.md"
+    audit_feedback_injection: str = "AUDIT_FEEDBACK_INJECTION.md"
+    architect_instruction: str = "ARCHITECT_INSTRUCTION.md"
+
+
 class ToolsConfig(BaseModel):
     jules_cmd: str = "jules"
     gh_cmd: str = "gh"
@@ -141,6 +376,20 @@ class ToolsConfig(BaseModel):
     )
 
 
+class UATConfig(BaseModel):
+    test_cmd: str = Field(default="uv run pytest tests/uat/")
+    playwright_args: list[str] = Field(
+        default_factory=lambda: [
+            "--browser=chromium",
+            "--tracing=on",
+            f"-c={Path.cwd() / 'pyproject.toml'}",
+            f"--confcutdir={Path.cwd()}",
+            f"--rootdir={Path.cwd()}",
+        ]
+    )
+    traceback_limit: int = Field(default=1000)
+
+
 class SandboxConfig(BaseModel):
     """Configuration for E2B Sandbox execution"""
 
@@ -151,12 +400,16 @@ class SandboxConfig(BaseModel):
     max_retries: int = 3
     command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
+    sandbox_env_cleanup: list[str] = ["UV_PROJECT_ENVIRONMENT"]
     files_to_sync: list[str] = [
         "pyproject.toml",
         "uv.lock",
         ".auditignore",
         "README.md",
     ]
+    allowed_cwd_prefixes: list[str] = Field(
+        default_factory=lambda: os.getenv("SANDBOX_ALLOWED_CWD_PREFIXES", "/home/,/opt/").split(",")
+    )
     install_cmd: str = "pip install --no-cache-dir ruff"
     lint_check_cmd: list[str] = ["uv", "run", "ruff", "check", "--fix", "."]
     type_check_cmd: list[str] = ["uv", "run", "mypy", "src/"]
@@ -167,24 +420,38 @@ class ASTAnalyzerConfig(BaseModel):
     max_files: int = Field(default=10000, description="Maximum number of files to analyze")
     max_depth: int = Field(default=20, description="Maximum directory depth to search")
     max_file_size_bytes: int = Field(
-        default=10 * 1024 * 1024, description="Maximum file size to read (10MB)"
+        default_factory=lambda: int(os.getenv("AST_ANALYZER_MAX_FILE_SIZE_BYTES", "10485760")),
+        description="Maximum file size to read (10MB default)",
     )
 
 
-class AgentsConfig(BaseModel):
-    auditor_model: str = "openai:gpt-4o"
-    qa_analyst_model: str = "openai:gpt-4o"
+class AgentsConfig(BaseSettings):
+    auditor_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_AUDITOR_MODEL",
+    )
+    qa_analyst_model: str = Field(
+        default="openai:gpt-4o",
+        alias="AC_CDD_QA_ANALYST_MODEL",
+    )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
-class ReviewerConfig(BaseModel):
+class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
         default="openai:gpt-4o",
+        alias="AC_CDD_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
         default="openai:gpt-4o-mini",
+        alias="AC_CDD_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
+    master_integrator_temperature: float = Field(
+        default_factory=lambda: float(os.getenv("REVIEWER_MASTER_INTEGRATOR_TEMPERATURE", "0.0"))
+    )
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
 class SessionConfig(BaseModel):
@@ -202,13 +469,27 @@ class Settings(BaseSettings):
     Application settings, loaded from environment variables.
     """
 
-    JULES_API_KEY: str | None = Field(default=None, description="Google API key")
-    OPENROUTER_API_KEY: str | None = None
+    JULES_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("JULES_API_KEY", "")),
+        description="Google API key",
+    )
+    OPENROUTER_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("OPENROUTER_API_KEY", "")),
+        description="OpenRouter API key",
+    )
+    E2B_API_KEY: SecretStr = Field(
+        default_factory=lambda: SecretStr(os.getenv("E2B_API_KEY", "")),
+        description="E2B Sandbox API key",
+    )
     MAX_RETRIES: int = 10
-    GRAPH_RECURSION_LIMIT: int = 2000
+    GRAPH_RECURSION_LIMIT: int = Field(
+        default_factory=lambda: int(os.getenv("GRAPH_RECURSION_LIMIT", "2000"))
+    )
     DUMMY_CYCLE_ID: str = "00"
-    E2B_API_KEY: str | None = Field(default=None, description="E2B Sandbox API key")
 
+    DEFAULT_BASE_BRANCH: str = Field(
+        default_factory=lambda: os.getenv("DEFAULT_BASE_BRANCH", "main")
+    )
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 
@@ -224,10 +505,15 @@ class Settings(BaseSettings):
     max_audit_retries: int = 2
 
     # Graph Node Names
-    node_uat_evaluate: str = "uat_evaluate"
-    node_sandbox_evaluate: str = "sandbox_evaluate"
-    node_coder_critic: str = "coder_critic"
     required_env_vars: list[str] = ["JULES_API_KEY", "E2B_API_KEY"]
+    known_implicit_secrets: list[str] = [
+        "DATABASE_URL",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "E2B_API_KEY",
+        "JULES_API_KEY",
+        "OPENROUTER_API_KEY",
+    ]
     default_cycles: list[str] = ["01", "02", "03", "04", "05"]
     architect_context_files: list[str] = [
         "ALL_SPEC.md",
@@ -238,10 +524,13 @@ class Settings(BaseSettings):
 
     session: SessionConfig = Field(default_factory=SessionConfig)
     paths: PathsConfig = Field(default_factory=PathsConfig)
+    template_files: TemplatesConfig = Field(default_factory=TemplatesConfig)
     jules: JulesConfig = Field(default_factory=JulesConfig)
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
+    uat: UATConfig = Field(default_factory=UATConfig)
     sandbox: SandboxConfig = Field(default_factory=SandboxConfig)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    auditor: AuditorConfig = Field(default_factory=AuditorConfig)
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
     ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
     tracing: LangSmithConfig = Field(default_factory=LangSmithConfig)
@@ -252,13 +541,31 @@ class Settings(BaseSettings):
 
         return TracingService(self.tracing)
 
+    # Graph Node Names
+    node_uat_evaluate: str = "uat_evaluate"
+    node_sandbox_evaluate: str = "sandbox_evaluate"
+    node_coder_critic: str = "coder_critic"
+
     # Auditor model selection: "smart" or "fast"
-    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = "fast"
+    AUDITOR_MODEL_MODE: Literal["smart", "fast"] = Field(default="fast", alias="AUDITOR_MODEL_MODE")
 
     test_mode: bool = Field(
-        default=False, description="Run in test mode with dummy keys and responses"
+        default=False,
+        alias="TEST_MODE",
+        description="Run in test mode with dummy keys and responses",
     )
-    auto_approve: bool = Field(default=False, description="Auto approve AI decisions")
+    auto_approve: bool = Field(
+        default=False, alias="AUTO_APPROVE", description="Auto approve AI decisions"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_booleans(cls, values: Any) -> Any:
+        if isinstance(values.get("TEST_MODE"), str):
+            values["TEST_MODE"] = values["TEST_MODE"].lower() == "true"
+        if isinstance(values.get("AUTO_APPROVE"), str):
+            values["AUTO_APPROVE"] = values["AUTO_APPROVE"].lower() == "true"
+        return values
 
     model_config = SettingsConfigDict(
         env_prefix="AC_CDD_",
@@ -270,21 +577,30 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_api_keys(self) -> "Settings":
+        import os
+
         missing = []
         if not getattr(self, "test_mode", False):
-            if not self.JULES_API_KEY and not os.getenv("JULES_API_KEY"):
+            if not self.JULES_API_KEY or not self.JULES_API_KEY.get_secret_value().strip():
                 missing.append("JULES_API_KEY")
-            if not self.E2B_API_KEY and not os.getenv("E2B_API_KEY"):
+            if not self.E2B_API_KEY or not self.E2B_API_KEY.get_secret_value().strip():
                 missing.append("E2B_API_KEY")
-        if missing and not os.getenv("PYTEST_CURRENT_TEST"):
+            if (
+                not self.OPENROUTER_API_KEY
+                or not self.OPENROUTER_API_KEY.get_secret_value().strip()
+            ):
+                missing.append("OPENROUTER_API_KEY")
+
+        if missing and not os.environ.get("PYTEST_CURRENT_TEST"):
             # Fallback to test_mode to not break initialization sequence during test runs where test_mode=True is set after instantiation or via kwargs
-            msg = f"Missing required environment variables: {', '.join(missing)}"
+            msg = (
+                f"Missing or explicitly empty required environment variables: {', '.join(missing)}"
+            )
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration
-        env_enabled = os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
-        tracing_enabled = self.tracing.tracing_enabled or env_enabled
-        api_key = self.tracing.api_key or os.environ.get("LANGCHAIN_API_KEY")
+        tracing_enabled = self.tracing.tracing_enabled
+        api_key = self.tracing.api_key
 
         if tracing_enabled and not api_key:
             logging.warning(
@@ -295,32 +611,6 @@ class Settings(BaseSettings):
             self.tracing.tracing_enabled = False
 
         return self
-
-    @model_validator(mode="before")
-    @classmethod
-    def load_legacy_env_vars(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Inject legacy/global env vars if missing from structured data."""
-        smart = os.getenv("SMART_MODEL")
-        fast = os.getenv("FAST_MODEL")
-
-        for key in ["JULES_API_KEY", "OPENROUTER_API_KEY", "E2B_API_KEY"]:
-            if not data.get(key) and os.getenv(key):
-                data[key] = os.getenv(key)
-
-        if smart or fast:
-            data.setdefault("agents", {})
-            if isinstance(data["agents"], dict) and smart:
-                data["agents"].setdefault("auditor_model", smart)
-                data["agents"].setdefault("qa_analyst_model", smart)
-
-            data.setdefault("reviewer", {})
-            if isinstance(data["reviewer"], dict):
-                if smart:
-                    data["reviewer"].setdefault("smart_model", smart)
-                if fast:
-                    data["reviewer"].setdefault("fast_model", fast)
-
-        return data
 
     @property
     def current_session_id(self) -> str:
