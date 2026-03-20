@@ -133,7 +133,7 @@ class GitMergingMixin(BaseGitManager):
 
         # 1. Check if Draft and mark ready if needed
         try:
-            stdout, _, code, _ = await self.runner.run_command(
+            stdout, stderr, code, _ = await self.runner.run_command(
                 [self.gh_cmd, "pr", "view", pr, "--json", "isDraft", "--jq", ".isDraft"],
                 check=False,
             )
@@ -189,7 +189,7 @@ class GitMergingMixin(BaseGitManager):
         """Creates final PR from integration branch to main."""
         logger.info(f"Creating final PR: {integration_branch} → main")
 
-        stdout, _, code, _ = await self.runner.run_command(
+        stdout, stderr, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",
@@ -220,7 +220,7 @@ class GitMergingMixin(BaseGitManager):
 
         await self._run_git(["push"])
 
-        stdout, _, code, _ = await self.runner.run_command(
+        stdout, stderr, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",

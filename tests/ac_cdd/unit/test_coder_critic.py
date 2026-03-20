@@ -4,10 +4,10 @@ from src.state import CycleState
 
 
 def test_route_coder_critic_completed() -> None:
-    state = CycleState(cycle_id="1", status=FlowStatus.COMPLETED)
+    state = CycleState(cycle_id="01", status=FlowStatus.COMPLETED)
     assert route_coder_critic(state) == "uat_evaluate"
 
 
 def test_route_coder_critic_retry() -> None:
-    state = CycleState(cycle_id="1", status=FlowStatus.CODER_RETRY)
+    state = CycleState(cycle_id="01", status=FlowStatus.CODER_RETRY)
     assert route_coder_critic(state) == "coder_session"

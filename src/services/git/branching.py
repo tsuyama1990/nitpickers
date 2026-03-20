@@ -24,9 +24,13 @@ class GitBranchingMixin(BaseGitManager):
         logger.info(f"Switching to branch {branch_name}...")
 
         # Check if branch exists
-        _, _, code, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
 
         if code == 0:
             logger.info(f"Branch {branch_name} exists. Checking out...")
@@ -40,9 +44,13 @@ class GitBranchingMixin(BaseGitManager):
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
         """Automatically commits changes if the working directory is dirty."""
         # Check for uncommitted changes
-        stdout, _, _, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             [self.git_cmd, "status", "--porcelain"], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
         if stdout.strip():
             # CRITICAL: Check for unresolved conflicts before committing
             # Git porcelain v1 conflict codes: DD, AU, UD, UA, DU, AA, UU
@@ -75,9 +83,13 @@ class GitBranchingMixin(BaseGitManager):
         await self._run_git(["checkout", "main"])
         await self._run_git(["pull"])
 
-        _, _, code, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", integration_branch], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
 
         if code == 0:
             logger.info(f"Integration branch {integration_branch} exists. Checking out...")
@@ -114,9 +126,13 @@ class GitBranchingMixin(BaseGitManager):
 
         # Create or checkout the new branch
         # Check if exists first
-        _, _, code, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
         if code == 0:
             logger.info(f"Feature branch {branch_name} already exists. Checking out...")
             await self._run_git(["checkout", branch_name])
@@ -148,9 +164,13 @@ class GitBranchingMixin(BaseGitManager):
         await self._run_git(["checkout", integration_branch])
         await self._run_git(["pull"])
 
-        _, _, code, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
 
         if code == 0:
             logger.info(f"Session branch {branch_name} exists. Checking out...")
@@ -163,10 +183,14 @@ class GitBranchingMixin(BaseGitManager):
 
     async def validate_remote_branch(self, branch: str) -> tuple[bool, str]:
         """Validate that branch exists on remote and is up-to-date."""
-        stdout, _, code, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             ["git", "ls-remote", "--heads", "origin", branch],
             check=False,
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
 
         if code != 0 or not stdout.strip():
             return False, f"Branch '{branch}' does not exist on remote 'origin'"

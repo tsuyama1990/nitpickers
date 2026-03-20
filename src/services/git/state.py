@@ -18,7 +18,7 @@ class GitStateMixin(BaseGitManager):
 
     async def ensure_state_branch(self) -> None:
         """Ensures the orphan branch exists."""
-        _, _, code, _ = await self.runner.run_command(
+        stdout, stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", self.STATE_BRANCH_NAME], check=False
         )
         if code == 0:
@@ -29,7 +29,7 @@ class GitStateMixin(BaseGitManager):
             ["fetch", "origin", f"{self.STATE_BRANCH_NAME}:{self.STATE_BRANCH_NAME}"], check=False
         )
 
-        _, _, code, _ = await self.runner.run_command(
+        stdout, stderr, code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "--verify", self.STATE_BRANCH_NAME], check=False
         )
         if code == 0:
@@ -72,7 +72,7 @@ class GitStateMixin(BaseGitManager):
     async def read_state_file(self, filename: str) -> str | None:
         """Reads a file from the state branch."""
         try:
-            content, _, code, _ = await self.runner.run_command(
+            content, stderr, code, _ = await self.runner.run_command(
                 [self.git_cmd, "show", f"{self.STATE_BRANCH_NAME}:{filename}"], check=False
             )
             return str(content) if code == 0 else None
@@ -99,7 +99,7 @@ class GitStateMixin(BaseGitManager):
                 file_path.write_text(content, encoding="utf-8")
                 await self._run_git(["-C", tmp_dir, "add", filename], check=True)
 
-                status, _, _, _ = await self.runner.run_command(
+                status, stderr, code, _ = await self.runner.run_command(
                     [self.git_cmd, "-C", tmp_dir, "status", "--porcelain"], check=False
                 )
                 if status.strip():

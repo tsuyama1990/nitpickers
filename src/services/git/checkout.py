@@ -37,9 +37,13 @@ class GitCheckoutMixin(BaseGitManager):
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
         """Automatically commits changes if the working directory is dirty."""
         # Check for uncommitted changes
-        stdout, _, _, _ = await self.runner.run_command(
+        result = await self.runner.run_command(
             ["git", "status", "--porcelain"], check=False
         )
+        if len(result) == 3:
+            stdout, stderr, code = result
+        else:
+            stdout, stderr, code, _ = result
         if stdout.strip():
             # CRITICAL: Check for unmerged files (conflicts) before committing
             # Codes: DD, AU, UD, UA, DU, AA, UU
@@ -81,10 +85,14 @@ class GitCheckoutMixin(BaseGitManager):
         default_branch = settings.DEFAULT_BASE_BRANCH
         try:
             # gh pr view <url> --json baseRefName -q .baseRefName
-            stdout, _, _, _ = await self.runner.run_command(
+            result = await self.runner.run_command(
                 [self.gh_cmd, "pr", "view", pr_url, "--json", "baseRefName", "-q", ".baseRefName"],
                 check=True,
             )
+            if len(result) == 3:
+                stdout, stderr, code = result
+            else:
+                stdout, stderr, code, _ = result
             base_branch = str(stdout).strip()
             if base_branch:
                 return base_branch
