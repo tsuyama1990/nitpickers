@@ -25,8 +25,9 @@ def _load_env() -> None:
 
         import re
         allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
-        dangerous_chars = (";", "&", "|", "$", "`", "\n")
         safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
+        # Secure value pattern: Allow letters, numbers, standard punctuation used in URLs/Keys, no newlines/backticks/pipes/amps
+        safe_value_pattern = re.compile(r"^[A-Za-z0-9_.:/=\-\+~@]+$")
         env_vars = dotenv_values(_ac_cdd_env)
 
         safe_updates = {}
@@ -37,9 +38,9 @@ def _load_env() -> None:
 
             if any(key.startswith(prefix) for prefix in allowed_prefixes):
                 if value is not None:
-                    if any(char in value for char in dangerous_chars):
+                    if not safe_value_pattern.match(value):
                         logging.warning(
-                            f"Ignoring environment variable {key} containing dangerous shell characters."
+                            f"Ignoring environment variable {key} containing unsafe characters."
                         )
                         continue
                     safe_updates[key] = value

@@ -315,10 +315,15 @@ class CoderUseCase:
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
         try:
+            from src.utils_sanitization import sanitize_for_llm
+
             feedback_template = settings.get_prompt_content(settings.template_files.audit_feedback_message)
             if not feedback_template:
                 feedback_template = "{{feedback}}"
-            feedback_msg = feedback_template.replace("{{feedback}}", feedback)
+
+            safe_feedback = sanitize_for_llm(feedback)
+            feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
+
             await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
 
             console.print(

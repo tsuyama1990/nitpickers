@@ -89,14 +89,17 @@ class LLMReviewer:
         """
         logger.info(f"LLMReviewer: starting UAT failure diagnosis using {model}")
 
-        # Basic sanitization to prevent unescaped markdown blocks closing the prompt early
-        safe_stdout = uat_state.stdout.replace("```", "\\`\\`\\`") if uat_state.stdout else ""
-        safe_stderr = uat_state.stderr.replace("```", "\\`\\`\\`") if uat_state.stderr else ""
+        from src.utils_sanitization import sanitize_for_llm
+
+        # Robust sanitization to prevent prompt injection and handle API payloads securely
+        safe_stdout = sanitize_for_llm(uat_state.stdout)
+        safe_stderr = sanitize_for_llm(uat_state.stderr)
+        safe_instruction = sanitize_for_llm(instruction)
 
         content_parts: list[dict[str, str | dict[str, str]]] = [
             {
                 "type": "text",
-                "text": f"{instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{safe_stdout}\n```\n\n## Stderr\n```\n{safe_stderr}\n```\n",
+                "text": f"{safe_instruction}\n\n# Execution Output\n\nExit Code: {uat_state.exit_code}\n\n## Stdout\n```\n{safe_stdout}\n```\n\n## Stderr\n```\n{safe_stderr}\n```\n",
             }
         ]
 
@@ -115,7 +118,7 @@ class LLMReviewer:
                             },
                         }
                     )
-                    safe_traceback = artifact.traceback.replace("```", "\\`\\`\\`") if artifact.traceback else ""
+                    safe_traceback = sanitize_for_llm(artifact.traceback)
                     content_parts.append(
                         {
                             "type": "text",

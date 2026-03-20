@@ -6,22 +6,23 @@ def test_cycle_state_backward_compatibility() -> None:
     state = CycleState(cycle_id="01")
 
     assert state.cycle_id == "01"
-    assert state.sandbox_artifacts == {}
+    assert state.uat.sandbox_artifacts == {}
     assert state.conflict_status is None
     assert state.concurrent_dependencies == []
 
 
 def test_cycle_state_new_fields_assignment() -> None:
     from src.enums import FlowStatus
+    from src.state import UATState
 
     state = CycleState(
         cycle_id="02",
-        sandbox_artifacts={"coverage": "85%"},
+        uat=UATState(sandbox_artifacts={"coverage": "85%"}),
         conflict_status=FlowStatus.CONFLICT_DETECTED,
         concurrent_dependencies=["01", "03"],
     )
 
-    assert state.sandbox_artifacts == {"coverage": "85%"}
+    assert state.uat.sandbox_artifacts == {"coverage": "85%"}
     assert state.conflict_status == FlowStatus.CONFLICT_DETECTED
     assert state.concurrent_dependencies == ["01", "03"]
 

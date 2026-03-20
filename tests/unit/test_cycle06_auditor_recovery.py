@@ -123,16 +123,21 @@ async def test_auditor_usecase_routing() -> None:
     )
     mock_reviewer.diagnose_uat_failure = AsyncMock(return_value=valid_plan)
 
-    usecase = AuditorUseCase(mock_jules, mock_git, mock_reviewer)
+    from src.services.auditor_usecase import UATAuditorUseCase
+    usecase = UATAuditorUseCase(mock_reviewer)
+
+    from src.state import UATState
 
     state = CycleState(
         cycle_id="01",
         current_phase=WorkPhase.CODER,
-        uat_execution_state=UatExecutionState(
-            exit_code=1,
-            stdout="",
-            stderr="",
-            artifacts=[]
+        uat=UATState(
+            uat_execution_state=UatExecutionState(
+                exit_code=1,
+                stdout="",
+                stderr="",
+                artifacts=[]
+            )
         )
     )
 

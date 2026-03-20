@@ -10,7 +10,11 @@ class AuditorNodes:
         self.llm_reviewer = llm_reviewer
 
     async def auditor_node(self, state: CycleState) -> dict[str, Any]:
-        from src.services.auditor_usecase import AuditorUseCase
+        from src.services.auditor_usecase import AuditorUseCase, UATAuditorUseCase
+
+        if getattr(state, "uat_execution_state", None):
+            uat_usecase = UATAuditorUseCase(self.llm_reviewer)
+            return dict(await uat_usecase.execute(state))
 
         usecase = AuditorUseCase(self.jules, self.git, self.llm_reviewer)
         return dict(await usecase.execute(state))

@@ -47,38 +47,6 @@ class AuditorUseCase:
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
 
-        # Determine if this is a UAT failure diagnostic route
-        if state.uat_execution_state:
-            console.print("[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]")
-
-            instruction = settings.get_prompt_content(settings.template_files.uat_auditor_instruction)
-            if not instruction:
-                instruction = "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
-            instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
-            model = settings.reviewer.smart_model
-
-            try:
-                fix_plan = await self.llm_reviewer.diagnose_uat_failure(
-                    uat_state=state.uat_execution_state,
-                    instruction=instruction,
-                    model=model,
-                )
-            except Exception as e:
-                console.print(f"[bold red]Diagnostic Loop Failed: {e}[/bold red]")
-                return {"status": FlowStatus.REJECTED, "error": str(e)}
-            else:
-                # We do not approve, we bounce it back to the Coder via RETRY_FIX
-                # But we bypass the normal committee loop because this is an execution failure, not a code review failure
-                console.print(
-                    f"[bold green]Diagnostic complete. Fix plan formulated for: {fix_plan.target_file}[/bold green]"
-                )
-                return {
-                    "current_fix_plan": fix_plan,
-                    "status": FlowStatus.RETRY_FIX,
-                    "uat_execution_state": None,  # clear it so we don't loop
-                    "last_feedback_time": 0,  # bypass cooldowns if any
-                }
-
         is_refactor_phase = getattr(state, "current_phase", None) == WorkPhase.REFACTORING
         template_name = (
             settings.template_files.final_refactor_instruction
@@ -284,3 +252,46 @@ class AuditorUseCase:
             "status": status_enum,
             "last_audited_commit": new_last_audited_commit,
         }
+
+class UATAuditorUseCase:
+    """
+    Dedicated usecase for diagnosing and recovering from dynamic Sandbox/UAT Execution failures.
+    Strictly follows the Single Responsibility Principle.
+    """
+    def __init__(self, llm_reviewer: LLMReviewer) -> None:
+        self.llm_reviewer = llm_reviewer
+
+    async def execute(self, state: CycleState) -> dict[str, Any]:
+        console.print("[bold magenta]UAT Failure Detected. Initiating Diagnostic Outer Loop...[/bold magenta]")
+
+        instruction = settings.get_prompt_content(settings.template_files.uat_auditor_instruction)
+        if not instruction:
+            instruction = "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
+        instruction = instruction.replace("{{cycle_id}}", str(state.cycle_id))
+        model = settings.reviewer.smart_model
+
+        if not state.uat_execution_state:
+            msg = "UAT Execution state is required for UATAuditorUseCase"
+            raise ValueError(msg)
+
+        try:
+            fix_plan = await self.llm_reviewer.diagnose_uat_failure(
+                uat_state=state.uat_execution_state,
+                instruction=instruction,
+                model=model,
+            )
+        except Exception as e:
+            console.print(f"[bold red]Diagnostic Loop Failed: {e}[/bold red]")
+            return {"status": FlowStatus.REJECTED, "error": str(e)}
+        else:
+            # We do not approve, we bounce it back to the Coder via RETRY_FIX
+            # But we bypass the normal committee loop because this is an execution failure, not a code review failure
+            console.print(
+                f"[bold green]Diagnostic complete. Fix plan formulated for: {fix_plan.target_file}[/bold green]"
+            )
+            return {
+                "current_fix_plan": fix_plan,
+                "status": FlowStatus.RETRY_FIX,
+                "uat_execution_state": None,  # clear it so we don't loop
+                "last_feedback_time": 0,  # bypass cooldowns if any
+            }
