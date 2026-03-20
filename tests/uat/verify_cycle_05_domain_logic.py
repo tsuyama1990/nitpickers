@@ -7,8 +7,8 @@ __generated_with = "0.10.19"
 app = marimo.App(width="medium")
 
 
-@app.cell
-def __1() -> tuple[Any, ...]:
+@app.cell(name="setup_imports")
+def setup_imports() -> tuple[Any, ...]:
     import pytest
 
     from src.domain_models.uat_execution_state import UatExecutionState
@@ -19,8 +19,8 @@ def __1() -> tuple[Any, ...]:
     return CycleState, FlowStatus, UatExecutionState, pytest, route_uat
 
 
-@app.cell
-def __2(
+@app.cell(name="run_routing_tests")
+def run_routing_tests(
     CycleState: Any,  # noqa: N803
     FlowStatus: Any,  # noqa: N803
     UatExecutionState: Any,  # noqa: N803

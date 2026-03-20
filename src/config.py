@@ -243,6 +243,7 @@ class UATConfig(BaseModel):
             f"--rootdir={Path.cwd()}",
         ]
     )
+    traceback_limit: int = Field(default=1000)
 
 
 class SandboxConfig(BaseModel):

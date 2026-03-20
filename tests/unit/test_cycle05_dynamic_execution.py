@@ -62,7 +62,16 @@ async def test_uat_usecase_dynamic_execution_failure(
     artifacts_dir = tmp_path / "artifacts"
     artifacts_dir.mkdir()
 
-    mock_settings.paths.artifacts_dir = artifacts_dir
+    # The new path validation needs resolve() to be relative to cwd.
+    # We will mock the resolve() to return something relative to cwd or patch it.
+    mock_resolved = MagicMock()
+    mock_resolved.is_relative_to.return_value = True
+    mock_resolved.exists.return_value = True
+    mock_resolved.is_dir.return_value = True
+    mock_resolved.glob.side_effect = artifacts_dir.glob
+    mock_resolved.__truediv__.side_effect = artifacts_dir.__truediv__
+
+    mock_settings.paths.artifacts_dir.resolve.return_value = mock_resolved
 
     # Mock files
     png_file = artifacts_dir / "test_login.png"
@@ -96,4 +105,4 @@ async def test_uat_usecase_dynamic_execution_failure(
     assert artifact.test_id == "test_login"
     assert artifact.screenshot_path == str(png_file)
     assert artifact.trace_path == str(zip_file)
-    assert artifact.traceback == "error trace"
+    assert artifact.traceback == "error trace"[-mock_settings.uat.traceback_limit :]

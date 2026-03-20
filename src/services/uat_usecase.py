@@ -1,6 +1,6 @@
+from pathlib import Path
 from typing import Any
-
-from rich.console import Console
+from urllib.parse import urlparse
 
 from src.config import settings
 from src.domain_models.multimodal_artifact_schema import MultiModalArtifact
@@ -9,8 +9,7 @@ from src.enums import FlowStatus, WorkPhase
 from src.process_runner import ProcessRunner
 from src.services.git_ops import GitManager
 from src.state import CycleState
-
-console = Console()
+from src.utils import logger
 
 
 class UatUseCase:
@@ -26,7 +25,13 @@ class UatUseCase:
 
     def _scan_artifacts(self, stdout: str, stderr: str) -> list[MultiModalArtifact]:
         """Scans the artifacts directory for multi-modal artifacts."""
-        artifacts_dir = settings.paths.artifacts_dir
+        artifacts_dir = settings.paths.artifacts_dir.resolve()
+
+        # Security: Prevent path traversal
+        if not artifacts_dir.is_relative_to(Path.cwd()):
+            logger.error(f"Invalid artifacts directory path: {artifacts_dir}")
+            return []
+
         artifacts = []
 
         # Scan for multi-modal artifacts if directory exists
@@ -43,53 +48,31 @@ class UatUseCase:
                             screenshot_path=str(img_path),
                             trace_path=str(zip_path),
                             console_logs=[],
-                            traceback=stderr[-1000:] if stderr else stdout[-1000:],
+                            traceback=(
+                                stderr[-settings.uat.traceback_limit :]
+                                if stderr
+                                else stdout[-settings.uat.traceback_limit :]
+                            ),
                         )
                         artifacts.append(artifact)
                     except Exception as e:
-                        console.print(f"[yellow]Failed to parse artifact {base_name}: {e}[/yellow]")
+                        logger.warning(f"Failed to parse artifact {base_name}: {e}")
         return artifacts
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
         """Node for UAT Evaluation, Auto-Merge, and Refactoring Transition."""
-        console.print("[bold cyan]Running UAT Evaluation...[/bold cyan]")
+        logger.info("Running UAT Evaluation...")
 
         # Dynamic Execution using ProcessRunner
         runner = ProcessRunner()
-        # Ensure we run the exact UAT tests folder with chromium
-        cmd = ["uv", "run", "pytest", "tests/uat/", "--browser=chromium"]
-        console.print(f"[dim]Executing: {' '.join(cmd)}[/dim]")
+        # Ensure we run the exact UAT tests folder with configurable browser args
+        cmd = ["uv", "run", "pytest", "tests/uat/", *settings.uat.playwright_args]
+        logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)
 
         if exit_code != 0:
-            console.print("[bold red]UAT Execution Failed.[/bold red]")
-            artifacts_dir = settings.paths.artifacts_dir
-            artifacts = []
-
-            # Scan for multi-modal artifacts if directory exists
-            if artifacts_dir.exists() and artifacts_dir.is_dir():
-                # We expect PNG screenshots and ZIP traces named like {test_id}.png / {test_id}_trace.zip
-                for img_path in artifacts_dir.glob("*.png"):
-                    base_name = img_path.stem
-                    zip_path = artifacts_dir / f"{base_name}_trace.zip"
-
-                    # Add to list even if trace is missing; trace path check will pass if file doesn't exist?
-                    # The schema verification requires both to exist. If missing, we create empty ones?
-                    # Actually, we should just include it if the schema can validate it
-                    if img_path.exists() and zip_path.exists():
-                        try:
-                            artifact = MultiModalArtifact(
-                                test_id=base_name,
-                                screenshot_path=str(img_path),
-                                trace_path=str(zip_path),
-                                console_logs=[],
-                                traceback=stderr[-1000:] if stderr else stdout[-1000:],
-                            )
-                            artifacts.append(artifact)
-                        except Exception as e:
-                            console.print(
-                                f"[yellow]Failed to parse artifact {base_name}: {e}[/yellow]"
-                            )
+            logger.error(f"UAT Execution Failed with exit code {exit_code}.")
+            artifacts = self._scan_artifacts(stdout, stderr)
 
             uat_state = UatExecutionState(
                 exit_code=exit_code, stdout=stdout, stderr=stderr, artifacts=artifacts
@@ -100,7 +83,7 @@ class UatUseCase:
                 "error": "UAT dynamically failed",
             }
 
-        console.print("[bold green]UAT Execution Passed.[/bold green]")
+        logger.info("UAT Execution Passed.")
         return await self._handle_success(state)
 
     async def _handle_success(self, state: CycleState) -> dict[str, Any]:
@@ -109,12 +92,13 @@ class UatUseCase:
         pr_url = state.pr_url
         if pr_url:
             try:
-                pr_number = pr_url.split("/")[-1]
-                console.print(f"[bold blue]Auto-merging Cycle PR #{pr_number}...[/bold blue]")
+                parsed_url = urlparse(pr_url)
+                pr_number = parsed_url.path.strip("/").split("/")[-1]
+                logger.info(f"Auto-merging Cycle PR #{pr_number}...")
                 await self.git.merge_pr(pr_number)
-                console.print("[bold green]Cycle PR merged successfully![/bold green]")
+                logger.info("Cycle PR merged successfully!")
             except Exception as e:
-                console.print(f"[bold red]Failed to auto-merge Cycle PR: {e}[/bold red]")
+                logger.error(f"Failed to auto-merge Cycle PR: {e}")
                 return {"status": FlowStatus.FAILED, "error": str(e)}
 
         # Refactoring Phase Transition Logic
@@ -131,9 +115,7 @@ class UatUseCase:
 
         if current_phase != WorkPhase.REFACTORING:
             if is_last_cycle:
-                console.print(
-                    "[bold magenta]All cycles completed. Transitioning to Final Refactoring Phase...[/bold magenta]"
-                )
+                logger.info("All cycles completed. Transitioning to Final Refactoring Phase...")
                 # Clear audit results and reset counters for the refactoring loop
                 return {
                     "current_phase": WorkPhase.REFACTORING,
@@ -148,11 +130,9 @@ class UatUseCase:
                     "last_feedback_time": 0,
                     "pr_url": None,
                 }
-            console.print(
-                f"[bold green]Cycle {state.cycle_id} of {planned_count} completed.[/bold green]"
-            )
+            logger.info(f"Cycle {state.cycle_id} of {planned_count} completed.")
             return {"status": FlowStatus.COMPLETED}
 
         # If we were already in refactoring, we are done
-        console.print("[bold green]Refactoring Phase Completed.[/bold green]")
+        logger.info("Refactoring Phase Completed.")
         return {"status": FlowStatus.COMPLETED}
