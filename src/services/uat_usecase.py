@@ -1,3 +1,5 @@
+import re
+import shlex
 from typing import Any
 from urllib.parse import urlparse
 
@@ -16,14 +18,36 @@ class UatUseCase:
     Encapsulates the logic for UAT Evaluation, Auto-Merge, and Refactoring Transition.
     """
 
+    ALLOWED_BINARIES: tuple[str, ...] = ("uv", "pytest", "python")
+    DANGEROUS_SHELL_CHARS: tuple[str, ...] = (";", "&", "|", "$", "`", "\n", "<", ">")
+    TEST_ID_PATTERN: re.Pattern[str] = re.compile(r"^[\w\.-]+$")
+    PR_URL_PATTERN: re.Pattern[str] = re.compile(
+        r"^https://github\.com/[\w.-]+/[\w.-]+/pull/\d+/?$"
+    )
+
     def __init__(self, git_manager: GitManager) -> None:
+        """
+        Initializes the UatUseCase.
+
+        Args:
+            git_manager (GitManager): Instance for executing git operations like PR merges.
+        """
         if not git_manager:
             msg = "GitManager must be injected into UatUseCase"
             raise ValueError(msg)
         self.git = git_manager
 
     def _scan_artifacts(self, stdout: str, stderr: str) -> list[MultiModalArtifact]:
-        """Scans the artifacts directory for multi-modal artifacts."""
+        """
+        Scans the local artifacts directory for multi-modal test artifacts (screenshots/traces).
+
+        Args:
+            stdout (str): Raw stdout from the test runner.
+            stderr (str): Raw stderr from the test runner.
+
+        Returns:
+            list[MultiModalArtifact]: Validated list of multimodal artifacts.
+        """
         artifacts_dir = settings.paths.artifacts_dir
 
         if not artifacts_dir.exists() or not artifacts_dir.is_dir():
@@ -37,15 +61,13 @@ class UatUseCase:
 
         artifacts = []
 
-        import re
-
         # Scan for multi-modal artifacts if directory exists
         if artifacts_dir.exists() and artifacts_dir.is_dir():
             # We expect PNG screenshots and ZIP traces named like {test_id}.png / {test_id}_trace.zip
             for img_path in artifacts_dir.glob("*.png"):
                 base_name = img_path.stem
                 # Validate test_id to prevent path traversal
-                if not re.match(r"^[\w\.-]+$", base_name):
+                if not self.TEST_ID_PATTERN.match(base_name):
                     logger.warning(f"Invalid artifact filename: {base_name}")
                     continue
 
@@ -70,10 +92,13 @@ class UatUseCase:
         return artifacts
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
-        """Node for UAT Evaluation, Auto-Merge, and Refactoring Transition."""
-        logger.info("Running UAT Evaluation...")
+        """
+        Executes the UAT Evaluation node.
 
-        import shlex
+        It deterministically executes Pytest with Playwright, evaluates the exit code,
+        collects mult-modal artifacts on failure, or delegates to success handling.
+        """
+        logger.info("Running UAT Evaluation...")
 
         # Dynamic Execution using ProcessRunner
         runner = ProcessRunner()
@@ -82,15 +107,13 @@ class UatUseCase:
         cmd = [*base_cmd, *settings.uat.playwright_args]
 
         # Security: whitelist allowed binaries to prevent command injection
-        allowed_binaries = ["uv", "pytest", "python"]
-        if not cmd or cmd[0] not in allowed_binaries:
+        if not cmd or cmd[0] not in self.ALLOWED_BINARIES:
             msg = f"Unauthorized command binary: {cmd[0] if cmd else 'empty'}"
             raise ValueError(msg)
 
         # Security: prevent argument injection via shell metacharacters
-        dangerous_chars = (";", "&", "|", "$", "`", "\n", "<", ">")
         for arg in cmd:
-            if any(char in arg for char in dangerous_chars):
+            if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
                 msg = f"Dangerous character detected in command argument: {arg}"
                 raise ValueError(msg)
 
@@ -114,10 +137,12 @@ class UatUseCase:
         return await self._handle_success(state)
 
     async def _handle_success(self, state: CycleState) -> dict[str, Any]:
-        """Handles the logic when UAT passes, including auto-merging and phase transition."""
+        """
+        Handles the logic when UAT passes, including auto-merging the PR and
+        calculating the correct state transition (Completed vs. Refactoring Phase).
+        """
         # Auto-Merge Cycle PR
         pr_url = state.pr_url
-        import re
 
         if pr_url:
             if not settings.session.auto_merge_to_integration:
@@ -126,7 +151,7 @@ class UatUseCase:
                 )
             else:
                 # Security: Validate the PR URL structure strictly
-                if not re.match(r"^https://github\.com/[\w.-]+/[\w.-]+/pull/\d+/?$", pr_url):
+                if not self.PR_URL_PATTERN.match(pr_url):
                     msg = f"Invalid PR URL format: {pr_url}"
                     logger.error(msg)
                     return {"status": FlowStatus.FAILED, "error": msg}
