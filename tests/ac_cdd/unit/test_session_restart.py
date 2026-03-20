@@ -32,7 +32,8 @@ class TestSessionRestart:
         self, mock_jules: MagicMock, mock_manifest: MagicMock
     ) -> None:
         """Should restart session when Jules fails, up to max_session_restarts."""
-        state = CycleState(cycle_id="01", iteration_count=1)
+        state = CycleState(cycle_id="01")
+        state.iteration_count = 1
         call_count = 0
 
         def run_session_side_effect(*args, **kwargs):  # type: ignore[no-untyped-def]
@@ -97,7 +98,8 @@ class TestSessionRestart:
         self, mock_jules: MagicMock, mock_manifest: MagicMock
     ) -> None:
         """Should fail after max_session_restarts attempts."""
-        state = CycleState(cycle_id="01", iteration_count=1)
+        state = CycleState(cycle_id="01")
+        state.iteration_count = 1
 
         mock_jules.run_session.return_value = {
             "session_name": "sessions/fail_123",

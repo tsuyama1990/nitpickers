@@ -189,7 +189,7 @@ class GitMergingMixin(BaseGitManager):
         """Creates final PR from integration branch to main."""
         logger.info(f"Creating final PR: {integration_branch} → main")
 
-        stdout, stderr, code, _ = await self.runner.run_command(
+        stdout, _stderr, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",
@@ -220,7 +220,7 @@ class GitMergingMixin(BaseGitManager):
 
         await self._run_git(["push"])
 
-        stdout, stderr, code, _ = await self.runner.run_command(
+        stdout, _stderr, code, _ = await self.runner.run_command(
             [
                 self.gh_cmd,
                 "pr",

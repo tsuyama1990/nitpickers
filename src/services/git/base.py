@@ -29,11 +29,7 @@ class BaseGitManager:
         await self._ensure_no_lock()
 
         cmd = [self.git_cmd, *args]
-        result = await self.runner.run_command(cmd, check=check)
-        if len(result) == 3:
-            stdout, stderr, code = result
-        else:
-            stdout, stderr, code, _ = result
+        stdout, stderr, code, _ = await self.runner.run_command(cmd, check=check)
 
         if code != 0 and check:
             msg = f"Git command failed: {' '.join(cmd)}\nStderr: {stderr}"
@@ -42,7 +38,7 @@ class BaseGitManager:
 
     async def get_current_commit(self) -> str:
         """Returns the current commit hash (HEAD)."""
-        stdout, stderr, code, _ = await self.runner.run_command(
+        stdout, _stderr, _code, _ = await self.runner.run_command(
             [self.git_cmd, "rev-parse", "HEAD"], check=True
         )
         return str(stdout).strip()

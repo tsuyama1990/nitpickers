@@ -48,12 +48,10 @@ class WorkflowService:
         ensure_api_key()
         graph = self.builder.build_architect_graph()
 
-        initial_state = CycleState(
-            cycle_id=settings.DUMMY_CYCLE_ID,
-            project_session_id=project_session_id,
-            planned_cycle_count=cycles,
-            requested_cycle_count=cycles,
-        )
+        initial_state = CycleState(cycle_id=settings.DUMMY_CYCLE_ID)
+        initial_state.project_session_id = project_session_id
+        initial_state.planned_cycle_count = cycles
+        initial_state.requested_cycle_count = cycles
 
         try:
             thread_id = project_session_id or "architect-session"
@@ -301,15 +299,13 @@ class WorkflowService:
     ) -> None:
         """Execute the cycle graph."""
         graph = self.builder.build_coder_graph()
-        state = CycleState(
-            cycle_id=cycle_id,
-            iteration_count=start_iter,
-            resume_mode=resume,
-            project_session_id=pid,
-            feature_branch=fb,
-            integration_branch=ib,
-            planned_cycle_count=planned_count,
-        )
+        state = CycleState(cycle_id=cycle_id)
+        state.iteration_count = start_iter
+        state.resume_mode = resume
+        state.project_session_id = pid
+        state.feature_branch = fb
+        state.integration_branch = ib
+        state.planned_cycle_count = planned_count
 
         thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
         metadata = TracingMetadata(
@@ -464,10 +460,10 @@ class WorkflowService:
         project_session_id = project_session_id or settings.current_session_id
         initial_state = CycleState(
             cycle_id="qa-tutorials",
-            project_session_id=project_session_id,
             current_phase=WorkPhase.QA,
             status=FlowStatus.START,
         )
+        initial_state.project_session_id = project_session_id
 
         thread_id = f"qa-{project_session_id}"
         metadata = TracingMetadata(session_id=thread_id, execution_type="qa_phase")
@@ -642,7 +638,8 @@ class WorkflowService:
             from src.state import CycleState
 
             refactor_node = GlobalRefactorNodes()
-            refactor_state = CycleState(cycle_id="global_refactor", project_session_id=sid)
+            refactor_state = CycleState(cycle_id="global_refactor")
+            refactor_state.project_session_id = sid
             result = await refactor_node.global_refactor_node(refactor_state)
 
             if "global_refactor_result" in result:

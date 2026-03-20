@@ -62,10 +62,10 @@ class DependencyManager:
         try:
             await self.runner.run_command(["uv", "sync", "--dev"], check=True)
 
-            stdout, stderr, code_ruff, _ = await self.runner.run_command(
+            _stdout, _stderr, code_ruff, _ = await self.runner.run_command(
                 ["uv", "run", "ruff", "--version"], check=False
             )
-            stdout, stderr, code_mypy, _ = await self.runner.run_command(
+            _stdout, _stderr, code_mypy, _ = await self.runner.run_command(
                 ["uv", "run", "mypy", "--version"], check=False
             )
 

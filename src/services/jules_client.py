@@ -154,7 +154,7 @@ class JulesClient:
             return {"session_name": session_name, "status": "running"}
 
         logger.info(f"Session created: {session_name}. Waiting for PR creation...")
-        result = await self.wait_for_completion(session_name, require_plan_approval=False)
+        result = await self.wait_for_completion_legacy(session_name, require_plan_approval=False)
         result["session_name"] = session_name
         return result
 
@@ -186,7 +186,7 @@ class JulesClient:
         logger.info(f"Continuing Session {session_name} with info...")
         await self._send_message(session_name, prompt)
         logger.info(f"Waiting for Jules to process feedback for {session_name}...")
-        result = await self.wait_for_completion(session_name)
+        result = await self.wait_for_completion_legacy(session_name)
         result["session_name"] = session_name
         return result
 

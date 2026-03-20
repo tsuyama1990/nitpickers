@@ -35,7 +35,11 @@ async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> N
         # First call: git status returns changes
         # Second call: git add .
         # Third call: git commit -m
-        mock_run.side_effect = [(" M file.py", "", 0, False), ("", "", 0, False), ("", "", 0, False)]
+        mock_run.side_effect = [
+            (" M file.py", "", 0, False),
+            ("", "", 0, False),
+            ("", "", 0, False),
+        ]
 
         await git_manager.ensure_clean_state(force_stash=True)
 

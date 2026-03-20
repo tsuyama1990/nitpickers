@@ -18,7 +18,8 @@ def mock_jules() -> MagicMock:
 @pytest.mark.asyncio
 async def test_uat_02_01_successful_critic_evaluation_loop(mock_jules: MagicMock) -> None:
     # UAT 02-01: Successful Critic Evaluation Loop
-    state = CycleState(cycle_id="01", project_session_id="session-123")
+    state = CycleState(cycle_id="01")
+    state.project_session_id = "session-123"
 
     mock_jules.wait_for_completion.return_value = {
         "status": "success",
@@ -34,7 +35,9 @@ async def test_uat_02_01_successful_critic_evaluation_loop(mock_jules: MagicMock
 @pytest.mark.asyncio
 async def test_uat_02_02_vulnerable_spec_regeneration(mock_jules: MagicMock) -> None:
     # UAT 02-02: Vulnerable Spec Regeneration
-    state = CycleState(cycle_id="01", project_session_id="session-123", critic_retry_count=0)
+    state = CycleState(cycle_id="01")
+    state.project_session_id = "session-123"
+    state.critic_retry_count = 0
 
     # Mock evaluate response rejection
     mock_jules.wait_for_completion.return_value = {
@@ -56,7 +59,9 @@ async def test_uat_02_02_vulnerable_spec_regeneration(mock_jules: MagicMock) -> 
 @pytest.mark.asyncio
 async def test_uat_02_03_critic_max_retries_limit(mock_jules: MagicMock) -> None:
     # UAT 02-03: Critic Max Retries Limit
-    state = CycleState(cycle_id="01", project_session_id="session-123", critic_retry_count=2)
+    state = CycleState(cycle_id="01")
+    state.project_session_id = "session-123"
+    state.critic_retry_count = 2
 
     mock_jules.wait_for_completion.return_value = {
         "status": "success",

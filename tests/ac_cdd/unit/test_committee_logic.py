@@ -9,7 +9,7 @@ from src.state import CycleState
 
 
 @pytest.mark.asyncio
-async def test_committee_logic_flow() -> None:
+async def test_committee_logic_flow() -> None:  # noqa: PLR0915
     # Mock settings
     mock_settings = MagicMock()
     mock_settings.NUM_AUDITORS = 3
@@ -29,7 +29,9 @@ async def test_committee_logic_flow() -> None:
 
         # --- Scenario 1: All Approved (Happy Path) ---
         # Auditor 1: Approved
-        state = CycleState(cycle_id="01", current_auditor_index=1, current_auditor_review_count=1)
+        state = CycleState(cycle_id="01")
+        state.current_auditor_index = 1
+        state.current_auditor_review_count = 1
         state.audit_result = AuditResult(
             status="APPROVED", is_approved=True, reason="OK", feedback="LGTM"
         )
@@ -64,9 +66,10 @@ async def test_committee_logic_flow() -> None:
 
         # --- Scenario 2: Rejected & Retry (Loop Back) ---
         # Auditor 2: Rejected (Attempt 1 of 2)
-        state = CycleState(
-            cycle_id="02", current_auditor_index=2, current_auditor_review_count=1, iteration_count=5
-        )
+        state = CycleState(cycle_id="02")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 1
+        state.iteration_count = 5
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Issues found", feedback="Fix this"
         )
@@ -81,12 +84,10 @@ async def test_committee_logic_flow() -> None:
 
         # --- Scenario 3: Max Retries Exceeded (Pipeline Handover) ---
         # Auditor 2: Rejected (Attempt 2 of 2) -> Should move to Auditor 3
-        state = CycleState(
-            cycle_id="03",
-            current_auditor_index=2,
-            current_auditor_review_count=2,
-            iteration_count=10,
-        )
+        state = CycleState(cycle_id="03")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 2
+        state.iteration_count = 10
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Still bad", feedback="Still broken"
         )
@@ -119,12 +120,10 @@ async def test_committee_pipeline_handover() -> None:
         nodes = CycleNodes(sandbox, jules)
 
         # Scenario 1: Auditor 1 (Rev 1/Limit) → Reject → Handover to Auditor 2
-        state = CycleState(
-            cycle_id="01",
-            current_auditor_index=1,
-            current_auditor_review_count=1,
-            iteration_count=0,
-        )
+        state = CycleState(cycle_id="01")
+        state.current_auditor_index = 1
+        state.current_auditor_review_count = 1
+        state.iteration_count = 0
         state.audit_result = AuditResult(
             status="REJECTED", is_approved=False, reason="Issues found", feedback="Fix these issues"
         )
@@ -139,12 +138,10 @@ async def test_committee_pipeline_handover() -> None:
         assert "final_fix" not in res or res.get("final_fix") is False
 
         # Scenario 2: Auditor 2 (Rev 1/Limit) → Reject → Final Fix
-        state = CycleState(
-            cycle_id="02",
-            current_auditor_index=2,
-            current_auditor_review_count=1,
-            iteration_count=1,
-        )
+        state = CycleState(cycle_id="02")
+        state.current_auditor_index = 2
+        state.current_auditor_review_count = 1
+        state.iteration_count = 1
         state.audit_result = AuditResult(
             status="REJECTED",
             is_approved=False,
