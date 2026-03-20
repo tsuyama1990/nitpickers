@@ -72,46 +72,33 @@ class PathsConfig(BaseModel):
         return self
 
 
-DEFAULT_JULES_TIMEOUT_SECONDS = "7200"
-DEFAULT_JULES_POLL_INTERVAL_SECONDS = "120"
-DEFAULT_JULES_WAIT_FOR_PR_TIMEOUT_SECONDS = "900"
-DEFAULT_JULES_MAX_PLAN_REJECTIONS = "2"
-DEFAULT_JULES_MONITOR_BATCH_SIZE = "1"
-DEFAULT_JULES_MONITOR_POLL_INTERVAL_SECONDS = "30"
-DEFAULT_JULES_STALE_SESSION_TIMEOUT_SECONDS = "1800"
-DEFAULT_JULES_MAX_STALE_NUDGES = "3"
-DEFAULT_JULES_DISTRESS_KEYWORDS = "inconsistent,cannot act,faulty audit,incorrect version,please manually,blocked,issue with,reiterate,cannot proceed,unable to complete,needs your input"
 
-
-class JulesConfig(BaseModel):
+class JulesConfig(BaseSettings):
     executable: str = "jules"
-    timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_TIMEOUT_SECONDS", DEFAULT_JULES_TIMEOUT_SECONDS))
-    )
-    polling_interval_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_POLL_INTERVAL_SECONDS", DEFAULT_JULES_POLL_INTERVAL_SECONDS))
-    )
+    timeout_seconds: int = Field(default=7200, alias="JULES_TIMEOUT_SECONDS")
+    polling_interval_seconds: int = Field(default=120, alias="JULES_POLL_INTERVAL_SECONDS")
     base_url: str = Field(
-        default_factory=lambda: os.getenv("JULES_BASE_URL", "https://jules.googleapis.com/v1alpha")
+        default="https://jules.googleapis.com/v1alpha", alias="JULES_BASE_URL"
     )
     wait_for_pr_timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_WAIT_FOR_PR_TIMEOUT_SECONDS", DEFAULT_JULES_WAIT_FOR_PR_TIMEOUT_SECONDS))
+        default=900, alias="JULES_WAIT_FOR_PR_TIMEOUT_SECONDS"
     )
-    max_plan_rejections: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MAX_PLAN_REJECTIONS", DEFAULT_JULES_MAX_PLAN_REJECTIONS))
-    )
+    max_plan_rejections: int = Field(default=2, alias="JULES_MAX_PLAN_REJECTIONS")
 
     # LangGraph session monitoring
     monitor_batch_size: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MONITOR_BATCH_SIZE", DEFAULT_JULES_MONITOR_BATCH_SIZE)),
+        default=1,
+        alias="JULES_MONITOR_BATCH_SIZE",
         description="Number of polls per LangGraph node invocation (batch_size * monitor_poll_interval_seconds = seconds per step).",
     )
     monitor_poll_interval_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MONITOR_POLL_INTERVAL_SECONDS", DEFAULT_JULES_MONITOR_POLL_INTERVAL_SECONDS)),
+        default=30,
+        alias="JULES_MONITOR_POLL_INTERVAL_SECONDS",
         description="Seconds between each poll within a monitor batch.",
     )
     stale_session_timeout_seconds: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_STALE_SESSION_TIMEOUT_SECONDS", DEFAULT_JULES_STALE_SESSION_TIMEOUT_SECONDS)),
+        default=1800,
+        alias="JULES_STALE_SESSION_TIMEOUT_SECONDS",
         description=(
             "Seconds without a Jules state change before sending a nudge message. "
             "Jules sometimes enters a silent mode where IN_PROGRESS stays unchanged. "
@@ -120,22 +107,37 @@ class JulesConfig(BaseModel):
         ),
     )
     max_stale_nudges: int = Field(
-        default_factory=lambda: int(os.getenv("JULES_MAX_STALE_NUDGES", DEFAULT_JULES_MAX_STALE_NUDGES)),
+        default=3,
+        alias="JULES_MAX_STALE_NUDGES",
         description="Maximum number of nudge messages to send before giving up and raising a timeout.",
     )
 
     # Distress detection keywords - Jules sometimes completes but signals a problem in its last message
     distress_keywords: list[str] = Field(
-        default_factory=lambda: os.getenv(
-            "JULES_DISTRESS_KEYWORDS",
-            DEFAULT_JULES_DISTRESS_KEYWORDS,
-        ).split(","),
+        default=[
+            "inconsistent", "cannot act", "faulty audit", "incorrect version",
+            "please manually", "blocked", "issue with", "reiterate",
+            "cannot proceed", "unable to complete", "needs your input"
+        ],
+        alias="JULES_DISTRESS_KEYWORDS",
         description=(
             "Keywords in Jules' last agentMessaged activity that indicate it is stuck or "
             "needs help. NOTE: keep these specific - broad words like 'error' will fire on "
             "normal progress messages such as '3 errors were fixed'."
         ),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_distress_keywords(cls, values: Any) -> Any:
+        # BaseSettings can read list of strings from comma separated if configured properly,
+        # but to be safe and support standard comma-separated env vars:
+        kw = values.get("distress_keywords", values.get("JULES_DISTRESS_KEYWORDS"))
+        if isinstance(kw, str):
+            values["distress_keywords"] = [k.strip() for k in kw.split(",")]
+        return values
+
+    model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
 class ToolsConfig(BaseModel):
