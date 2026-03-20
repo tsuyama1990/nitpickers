@@ -1,8 +1,8 @@
 import os
+from typing import Any
 from unittest.mock import patch
 
 import pytest
-from typing import Any
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -53,7 +53,7 @@ async def test_missing_api_key_fallback() -> None:
         patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
         patch("logging.warning") as mock_logger,
     ):
-        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", OPENROUTER_API_KEY="dummy", test_mode=True)
+        settings = Settings(JULES_API_KEY="dummy", E2B_API_KEY="dummy", OPENROUTER_API_KEY="dummy", TEST_MODE=True)
         assert settings.tracing.tracing_enabled is False
         assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
 

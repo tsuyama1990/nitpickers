@@ -2,9 +2,10 @@ from typing import Any
 
 from rich.console import Console
 
-from src.config import settings
 from src.contracts.e2b_executor import E2BExecutorService
+from src.domain_models.verification_schema import StructuralGateReport, VerificationResult
 from src.enums import FlowStatus
+from src.process_runner import ProcessRunner
 from src.services.e2b_executor import E2BExecutorServiceImpl
 from src.state import CycleState
 
@@ -16,78 +17,69 @@ class SandboxEvaluatorNodes:
     Evaluates the code and tests using the E2B Sandbox for Agentic TDD loop.
     """
 
-    def __init__(self, executor: E2BExecutorService | None = None) -> None:
+    def __init__(
+        self,
+        executor: E2BExecutorService | None = None,
+        process_runner: ProcessRunner | None = None,
+    ) -> None:
         self.executor = executor or E2BExecutorServiceImpl()
+        self.process_runner = process_runner or ProcessRunner()
 
     async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         """
-        Executes the Red-Green-Refactor logic inside an E2B Sandbox.
+        Executes the mechanical verification blockade: Linting, Type Checking, and Testing.
+        All checks must pass with exit code 0 to proceed to the audit phase.
         """
-        console.print("[bold cyan]Running Agentic TDD Evaluation in Sandbox...[/bold cyan]")
-
-        # Get phase, default to green if not set to assume standard run
-        tdd_phase = state.tdd_phase or "green"
+        console.print("[bold cyan]Running Mechanical Verification Blockade...[/bold cyan]")
 
         try:
-            # Sync files and run pytest
-            pytest_cmd = getattr(settings.sandbox, "test_cmd", "uv run pytest -v --tb=short")
-            result = await self.executor.run_tests(str(pytest_cmd))
-
-            console.print(f"[dim]Sandbox Execution Exit Code: {result.exit_code}[/dim]")
-            # Note: We omit dumping the raw stdout/stderr to the console directly
-            # to prevent potential information disclosure. They are stored in
-            # `sandbox_artifacts` for processing by subsequent AI nodes.
-
-            # Evaluate based on Red-Green phase
-            if tdd_phase == "red":
-                if result.exit_code == 0:
-                    # Test passed immediately without implementation -> bad
-                    msg = "Test passed immediately; it must fail first to prove valid assertions."
-                    console.print(f"[bold red]TDD Failure: {msg}[/bold red]")
-                    return {
-                        "status": FlowStatus.UAT_FAILED,
-                        "error": msg,
-                        "sandbox_artifacts": result.model_dump(),
-                        "tdd_phase": "red",
-                    }
-                # Test failed -> good (valid failing test)
-                console.print(
-                    "[bold green]Failing test confirmed (Red Phase complete). Requesting implementation...[/bold green]"
-                )
-                return {
-                    "status": FlowStatus.READY_FOR_AUDIT,  # or a custom status to route back for implementation, but usually READY_FOR_AUDIT proceeds
-                    "sandbox_artifacts": result.model_dump(),
-                    "tdd_phase": "green",  # transition to green phase for next run
-                }
-
-            # Green Phase evaluation
-            if result.exit_code == 0:
-                # Tests passed -> good (implementation works)
-                console.print(
-                    "[bold green]Tests passed (Green Phase complete). Ready for Audit.[/bold green]"
-                )
-                return {
-                    "status": FlowStatus.READY_FOR_AUDIT,
-                    "sandbox_artifacts": result.model_dump(),
-                    "tdd_phase": "green",
-                }
-
-            # Tests failed -> bad (implementation is broken)
-            error_msg = f"Execution failed. Fix this: \n{result.stderr}\n{result.stdout}"
-            console.print(
-                "[bold red]Tests failed in Green Phase. Routing back to Coder...[/bold red]"
+            # 1. Run Linting (Ruff)
+            lint_cmd = ["uv", "run", "ruff", "check", "."]
+            l_out, l_err, l_code = await self.process_runner.run_command(lint_cmd, check=False)
+            lint_result = VerificationResult(
+                command=" ".join(lint_cmd), exit_code=l_code, stdout=l_out, stderr=l_err
             )
-            return {
-                "status": FlowStatus.UAT_FAILED,
-                "error": error_msg,
-                "sandbox_artifacts": result.model_dump(),
-                "tdd_phase": "green",  # stay in green phase until fixed
-            }
+
+            # 2. Run Type Checking (Mypy)
+            type_cmd = ["uv", "run", "mypy", "."]
+            t_out, t_err, t_code = await self.process_runner.run_command(type_cmd, check=False)
+            type_result = VerificationResult(
+                command=" ".join(type_cmd), exit_code=t_code, stdout=t_out, stderr=t_err
+            )
+
+            # 3. Run Testing (Pytest)
+            test_cmd = ["uv", "run", "pytest"]
+            p_out, p_err, p_code = await self.process_runner.run_command(test_cmd, check=False)
+            test_result = VerificationResult(
+                command=" ".join(test_cmd), exit_code=p_code, stdout=p_out, stderr=p_err
+            )
+
+            report = StructuralGateReport(
+                lint_result=lint_result,
+                type_check_result=type_result,
+                test_result=test_result,
+            )
+
+            if not report.passed:
+                console.print("[bold red]Mechanical Blockade Enforced: Structural failure detected.[/bold red]")
+                error_trace = report.get_failure_report()
+
+                return {
+                    "status": FlowStatus.TDD_FAILED,
+                    "error": f"Verification failed:\n{error_trace}",
+                    "structural_report": report,
+                }
 
         except Exception as e:
-            console.print(f"[bold red]Sandbox Execution Error: {e}[/bold red]")
+            console.print(f"[bold red]Execution Error in Verification Gate: {e}[/bold red]")
             return {
-                "status": FlowStatus.UAT_FAILED,
+                "status": FlowStatus.TDD_FAILED,
                 "error": f"Sandbox error: {e!s}",
-                "tdd_phase": tdd_phase,
+            }
+        else:
+            console.print("[bold green]All structural checks passed. Ready for Audit.[/bold green]")
+            return {
+                "status": FlowStatus.READY_FOR_AUDIT,
+                "structural_report": report,
+                "error": None,
             }

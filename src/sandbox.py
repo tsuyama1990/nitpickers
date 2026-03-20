@@ -1,5 +1,4 @@
 import io
-import os
 import shlex
 
 from e2b_code_interpreter import Sandbox
