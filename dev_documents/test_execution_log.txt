@@ -16,7 +16,7 @@ Name                                              Stmts   Miss  Cover   Missing
 src/__init__.py                                       0      0   100%
 src/agents.py                                        63     63     0%   1-138
 src/cli.py                                           17     17     0%   3-57
-src/config.py                                       293     95    68%   23, 25-27, 42-55, 61-63, 70-72, 79-83, 91, 95, 99, 103-105, 111-112, 393-395, 418, 420, 438, 440, 442, 446-447, 454-459, 466-469, 473, 477-485, 489-499, 502-527, 530-549
+src/config.py                                       321    115    64%   22-39, 54-60, 66-70, 77-81, 88-92, 100, 104, 108, 112-124, 130-131, 172-174, 177-178, 444-446, 469, 471, 489, 491, 496, 500-503, 510-515, 522-525, 529, 533-541, 545-555, 558-583, 586-605
 src/contracts/__init__.py                             0      0   100%
 src/contracts/e2b_executor.py                         9      9     0%   1-20
 src/domain_models/__init__.py                        14      0   100%
@@ -36,7 +36,7 @@ src/domain_models/uat_execution_state.py              8      0   100%
 src/domain_models/verification_schema.py             31     13    58%   20, 40, 47-62
 src/enums.py                                         32      0   100%
 src/error_messages.py                                 7      7     0%   4-18
-src/graph.py                                         59     59     0%   1-167
+src/graph.py                                         76     76     0%   1-194
 src/graph_nodes.py                                   75     75     0%   1-131
 src/hash_utils.py                                    25     25     0%   1-30
 src/interfaces.py                                     5      5     0%   1-43
@@ -87,16 +87,16 @@ src/services/qa_usecase.py                          146    146     0%   1-268
 src/services/refactor_usecase.py                     61     61     0%   1-120
 src/services/self_critic_evaluator.py                59     59     0%   1-100
 src/services/tracing.py                              12     12     0%   1-21
-src/services/uat_usecase.py                          80     26    68%   23-24, 29-51, 89-90, 116-118, 126-127, 134-138, 157-158
+src/services/uat_usecase.py                         100     27    73%   36-37, 54, 58-60, 71-72, 90-91, 111-112, 117-118, 149, 155-157, 166-168, 176-177, 184-186, 203-204
 src/services/workflow.py                            426    426     0%   1-780
 src/session_manager.py                               65     65     0%   3-110
-src/state.py                                         83      9    89%   98-101, 106-109, 112
+src/state.py                                        106     21    80%   101-102, 108-114, 119-125, 128, 141-142, 146-147
 src/state_manager.py                                 94     94     0%   3-211
 src/tools.py                                         21     21     0%   1-48
 src/utils.py                                         72     54    25%   31-56, 65-78, 83-102, 112-113, 118-142, 151-160
 src/validators.py                                    41     41     0%   3-86
 -------------------------------------------------------------------------------
-TOTAL                                              4994   4235    15%
-============================== 2 passed in 13.63s ==============================
+TOTAL                                              5082   4285    16%
+============================== 2 passed in 9.90s ===============================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
