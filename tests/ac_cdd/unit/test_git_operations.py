@@ -18,7 +18,7 @@ def test_ensure_clean_state_clean(git_manager: GitManager) -> None:
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
         # Mock git status to return empty (clean state)
         # Returns tuple: (stdout, stderr, code)
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         # Should not raise
         # Note: ensure_clean_state is async
@@ -35,7 +35,11 @@ async def test_ensure_clean_state_dirty_auto_stash(git_manager: GitManager) -> N
         # First call: git status returns changes
         # Second call: git add .
         # Third call: git commit -m
-        mock_run.side_effect = [(" M file.py", "", 0), ("", "", 0), ("", "", 0)]
+        mock_run.side_effect = [
+            (" M file.py", "", 0, False),
+            ("", "", 0, False),
+            ("", "", 0, False),
+        ]
 
         await git_manager.ensure_clean_state(force_stash=True)
 
@@ -49,7 +53,11 @@ async def test_create_integration_branch(git_manager: GitManager) -> None:
     session_id = "session-20251230-120000"
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
 
         branch = await git_manager.create_integration_branch(session_id)
 
@@ -64,7 +72,7 @@ async def test_create_session_branch_arch(git_manager: GitManager) -> None:
     integration_branch = "dev/session-20251230-120000/integration"
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         branch = await git_manager.create_session_branch(session_id, "arch", "", integration_branch)
 
@@ -79,7 +87,9 @@ async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
     integration_branch = "dev/session-20251230-120000/integration"
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
+        mock_run.return_value = ("", "", 0, False)
 
         branch = await git_manager.create_session_branch(
             session_id, "cycle", "01", integration_branch
@@ -92,7 +102,7 @@ async def test_create_session_branch_cycle(git_manager: GitManager) -> None:
 async def test_safe_merge_with_conflicts_success(git_manager: GitManager) -> None:
     """Test safe_merge_with_conflicts on clean merge."""
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         result = await git_manager.safe_merge_with_conflicts("feature-branch")
 
@@ -107,7 +117,7 @@ async def test_safe_merge_with_conflicts_success(git_manager: GitManager) -> Non
 async def test_safe_merge_with_conflicts_failure(git_manager: GitManager) -> None:
     """Test safe_merge_with_conflicts on conflicting merge."""
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("Merge conflict in test.py", "error", 1)
+        mock_run.return_value = ("Merge conflict in test.py", "error", 1, False)
 
         result = await git_manager.safe_merge_with_conflicts("feature-branch")
 
@@ -124,7 +134,7 @@ async def test_merge_pr(git_manager: GitManager) -> None:
     pr_number = 123
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         # Merge with default method (squash)
         await git_manager.merge_pr(pr_number)
@@ -172,11 +182,11 @@ async def test_create_final_pr_new(git_manager: GitManager) -> None:
         # Mock gh pr create to return new PR URL -> check=True
 
         mock_run.side_effect = [
-            ("", "", 0),  # gh pr list (empty)
-            ("", "", 0),  # git checkout
-            ("", "", 0),  # git pull (added in refactor)
-            ("", "", 0),  # git push
-            ("https://github.com/user/repo/pull/456", "", 0),  # gh pr create
+            ("", "", 0, False),  # gh pr list (empty)
+            ("", "", 0, False),  # git checkout
+            ("", "", 0, False),  # git pull (added in refactor)
+            ("", "", 0, False),  # git push
+            ("https://github.com/user/repo/pull/456", "", 0, False),  # gh pr create
         ]
 
         pr_url = await git_manager.create_final_pr(integration_branch, title, body)
@@ -193,7 +203,7 @@ async def test_create_final_pr_existing(git_manager: GitManager) -> None:
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
         # Mock gh pr list to return existing PR
         existing_pr = "https://github.com/user/repo/pull/789"
-        mock_run.return_value = (existing_pr, "", 0)
+        mock_run.return_value = (existing_pr, "", 0, False)
 
         pr_url = await git_manager.create_final_pr(integration_branch, "title", "body")
 
@@ -212,10 +222,10 @@ async def test_validate_remote_branch_success(git_manager: GitManager) -> None:
         # Then fetch, rev-parse local, rev-parse remote, merge-base
 
         mock_run.side_effect = [
-            (f"abc1234 refs/heads/{branch}", "", 0),  # ls-remote
-            ("", "", 0),  # fetch
-            ("hash1", "", 0),  # rev-parse local
-            ("hash1", "", 0),  # rev-parse remote
+            (f"abc1234 refs/heads/{branch}", "", 0, False),  # ls-remote
+            ("", "", 0, False),  # fetch
+            ("hash1", "", 0, False),  # rev-parse local
+            ("hash1", "", 0, False),  # rev-parse remote
             # No merge-base call if hashes equal
         ]
 
@@ -232,7 +242,7 @@ async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
         # Mock git ls-remote to return empty
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         is_valid, error = await git_manager.validate_remote_branch(branch)
 
@@ -246,10 +256,10 @@ async def test_get_changed_files(git_manager: GitManager) -> None:
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
         # Mock git diff to return file list
         mock_run.side_effect = [
-            ("file1.py\nfile2.py", "", 0),  # committed changes
-            ("file3.py", "", 0),  # staged changes
-            ("file4.py", "", 0),  # unstaged changes
-            ("file5.py", "", 0),  # untracked files
+            ("file1.py\nfile2.py", "", 0, False),  # committed changes
+            ("file3.py", "", 0, False),  # staged changes
+            ("file4.py", "", 0, False),  # unstaged changes
+            ("file5.py", "", 0, False),  # untracked files
         ]
 
         files = await git_manager.get_changed_files()

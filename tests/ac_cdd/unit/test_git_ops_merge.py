@@ -34,8 +34,8 @@ async def test_merge_pr_immediate_success(git_manager: GitManager, mock_runner: 
 
     # Setup mock to return success for "pr view" (draft check) and "pr merge"
     mock_runner.run_command.side_effect = [
-        ("false", "", 0),  # pr view (isDraft=false)
-        ("Merged", "", 0),  # pr merge
+        ("false", "", 0, False),  # pr view (isDraft=false)
+        ("Merged", "", 0, False),  # pr merge
     ]
 
     await git_manager.merge_pr(36, method="squash")
@@ -62,9 +62,9 @@ async def test_merge_pr_fallback_to_auto(git_manager: GitManager, mock_runner: A
     # 3. auto merge -> success
 
     mock_runner.run_command.side_effect = [
-        ("false", "", 0),  # pr view (isDraft=false)
-        ("", "Base branch requires status checks", 1),  # immediate merge fails
-        ("Auto-merge enabled", "", 0),  # auto merge succeeds
+        ("false", "", 0, False),  # pr view (isDraft=false)
+        ("", "Base branch requires status checks", 1, False),  # immediate merge fails
+        ("Auto-merge enabled", "", 0, False),  # auto merge succeeds
     ]
 
     await git_manager.merge_pr(36, method="squash")
@@ -89,8 +89,8 @@ async def test_merge_pr_failure_no_fallback(git_manager: GitManager, mock_runner
     # 2. immediate merge -> fail (conflict)
 
     mock_runner.run_command.side_effect = [
-        ("false", "", 0),
-        ("", "Merge conflict", 1),  # Fail with conflict
+        ("false", "", 0, False),
+        ("", "Merge conflict", 1, False),  # Fail with conflict
     ]
 
     # Should raise RuntimeError

@@ -326,9 +326,14 @@ class CycleState(BaseModel):
         }
 
         for sub_model, keys in legacy_mappings.items():
-            if sub_model not in data:
-                extracted = {k: data.pop(k) for k in keys if k in data}
-                if extracted:
+            extracted = {k: data.pop(k) for k in keys if k in data}
+            if extracted:
+                if sub_model in data and isinstance(data[sub_model], dict):
+                    data[sub_model].update(extracted)
+                elif sub_model in data and hasattr(data[sub_model], "__dict__"):
+                    for k, v in extracted.items():
+                        setattr(data[sub_model], k, v)
+                else:
                     data[sub_model] = extracted
 
         return data

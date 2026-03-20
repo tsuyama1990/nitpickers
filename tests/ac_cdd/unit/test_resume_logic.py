@@ -27,7 +27,9 @@ class TestResumeLogic:
         mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
 
         usecase = CoderUseCase(mock_jules)
-        state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
+        state = CycleState(cycle_id="01")
+        state.iteration_count = 1
+        state.resume_mode = True
 
         with patch("src.services.coder_usecase.settings") as mock_settings:
             mock_settings.get_template.return_value.read_text.return_value = "Instruction"
@@ -57,7 +59,9 @@ class TestResumeLogic:
         }
 
         usecase = CoderUseCase(mock_jules)
-        state = CycleState(cycle_id="01", iteration_count=1, resume_mode=True)
+        state = CycleState(cycle_id="01")
+        state.iteration_count = 1
+        state.resume_mode = True
 
         with patch("src.services.coder_usecase.settings") as mock_settings:
             mock_settings.get_template.return_value.read_text.return_value = "Instruction"

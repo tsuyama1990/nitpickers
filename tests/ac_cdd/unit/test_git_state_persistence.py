@@ -16,7 +16,7 @@ class TestGitStatePersistence:
         self, mock_run: AsyncMock, git_manager: GitManager
     ) -> None:
         # Setup: branch exists (rev-parse returns 0)
-        mock_run.return_value = ("", "", 0)
+        mock_run.return_value = ("", "", 0, False)
 
         await git_manager.ensure_state_branch()
 
@@ -28,7 +28,7 @@ class TestGitStatePersistence:
     @patch("src.process_runner.ProcessRunner.run_command")
     async def test_read_state_file(self, mock_run: AsyncMock, git_manager: GitManager) -> None:
         expected_content = '{"key": "value"}'
-        mock_run.return_value = (expected_content, "", 0)
+        mock_run.return_value = (expected_content, "", 0, False)
 
         content = await git_manager.read_state_file("test.json")
 
@@ -58,13 +58,13 @@ class TestGitStatePersistence:
 
         # We need to feed enough mock returns
         mock_run.side_effect = [
-            ("", "", 0),  # ensure_state_branch -> rev-parse (local exists)
-            ("", "", 0),  # worktree add
-            ("", "", 0),  # git add
-            ("M test.json", "", 0),  # git status (changed)
-            ("", "", 0),  # git commit
-            ("", "", 0),  # git push
-            ("", "", 0),  # worktree remove
+            ("", "", 0, False),  # ensure_state_branch -> rev-parse (local exists)
+            ("", "", 0, False),  # worktree add
+            ("", "", 0, False),  # git add
+            ("M test.json", "", 0, False),  # git status (changed)
+            ("", "", 0, False),  # git commit
+            ("", "", 0, False),  # git push
+            ("", "", 0, False),  # worktree remove
         ]
 
         await git_manager.save_state_file("test.json", "content", "msg")

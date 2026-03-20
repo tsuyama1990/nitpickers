@@ -31,13 +31,11 @@ class TestAuditPolling:
 
         usecase = AuditorUseCase(mock_jules, mock_git, mock_llm)
 
-        state = CycleState(
-            cycle_id="99",
-            pr_url="https://github.com/org/repo/pull/123",
-            last_audited_commit="commit_A",
-            feature_branch="feature/branch",
-            jules_session_name="sessions/123",
-        )
+        state = CycleState(cycle_id="99")
+        state.pr_url = "https://github.com/org/repo/pull/123"
+        state.last_audited_commit = "commit_A"
+        state.feature_branch = "feature/branch"
+        state.jules_session_name = "sessions/123"
 
         # Run the auditor
         result = await usecase.execute(state)

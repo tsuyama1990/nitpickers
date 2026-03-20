@@ -37,8 +37,8 @@ class TestSessionReuse:
         state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
-            audit_result=audit,
         )
+        state.audit_result = audit
 
         usecase = CoderUseCase(mock_jules)
 
@@ -95,8 +95,8 @@ class TestSessionReuse:
         state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
-            audit_result=audit,
         )
+        state.audit_result = audit
 
         usecase = CoderUseCase(mock_jules)
 
@@ -143,8 +143,8 @@ class TestSessionReuse:
         state = CycleState(
             cycle_id="01",
             status=FlowStatus.RETRY_FIX,
-            audit_result=audit,
         )
+        state.audit_result = audit
 
         usecase = CoderUseCase(mock_jules)
 

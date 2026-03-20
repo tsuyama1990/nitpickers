@@ -41,7 +41,8 @@ def cell_2() -> Any:
 
             usecase = RefactorUsecase(jules_client=jules_client, base_dir=base_dir)
             nodes = GlobalRefactorNodes(usecase=usecase)
-            state = CycleState(cycle_id="08", project_session_id="session-1")
+            state = CycleState(cycle_id="08")
+            state.project_session_id = "session-1"
 
             with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
                 instance = mock_analyzer.return_value
@@ -68,7 +69,8 @@ def cell_2() -> Any:
 
             usecase = RefactorUsecase(jules_client=jules_client, base_dir=base_dir)
             nodes = GlobalRefactorNodes(usecase=usecase)
-            state = CycleState(cycle_id="08", project_session_id="session-1")
+            state = CycleState(cycle_id="08")
+            state.project_session_id = "session-1"
 
             with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
                 instance = mock_analyzer.return_value

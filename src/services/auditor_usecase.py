@@ -181,7 +181,7 @@ class AuditorUseCase:
                 try:
                     filtered_files = []
                     for file_path in reviewable_files:
-                        _, _, code, _ = await self.git.runner.run_command(
+                        _stdout, _stderr, code, _ = await self.git.runner.run_command(
                             ["git", "check-ignore", "-q", file_path], check=False
                         )
                         if code != 0:

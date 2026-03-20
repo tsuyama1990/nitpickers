@@ -50,7 +50,7 @@ class TestGitCheckoutRobustness:
         # Simulate 'git status --porcelain' returning conflict
         # UU = both modified (conflict)
         mixin.runner.run_command = AsyncMock(
-            return_value=("UU conflicting_file.py\n M normal_file.py", "", 0)
+            return_value=("UU conflicting_file.py\n M normal_file.py", "", 0, False)
         )
 
         # Act & Assert
@@ -68,7 +68,7 @@ class TestGitCheckoutRobustness:
         mixin._run_git = AsyncMock()  # type: ignore[method-assign]
 
         # simulate modified state
-        mixin.runner.run_command = AsyncMock(return_value=(" M file.py", "", 0))
+        mixin.runner.run_command = AsyncMock(return_value=(" M file.py", "", 0, False))
 
         await mixin._auto_commit_if_dirty()
 
