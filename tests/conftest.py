@@ -1,4 +1,3 @@
-import os
 import re
 from collections.abc import Generator
 from typing import Any
@@ -8,11 +7,13 @@ import pytest
 from src.config import settings
 from src.domain_models import MultiModalArtifact
 
-ARTIFACTS_DIR = settings.paths.documents_dir / "artifacts"
+ARTIFACTS_DIR = settings.paths.artifacts_dir
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]) -> Generator[None, Any, None]:
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[None]
+) -> Generator[None, Any, None]:
     """Capture Playwright screenshot and DOM state on test failure."""
     # Execute all other hooks to obtain the report object
     outcome = yield
@@ -67,17 +68,19 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]) ->
             # Attach the artifact to the report
             report.multimodal_artifact = artifact
 
-# Set dummy API keys before any tests run, to prevent pydantic-ai from complaining
-# during module import and inspection.
-os.environ["OPENAI_API_KEY"] = "dummy_key_for_test"
-os.environ["ANTHROPIC_API_KEY"] = "dummy_key_for_test"
-os.environ["GEMINI_API_KEY"] = "dummy_key_for_test"
-os.environ["OPENROUTER_API_KEY"] = "dummy_key_for_test"
-os.environ["JULES_API_KEY"] = "dummy_key_for_test"
-os.environ["E2B_API_KEY"] = "dummy_key_for_test"
 
-# Also set models to dummy values to prevent provider resolution errors
-os.environ["AC_CDD_AUDITOR_MODEL"] = "openai:gpt-4o"
-os.environ["AC_CDD_QA_ANALYST_MODEL"] = "openai:gpt-4o"
-os.environ["AC_CDD_REVIEWER__SMART_MODEL"] = "openai:gpt-4o"
-os.environ["AC_CDD_REVIEWER__FAST_MODEL"] = "openai:gpt-3.5-turbo"
+@pytest.fixture(autouse=True)
+def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Set dummy API keys and models before any tests run, to prevent pydantic-ai from complaining
+    during module import and inspection without leaking to the global environment."""
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy_key_for_test")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy_key_for_test")
+    monkeypatch.setenv("GEMINI_API_KEY", "dummy_key_for_test")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "dummy_key_for_test")
+    monkeypatch.setenv("JULES_API_KEY", "dummy_key_for_test")
+    monkeypatch.setenv("E2B_API_KEY", "dummy_key_for_test")
+
+    monkeypatch.setenv("AC_CDD_AUDITOR_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("AC_CDD_QA_ANALYST_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("AC_CDD_REVIEWER__SMART_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("AC_CDD_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")

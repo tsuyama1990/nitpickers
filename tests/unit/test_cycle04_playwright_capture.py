@@ -112,7 +112,7 @@ def test_pytest_runtest_makereport_hook_failure_with_page(
     mock_outcome = MagicMock()
     mock_report = MagicMock()
     mock_report.when = "call"
-    mock_report.failed = True # Test failed!
+    mock_report.failed = True  # Test failed!
     mock_report.longreprtext = "Traceback (most recent call last):\n..."
     mock_outcome.get_result.return_value = mock_report
 
@@ -128,6 +128,7 @@ def test_pytest_runtest_makereport_hook_failure_with_page(
     # Since the paths are generated dynamically by the hook based on test_id,
     # let's pre-create the expected file paths so the MultiModalArtifact validation passes.
     import re
+
     safe_name = re.sub(r"[^\w\-_\.]", "_", mock_item.nodeid)
     expected_screenshot = artifacts_dir / f"{safe_name}.png"
     expected_trace = artifacts_dir / f"{safe_name}_trace.zip"
@@ -145,7 +146,9 @@ def test_pytest_runtest_makereport_hook_failure_with_page(
         gen.send(mock_outcome)
 
     # Verify the hook called the right things
-    mock_page.screenshot.assert_called_once_with(path=str(expected_screenshot), full_page=True, timeout=5000)
+    mock_page.screenshot.assert_called_once_with(
+        path=str(expected_screenshot), full_page=True, timeout=5000
+    )
     mock_page.context.tracing.stop.assert_called_once_with(path=str(expected_trace))
 
     # Verify the artifact was attached to the report

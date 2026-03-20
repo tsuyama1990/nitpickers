@@ -68,6 +68,7 @@ class PathsConfig(BaseModel):
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
+    artifacts_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts")
     sessions_dir: str = ".jules/sessions"
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
     tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
