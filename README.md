@@ -90,6 +90,12 @@ Ensure the following tools are available on your system:
 
 NITPICKERS operates primarily through its Command-Line Interface.
 
+### Interactive Tutorials (UAT Verification)
+To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial. It natively supports both **Mock Mode** (no API keys required) and **Real Mode**.
+```bash
+uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
+```
+
 ### Generate Development Cycles (Phase 1)
 Parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
