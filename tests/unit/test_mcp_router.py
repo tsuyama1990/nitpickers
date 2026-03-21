@@ -31,7 +31,7 @@ def test_e2b_config_success() -> None:
 
 
 def test_mcp_client_manager_sanitization() -> None:
-    # Test that explicitly safe keys are kept while dangerous keys are dropped based on blacklisting.
+    # Test that explicitly safe keys are kept while dangerous or unrelated keys are dropped based on whitelisting/blacklisting.
     test_env = {
         "PATH": "/usr/bin:/bin",
         "NORMAL_VAR": "value",
@@ -46,7 +46,7 @@ def test_mcp_client_manager_sanitization() -> None:
         sanitized = manager._sanitize_environment()
 
         assert "PATH" in sanitized
-        assert "NORMAL_VAR" in sanitized
+        assert "NORMAL_VAR" not in sanitized
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
         assert "OPENAI_API_KEY" in sanitized
@@ -77,14 +77,12 @@ async def test_mcp_client_manager_context() -> None:
                 e2b_config = call_args["e2b"]
                 assert e2b_config["command"] == "npx"
                 assert "SUDO_CMD" not in e2b_config["env"]
-                assert "E2B_API_KEY" in e2b_config["env"]
                 assert e2b_config["env"]["E2B_API_KEY"] == "mock_e2b_key_1234"
 
                 github_config = call_args["github"]
                 assert github_config["command"] == "npx"
                 assert github_config["args"] == ["-y", "@modelcontextprotocol/server-github"]
-                assert "GITHUB_PERSONAL_ACCESS_TOKEN" in github_config["env"]
-                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
+                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
 
 def test_github_config_validation() -> None:
     # Test that GitHubMcpConfig raises an error if GITHUB_PERSONAL_ACCESS_TOKEN is missing

@@ -28,20 +28,13 @@ async def _fetch_tools_with_retry(server_name: str, allowed_tools: set[str] | No
     for attempt in range(max_retries):
         try:
             async with manager.get_client() as client:
-                # Adding robust timeout mechanism specifically per server tool fetching
-                all_tools = await asyncio.wait_for(client.get_tools(), timeout=15.0)
+                all_tools = await asyncio.wait_for(client.get_tools(), timeout=10.0)
 
                 return [
                     t for t in all_tools
                     if getattr(t, "server_name", "") == server_name
                     and (allowed_tools is None or t.name in allowed_tools)
                 ]
-        except TimeoutError:
-            logger.warning(f"Timeout fetching {server_name.upper()} tools (attempt {attempt+1}/{max_retries}).")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(base_delay * (2**attempt))
-            else:
-                logger.warning(f"Failed to retrieve {server_name.upper()} tools due to repeated timeouts. Tools disabled.")
         except Exception as e:
             logger.warning(f"Error fetching {server_name.upper()} tools (attempt {attempt+1}/{max_retries}): {e}")
             if attempt < max_retries - 1:

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from src.process_runner import ProcessRunner
+from src.services.git_ops import GitManager
 from src.utils import logger
 
 
@@ -9,6 +10,7 @@ class DependencyManager:
 
     def __init__(self) -> None:
         self.runner = ProcessRunner()
+        self.git = GitManager()
 
     async def initialize_dependencies_and_git(self) -> None:
         if not (Path.cwd() / "pyproject.toml").exists():

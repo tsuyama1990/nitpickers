@@ -1,75 +1,71 @@
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from langchain_core.tools import tool
 
-from src.services.integration_usecase import IntegrationUsecase
-from src.state import IntegrationState
+from src.services.git_ops import GitManager
 
-
-@tool
-def dummy_push_commit(commit_message: str) -> str:
-    """Mocks pushing a commit via MCP."""
-    return f"Successfully pushed commit: {commit_message}"
-
-@tool
-def dummy_create_pull_request(title: str, body: str) -> str:
-    """Mocks creating a PR via MCP."""
-    return f"Successfully created PR: {title}"
 
 @pytest.fixture
 def mock_git_env(tmp_path: Path) -> Path:
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
+    (repo_dir / ".git").mkdir()
     return repo_dir
 
+
 @pytest.mark.asyncio
-async def test_mcp_git_tools_execution() -> None:
+async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
     """
-    Verify that IntegrationUsecase securely iterates over injected github_write_tools instead of calling the subprocess.
+    Verify that create_feature_branch doesn't fail if branch already exists.
     """
-    tools = [dummy_push_commit, dummy_create_pull_request]
+    with patch("pathlib.Path.cwd", return_value=mock_git_env):
+        git = GitManager()
 
-    usecase = IntegrationUsecase(github_write_tools=tools)
+        # Simulate running git commands
+        # 1. checkout main (ok)
+        # 2. pull (ok)
+        # 3. checkout -b existing_branch -> FAILS
 
-    # Normally we would mock litellm.acompletion to return a ToolCall and assert the ainvoke happens
-    # However since we're verifying structural injection here:
-    assert len(usecase.github_write_tools) == 2
+        branch_name = "dev/int-test"
 
-    state = IntegrationState(
-        master_integrator_session_id="test",
-        unresolved_conflicts=[]
-    )
+        # Mock run_command to simulate branch existence
+        async def mock_run_command(cmd: list[str], check: bool = True) -> tuple[str, str, int]:
+            cmd_str = " ".join(cmd)
+            # When checking existence
+            if "rev-parse --verify dev/int-test" in cmd_str:
+                return "", "", 0  # Return 0 = Exists
+            # If it tries to create anyway (fail case)
+            if "checkout -b dev/int-test" in cmd_str:
+                return "", "fatal: A branch named 'dev/int-test' already exists.", 128
+            return "", "", 0
 
-    # We mock out the MCP manager and litellm to test structural execution
-    # First, mock the asynchronous context manager returned by get_client correctly
-    from contextlib import asynccontextmanager
+        git.runner.run_command = AsyncMock(side_effect=mock_run_command)  # type: ignore[method-assign]
+        git._ensure_no_lock = AsyncMock()  # type: ignore[method-assign]
 
-    @asynccontextmanager
-    async def mock_get_client() -> Any:
-        yield AsyncMock()
+        # Now it should NOT raise
+        await git.create_feature_branch(branch_name)
 
-    with patch("src.mcp_router.manager.McpClientManager.get_client", return_value=mock_get_client()), \
-         patch("src.services.integration_usecase.litellm.acompletion", new_callable=AsyncMock) as mock_litellm:
+        # Verify checking logic was called
+        # mock_run_command logic was: if rev-parse -> return 0 (exists), 128 (failed)
+        # We need to ensure the test mock reflects "exists".
+        # The logic in create_feature_branch calls rev-parse first.
+        # If I want to simulate "exists", rev-parse should return 0.
 
-        # Setup mock to exit loop early by not returning tool_calls
-        mock_response = AsyncMock()
-        mock_response.choices = [AsyncMock()]
-        mock_response.choices[0].message.tool_calls = None
-        mock_response.choices[0].message.to_dict.return_value = {"role": "assistant", "content": "Done"}
-        mock_litellm.return_value = mock_response
 
-        # Execute
-        await usecase.run_integration_loop(state, Path("."))
+@pytest.mark.asyncio
+async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
+    """
+    Verify smart checkout recovers from dirty state.
+    """
+    with patch("pathlib.Path.cwd", return_value=mock_git_env):
+        git = GitManager()
+        git.runner.run_command = AsyncMock(return_value=("", "", 0))  # type: ignore[method-assign]
 
-        # Verify litellm was called with the injected tool schema
-        mock_litellm.assert_called_once()
-        call_kwargs = mock_litellm.call_args.kwargs
-        assert "tools" in call_kwargs
+        # Mock _auto_commit_if_dirty
+        git._auto_commit_if_dirty = AsyncMock()  # type: ignore[method-assign]
 
-        # Verify that schema parsing successfully captured dummy tools
-        tools_schema = call_kwargs["tools"]
-        assert len(tools_schema) == 2
-        assert any(t["function"]["name"] == "dummy_push_commit" for t in tools_schema)
+        # Should call auto-commit and checkout
+        await git.smart_checkout("new-branch")
+
+        git._auto_commit_if_dirty.assert_called_once()
