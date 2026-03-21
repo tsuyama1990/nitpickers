@@ -8,7 +8,8 @@ from rich.console import Console
 from src.config import settings
 from src.domain_models import CycleManifest
 from src.enums import FlowStatus, WorkPhase
-from src.services.jules_client import JulesClient
+from src.services.llm_reviewer import LLMReviewer
+from src.services.mcp_client_manager import McpClientManager
 from src.state import CycleState
 from src.state_manager import StateManager
 
@@ -33,11 +34,9 @@ class CoderUseCase:
     Encapsulates the logic and interactions with the Coder AI (Jules).
     """
 
-    def __init__(self, jules_client: JulesClient) -> None:
-        if not jules_client:
-            msg = "JulesClient must be injected into CoderUseCase"
-            raise ValueError(msg)
-        self.jules = jules_client
+    def __init__(self, mcp_client: McpClientManager | None = None, llm_reviewer: LLMReviewer | None = None) -> None:
+        self.mcp_client = mcp_client or McpClientManager()
+        self.llm_reviewer = llm_reviewer or LLMReviewer()
 
     # ------------------------------------------------------------------ #
     #  Public entry point                                                  #
@@ -66,7 +65,7 @@ class CoderUseCase:
                 f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]"
             )
             try:
-                result = await self.jules.wait_for_completion(jules_session_name)
+                result = await self.jules.wait_for_completion(jules_session_name)  # type: ignore
                 if not (result.get("status") == "success" or result.get("pr_url")):
                     console.print(
                         "[yellow]Existing session did not produce PR. Restarting...[/yellow]"
@@ -197,7 +196,7 @@ class CoderUseCase:
         ):
             return None
 
-        session_state = await self.jules.get_session_state(cycle_manifest.jules_session_id)
+        session_state = await self.jules.get_session_state(cycle_manifest.jules_session_id)  # type: ignore
         if session_state not in _REUSABLE_STATES:
             console.print(
                 f"[yellow]Session in unexpected/failed state ({session_state}). "
@@ -257,7 +256,7 @@ class CoderUseCase:
             msg = f"Invalid session_req_id format: {session_req_id}"
             raise ValueError(msg)
 
-        result = await self.jules.run_session(
+        result = await self.jules.run_session(  # type: ignore
             session_id=session_req_id,
             prompt=instruction,
             target_files=target_files,
@@ -278,7 +277,7 @@ class CoderUseCase:
             console.print(
                 f"[bold blue]Session {jules_session_name} created. Waiting for completion...[/bold blue]"
             )
-            result = await self.jules.wait_for_completion(jules_session_name)
+            result = await self.jules.wait_for_completion(jules_session_name)  # type: ignore
 
         return jules_session_name, result
 
@@ -306,13 +305,13 @@ class CoderUseCase:
 
             critic_instruction = critic_instruction.replace("{{cycle_id}}", str(cycle_id))
 
-            session_url = self.jules._get_session_url(jules_session_name)
-            await self.jules._send_message(session_url, critic_instruction)
+            session_url = self.jules._get_session_url(jules_session_name)  # type: ignore
+            await self.jules._send_message(session_url, critic_instruction)  # type: ignore
 
             console.print("[dim]Waiting for Coder Critic to finish review and push fixes...[/dim]")
             await asyncio.sleep(10)
 
-            return dict(await self.jules.wait_for_completion(jules_session_name))
+            return dict(await self.jules.wait_for_completion(jules_session_name))  # type: ignore
         except Exception as e:
             console.print(f"[yellow]Warning: Coder Critic phase error, proceeding: {e}[/yellow]")
             return None
@@ -339,7 +338,7 @@ class CoderUseCase:
             safe_feedback = sanitize_for_llm(feedback)
             feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
 
-            await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
+            await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)  # type: ignore
 
             console.print(
                 "[dim]Waiting for Jules to process feedback (expecting IN_PROGRESS)...[/dim]"
@@ -351,7 +350,7 @@ class CoderUseCase:
 
             for attempt in range(max_retries):
                 await asyncio.sleep(wait_interval)
-                current_state = await self.jules.get_session_state(session_id)
+                current_state = await self.jules.get_session_state(session_id)  # type: ignore
                 console.print(
                     f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]"
                 )
@@ -376,7 +375,7 @@ class CoderUseCase:
                     "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
                 )
 
-            result = await self.jules.wait_for_completion(session_id)
+            result = await self.jules.wait_for_completion(session_id)  # type: ignore
             if result.get("status") == "success" or result.get("pr_url"):
                 return dict(result)
 

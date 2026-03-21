@@ -23,7 +23,6 @@ from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.services.audit_orchestrator import AuditOrchestrator
 from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 
@@ -35,7 +34,7 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(self, sandbox_runner: object, jules_client: JulesClient) -> None:
+    def __init__(self, sandbox_runner: object, jules_client: Any) -> None:
         self.sandbox = sandbox_runner
         self.jules = jules_client
 
@@ -66,7 +65,7 @@ class CycleNodes(IGraphNodes):
         if hasattr(container, "resolve"):
             refactor_usecase = container.resolve(RefactorUsecase)
         else:
-            refactor_usecase = RefactorUsecase(jules_client=self.jules)
+            refactor_usecase = RefactorUsecase(jules_client=self.jules)  # type: ignore
 
         self._global_refactor = GlobalRefactorNodes(usecase=refactor_usecase)
 

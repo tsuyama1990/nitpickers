@@ -4,8 +4,8 @@ from src.state import CycleState
 
 
 class AuditorNodes:
-    def __init__(self, jules: Any, git: Any, llm_reviewer: Any) -> None:
-        self.jules = jules
+    def __init__(self, mcp_client: Any = None, git: Any = None, llm_reviewer: Any = None) -> None:
+        self.mcp_client = mcp_client
         self.git = git
         self.llm_reviewer = llm_reviewer
 
@@ -16,5 +16,5 @@ class AuditorNodes:
             uat_usecase = UATAuditorUseCase(self.llm_reviewer)
             return dict(await uat_usecase.execute(state))
 
-        usecase = AuditorUseCase(self.jules, self.git, self.llm_reviewer)
+        usecase = AuditorUseCase(self.mcp_client, self.git, self.llm_reviewer)
         return dict(await usecase.execute(state))

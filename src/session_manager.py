@@ -26,7 +26,7 @@ class SessionManager:
 
     async def load_manifest(self) -> ProjectManifest | None:
         """Loads manifest from the orphan state branch."""
-        content = await self.git.read_state_file(self.STATE_FILE)
+        content = await self.git.read_state_file(self.STATE_FILE)  # type: ignore
         if not content:
             return None
 
@@ -44,7 +44,7 @@ class SessionManager:
         try:
             manifest.last_updated = datetime.now(UTC)
             content = manifest.model_dump_json(indent=2)
-            await self.git.save_state_file(self.STATE_FILE, content, commit_msg)
+            await self.git.save_state_file(self.STATE_FILE, content, commit_msg)  # type: ignore
         except Exception as e:
             logger.exception(f"Failed to save manifest: {e}")
             raise

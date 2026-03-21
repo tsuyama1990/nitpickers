@@ -1,9 +1,11 @@
 from pathlib import Path
 
+from src.config import settings
 from src.domain_models.execution import ConflictRegistryItem
 from src.services.conflict_manager import ConflictManager, ConflictMarkerRemainsError
 from src.services.file_ops import FilePatcher
-from src.services.jules_client import JulesClient
+from src.services.llm_reviewer import LLMReviewer
+from src.services.mcp_client_manager import McpClientManager
 from src.state import IntegrationState
 from src.utils import logger
 
@@ -14,9 +16,13 @@ class MaxRetriesExceededError(Exception):
 
 class IntegrationUsecase:
     def __init__(
-        self, jules_client: JulesClient | None = None, max_retries: int | None = None
+        self,
+        mcp_client: McpClientManager | None = None,
+        llm_reviewer: LLMReviewer | None = None,
+        max_retries: int | None = None,
     ) -> None:
-        self.jules = jules_client or JulesClient()
+        self.mcp_client = mcp_client or McpClientManager()
+        self.llm_reviewer = llm_reviewer or LLMReviewer()
         self.conflict_manager = ConflictManager()
         self.file_ops = FilePatcher()
 
@@ -38,9 +44,10 @@ class IntegrationUsecase:
         Sends unresolved conflicts sequentially to the stateful Jules session.
         Validates the output. If markers remain, retries up to max limits.
         """
-        # Ensure session exists
+        # Master Integrator loop logic via MCP.
+        # Now handles write tools.
         if not state.master_integrator_session_id:
-            state.master_integrator_session_id = self.jules.create_master_integrator_session()
+            state.master_integrator_session_id = "master-integrator-session"
             logger.info(f"Created Master Integrator Session: {state.master_integrator_session_id}")
 
         for i, item in enumerate(state.unresolved_conflicts):
@@ -66,7 +73,7 @@ class IntegrationUsecase:
         # we can just use the global session, but for specific files, we might need a fresh context
         # or we just rely on the LLM's capacity if we maintain one list. For Master Integrator,
         # we'll maintain history just for this file's resolution to keep context window manageable.
-        message_history: list[dict[str, str]] = []
+
 
         prompt = self.conflict_manager.build_conflict_package(item, repo_path)
 
@@ -76,10 +83,12 @@ class IntegrationUsecase:
                 f"Resolving {item.file_path} (Attempt {item.resolution_attempts}/{max_retries})"
             )
 
-            # Send to Jules
-            response_code = await self.jules.send_message_to_session(
-                session_id, prompt, message_history
-            )
+            # Use MCP GitHub read tools maybe, or just LLM
+            async with self.mcp_client as _client:
+                model = settings.reviewer.smart_model
+                response_code = await self.llm_reviewer._ainvoke_with_tools(  # type: ignore
+                    prompt=prompt, model=model, tools=[]
+                )
 
             # Extract code block if any
             clean_code = self._extract_code_block(response_code)

@@ -38,12 +38,10 @@ class CommitteeState(BaseModel):
 class SessionPersistenceState(BaseModel):
     jules_session_name: str | None = None
     critic_retry_count: int = 0
-    pr_url: str | None = None
+    pull_request_url: str | None = None
     resume_mode: bool = False
-    active_branch: str | None = None
+    remote_commit_hash: str | None = None
     project_session_id: str | None = None
-    feature_branch: str | None = None
-    integration_branch: str | None = None
     is_session_finalized: bool = False
 
 
@@ -169,12 +167,12 @@ class CycleState(BaseModel):
         self.session.jules_session_name = value
 
     @property
-    def pr_url(self) -> str | None:
-        return self.session.pr_url
+    def pull_request_url(self) -> str | None:
+        return self.session.pull_request_url
 
-    @pr_url.setter
-    def pr_url(self, value: str | None) -> None:
-        self.session.pr_url = value
+    @pull_request_url.setter
+    def pull_request_url(self, value: str | None) -> None:
+        self.session.pull_request_url = value
 
     @property
     def resume_mode(self) -> bool:
@@ -185,20 +183,12 @@ class CycleState(BaseModel):
         self.session.resume_mode = value
 
     @property
-    def feature_branch(self) -> str | None:
-        return self.session.feature_branch
+    def remote_commit_hash(self) -> str | None:
+        return self.session.remote_commit_hash
 
-    @feature_branch.setter
-    def feature_branch(self, value: str | None) -> None:
-        self.session.feature_branch = value
-
-    @property
-    def integration_branch(self) -> str | None:
-        return self.session.integration_branch
-
-    @integration_branch.setter
-    def integration_branch(self, value: str | None) -> None:
-        self.session.integration_branch = value
+    @remote_commit_hash.setter
+    def remote_commit_hash(self, value: str | None) -> None:
+        self.session.remote_commit_hash = value
 
     @property
     def audit_feedback(self) -> list[str]:
@@ -313,12 +303,10 @@ class CycleState(BaseModel):
             "session": [
                 "jules_session_name",
                 "critic_retry_count",
-                "pr_url",
+                "pull_request_url",
                 "resume_mode",
-                "active_branch",
+                "remote_commit_hash",
                 "project_session_id",
-                "feature_branch",
-                "integration_branch",
                 "is_session_finalized",
             ],
             "audit": [

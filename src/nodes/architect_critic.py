@@ -9,9 +9,9 @@ console = Console()
 
 
 class ArchitectCriticNodes:
-    def __init__(self, jules_client: Any) -> None:
-        self.jules = jules_client
-        self.evaluator = SelfCriticEvaluator(jules_client)
+    def __init__(self, mcp_client: Any = None) -> None:
+        self.mcp_client = mcp_client
+        self.evaluator = SelfCriticEvaluator(mcp_client)
 
     async def architect_critic_node(self, state: CycleState) -> dict[str, Any]:
         """Node for running the Architect Self-Critic evaluation."""

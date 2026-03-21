@@ -36,6 +36,17 @@ class McpClientManager:
                 env=e2b_env,
             )
 
+        if "jules" not in self.configs:
+            jules_env = {}
+            if settings.JULES_API_KEY:
+                jules_env["JULES_API_KEY"] = settings.JULES_API_KEY.get_secret_value()
+            self.configs["jules"] = McpServerConfig(
+                server_name="jules",
+                command="npx",
+                args=["-y", "@google/jules-mcp"],
+                env=jules_env,
+            )
+
         if "github" not in self.configs:
             gh_env = {}
             gh_token = os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -50,7 +61,10 @@ class McpClientManager:
 
         connections = {}
         for name, cfg in self.configs.items():
-            merged_env = os.environ.copy()
+            merged_env = {
+                k: v for k, v in os.environ.items()
+                if not k.startswith("SUDO_")
+            }
             merged_env.update(cfg.env)
             connections[name] = {
                 "command": cfg.command,
@@ -59,7 +73,7 @@ class McpClientManager:
                 "transport": "stdio",
             }
 
-        self._client = MultiServerMCPClient(connections=connections)  # type: ignore[arg-type]
+        self._client = MultiServerMCPClient(connections=connections)  # type: ignore
 
     async def get_tools(self, server_name: str | None = None) -> list[BaseTool]:
         """
@@ -135,7 +149,65 @@ class McpClientManager:
 
         return filtered
 
-    def _create_proxy_tool(self, tool: BaseTool, max_length: int) -> BaseTool:
+    async def get_write_tools(self, server_name: str) -> list[BaseTool]:
+        """
+        Retrieves write tools specifically for destructive nodes like Master Integrator.
+        """
+        all_tools = await self._client.get_tools()
+        whitelist = ["push_commit", "create_pull_request"]
+
+        filtered = []
+        for tool in all_tools:
+            is_match = False
+            for w in whitelist:
+                if tool.name == w or tool.name.endswith(f"_{w}"):
+                    is_match = True
+                    break
+
+            if not is_match:
+                continue
+
+            if (
+                not tool.name.startswith(f"{server_name}_")
+                and tool.name != whitelist[0]
+                and tool.name != whitelist[1]
+                and getattr(tool, "server_name", server_name) != server_name
+            ):
+                continue
+            filtered.append(tool)
+
+        return filtered
+
+    async def get_orchestration_tools(self, server_name: str) -> list[BaseTool]:
+        """
+        Retrieves orchestration tools specifically for Global Refactor node.
+        """
+        all_tools = await self._client.get_tools()
+        whitelist = ["create_session", "review_changes"]
+
+        filtered = []
+        for tool in all_tools:
+            is_match = False
+            for w in whitelist:
+                if tool.name == w or tool.name.endswith(f"_{w}"):
+                    is_match = True
+                    break
+
+            if not is_match:
+                continue
+
+            if (
+                not tool.name.startswith(f"{server_name}_")
+                and tool.name != whitelist[0]
+                and tool.name != whitelist[1]
+                and getattr(tool, "server_name", server_name) != server_name
+            ):
+                continue
+            filtered.append(tool)
+
+        return filtered
+
+    def _create_proxy_tool(self, tool: Any, max_length: int) -> BaseTool:
         """Wraps a tool to intercept output and prevent token exhaustion/crashes."""
 
         async def proxied_arun(*args: Any, **kwargs: Any) -> Any:
@@ -166,7 +238,7 @@ class McpClientManager:
         return StructuredTool(
             name=tool.name,
             description=tool.description,
-            args_schema=tool.args_schema,  # type: ignore[arg-type]
+            args_schema=tool.args_schema,
             func=proxied_run,
             coroutine=proxied_arun,
         )

@@ -7,8 +7,8 @@ from src.config import settings
 from src.domain_models import AuditResult
 from src.enums import FlowStatus, WorkPhase
 from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.services.llm_reviewer import LLMReviewer
+from src.services.mcp_client_manager import McpClientManager
 from src.state import CycleState
 from src.state_manager import StateManager
 
@@ -22,18 +22,16 @@ class AuditorUseCase:
 
     def __init__(
         self,
-        jules_client: JulesClient,
-        git_manager: GitManager,
-        llm_reviewer: LLMReviewer,
+        mcp_client: McpClientManager | None = None,
+        git_manager: GitManager | None = None,
+        llm_reviewer: LLMReviewer | None = None,
         sandbox_runner: Any = None,
     ) -> None:
-        from src.services.mcp_client_manager import McpClientManager
 
-        self.jules = jules_client
-        self.git = git_manager
-        self.llm_reviewer = llm_reviewer
+        self.mcp_client = mcp_client or McpClientManager()
+        self.git = git_manager or GitManager()
+        self.llm_reviewer = llm_reviewer or LLMReviewer()
         self.sandbox = sandbox_runner
-        self.mcp_client = McpClientManager()
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
@@ -80,12 +78,12 @@ class AuditorUseCase:
 
         try:
             new_last_audited_commit = state.last_audited_commit
-            pr_url = state.pr_url
+            pr_url = state.pr_url  # type: ignore
 
             if pr_url:
                 console.print(f"[dim]Checking out PR: {pr_url}[/dim]")
                 try:
-                    await self.git.checkout_pr(pr_url)
+                    await self.git.checkout_pr(pr_url)  # type: ignore
                     console.print("[dim]Successfully checked out PR branch[/dim]")
 
                     current_commit = await self.git.get_current_commit()
@@ -106,7 +104,7 @@ class AuditorUseCase:
 
                         if jules_session_id:
                             try:
-                                jules_status = await self.jules.get_session_state(jules_session_id)
+                                jules_status = await self.jules.get_session_state(jules_session_id)  # type: ignore
                                 # Official Jules API terminal states: COMPLETED, FAILED
                                 # (SUCCEEDED does not exist in the official API)
                                 # Non-terminal (still working): IN_PROGRESS, QUEUED, PLANNING,
@@ -143,7 +141,7 @@ class AuditorUseCase:
                     "[yellow]Warning: No PR URL provided, reviewing current branch[/yellow]"
                 )
 
-            base_branch = state.feature_branch or state.integration_branch or "main"
+            base_branch = state.feature_branch or state.integration_branch or "main"  # type: ignore
             if pr_url:
                 try:
                     pr_base = await self.git.get_pr_base_branch(pr_url)
@@ -251,7 +249,7 @@ class AuditorUseCase:
             feedback=audit_feedback,
         )
 
-        feature_branch = state.feature_branch
+        feature_branch = state.feature_branch  # type: ignore
         if feature_branch:
             try:
                 await self.git.checkout_branch(feature_branch)

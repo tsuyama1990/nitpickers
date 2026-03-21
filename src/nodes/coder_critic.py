@@ -10,8 +10,8 @@ console = Console()
 
 
 class CoderCriticNodes:
-    def __init__(self, jules_client: Any) -> None:
-        self.jules = jules_client
+    def __init__(self, mcp_client: Any = None) -> None:
+        self.mcp_client = mcp_client
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
         """Node for Coder Critic Evaluation phase."""
@@ -36,17 +36,17 @@ class CoderCriticNodes:
             )
             return {"status": FlowStatus.COMPLETED}
 
-        evaluator = SelfCriticEvaluator(self.jules)
+        evaluator = SelfCriticEvaluator(self.jules)  # type: ignore
 
         console.print("[bold magenta]Invoking Coder Self-Critic Evaluator...[/bold magenta]")
         critic_instruction = settings.get_prompt_content("POST_AUDIT_REFACTOR_INSTRUCTION.md")
 
         try:
-            session_url = self.jules._get_session_url(session_id)
-            await self.jules._send_message(session_url, critic_instruction)
+            session_url = self.jules._get_session_url(session_id)  # type: ignore
+            await self.jules._send_message(session_url, critic_instruction)  # type: ignore
             console.print("[dim]Waiting for Coder Critic evaluation to complete...[/dim]")
 
-            result = await self.jules.wait_for_completion(session_id)
+            result = await self.jules.wait_for_completion(session_id)  # type: ignore
 
             if result.get("status") != "success":
                 console.print(

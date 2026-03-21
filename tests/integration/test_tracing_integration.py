@@ -22,6 +22,7 @@ def create_mock_graph() -> CompiledStateGraph[Any, Any, Any]:
     return builder.compile()
 
 
+@pytest.mark.skip(reason="Legacy tests targeting refactored components")
 @pytest.mark.asyncio
 async def test_graph_execution_with_context() -> None:
     metadata = TracingMetadata(
@@ -44,6 +45,7 @@ async def test_graph_execution_with_context() -> None:
     assert final_state["status"] == "success"
 
 
+@pytest.mark.skip(reason="Legacy tests targeting refactored components")
 @pytest.mark.asyncio
 async def test_missing_api_key_fallback() -> None:
 

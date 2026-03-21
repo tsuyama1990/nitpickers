@@ -1,11 +1,11 @@
-import secrets
 from pathlib import Path
 from typing import Any
 
 from src.config import settings
 from src.domain_models.refactor import GlobalRefactorResult
 from src.services.ast_analyzer import ASTAnalyzer
-from src.services.jules_client import JulesClient
+from src.services.llm_reviewer import LLMReviewer
+from src.services.mcp_client_manager import McpClientManager
 from src.utils import logger
 
 
@@ -13,9 +13,13 @@ class RefactorUsecase:
     """Uses the AST analyzer to identify global refactoring opportunities and delegates to Jules."""
 
     def __init__(
-        self, jules_client: JulesClient | None = None, base_dir: Path | None = None
+        self,
+        mcp_client: McpClientManager | None = None,
+        llm_reviewer: LLMReviewer | None = None,
+        base_dir: Path | None = None,
     ) -> None:
-        self.jules_client = jules_client or JulesClient()
+        self.mcp_client = mcp_client or McpClientManager()
+        self.llm_reviewer = llm_reviewer or LLMReviewer()
         self.base_dir = (base_dir or settings.paths.src).resolve()
 
     def _format_duplicates(self, duplicates: list[list[dict[str, Any]]]) -> str:
@@ -100,14 +104,23 @@ class RefactorUsecase:
             f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules..."
         )
 
-        # Securely generate Session ID to prevent session fixation attacks
-        secure_token = secrets.token_urlsafe(32)
-        session_id = f"master-integrator-{settings.current_session_id}-{secure_token}"
-
         try:
-            await self.jules_client.run_session(
-                session_id=session_id, prompt=prompt, files=list(modified_files)
-            )
+            async with self.mcp_client as client:
+                tools = await client.get_orchestration_tools(server_name="jules")
+                model = settings.reviewer.smart_model
+
+                # Create prompt calling for jules orchestration
+                orchestration_prompt = (
+                    "You are the Global Refactor orchestrator. You must dispatch agents to refactor the code based on the following plan:\n"
+                    f"{prompt}\n\n"
+                    "Use the `create_session` tool to start a refactoring session.\n"
+                    "Once the diffs are returned, apply them sequentially using valid patching locks to avoid race conditions.\n"
+                    "Ensure you resolve all files: " + ", ".join(modified_files)
+                )
+
+                _response = await self.llm_reviewer._ainvoke_with_tools(  # type: ignore
+                    prompt=orchestration_prompt, model=model, tools=tools
+                )
 
             return GlobalRefactorResult(
                 refactorings_applied=True,

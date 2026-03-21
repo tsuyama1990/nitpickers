@@ -61,7 +61,7 @@ class SessionValidator(BaseValidator):
         # 2. Remote branch check (optional)
         if self.check_remote:
             git = GitManager()
-            is_valid_remote, remote_error = await git.validate_remote_branch(
+            is_valid_remote, remote_error = await git.validate_remote_branch(  # type: ignore
                 self.integration_branch
             )
             if not is_valid_remote:

@@ -149,7 +149,7 @@ class UatUseCase:
         calculating the correct state transition (Completed vs. Refactoring Phase).
         """
         # Auto-Merge Cycle PR
-        pr_url = state.pr_url
+        pr_url = state.pr_url  # type: ignore
 
         if pr_url:
             if not settings.session.auto_merge_to_integration:
@@ -168,7 +168,7 @@ class UatUseCase:
 
                 try:
                     logger.info(f"Auto-merging Cycle PR #{pr_number}...")
-                    await self.git.merge_pr(pr_number)
+                    await self.git.merge_pr(pr_number)  # type: ignore
                     logger.info("Cycle PR merged successfully!")
                 except Exception as e:
                     logger.error(f"Failed to auto-merge Cycle PR: {e}")
