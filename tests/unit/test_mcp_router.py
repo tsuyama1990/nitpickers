@@ -20,14 +20,14 @@ def test_e2b_config_validation() -> None:
 
 def test_e2b_config_success() -> None:
     # Test valid configuration
-    with patch.dict(os.environ, {"E2B_API_KEY": "e2b_valid_key123"}):
+    with patch.dict(os.environ, {"E2B_API_KEY": "mock_e2b_key_valid"}):
         config = E2bMcpConfig()  # type: ignore[call-arg]
         params = config.get_connection_config()
         e2b = params["e2b"]
         assert e2b["command"] == "npx"
         assert e2b["args"] == ["-y", "@e2b/mcp-server"]
         assert e2b["env"] is not None
-        assert e2b["env"]["E2B_API_KEY"] == "e2b_valid_key123"
+        assert e2b["env"]["E2B_API_KEY"] == "mock_e2b_key_valid"
 
 
 def test_mcp_client_manager_sanitization() -> None:
@@ -56,7 +56,7 @@ def test_mcp_client_manager_sanitization() -> None:
 @pytest.mark.asyncio
 async def test_mcp_client_manager_context() -> None:
     # Test that the context manager yields a client with correct parameters
-    with patch.dict(os.environ, {"E2B_API_KEY": "e2b_test_key123", "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_mock_token_1234567890", "SUDO_CMD": "secret"}):
+    with patch.dict(os.environ, {"E2B_API_KEY": "mock_e2b_key_1234", "GITHUB_PERSONAL_ACCESS_TOKEN": "mock_github_key_1234", "SUDO_CMD": "secret"}):
         manager = McpClientManager()
 
         # We mock the MultiServerMCPClient to avoid actually starting node processes
@@ -72,12 +72,12 @@ async def test_mcp_client_manager_context() -> None:
                 e2b_config = call_args["e2b"]
                 assert e2b_config["command"] == "npx"
                 assert "SUDO_CMD" not in e2b_config["env"]
-                assert e2b_config["env"]["E2B_API_KEY"] == "e2b_test_key123"
+                assert e2b_config["env"]["E2B_API_KEY"] == "mock_e2b_key_1234"
 
                 github_config = call_args["github"]
                 assert github_config["command"] == "npx"
                 assert github_config["args"] == ["-y", "@modelcontextprotocol/server-github"]
-                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "ghp_mock_token_1234567890"
+                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
 
 def test_github_config_validation() -> None:
     # Test that GitHubMcpConfig raises an error if GITHUB_PERSONAL_ACCESS_TOKEN is missing
@@ -87,11 +87,11 @@ def test_github_config_validation() -> None:
         assert "GITHUB_PERSONAL_ACCESS_TOKEN" in str(exc.value)
 
 def test_github_config_success() -> None:
-    with patch.dict(os.environ, {"GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_mock_token_1234567890"}):
+    with patch.dict(os.environ, {"GITHUB_PERSONAL_ACCESS_TOKEN": "mock_github_key_1234"}):
         config = GitHubMcpConfig()  # type: ignore[call-arg]
         params = config.get_connection_config()
         assert "github" in params
-        assert params["github"]["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "ghp_mock_token_1234567890"
+        assert params["github"]["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
 
 @pytest.mark.asyncio
 async def test_get_github_read_tools_filtering() -> None:
