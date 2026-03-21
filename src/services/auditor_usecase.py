@@ -27,10 +27,13 @@ class AuditorUseCase:
         llm_reviewer: LLMReviewer,
         sandbox_runner: Any = None,
     ) -> None:
+        from src.services.mcp_client_manager import McpClientManager
+
         self.jules = jules_client
         self.git = git_manager
         self.llm_reviewer = llm_reviewer
         self.sandbox = sandbox_runner
+        self.mcp_client = McpClientManager()
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
@@ -224,12 +227,15 @@ class AuditorUseCase:
             else settings.reviewer.fast_model
         )
 
-        audit_feedback = await self.llm_reviewer.review_code(
-            target_files=target_files,
-            context_docs=context_docs,
-            instruction=instruction,
-            model=model,
-        )
+        async with self.mcp_client as client:
+            tools = await client.get_readonly_tools(server_name="github")
+            audit_feedback = await self.llm_reviewer.review_code(
+                target_files=target_files,
+                context_docs=context_docs,
+                instruction=instruction,
+                model=model,
+                tools=tools,
+            )
 
         if "-> REVIEW_PASSED" in audit_feedback:
             status = "approved"

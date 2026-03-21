@@ -34,8 +34,8 @@ The core concept is that a "read" action is no longer a blocking, deterministic 
 ## Implementation Approach
 1.  **Extend McpClientManager:** Modify `src/services/mcp_client_manager.py` to asynchronously connect to a second server: `npx -y @modelcontextprotocol/server-github`, securely passing the `GITHUB_PERSONAL_ACCESS_TOKEN`. Ensure connection pooling correctly handles both E2B and GitHub concurrently via the `async with` singleton pattern.
 2.  **Implement Tool Filtering & Proxy:** Add a method to the `McpClientManager` (e.g., `get_readonly_tools(server_name)`) that explicitly filters the retrieved tools against a strict whitelist (e.g., `['get_file_content']`). Implement the Token Exhaustion Prevention logic by injecting a wrapper around the `get_file_content` schema that enforces truncation.
-3.  **Refactor Analytical Nodes:** Update `src/nodes/architect.py` and `src/nodes/auditor.py`. Remove legacy Python functions that injected file contents. Inject the `McpClientManager`, retrieve the safely proxied read-only tools, and bind them to the LLM via `.bind_tools()`.
-4.  **Update System Prompts:** Refine `ARCHITECT_INSTRUCTION.md` and related prompts. Instruct the agent to autonomously utilize the `get_file_content` tool to explore the repository rather than asking the system to supply files.
+3.  **Refactor Analytical Nodes:** Update `src/nodes/architect.py` and `src/nodes/auditor.py`. Retain critical deterministic context (like loading explicit `ALL_SPEC.md`), but inject the `McpClientManager`, retrieve the safely proxied read-only tools, and run a pre-processing autonomous LLM exploration loop.
+4.  **ReAct Execution Abstraction:** Delegate the ReAct while-loop mapping logic (binding, tool execution, payload appending) into a shared `src/services/react_agent.py` to preserve DRY boundaries across nodes that invoke tools natively (Architect and LLMReviewer).
 5.  **State Transformation & Fallback Logic:** Ensure the nodes correctly process the `ToolMessage` returned by the GitHub server, particularly when handling `mcp.ServerError` (e.g., File Not Found), allowing the LLM to continue its reasoning loop securely.
 
 ## Test Strategy

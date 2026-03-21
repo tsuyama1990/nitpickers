@@ -21,7 +21,7 @@ def test_fix_plan_schema_valid() -> None:
             }
         ]
     }
-    schema = FixPlanSchema(**data)
+    schema = FixPlanSchema.model_validate(data)
     assert schema.patches[0].target_file == "src/main.py"
     assert "misspelled" in schema.defect_description
 
@@ -38,7 +38,7 @@ def test_fix_plan_schema_invalid_extra_field() -> None:
         "extra_field": "Should fail",
     }
     with pytest.raises(ValidationError):
-        FixPlanSchema(**data)
+        FixPlanSchema.model_validate(data)
 
 
 @pytest.mark.asyncio
