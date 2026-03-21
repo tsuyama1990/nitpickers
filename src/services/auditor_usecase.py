@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from langchain_core.tools import BaseTool
 from rich.console import Console
 
 from src.config import settings
@@ -26,11 +28,13 @@ class AuditorUseCase:
         git_manager: GitManager,
         llm_reviewer: LLMReviewer,
         sandbox_runner: Any = None,
+        e2b_tools: Sequence[BaseTool] | None = None,
     ) -> None:
         self.jules = jules_client
         self.git = git_manager
         self.llm_reviewer = llm_reviewer
         self.sandbox = sandbox_runner
+        self.e2b_tools = e2b_tools
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
         """Helper to read files from the local filesystem."""
@@ -267,8 +271,9 @@ class UATAuditorUseCase:
     Strictly follows the Single Responsibility Principle.
     """
 
-    def __init__(self, llm_reviewer: LLMReviewer) -> None:
+    def __init__(self, llm_reviewer: LLMReviewer, e2b_tools: Sequence[BaseTool] | None = None) -> None:
         self.llm_reviewer = llm_reviewer
+        self.e2b_tools = e2b_tools
 
     async def execute(self, state: CycleState) -> dict[str, Any]:
         console.print(
@@ -290,6 +295,7 @@ class UATAuditorUseCase:
                 uat_state=state.uat_execution_state,
                 instruction=instruction,
                 model=model,
+                e2b_tools=getattr(self, "e2b_tools", None),
             )
         except Exception as e:
             console.print(f"[bold red]Diagnostic Loop Failed: {e}[/bold red]")
