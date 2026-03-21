@@ -12,8 +12,7 @@ class E2bMcpConfig(BaseSettings):
     E2B_API_KEY: str = Field(
         ...,
         min_length=10,
-        pattern=r"^e2b_[a-zA-Z0-9_]+$",
-        description="E2B API key for authentication (must start with e2b_)",
+        description="E2B API key for authentication",
     )
     E2B_COMMAND: str = Field("npx", description="The command to boot the E2B server")
     E2B_ARGS: list[str] = Field(["-y", "@e2b/mcp-server"], description="Arguments for the E2B server command")

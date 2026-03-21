@@ -87,7 +87,18 @@ class SandboxEvaluatorNodes:
                     "test": test_str,
                 }
 
+                import re
+                forbidden_chars = re.compile(r"[&|<>;$`\\]")
+
                 for check_name, cmd_str in commands.items():
+                    if not cmd_str or not cmd_str.strip():
+                        msg = f"Command for {check_name} is empty."
+                        raise ValueError(msg)  # noqa: TRY301
+
+                    if forbidden_chars.search(cmd_str):
+                        msg = f"Dangerous characters detected in {check_name} command."
+                        raise ValueError(msg)  # noqa: TRY301
+
                     # Dynamically discover the argument name from the tool schema
                     arg_name = "command"
                     if getattr(exec_tool, "args_schema", None):
@@ -96,26 +107,35 @@ class SandboxEvaluatorNodes:
                             arg_name = next(iter(props.keys()))
 
                     timeout_occurred = False
+                    code = 0
+                    stdout = ""
+                    stderr = ""
+
                     try:
                         import asyncio
                         # Using wait_for to prevent infinite hanging
-                        tool_result = await asyncio.wait_for(exec_tool.ainvoke({arg_name: cmd_str}), timeout=settings.sandbox.timeout)
+                        tool_result = await asyncio.wait_for(
+                            exec_tool.ainvoke({arg_name: cmd_str}),
+                            timeout=settings.sandbox.timeout
+                        )
+                        stdout = str(tool_result)
+                        if "Error" in stdout or "failed" in stdout.lower() or "exit code: 1" in stdout.lower():
+                            code = 1
+                            stderr = stdout
                     except TimeoutError:
-                        tool_result = f"Error: Command timed out after {settings.sandbox.timeout} seconds"
+                        stderr = f"Error: Command timed out after {settings.sandbox.timeout} seconds"
                         timeout_occurred = True
+                        code = 124  # Standard bash exit code for timeout
+                    except ConnectionError as conn_err:
+                        stderr = f"Connection Error to MCP Server: {conn_err}"
+                        code = 1
                     except Exception as invoke_err:
-                        tool_result = str(invoke_err)
+                        import logging
 
-                    # For safety, since MCP execution might wrap things, let's treat the tool_result as stdout.
-                    # If an exception was raised, it's a non-zero exit code.
-
-                    code = 0
-                    stdout = str(tool_result)
-                    stderr = ""
-
-                    if "Error" in stdout or "failed" in stdout.lower() or "exit code: 1" in stdout.lower():
-                         code = 1
-                         stderr = stdout
+                        logger = logging.getLogger(__name__)
+                        logger.exception("Unexpected error executing tool")
+                        stderr = f"Execution Error: {invoke_err}"
+                        code = 1
 
                     results[check_name] = VerificationResult(
                         command=cmd_str,

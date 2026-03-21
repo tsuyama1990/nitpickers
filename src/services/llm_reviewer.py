@@ -42,12 +42,18 @@ class LLMReviewer:
             if ".." in p:
                 return False
 
-            allowed_extensions = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".sh", ".env"}
+            # Removed .env to prevent secret leakage
+            allowed_extensions = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".sh"}
 
             try:
                 p_path = anyio.Path(p)
+
                 # Verify file extension (if any) is allowed
-                if p_path.suffix and p_path.suffix not in allowed_extensions:
+                if (
+                    p_path.suffix
+                    and p_path.suffix not in allowed_extensions
+                    and p_path.name not in {"Dockerfile", "Makefile"}
+                ):
                     return False
 
                 # Exclude .ac_cdd to protect system metadata
@@ -55,6 +61,13 @@ class LLMReviewer:
                     return False
 
                 resolved = await p_path.resolve(strict=False)
+
+                # Prevent symlink traversal out of the working directory
+                if await p_path.is_symlink():
+                    symlink_target = await p_path.resolve(strict=True)
+                    if not symlink_target.is_relative_to(cwd):
+                        return False
+
                 return resolved.is_relative_to(cwd)
             except Exception as e:
                 logger.debug(f"Path resolution failed for {p}: {e}")
@@ -137,13 +150,23 @@ class LLMReviewer:
                     if tools_param:
                         kwargs["tools"] = tools_param
 
-                    response = await litellm.acompletion(
-                        model=model,
-                        messages=messages,
-                        temperature=0.0,
-                        max_tokens=8192,
-                        **kwargs,
-                    )
+                    import asyncio
+                    try:
+                        response = await asyncio.wait_for(
+                            litellm.acompletion(
+                                model=model,
+                                messages=messages,
+                                temperature=0.0,
+                                max_tokens=8192,
+                                **kwargs,
+                            ),
+                            timeout=settings.jules.request_timeout
+                        )
+                    except TimeoutError:
+                        logger.error("LLMReviewer timed out waiting for API response.")
+                        if attempt == 2:
+                            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review request timed out.\n  - Location: `Unknown`\n  - Concrete Fix: Try again later or increase timeout."
+                        break # break tool loop and go to next outer attempt
 
                     message = response.choices[0].message
                     if hasattr(message, "model_dump"):
@@ -286,14 +309,32 @@ class LLMReviewer:
                     if tools_param:
                         kwargs["tools"] = tools_param
 
-                    response = await litellm.acompletion(
-                        model=model,
-                        messages=messages,
-                        response_format=FixPlanSchema,
-                        temperature=0.0,
-                        max_tokens=8192,
-                        **kwargs,
-                    )
+                    import asyncio
+                    try:
+                        response = await asyncio.wait_for(
+                            litellm.acompletion(
+                                model=model,
+                                messages=messages,
+                                response_format=FixPlanSchema,
+                                temperature=0.0,
+                                max_tokens=8192,
+                                **kwargs,
+                            ),
+                            timeout=settings.jules.request_timeout
+                        )
+                    except TimeoutError:
+                        logger.error("LLMReviewer diagnose_uat_failure timed out waiting for API response.")
+                        if attempt == 2:
+                            return FixPlanSchema(
+                                defect_description="SYSTEM_ERROR: LLM API request timed out.",
+                                patches=[
+                                    {
+                                        "target_file": "Unknown",
+                                        "git_diff_patch": "Please review the UAT logs manually."
+                                    }
+                                ],
+                            )
+                        break # break tool loop and go to next outer attempt
 
                     message = response.choices[0].message
 
