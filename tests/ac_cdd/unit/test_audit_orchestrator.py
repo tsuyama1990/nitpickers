@@ -34,7 +34,7 @@ def mock_auditor() -> Any:
 @pytest.fixture
 def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
 
-    mock_sandbox = AsyncMock(spec=SandboxRunner)
+    mock_sandbox = AsyncMock()
     return AuditOrchestrator(
         jules_client=mock_jules, sandbox_runner=mock_sandbox, plan_auditor=mock_auditor
     )

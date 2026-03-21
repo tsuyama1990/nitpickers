@@ -59,12 +59,13 @@ class LLMReviewer:
 
         return None
 
-    async def review_code(
+    async def review_code(  # noqa: C901, PLR0912, PLR0915
         self,
         target_files: dict[str, str],
         context_docs: dict[str, str],
         instruction: str,
         model: str,
+        tools: list[object] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -83,35 +84,114 @@ class LLMReviewer:
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
 
+        # Convert tools to litellm format if available
+        litellm_tools = None
+        tools_map = {}
+        if tools:
+            from langchain_core.utils.function_calling import convert_to_openai_tool
+            litellm_tools = [convert_to_openai_tool(t) for t in tools]
+            tools_map = {t.name: t for t in tools}
+
         # Retry logic (up to 2 retries, total 3 attempts)
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are an automated code reviewer. You must strictly follow the "
-                                "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                                "MAXIMUM of 10 issues to prevent excessively large JSON generation."
-                            ),
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.0,  # Deterministic output for reviews
-                    max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
-                )
+                messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an automated code reviewer. You must strictly follow the "
+                            "provided instructions and only review the target code. You MUST return valid JSON. "
+                            "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
+                            "MAXIMUM of 10 issues to prevent excessively large JSON generation. "
+                            "If tools are provided, you may use them to explore the repository to find missing files or context."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ]
 
-                content_str = response.choices[0].message.content
+                # ReAct loop for tool calling
+                MAX_TOOL_LOOPS = 5
+                loops = 0
+
+                while loops < MAX_TOOL_LOOPS:
+                    # Remove tools formatting when enforcing structured output format
+                    # or litellm might get confused if we are also enforcing JSON via Pydantic response_format.
+                    # Currently, we just parse JSON out of content_str, so tool calling is fine.
+                    kwargs = {}
+                    if litellm_tools:
+                        kwargs["tools"] = litellm_tools
+
+                    response = await litellm.acompletion(
+                        model=model,
+                        messages=messages,
+                        temperature=0.0,
+                        max_tokens=8192,
+                        **kwargs
+                    )
+
+                    message = response.choices[0].message
+
+                    # Ensure we handle responses properly.
+                    # If it's a litellm object, model_dump works.
+                    # Otherwise handle carefully.
+                    if hasattr(message, "model_dump"):
+                        messages.append(message.model_dump())
+                    elif hasattr(message, "to_dict"):
+                        messages.append(message.to_dict())
+                    elif isinstance(message, dict):
+                        messages.append(message)
+                    else:
+                        messages.append({"role": "assistant", "content": message.content})
+
+                    if getattr(message, "tool_calls", None):
+                        for tool_call in message.tool_calls:
+                            tool_name = tool_call.function.name
+                            try:
+                                import json
+                                tool_args = json.loads(tool_call.function.arguments)
+                            except Exception:
+                                tool_args = {}
+
+                            if tool_name in tools_map:
+                                try:
+                                    tool_result = await tools_map[tool_name].ainvoke(tool_args)
+                                    tool_content = str(tool_result)
+                                except Exception as e:
+                                    tool_content = f"Tool execution failed: {e}"
+                            else:
+                                tool_content = f"Error: Tool {tool_name} not found."
+
+                            messages.append(
+                                {
+                                    "role": "tool",
+                                    "tool_call_id": tool_call.id,
+                                    "name": tool_name,
+                                    "content": tool_content,
+                                }
+                            )
+                        loops += 1
+                        continue
+                    break  # No more tool calls
+
+                content_str = message.content or "{}"
+
+                # Extract JSON block using regex if LLM included conversational text
+                import re
+                json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content_str, re.DOTALL)
+                if json_match:
+                    content_str = json_match.group(1)
+                else:
+                    # Try to find the outermost curly braces if no markdown blocks
+                    brace_match = re.search(r"\{.*\}", content_str, re.DOTALL)
+                    if brace_match:
+                        content_str = brace_match.group(0)
 
                 # Parse the response safely into our robust Pydantic model
                 report = AuditorReport.model_validate_json(content_str)
                 return self._format_as_markdown(report)
 
             except (ValidationError, Exception) as e:
-                logger.warning(f"LLMReviewer attempt {attempt + 1} failed to parse JSON: {e}")
+                logger.warning(f"LLMReviewer attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("LLMReviewer failed completely after 3 attempts.")
                     return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
