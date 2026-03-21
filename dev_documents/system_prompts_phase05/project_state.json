@@ -1,0 +1,48 @@
+{
+  "project_session_id": "sessions/11029628036941476885",
+  "feature_branch": "dev/int-20260321-0648",
+  "integration_branch": "dev/int-20260321-0648",
+  "qa_session_id": null,
+  "cycles": [
+    {
+      "id": "01",
+      "status": "completed",
+      "branch_name": null,
+      "jules_session_id": "sessions/18318045097080211893",
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": null,
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-21T07:13:55.756872Z",
+      "updated_at": "2026-03-21T10:43:11.614097Z"
+    },
+    {
+      "id": "02",
+      "status": "completed",
+      "branch_name": null,
+      "jules_session_id": "sessions/15323483647730733698",
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": "Session timed out. Last error: Timed out after 7226.313105708105s",
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-21T07:13:55.756881Z",
+      "updated_at": "2026-03-21T15:47:23.113675Z"
+    },
+    {
+      "id": "03",
+      "status": "completed",
+      "branch_name": null,
+      "jules_session_id": "sessions/1627076334630949834",
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": null,
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-21T07:13:55.756883Z",
+      "updated_at": "2026-03-21T22:59:21.330534Z"
+    }
+  ],
+  "last_updated": "2026-03-21T22:59:21.330551Z"
+}
