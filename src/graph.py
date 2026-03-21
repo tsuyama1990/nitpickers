@@ -7,7 +7,6 @@ from langgraph.graph.state import CompiledStateGraph
 from .enums import FlowStatus
 from .graph_nodes import CycleNodes
 from .interfaces import IGraphNodes
-from .sandbox import SandboxRunner
 from .service_container import ServiceContainer
 from .services.jules_client import JulesClient
 from .state import CycleState
@@ -15,7 +14,7 @@ from .state import CycleState
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient
+        self, services: ServiceContainer, sandbox: object, jules: JulesClient
     ) -> None:
         self.sandbox = sandbox
         self.jules = jules

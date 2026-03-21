@@ -4,106 +4,2249 @@ rootdir: /app
 configfile: pyproject.toml
 plugins: langsmith-0.7.22, base-url-2.1.0, cov-7.0.0, playwright-0.7.2, asyncio-1.3.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 5 items
+collected 200 items
 
-tests/unit/test_cycle06_auditor_recovery.py .....                        [100%]
+tests/unit/project_setup/test_template_manager.py ........               [  4%]
+tests/unit/test_ast_analyzer.py ....                                     [  6%]
+tests/unit/test_conflict.py ...                                          [  7%]
+tests/unit/test_cycle01_observability.py ...FFFF                         [ 11%]
+tests/unit/test_cycle03_mechanical_gate.py ...FFF                        [ 14%]
+tests/unit/test_cycle04_playwright_capture.py .....                      [ 16%]
+tests/unit/test_cycle05_dynamic_execution.py ..                          [ 17%]
+tests/unit/test_cycle06_auditor_recovery.py .....                        [ 20%]
+tests/unit/test_dispatcher.py ......                                     [ 23%]
+tests/unit/test_domain_models.py .....                                   [ 25%]
+tests/unit/test_integration_usecase.py ...                               [ 27%]
+tests/unit/test_mcp_client_manager.py ..                                 [ 28%]
+tests/unit/test_permission_manager.py ...                                [ 29%]
+tests/unit/test_refactor_usecase.py ...                                  [ 31%]
+tests/unit/test_sandbox_evaluator.py FFFF                                [ 33%]
+tests/unit/test_self_critic_evaluator.py ..                              [ 34%]
+tests/unit/test_state.py ...                                             [ 35%]
+tests/unit/test_tracing_service.py ...                                   [ 37%]
+tests/ac_cdd/integration/test_audit_loop.py .                            [ 37%]
+tests/ac_cdd/integration/test_cli_commands.py .                          [ 38%]
+tests/ac_cdd/integration/test_end_to_end_workflow.py .                   [ 38%]
+tests/ac_cdd/integration/test_git_robustness.py FF                       [ 39%]
+tests/ac_cdd/integration/test_mcp_e2b_sandbox_execution.py .             [ 40%]
+tests/ac_cdd/unit/test_audit_orchestrator.py EEE                         [ 41%]
+tests/ac_cdd/unit/test_audit_polling.py .                                [ 42%]
+tests/ac_cdd/unit/test_auditor_polling_exit.py .                         [ 42%]
+tests/ac_cdd/unit/test_auto_merge.py .                                   [ 43%]
+tests/ac_cdd/unit/test_cli_reconstruction.py ...                         [ 44%]
+tests/ac_cdd/unit/test_coder_critic.py ..                                [ 45%]
+tests/ac_cdd/unit/test_coder_critic_flow.py .                            [ 46%]
+tests/ac_cdd/unit/test_committee_logic.py ..                             [ 47%]
+tests/ac_cdd/unit/test_config.py ......                                  [ 50%]
+tests/ac_cdd/unit/test_file_patcher.py ...                               [ 51%]
+tests/ac_cdd/unit/test_gen_cycles_options.py .........                   [ 56%]
+tests/ac_cdd/unit/test_git_checkout.py .                                 [ 56%]
+tests/ac_cdd/unit/test_git_operations.py .............                   [ 63%]
+tests/ac_cdd/unit/test_git_ops_merge.py ...                              [ 64%]
+tests/ac_cdd/unit/test_git_state_persistence.py ...                      [ 66%]
+tests/ac_cdd/unit/test_graph.py .                                        [ 66%]
+tests/ac_cdd/unit/test_jules_client.py ....                              [ 68%]
+tests/ac_cdd/unit/test_jules_client_logic.py FF                          [ 69%]
+tests/ac_cdd/unit/test_jules_session_fixes.py FFFFF                      [ 72%]
+tests/ac_cdd/unit/test_jules_session_state.py FEFEFE                     [ 73%]
+tests/ac_cdd/unit/test_llm_reviewer.py FF                                [ 74%]
+tests/ac_cdd/unit/test_phase_transition.py .                             [ 75%]
+tests/ac_cdd/unit/test_plan_auditor.py ..                                [ 76%]
+tests/ac_cdd/unit/test_project_init_robustness.py .                      [ 76%]
+tests/ac_cdd/unit/test_project_manifest.py ...                           [ 78%]
+tests/ac_cdd/unit/test_resume_logic.py ..                                [ 79%]
+tests/ac_cdd/unit/test_robustness_fixes.py ...                           [ 80%]
+tests/ac_cdd/unit/test_session_manager.py .........                      [ 85%]
+tests/ac_cdd/unit/test_session_restart.py ..                             [ 86%]
+tests/ac_cdd/unit/test_session_reuse.py FFF                              [ 87%]
+tests/ac_cdd/unit/test_state_manager.py ..............                   [ 94%]
+tests/ac_cdd/unit/test_utils.py ..                                       [ 95%]
+tests/ac_cdd/unit/test_validators.py .........                           [100%]
 
+==================================== ERRORS ====================================
+____________ ERROR at setup of test_run_session_approved_first_try _____________
+
+mock_jules = <MagicMock name='JulesClient()' id='139939629246336'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139939630881328'>
+
+    @pytest.fixture
+    def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
+>       from src.sandbox import SandboxRunner
+E       ModuleNotFoundError: No module named 'src.sandbox'
+
+tests/ac_cdd/unit/test_audit_orchestrator.py:36: ModuleNotFoundError
+__________ ERROR at setup of test_run_session_rejected_then_approved ___________
+
+mock_jules = <MagicMock name='JulesClient()' id='139939629066448'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139939629166192'>
+
+    @pytest.fixture
+    def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
+>       from src.sandbox import SandboxRunner
+E       ModuleNotFoundError: No module named 'src.sandbox'
+
+tests/ac_cdd/unit/test_audit_orchestrator.py:36: ModuleNotFoundError
+_________________ ERROR at setup of test_max_retries_exceeded __________________
+
+mock_jules = <MagicMock name='JulesClient()' id='139939629242160'>
+mock_auditor = <MagicMock name='PlanAuditor()' id='139939629420416'>
+
+    @pytest.fixture
+    def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
+>       from src.sandbox import SandboxRunner
+E       ModuleNotFoundError: No module named 'src.sandbox'
+
+tests/ac_cdd/unit/test_audit_orchestrator.py:36: ModuleNotFoundError
+_ ERROR at teardown of TestSessionStateValidation.test_get_session_state_in_progress _
+
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f463c2cb620>
+request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_in_progress>>
+
+    @pytest.fixture(
+        scope=scope,
+        name=f"_{scope}_scoped_runner",
+    )
+    def _scoped_runner(
+        event_loop_policy,
+        request: FixtureRequest,
+    ) -> Iterator[Runner]:
+        new_loop_policy = event_loop_policy
+        debug_mode = _get_asyncio_debug(request.config)
+        with _temporary_event_loop_policy(new_loop_policy):
+            runner = Runner(debug=debug_mode).__enter__()
+            try:
+                yield runner
+            except Exception as e:
+                runner.__exit__(type(e), e, e.__traceback__)
+            else:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", ".*BaseEventLoop.shutdown_asyncgens.*", RuntimeWarning
+                    )
+                    try:
+>                       runner.__exit__(None, None, None)
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:817:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:62: in __exit__
+    self.close()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:70: in close
+    _cancel_all_tasks(loop)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:206: in _cancel_all_tasks
+    loop.run_until_complete(tasks.gather(*to_cancel, return_exceptions=True))
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b384740>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939617537488'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_ ERROR at teardown of TestSessionStateValidation.test_get_session_state_completed _
+
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f463c2cb620>
+request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_completed>>
+
+    @pytest.fixture(
+        scope=scope,
+        name=f"_{scope}_scoped_runner",
+    )
+    def _scoped_runner(
+        event_loop_policy,
+        request: FixtureRequest,
+    ) -> Iterator[Runner]:
+        new_loop_policy = event_loop_policy
+        debug_mode = _get_asyncio_debug(request.config)
+        with _temporary_event_loop_policy(new_loop_policy):
+            runner = Runner(debug=debug_mode).__enter__()
+            try:
+                yield runner
+            except Exception as e:
+                runner.__exit__(type(e), e, e.__traceback__)
+            else:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", ".*BaseEventLoop.shutdown_asyncgens.*", RuntimeWarning
+                    )
+                    try:
+>                       runner.__exit__(None, None, None)
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:817:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:62: in __exit__
+    self.close()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:70: in close
+    _cancel_all_tasks(loop)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:206: in _cancel_all_tasks
+    loop.run_until_complete(tasks.gather(*to_cancel, return_exceptions=True))
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b316ae0>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939628439680'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_ ERROR at teardown of TestSessionStateValidation.test_get_session_state_on_error _
+
+event_loop_policy = <asyncio.unix_events._UnixDefaultEventLoopPolicy object at 0x7f463c2cb620>
+request = <SubRequest '_function_scoped_runner' for <Coroutine test_get_session_state_on_error>>
+
+    @pytest.fixture(
+        scope=scope,
+        name=f"_{scope}_scoped_runner",
+    )
+    def _scoped_runner(
+        event_loop_policy,
+        request: FixtureRequest,
+    ) -> Iterator[Runner]:
+        new_loop_policy = event_loop_policy
+        debug_mode = _get_asyncio_debug(request.config)
+        with _temporary_event_loop_policy(new_loop_policy):
+            runner = Runner(debug=debug_mode).__enter__()
+            try:
+                yield runner
+            except Exception as e:
+                runner.__exit__(type(e), e, e.__traceback__)
+            else:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", ".*BaseEventLoop.shutdown_asyncgens.*", RuntimeWarning
+                    )
+                    try:
+>                       runner.__exit__(None, None, None)
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:817:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:62: in __exit__
+    self.close()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:70: in close
+    _cancel_all_tasks(loop)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:206: in _cancel_all_tasks
+    loop.run_until_complete(tasks.gather(*to_cancel, return_exceptions=True))
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b305130>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939628461632'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+=================================== FAILURES ===================================
+_______________________ test_verify_environment_success ________________________
+
+    @patch.dict(
+        os.environ,
+        {
+            "LANGCHAIN_TRACING_V2": "true",
+            "LANGCHAIN_API_KEY": "valid_key",
+            "LANGCHAIN_PROJECT": "test_proj",
+            "JULES_API_KEY": "mock",
+            "E2B_API_KEY": "mock",
+            "OPENROUTER_API_KEY": "mock",
+            "OPENAI_API_KEY": "mock",
+        },
+        clear=True,
+    )
+    def test_verify_environment_success() -> None:
+        with (
+            patch("src.services.workflow.ServiceContainer.default"),
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+        ):
+>           service = WorkflowService()
+                      ^^^^^^^^^^^^^^^^^
+
+tests/unit/test_cycle01_observability.py:59:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.workflow.WorkflowService object at 0x7f463bf4df10>
+services = None
+
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+
+        self.builder = GraphBuilder(
+            self.services,
+>           SandboxRunner(),
+            ^^^^^^^^^^^^^
+            self.services.jules if self.services.jules else JulesClient(),
+        )
+E       NameError: name 'SandboxRunner' is not defined
+
+src/services/workflow.py:35: NameError
+___________________ test_verify_environment_failure_tracing ____________________
+
+    @patch.dict(
+        os.environ,
+        {
+            "LANGCHAIN_TRACING_V2": "false",
+            "LANGCHAIN_API_KEY": "valid_key",
+            "LANGCHAIN_PROJECT": "test_proj",
+            "JULES_API_KEY": "mock",
+            "E2B_API_KEY": "mock",
+            "OPENROUTER_API_KEY": "mock",
+            "OPENAI_API_KEY": "mock",
+        },
+        clear=True,
+    )
+    def test_verify_environment_failure_tracing() -> None:
+        with (
+            patch("src.services.workflow.ServiceContainer.default"),
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+        ):
+>           service = WorkflowService()
+                      ^^^^^^^^^^^^^^^^^
+
+tests/unit/test_cycle01_observability.py:82:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.workflow.WorkflowService object at 0x7f463bf20440>
+services = None
+
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+
+        self.builder = GraphBuilder(
+            self.services,
+>           SandboxRunner(),
+            ^^^^^^^^^^^^^
+            self.services.jules if self.services.jules else JulesClient(),
+        )
+E       NameError: name 'SandboxRunner' is not defined
+
+src/services/workflow.py:35: NameError
+_______________ test_verify_environment_spec_dependency_success ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-0/test_verify_environment_spec_d0')
+
+    @patch.dict(
+        os.environ,
+        {
+            "LANGCHAIN_TRACING_V2": "true",
+            "LANGCHAIN_API_KEY": "valid_key",
+            "LANGCHAIN_PROJECT": "test_proj",
+            "JULES_API_KEY": "mock",
+            "E2B_API_KEY": "mock",
+            "OPENROUTER_API_KEY": "mock",
+            "OPENAI_API_KEY": "mock",
+        },
+        clear=True,
+    )
+    def test_verify_environment_spec_dependency_success(tmp_path: Path) -> None:
+        # Setup a dummy spec document mentioning an implicit dependency
+        spec_dir = tmp_path / "dev_documents" / "system_prompts"
+        spec_dir.mkdir(parents=True)
+        spec_file = spec_dir / "SPEC.md"
+        spec_file.write_text("This feature requires DATABASE_URL to connect to the db.")
+
+        with (
+            patch("src.config.settings.paths.documents_dir", tmp_path / "dev_documents"),
+            patch.dict(os.environ, {"DATABASE_URL": "postgresql://user:pass@localhost:5432/db"}),
+            patch("src.services.workflow.ServiceContainer.default"),
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+        ):
+>           service = WorkflowService()
+                      ^^^^^^^^^^^^^^^^^
+
+tests/unit/test_cycle01_observability.py:113:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.workflow.WorkflowService object at 0x7f463bf6a2a0>
+services = None
+
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+
+        self.builder = GraphBuilder(
+            self.services,
+>           SandboxRunner(),
+            ^^^^^^^^^^^^^
+            self.services.jules if self.services.jules else JulesClient(),
+        )
+E       NameError: name 'SandboxRunner' is not defined
+
+src/services/workflow.py:35: NameError
+_______________ test_verify_environment_spec_dependency_failure ________________
+
+tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-0/test_verify_environment_spec_d1')
+
+    @patch.dict(
+        os.environ,
+        {
+            "LANGCHAIN_TRACING_V2": "true",
+            "LANGCHAIN_API_KEY": "valid_key",
+            "LANGCHAIN_PROJECT": "test_proj",
+            "JULES_API_KEY": "mock",
+            "E2B_API_KEY": "mock",
+            "OPENROUTER_API_KEY": "mock",
+            "OPENAI_API_KEY": "mock",
+        },
+        clear=True,
+    )
+    def test_verify_environment_spec_dependency_failure(tmp_path: Path) -> None:
+        # Setup a dummy spec document mentioning an implicit dependency
+        spec_dir = tmp_path / "dev_documents" / "system_prompts"
+        spec_dir.mkdir(parents=True)
+        spec_file = spec_dir / "SPEC.md"
+        spec_file.write_text("This feature requires DATABASE_URL to connect to the db.")
+
+        with (
+            patch("src.config.settings.paths.documents_dir", tmp_path / "dev_documents"),
+            patch("src.services.workflow.ServiceContainer.default"),
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+        ):
+            # Not providing DATABASE_URL
+>           service = WorkflowService()
+                      ^^^^^^^^^^^^^^^^^
+
+tests/unit/test_cycle01_observability.py:143:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.workflow.WorkflowService object at 0x7f463bf6ba40>
+services = None
+
+    def __init__(self, services: ServiceContainer | None = None) -> None:
+        self.services = services or ServiceContainer.default()
+
+        self.builder = GraphBuilder(
+            self.services,
+>           SandboxRunner(),
+            ^^^^^^^^^^^^^
+            self.services.jules if self.services.jules else JulesClient(),
+        )
+E       NameError: name 'SandboxRunner' is not defined
+
+src/services/workflow.py:35: NameError
+_______________________ test_sandbox_evaluator_all_pass ________________________
+
+    @pytest.mark.asyncio
+    async def test_sandbox_evaluator_all_pass() -> None:
+        mock_runner = AsyncMock(spec=ProcessRunner)
+        mock_runner.run_command.return_value = ("ok", "", 0, False)
+
+        node = SandboxEvaluatorNodes(process_runner=mock_runner)
+        state = CycleState(cycle_id="01")
+
+        result = await node.sandbox_evaluate_node(state)
+
+>       assert result["status"] == FlowStatus.READY_FOR_AUDIT
+E       AssertionError: assert <FlowStatus.T... 'tdd_failed'> == <FlowStatus.R...dy_for_audit'>
+E
+E         - ready_for_audit
+E         + tdd_failed
+
+tests/unit/test_cycle03_mechanical_gate.py:74: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Running Mechanical Verification Blockade...
+Execution Error in Verification Gate: object MagicMock can't be used in 'await'
+expression
+------------------------------ Captured log call -------------------------------
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+______________________ test_sandbox_evaluator_lint_fails _______________________
+
+    @pytest.mark.asyncio
+    async def test_sandbox_evaluator_lint_fails() -> None:
+        mock_runner = AsyncMock(spec=ProcessRunner)
+
+        # First call (lint) fails, others pass
+        mock_runner.run_command.side_effect = [
+            ("", "lint failed", 1, False),  # lint
+            ("ok", "", 0, False),  # mypy
+            ("ok", "", 0, False),  # pytest
+        ]
+
+        node = SandboxEvaluatorNodes(process_runner=mock_runner)
+        state = CycleState(cycle_id="01")
+
+        result = await node.sandbox_evaluate_node(state)
+
+        assert result["status"] == FlowStatus.TDD_FAILED
+>       assert "Verification failed" in result["error"]
+E       assert 'Verification failed' in "Sandbox error: object MagicMock can't be used in 'await' expression"
+
+tests/unit/test_cycle03_mechanical_gate.py:98: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Running Mechanical Verification Blockade...
+Execution Error in Verification Gate: object MagicMock can't be used in 'await'
+expression
+------------------------------ Captured log call -------------------------------
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+___________________ test_sandbox_evaluator_handles_exception ___________________
+
+    @pytest.mark.asyncio
+    async def test_sandbox_evaluator_handles_exception() -> None:
+        mock_runner = AsyncMock(spec=ProcessRunner)
+
+        msg = "Simulated crash"
+        mock_runner.run_command.side_effect = Exception(msg)
+
+        node = SandboxEvaluatorNodes(process_runner=mock_runner)
+        state = CycleState(cycle_id="01")
+
+        result = await node.sandbox_evaluate_node(state)
+
+        assert result["status"] == FlowStatus.TDD_FAILED
+>       assert msg in result["error"]
+E       assert 'Simulated crash' in "Sandbox error: object MagicMock can't be used in 'await' expression"
+
+tests/unit/test_cycle03_mechanical_gate.py:120: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Running Mechanical Verification Blockade...
+Execution Error in Verification Gate: object MagicMock can't be used in 'await'
+expression
+------------------------------ Captured log call -------------------------------
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+____________________ test_evaluate_red_phase_success_fails _____________________
+
+base_state = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+mock_executor = <AsyncMock id='139939629414592'>
+
+    @pytest.mark.asyncio
+    async def test_evaluate_red_phase_success_fails(base_state: CycleState, mock_executor: Any) -> None:
+        base_state.tdd_phase = "red"
+        mock_executor.run_tests.return_value = E2BExecutionResult(
+            stdout="Test passed", stderr="", exit_code=0
+        )
+
+>       node = SandboxEvaluatorNodes(executor=mock_executor)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SandboxEvaluatorNodes.__init__() got an unexpected keyword argument 'executor'
+
+tests/unit/test_sandbox_evaluator.py:35: TypeError
+____________________ test_evaluate_red_phase_failure_passes ____________________
+
+base_state = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+mock_executor = <AsyncMock id='139939629402304'>
+
+    @pytest.mark.asyncio
+    async def test_evaluate_red_phase_failure_passes(
+        base_state: CycleState, mock_executor: Any
+    ) -> None:
+        base_state.tdd_phase = "red"
+        mock_executor.run_tests.return_value = E2BExecutionResult(
+            stdout="", stderr="Test failed", exit_code=1
+        )
+
+>       node = SandboxEvaluatorNodes(executor=mock_executor)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SandboxEvaluatorNodes.__init__() got an unexpected keyword argument 'executor'
+
+tests/unit/test_sandbox_evaluator.py:52: TypeError
+___________________ test_evaluate_green_phase_success_passes ___________________
+
+base_state = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+mock_executor = <AsyncMock id='139939630368816'>
+
+    @pytest.mark.asyncio
+    async def test_evaluate_green_phase_success_passes(
+        base_state: CycleState, mock_executor: Any
+    ) -> None:
+        base_state.tdd_phase = "green"
+        mock_executor.run_tests.return_value = E2BExecutionResult(
+            stdout="Test passed", stderr="", exit_code=0
+        )
+
+>       node = SandboxEvaluatorNodes(executor=mock_executor)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SandboxEvaluatorNodes.__init__() got an unexpected keyword argument 'executor'
+
+tests/unit/test_sandbox_evaluator.py:68: TypeError
+___________________ test_evaluate_green_phase_failure_fails ____________________
+
+base_state = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+mock_executor = <AsyncMock id='139939630463552'>
+
+    @pytest.mark.asyncio
+    async def test_evaluate_green_phase_failure_fails(
+        base_state: CycleState, mock_executor: Any
+    ) -> None:
+        base_state.tdd_phase = "green"
+        mock_executor.run_tests.return_value = E2BExecutionResult(
+            stdout="", stderr="Test failed", exit_code=1
+        )
+
+>       node = SandboxEvaluatorNodes(executor=mock_executor)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: SandboxEvaluatorNodes.__init__() got an unexpected keyword argument 'executor'
+
+tests/unit/test_sandbox_evaluator.py:84: TypeError
+____________________ test_create_feature_branch_idempotency ____________________
+
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-0/test_create_feature_branch_ide0/repo')
+
+    @pytest.mark.asyncio
+    async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
+        """
+        Verify that create_feature_branch doesn't fail if branch already exists.
+        """
+        with patch("pathlib.Path.cwd", return_value=mock_git_env):
+            git = GitManager()
+
+            # Simulate running git commands
+            # 1. checkout main (ok)
+            # 2. pull (ok)
+            # 3. checkout -b existing_branch -> FAILS
+
+            branch_name = "dev/int-test"
+
+            # Mock run_command to simulate branch existence
+            async def mock_run_command(cmd: list[str], check: bool = True) -> tuple[str, str, int]:
+                cmd_str = " ".join(cmd)
+                # When checking existence
+                if "rev-parse --verify dev/int-test" in cmd_str:
+                    return "", "", 0  # Return 0 = Exists
+                # If it tries to create anyway (fail case)
+                if "checkout -b dev/int-test" in cmd_str:
+                    return "", "fatal: A branch named 'dev/int-test' already exists.", 128
+                return "", "", 0
+
+            git.runner.run_command = AsyncMock(side_effect=mock_run_command)  # type: ignore[method-assign]
+            git._ensure_no_lock = AsyncMock()  # type: ignore[method-assign]
+
+            # Now it should NOT raise
+>           await git.create_feature_branch(branch_name)
+
+tests/ac_cdd/integration/test_git_robustness.py:47:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/services/git/branching.py:109: in create_feature_branch
+    await self._auto_commit_if_dirty()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.git_ops.GitManager object at 0x7f463bf20e60>
+message = 'Auto-save before branch switch'
+
+    async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
+        """Automatically commits changes if the working directory is dirty."""
+        # Check for uncommitted changes
+>       stdout, _stderr, _code, _ = await self.runner.run_command(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+            [self.git_cmd, "status", "--porcelain"], check=False
+        )
+E       ValueError: not enough values to unpack (expected 4, got 3)
+
+src/services/git/branching.py:43: ValueError
+______________________ test_smart_checkout_dirty_recovery ______________________
+
+mock_git_env = PosixPath('/tmp/pytest-of-jules/pytest-0/test_smart_checkout_dirty_reco0/repo')
+
+    @pytest.mark.asyncio
+    async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
+        """
+        Verify smart checkout recovers from dirty state.
+        """
+        with patch("pathlib.Path.cwd", return_value=mock_git_env):
+            git = GitManager()
+            git.runner.run_command = AsyncMock(return_value=("", "", 0))  # type: ignore[method-assign]
+
+            # Mock _auto_commit_if_dirty
+            git._auto_commit_if_dirty = AsyncMock()  # type: ignore[method-assign]
+
+            # Should call auto-commit and checkout
+>           await git.smart_checkout("new-branch")
+
+tests/ac_cdd/integration/test_git_robustness.py:69:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/services/git/checkout.py:26: in smart_checkout
+    await self._run_git(cmd)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.git_ops.GitManager object at 0x7f463be40a10>
+args = ['checkout', 'new-branch'], check = True
+
+    async def _run_git(self, args: list[str], check: bool = True) -> str:
+        # Check for lock before running any command
+        await self._ensure_no_lock()
+
+        cmd = [self.git_cmd, *args]
+>       stdout, stderr, code, _ = await self.runner.run_command(cmd, check=check)
+        ^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 4, got 3)
+
+src/services/git/base.py:32: ValueError
+------------------------------ Captured log call -------------------------------
+ERROR    AC-CDD:checkout.py:34 Failed to checkout 'new-branch'. Please check git status.
+________ TestJulesClientLogic.test_deduplication_of_existing_activities ________
+
+self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_deduplication_of_existing_activities>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='139939614895536'>
+_mock_sleep = <AsyncMock name='sleep' id='139939614718336'>
+
+    @patch("asyncio.sleep", return_value=None)
+    @patch("httpx.AsyncClient")
+    async def test_deduplication_of_existing_activities(
+        self, mock_httpx_cls: Any, _mock_sleep: Any
+    ) -> None:
+        """
+        Verify that existing activities are IGNORED and do not trigger a reply.
+        """
+        mock_client = AsyncMock()
+        mock_httpx_cls.return_value.__aenter__.return_value = mock_client
+
+        session_id = "sessions/123"
+        old_activity_id = "sessions/123/activities/old"
+
+        self.client.list_activities = MagicMock(  # type: ignore[method-assign]
+            return_value=[
+                {"name": old_activity_id, "agentMessaged": {"agentMessage": "Old Question"}}
+            ]
+        )
+
+        self.client._send_message = AsyncMock()
+
+        # Responses
+        r_session_completed = MagicMock()
+        r_session_completed.status_code = 200
+        r_session_completed.json.return_value = {"state": "IN_PROGRESS", "outputs": []}
+
+        r_acts_old = MagicMock()
+        r_acts_old.status_code = 200
+        r_acts_old.json.return_value = {
+            "activities": [
+                {"name": old_activity_id, "agentMessaged": {"agentMessage": "Old Question"}}
+            ]
+        }
+
+        r_session_success = MagicMock()
+        r_session_success.status_code = 200
+        r_session_success.json.return_value = {
+            "state": "COMPLETED",
+            "outputs": [{"pullRequest": {"url": "http://github.com/pr/1"}}],
+        }
+
+        r_acts_empty = MagicMock()
+        r_acts_empty.status_code = 200
+        r_acts_empty.json.return_value = {"activities": []}
+
+        r_acts_logging = MagicMock()
+        r_acts_logging.status_code = 200
+        r_acts_logging.json.return_value = {"activities": []}
+
+        # Sequence:
+        # Iteration 1:
+        # 1. get(session) -> COMPLETED
+        # 2. get(activities) (Check Inquiry) -> Old Activity (Ignored)
+        #    -> Logic: if duplicate, continue (skip rest of loop)
+        # Iteration 2:
+        # 3. get(session) -> COMPLETED
+        # 4. get(activities) (Check Inquiry) -> Empty
+        #    -> Success Check -> Returns PR
+
+        call_counts = {"state": 0, "activities": 0}
+
+        async def dynamic_get(url: str, **kwargs: Any) -> MagicMock:
+            if url.endswith("/activities"):
+                call_counts["activities"] += 1
+                if call_counts["activities"] == 1:
+                    return r_acts_old
+                if call_counts["activities"] == 2:
+                    return r_acts_logging
+                return r_acts_empty
+            call_counts["state"] += 1
+            if call_counts["state"] in (1, 2):
+                return r_session_completed
+            return r_session_success
+
+        mock_client.get.side_effect = dynamic_get
+
+>       await self.client.wait_for_completion(session_id)
+
+tests/ac_cdd/unit/test_jules_client_logic.py:222:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.services.jules_client.JulesClient object at 0x7f463b1a0920>
+session_name = 'sessions/123', require_plan_approval = False
+
+    async def wait_for_completion(
+        self, session_name: str, require_plan_approval: bool = False
+    ) -> dict[str, Any]:
+        """Wait for Jules session completion using LangGraph state management.
+        This method uses LangGraph to manage the complex state transitions of:
+        - Monitoring session progress
+        - Handling inquiries (questions from Jules)
+        - Validating completion state
+        - Checking for PR creation
+        - Requesting manual PR creation if needed
+        - Waiting for PR with state re-validation
+        """
+        from langchain_core.runnables import RunnableConfig
+
+        from src.jules_session_graph import build_jules_session_graph
+        from src.jules_session_state import JulesSessionState
+
+        self.console.print(
+            f"[bold green]Jules is working... (Session: {session_name})[/bold green]"
+        )
+        self.console.print(
+            "[dim]Type your message and press Enter at any time to chat with Jules.[/dim]"
+        )
+
+        session_url = self._get_session_url(session_name)
+
+        # Initialize processed IDs
+        processed_ids: set[str] = set()
+        processed_completion_ids: set[str] = set()
+        await self._initialize_processed_ids(
+            session_url, processed_ids, processed_completion_ids=processed_completion_ids
+        )
+
+        # Build graph
+        graph = build_jules_session_graph(self)
+
+        # Create initial state
+        initial_state = JulesSessionState(
+            session_url=session_url,
+            session_name=session_name,
+            start_time=asyncio.get_running_loop().time(),
+            timeout_seconds=self.timeout,
+            poll_interval=self.poll_interval,
+            require_plan_approval=require_plan_approval,
+            fallback_max_wait=settings.jules.wait_for_pr_timeout_seconds,
+            processed_activity_ids=processed_ids,
+            processed_completion_ids=processed_completion_ids,
+        )
+
+        # Run graph
+        metadata = TracingMetadata(
+            session_id=f"jules-{session_name}", execution_type="jules_session"
+        )
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+
+        config = RunnableConfig(
+            configurable={"thread_id": f"jules-{session_name}"},
+            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            **tracing_config,  # type: ignore[typeddict-item]
+        )
+
+        try:
+            async with asyncio.timeout(self.timeout):
+>               final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               TypeError: object MagicMock can't be used in 'await' expression
+
+src/services/jules_client.py:256: TypeError
+______ TestJulesClientLogic.test_prioritize_inquiry_over_completed_state _______
+
+self = <src.services.jules_client.JulesClient object at 0x7f463b182a20>
+session_name = 'sessions/123', require_plan_approval = False
+
+    async def wait_for_completion(
+        self, session_name: str, require_plan_approval: bool = False
+    ) -> dict[str, Any]:
+        """Wait for Jules session completion using LangGraph state management.
+        This method uses LangGraph to manage the complex state transitions of:
+        - Monitoring session progress
+        - Handling inquiries (questions from Jules)
+        - Validating completion state
+        - Checking for PR creation
+        - Requesting manual PR creation if needed
+        - Waiting for PR with state re-validation
+        """
+        from langchain_core.runnables import RunnableConfig
+
+        from src.jules_session_graph import build_jules_session_graph
+        from src.jules_session_state import JulesSessionState
+
+        self.console.print(
+            f"[bold green]Jules is working... (Session: {session_name})[/bold green]"
+        )
+        self.console.print(
+            "[dim]Type your message and press Enter at any time to chat with Jules.[/dim]"
+        )
+
+        session_url = self._get_session_url(session_name)
+
+        # Initialize processed IDs
+        processed_ids: set[str] = set()
+        processed_completion_ids: set[str] = set()
+        await self._initialize_processed_ids(
+            session_url, processed_ids, processed_completion_ids=processed_completion_ids
+        )
+
+        # Build graph
+        graph = build_jules_session_graph(self)
+
+        # Create initial state
+>       initial_state = JulesSessionState(
+            session_url=session_url,
+            session_name=session_name,
+            start_time=asyncio.get_running_loop().time(),
+            timeout_seconds=self.timeout,
+            poll_interval=self.poll_interval,
+            require_plan_approval=require_plan_approval,
+            fallback_max_wait=settings.jules.wait_for_pr_timeout_seconds,
+            processed_activity_ids=processed_ids,
+            processed_completion_ids=processed_completion_ids,
+        )
+
+src/services/jules_client.py:230:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'fallback_max_wait': 900, 'poll_interval': 0.1, 'processed_activity_ids': {'sessions/123/activities/monologue'}, 'processed_completion_ids': set(), ...}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <unit.test_jules_client_logic.TestJulesClientLogic testMethod=test_prioritize_inquiry_over_completed_state>
+mock_httpx_cls = <MagicMock name='AsyncClient' id='139939615414784'>
+_mock_sleep = <AsyncMock name='sleep' id='139939615413488'>
+
+    @patch("asyncio.sleep", return_value=None)
+    @patch("httpx.AsyncClient")
+    async def test_prioritize_inquiry_over_completed_state(
+        self, mock_httpx_cls: Any, _mock_sleep: Any
+    ) -> None:
+        """
+        Verify correct inquiry semantics:
+        - agentMessaged (Jules internal monologue e.g. Root Cause Analysis) is IGNORED.
+        - inquiryAsked in AWAITING_USER_FEEDBACK state triggers Manager Agent reply.
+
+        Old behavior (wrong): the code replied to any agentMessaged regardless of state.
+        New behavior (correct): ONLY inquiryAsked + AWAITING_USER_FEEDBACK triggers a reply.
+        """
+        mock_client = AsyncMock()
+        mock_httpx_cls.return_value.__aenter__.return_value = mock_client
+
+        session_id = "sessions/123"
+        monologue_id = "sessions/123/activities/monologue"
+        question_id = "sessions/123/activities/question"
+
+        self.client.list_activities = MagicMock(return_value=[])  # type: ignore[method-assign]
+        self.client._send_message = AsyncMock()
+
+        call_counts: dict[str, int] = {"state": 0, "activities": 0}
+
+        def state_response(call_n: int) -> MagicMock:
+            mock = MagicMock()
+            mock.status_code = 200
+            if call_n == 1:
+                mock.json.return_value = {"state": "IN_PROGRESS", "outputs": []}
+            elif call_n == 2:
+                mock.json.return_value = {"state": "AWAITING_USER_FEEDBACK", "outputs": []}
+            else:
+                mock.json.return_value = {
+                    "state": "COMPLETED",
+                    "outputs": [{"pullRequest": {"url": "http://github.com/pr/1"}}],
+                }
+            return mock
+
+        def activities_response(call_n: int) -> MagicMock:
+            mock = MagicMock()
+            mock.status_code = 200
+            if call_n == 1:
+                # Monologue while IN_PROGRESS - must be ignored
+                mock.json.return_value = {
+                    "activities": [
+                        {
+                            "name": monologue_id,
+                            "agentMessaged": {"agentMessage": "Root Cause Analysis..."},
+                        }
+                    ]
+                }
+            elif call_n == 2:
+                # Genuine question while AWAITING_USER_FEEDBACK - must be answered
+                # Official Jules API: AWAITING_USER_FEEDBACK + agentMessaged.agentMessage
+                # (inquiryAsked does NOT exist in the official Jules API)
+                mock.json.return_value = {
+                    "activities": [
+                        {
+                            "name": question_id,
+                            "agentMessaged": {"agentMessage": "Which file should I edit?"},
+                        }
+                    ]
+                }
+            else:
+                mock.json.return_value = {"activities": []}
+            return mock
+
+        async def dynamic_get(url: str, **kwargs: Any) -> MagicMock:
+            if "activities" in url:
+                call_counts["activities"] += 1
+                return activities_response(call_counts["activities"])
+            call_counts["state"] += 1
+            return state_response(call_counts["state"])
+
+        mock_client.get.side_effect = dynamic_get
+
+>       result = await self.client.wait_for_completion(session_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+tests/ac_cdd/unit/test_jules_client_logic.py:139: RuntimeError
+________________________ test_monitor_session_batching _________________________
+
+    @pytest.mark.asyncio
+    async def test_monitor_session_batching() -> None:
+        """Verify monitor_session loops internally for batch polling."""
+        # Setup
+        mock_client = MagicMock()
+        mock_client._get_headers.return_value = {}
+        mock_client._sleep = AsyncMock()
+        mock_client.inquiry_handler = MagicMock()
+        mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
+        mock_client.inquiry_handler.check_for_inquiry = AsyncMock(return_value=None)
+        mock_client._handle_manual_input = AsyncMock()
+
+        loop = asyncio.get_running_loop()
+        start_time = loop.time()
+        nodes = JulesSessionNodes(mock_client)
+>       state = JulesSessionState(session_url="http://test/session", start_time=start_time)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_jules_session_fixes.py:25:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'session_url': 'http://test/session', 'start_time': 2015.915602377}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_monitor_session_batching>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-238' coro=<test_monitor_session_batching() done, defined at /app/tests/ac_cdd/unit/test_jules_session_fixes.py:10> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+
+        If the argument is a coroutine, it is wrapped in a Task.
+
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:691: RuntimeError
+_________________ test_monitor_session_returns_early_on_change _________________
+
+    @pytest.mark.asyncio
+    async def test_monitor_session_returns_early_on_change() -> None:
+        """Verify monitor_session returns early if state changes to COMPLETED."""
+        # Setup
+        mock_client = MagicMock()
+        mock_client._get_headers.return_value = {}
+        mock_client._sleep = AsyncMock()
+        mock_client.inquiry_handler = MagicMock()
+        mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
+        mock_client.inquiry_handler.check_for_inquiry = AsyncMock(return_value=None)
+        mock_client._handle_manual_input = AsyncMock()
+
+        loop = asyncio.get_running_loop()
+        start_time = loop.time()
+        nodes = JulesSessionNodes(mock_client)
+>       state = JulesSessionState(session_url="http://test/session", start_time=start_time)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_jules_session_fixes.py:74:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'session_url': 'http://test/session', 'start_time': 2016.388747508}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_monitor_session_returns_early_on_change>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-241' coro=<test_monitor_session_returns_early_on_change() done, defined at /app/tests/ac_cdd/unit/test_jules_session_fixes.py:59> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+
+        If the argument is a coroutine, it is wrapped in a Task.
+
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:691: RuntimeError
+___________________ test_validate_completion_stale_detection ___________________
+
+    @pytest.mark.asyncio
+    async def test_validate_completion_stale_detection() -> None:
+        """Verify validate_completion handles stale events correctly."""
+        # Setup
+        mock_client = MagicMock()
+        mock_client._get_headers.return_value = {}
+
+        nodes = JulesSessionNodes(mock_client)
+>       state = JulesSessionState(session_url="http://test/session")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_jules_session_fixes.py:117:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'session_url': 'http://test/session'}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_validate_completion_stale_detection>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-244' coro=<test_validate_completion_stale_detection() done, defined at /app/tests/ac_cdd/unit/test_jules_session_fixes.py:109> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+
+        If the argument is a coroutine, it is wrapped in a Task.
+
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:691: RuntimeError
+______________ test_validate_completion_stale_but_new_transition _______________
+
+    @pytest.mark.asyncio
+    async def test_validate_completion_stale_but_new_transition() -> None:
+        """Verify validate_completion accepts stale event if transition is valid (IN_PROGRESS -> COMPLETED)."""
+        # Setup
+        mock_client = MagicMock()
+        mock_client._get_headers.return_value = {}
+
+        nodes = JulesSessionNodes(mock_client)
+>       state = JulesSessionState(session_url="http://test/session")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_jules_session_fixes.py:152:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'session_url': 'http://test/session'}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_validate_completion_stale_but_new_transition>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-247' coro=<test_validate_completion_stale_but_new_transition() done, defined at /app/tests/ac_cdd/unit/test_jules_session_fixes.py:144> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+
+        If the argument is a coroutine, it is wrapped in a Task.
+
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:691: RuntimeError
+_________________ test_monitor_session_avoids_validation_loop __________________
+
+    @pytest.mark.asyncio
+    async def test_monitor_session_avoids_validation_loop() -> None:
+        """Verify monitor_session does NOT go to validation if already validated."""
+        # Setup
+        mock_client = MagicMock()
+        mock_client._get_headers.return_value = {}
+        mock_client._sleep = AsyncMock()
+        mock_client.inquiry_handler = MagicMock()
+        mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
+        mock_client.inquiry_handler.check_for_inquiry = AsyncMock(return_value=None)
+        mock_client._handle_manual_input = AsyncMock()
+
+        loop = asyncio.get_running_loop()
+        start_time = loop.time()
+        nodes = JulesSessionNodes(mock_client)
+>       state = JulesSessionState(session_url="http://test/session", start_time=start_time)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/ac_cdd/unit/test_jules_session_fixes.py:191:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1139: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1143: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <MagicMock spec='str' id='139939631685776'>, args = ()
+kwargs = {'session_url': 'http://test/session', 'start_time': 2017.851462596}
+effect = <tuple_iterator object at 0x7f463c090220>
+
+    def _execute_mock_call(self, /, *args, **kwargs):
+        # separate from _increment_mock_call so that awaited functions are
+        # executed separately from their call, also AsyncMock overrides this method
+
+        effect = self.side_effect
+        if effect is not None:
+            if _is_exception(effect):
+                raise effect
+            elif not _callable(effect):
+>               result = next(effect)
+                         ^^^^^^^^^^^^
+E               StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/unittest/mock.py:1200: StopIteration
+
+The above exception was the direct cause of the following exception:
+
+self = <Coroutine test_monitor_session_avoids_validation_loop>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_UnixSelectorEventLoop running=False closed=False debug=False>
+future = <Task finished name='Task-250' coro=<test_monitor_session_avoids_validation_loop() done, defined at /app/tests/ac_cdd/unit/test_jules_session_fixes.py:176> exception=RuntimeError('coroutine raised StopIteration')>
+
+    def run_until_complete(self, future):
+        """Run until the Future is done.
+
+        If the argument is a coroutine, it is wrapped in a Task.
+
+        WARNING: It would be disastrous to call run_until_complete()
+        with the same coroutine twice -- it would wrap it in two
+        different Tasks and that can't be good.
+
+        Return the Future's result, or raise its exception.
+        """
+        self._check_closed()
+        self._check_running()
+
+        new_task = not futures.isfuture(future)
+        future = tasks.ensure_future(future, loop=self)
+        if new_task:
+            # An exception is raised if the future didn't complete, so there
+            # is no need to log the "destroy pending task" message
+            future._log_destroy_pending = False
+
+        future.add_done_callback(_run_until_complete_cb)
+        try:
+            self.run_forever()
+        except:
+            if new_task and future.done() and not future.cancelled():
+                # The coroutine raised a BaseException. Consume the exception
+                # to not log a warning, the caller doesn't have access to the
+                # local task.
+                future.exception()
+            raise
+        finally:
+            future.remove_done_callback(_run_until_complete_cb)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+>       return future.result()
+               ^^^^^^^^^^^^^^^
+E       RuntimeError: coroutine raised StopIteration
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:691: RuntimeError
+________ TestSessionStateValidation.test_get_session_state_in_progress _________
+
+self = <Coroutine test_get_session_state_in_progress>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b384740>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939617537488'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+_________ TestSessionStateValidation.test_get_session_state_completed __________
+
+self = <Coroutine test_get_session_state_completed>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b316ae0>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939628439680'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+__________ TestSessionStateValidation.test_get_session_state_on_error __________
+
+self = <Coroutine test_get_session_state_on_error>
+
+    def runtest(self) -> None:
+        runner_fixture_id = f"_{self._loop_scope}_scoped_runner"
+        runner = self._request.getfixturevalue(runner_fixture_id)
+        context = contextvars.copy_context()
+        synchronized_obj = _synchronize_coroutine(
+            getattr(*self._synchronization_target_attr), runner, context
+        )
+        with MonkeyPatch.context() as c:
+            c.setattr(*self._synchronization_target_attr, synchronized_obj)
+>           super().runtest()
+
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:469:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pytest_asyncio/plugin.py:716: in inner
+    runner.run(coro, context=context)
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:678: in run_until_complete
+    self.run_forever()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:645: in run_forever
+    self._run_once()
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/asyncio/base_events.py:1961: in _run_once
+    event_list = self._selector.select(timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <selectors.EpollSelector object at 0x7f463b305130>, timeout = 0
+
+    def select(self, timeout=None):
+        if timeout is None:
+            timeout = -1
+        elif timeout <= 0:
+            timeout = 0
+        else:
+            # epoll_wait() has a resolution of 1 millisecond, round away
+            # from zero to wait *at least* timeout seconds.
+            timeout = math.ceil(timeout * 1e3) * 1e-3
+
+        # epoll_wait() expects `maxevents` to be greater than zero;
+        # we want to make sure that `select()` can be called when no
+        # FD is registered.
+        max_ev = max(len(self._fd_to_key), 1)
+
+        ready = []
+        try:
+>           fd_event_list = self._selector.poll(timeout, max_ev)
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           OSError: [Errno 22] Invalid argument
+
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/selectors.py:468: OSError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: ("File <MagicMock name='mock.get_application_default_credentials_path()' id='139939628461632'> is not a valid json file.", JSONDecodeError('Expecting value: line 1 column 1 (char 0)')). Falling back to API Key if available.
+___________________________ test_review_code_success ___________________________
+
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f463bf57290>
+
+    @pytest.mark.asyncio
+    async def test_review_code_success(reviewer: LLMReviewer) -> None:
+        """Test successful code review call."""
+        target_files = {"main.py": "print('hello')"}
+        context_files = {"spec.md": "# Spec"}
+        instruction = "Review this code."
+        model = "test-model"
+
+        from src.domain_models import AuditorReport
+
+        valid_json = AuditorReport(
+            is_passed=True, summary="Refactored code", issues=[]
+        ).model_dump_json()
+
+        # Mock litellm.acompletion
+        mock_response = AsyncMock()
+        mock_response.choices = [
+            type("obj", (object,), {"message": type("obj", (object,), {"content": valid_json})})
+        ]
+
+        with patch("litellm.acompletion", return_value=mock_response) as mock_completion:
+            # UPDATED SIGNATURE: target_files, context_docs, instruction, model
+            result = await reviewer.review_code(target_files, context_files, instruction, model)
+
+>           assert "REVIEW_PASSED" in result
+E           AssertionError: assert 'REVIEW_PASSED' in '-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. (litellm.BadReque...cs/providers)\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again.'
+
+tests/ac_cdd/unit/test_llm_reviewer.py:44: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=test-model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+ERROR    AC-CDD:llm_reviewer.py:116 LLMReviewer failed completely after 3 attempts.
+_________________________ test_review_code_api_failure _________________________
+
+reviewer = <src.services.llm_reviewer.LLMReviewer object at 0x7f463bf4c3e0>
+
+    @pytest.mark.asyncio
+    async def test_review_code_api_failure(reviewer: LLMReviewer) -> None:
+        """Test error handling when API fails."""
+        target_files = {"main.py": "content"}
+        context_files: dict[str, str] = {}
+
+        with patch("litellm.acompletion", side_effect=Exception("API Error")):
+            result = await reviewer.review_code(target_files, context_files, "inst", "model")
+
+            assert "REVIEW_FAILED" in result
+>           assert "API Error" in result
+E           AssertionError: assert 'API Error' in '-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. (litellm.BadReque...cs/providers)\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again.'
+
+tests/ac_cdd/unit/test_llm_reviewer.py:70: AssertionError
+----------------------------- Captured stdout call -----------------------------
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+
+[1;31mProvider List: https://docs.litellm.ai/docs/providers[0m
+
+------------------------------ Captured log call -------------------------------
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 1 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 2 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+WARNING  AC-CDD:llm_reviewer.py:114 LLMReviewer attempt 3 failed to parse JSON: litellm.BadRequestError: LLM Provider NOT provided. Pass in the LLM provider you are trying to call. You passed model=model
+ Pass model as E.g. For 'Huggingface' inference endpoints pass in `completion(model='huggingface/starcoder',..)` Learn more: https://docs.litellm.ai/docs/providers
+ERROR    AC-CDD:llm_reviewer.py:116 LLMReviewer failed completely after 3 attempts.
+_______ TestSessionReuse.test_reuse_completed_session_for_auditor_reject _______
+
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f463c0cce30>
+mock_jules = <MagicMock id='139939613684272'>
+
+    @pytest.mark.asyncio
+    async def test_reuse_completed_session_for_auditor_reject(self, mock_jules: MagicMock) -> None:
+        """Should REUSE COMPLETED session for Auditor Reject (send feedback to same session)."""
+        mock_jules.get_session_state.return_value = "COMPLETED"
+        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+
+        mock_manifest = MagicMock()
+        mock_manifest.jules_session_id = "sessions/123"
+        mock_manifest.pr_url = None
+
+        audit = AuditResult(
+            status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this issue"
+        )
+        state = CycleState(
+            cycle_id="01",
+            status=FlowStatus.RETRY_FIX,
+        )
+        state.audit_result = audit
+
+        usecase = CoderUseCase(mock_jules)
+
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
+
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+
+                def mock_get_template(name: str) -> MagicMock:
+                    m = MagicMock()
+                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
+                        m.read_text.return_value = "Instruction {{feedback}}"
+                    else:
+                        m.read_text.return_value = "Instruction"
+                    return m
+
+                mock_settings.get_template.side_effect = mock_get_template
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                result = await usecase.execute(state)
+
+        mock_jules.get_session_state.assert_called_with("sessions/123")
+        mock_jules._send_message.assert_called_once()  # Feedback was sent to existing session
+
+        # Verify the actual feedback content sent
+        sent_message = (
+            mock_jules._send_message.call_args.args[1]
+            if mock_jules._send_message.call_args.args
+            else mock_jules._send_message.call_args.kwargs.get("message", "")
+        )
+>       assert "Fix this issue" in sent_message
+E       AssertionError: assert 'Fix this issue' in <MagicMock name='settings.get_prompt_content().replace()' id='139939612705184'>
+
+tests/ac_cdd/unit/test_session_reuse.py:73: AssertionError
+______________ TestSessionReuse.test_create_new_session_if_failed ______________
+
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f463c0ce540>
+mock_jules = <MagicMock id='139939610783680'>
+
+    @pytest.mark.asyncio
+    async def test_create_new_session_if_failed(self, mock_jules: MagicMock) -> None:
+        """Should create NEW session if previous session FAILED."""
+        mock_jules.get_session_state.return_value = "FAILED"
+        mock_jules.run_session.return_value = {
+            "session_name": "sessions/new_456",
+            "status": "success",
+            "pr_url": "http://pr-new",
+        }
+
+        mock_manifest = MagicMock()
+        mock_manifest.jules_session_id = "sessions/123"
+        mock_manifest.pr_url = "https://pr"
+
+        audit = AuditResult(
+            status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this issue"
+        )
+        state = CycleState(
+            cycle_id="01",
+            status=FlowStatus.RETRY_FIX,
+        )
+        state.audit_result = audit
+
+        usecase = CoderUseCase(mock_jules)
+
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
+
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+
+                def mock_get_template(name: str) -> MagicMock:
+                    m = MagicMock()
+                    if name == "AUDIT_FEEDBACK_INJECTION.md":
+                        m.read_text.return_value = "# PREVIOUS AUDIT FEEDBACK (MUST FIX)\n\n{{feedback}}\n\n{{#pr_url}}\nPrevious PR: {{pr_url}}\n{{/pr_url}}"
+                    else:
+                        m.read_text.return_value = "Instruction"
+                    return m
+
+                mock_settings.get_template.side_effect = mock_get_template
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                await usecase.execute(state)
+
+        mock_jules.get_session_state.assert_called_with("sessions/123")
+        mock_jules._send_message.assert_not_called()  # Should NOT reuse FAILED session
+        mock_jules.run_session.assert_called()
+
+        prompt = mock_jules.run_session.call_args.kwargs["prompt"]
+>       assert "Fix this issue" in prompt
+E       assert 'Fix this issue' in "<MagicMock name='settings.get_prompt_content().replace().__iadd__()' id='139939610440288'>"
+
+tests/ac_cdd/unit/test_session_reuse.py:127: AssertionError
+_______________ TestSessionReuse.test_reuse_in_progress_session ________________
+
+self = <unit.test_session_reuse.TestSessionReuse object at 0x7f463c0cea20>
+mock_jules = <MagicMock id='139939610195536'>
+
+    @pytest.mark.asyncio
+    async def test_reuse_in_progress_session(self, mock_jules: MagicMock) -> None:
+        """Should REUSE IN_PROGRESS session (original behavior)."""
+        mock_jules.get_session_state.return_value = "IN_PROGRESS"
+        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+
+        mock_manifest = MagicMock()
+        mock_manifest.jules_session_id = "sessions/123"
+        mock_manifest.pr_url = None
+
+        audit = AuditResult(
+            status="REJECTED", is_approved=False, reason="Needs work", feedback="Fix this"
+        )
+        state = CycleState(
+            cycle_id="01",
+            status=FlowStatus.RETRY_FIX,
+        )
+        state.audit_result = audit
+
+        usecase = CoderUseCase(mock_jules)
+
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
+
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+
+                def mock_get_template(name: str) -> MagicMock:
+                    m = MagicMock()
+                    if name == "AUDIT_FEEDBACK_MESSAGE.md":
+                        m.read_text.return_value = "Instruction {{feedback}}"
+                    else:
+                        m.read_text.return_value = "Instruction"
+                    return m
+
+                mock_settings.get_template.side_effect = mock_get_template
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                result = await usecase.execute(state)
+
+        mock_jules._send_message.assert_called_once()  # Feedback was sent
+
+        # Verify the actual feedback content sent
+        sent_message = (
+            mock_jules._send_message.call_args.args[1]
+            if mock_jules._send_message.call_args.args
+            else mock_jules._send_message.call_args.kwargs.get("message", "")
+        )
+>       assert "Fix this" in sent_message
+E       AssertionError: assert 'Fix this' in <MagicMock name='settings.get_prompt_content().replace()' id='139939610857920'>
+
+tests/ac_cdd/unit/test_session_reuse.py:178: AssertionError
+=============================== warnings summary ===============================
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+  /app/src/services/coder_usecase.py:277: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if result.get("status") == "running" and jules_session_name:
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+  /app/src/services/coder_usecase.py:111: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    if result and (result.get("status") == "success" or result.get("pr_url")):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.13-final-0 _______________
 
-Name                                              Stmts   Miss  Cover   Missing
--------------------------------------------------------------------------------
-src/__init__.py                                       0      0   100%
-src/agents.py                                        63     47    25%   16-19, 24-44, 49-57, 65-85, 99-111, 117-138
-src/cli.py                                           17     17     0%   3-57
-src/config.py                                       346    114    67%   22-52, 67-73, 79-83, 90-94, 101-105, 113, 117, 121, 125-137, 143-144, 185-187, 190-191, 526-528, 551, 553, 571, 573, 578, 582-585, 592-597, 604-607, 611, 617, 623, 633-637, 640-665, 668-687
-src/contracts/__init__.py                             0      0   100%
-src/contracts/e2b_executor.py                         9      9     0%   1-20
-src/domain_models/__init__.py                        15      0   100%
-src/domain_models/architecture.py                    11      0   100%
-src/domain_models/config.py                           6      0   100%
-src/domain_models/critic.py                           6      0   100%
-src/domain_models/execution.py                       20      0   100%
-src/domain_models/file_ops.py                        19      0   100%
-src/domain_models/fix_plan_schema.py                  6      0   100%
-src/domain_models/manifest.py                        27      0   100%
-src/domain_models/multimodal_artifact_schema.py      18      4    78%   19-20, 22-23
-src/domain_models/observability_config.py            29     16    45%   32-43, 48-51
-src/domain_models/refactor.py                         6      0   100%
-src/domain_models/review.py                          28      0   100%
-src/domain_models/spec.py                            26      0   100%
-src/domain_models/tracing.py                         17      4    76%   25-29
-src/domain_models/uat_execution_state.py              8      0   100%
-src/domain_models/verification_schema.py             31     13    58%   20, 40, 47-62
-src/enums.py                                         32      0   100%
-src/error_messages.py                                 7      7     0%   4-18
-src/graph.py                                         76     76     0%   1-194
-src/graph_nodes.py                                   75     75     0%   1-131
-src/hash_utils.py                                    25     25     0%   1-30
-src/interfaces.py                                     5      5     0%   1-43
-src/jules_session_graph.py                           45     45     0%   3-111
-src/jules_session_nodes.py                          328    328     0%   3-624
-src/jules_session_state.py                           46     46     0%   3-78
-src/messages.py                                      56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
-src/nodes/__init__.py                                10     10     0%   1-19
-src/nodes/architect.py                               97     97     0%   1-188
-src/nodes/architect_critic.py                        33     33     0%   1-62
-src/nodes/auditor.py                                 14     14     0%   1-20
-src/nodes/coder.py                                    9      9     0%   1-14
-src/nodes/coder_critic.py                            42     42     0%   1-71
-src/nodes/committee.py                                7      7     0%   1-11
-src/nodes/global_refactor.py                         18     18     0%   1-35
-src/nodes/master_integrator.py                       20     20     0%   1-39
-src/nodes/qa.py                                      15     15     0%   1-22
-src/nodes/routers.py                                 62     62     0%   1-84
-src/nodes/sandbox_evaluator.py                       43     43     0%   1-100
-src/nodes/uat.py                                      9      9     0%   1-14
-src/process_runner.py                                30     24    20%   25-62
-src/sandbox.py                                      160    160     0%   1-273
-src/service_container.py                             18     18     0%   1-22
-src/services/__init__.py                              5      0   100%
-src/services/artifacts.py                            14      8    43%   17-28
-src/services/ast_analyzer.py                        109    109     0%   1-211
-src/services/async_dispatcher.py                     56     36    36%   24-38, 47-48, 57-100, 104-105
-src/services/audit_orchestrator.py                   76     76     0%   1-147
-src/services/auditor_usecase.py                     154    124    19%   30-33, 37-49, 53-257, 280, 285-286, 294-296
-src/services/coder_usecase.py                       200    200     0%   1-447
-src/services/committee_usecase.py                    50     50     0%   1-104
-src/services/conflict_manager.py                     68     68     0%   1-126
-src/services/contracts.py                            26     21    19%   16-43
-src/services/e2b_executor.py                         28     28     0%   1-54
-src/services/file_ops.py                            110     89    19%   28-59, 62-80, 88-103, 112-123, 126-137, 140-145, 149-171
-src/services/git/base.py                             37     24    35%   12-14, 18-25, 29-36, 40-43, 46, 49, 52, 55-56
-src/services/git/branching.py                       111    100    10%   10-13, 17, 23-38, 43-64, 70-99, 103-139, 145-162, 166-196
-src/services/git/checkout.py                        114     98    14%   14-35, 40-59, 63-72, 79-97, 101-105, 109, 113-118, 122-134, 138-143, 147-150, 154-176
-src/services/git/merging.py                         127    115     9%   16-31, 35-56, 64-90, 94-122, 129-186, 190-246
-src/services/git/state.py                            56     45    20%   21-68, 74-80, 84-111
-src/services/git_ops.py                               9      1    89%   20
-src/services/integration_usecase.py                  63     63     0%   1-116
-src/services/jules/api.py                           127    105    17%   20-33, 36-50, 53-58, 62, 74-102, 105-106, 109-113, 124-135, 139-141, 144-167, 172-203
-src/services/jules/context_builder.py                81     69    15%   11, 20-32, 36-46, 50-80, 84-92, 101-138
-src/services/jules/git_context.py                    42     32    24%   14, 17-56, 59-60
-src/services/jules/inquiry_handler.py               143    126    12%   20-22, 42-77, 102-107, 113-138, 142-175, 186-221, 239-286
-src/services/jules_client.py                        393    334    15%   10-11, 63-97, 103, 107, 111-117, 128-159, 163-182, 186-191, 205-285, 291-351, 354-356, 378-390, 398-453, 458-485, 488-506, 511-523, 526-537, 541, 546-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
-src/services/llm_reviewer.py                         90     50    44%   37-99, 147-148, 168, 183, 191-205, 215-227
-src/services/plan_auditor.py                         27     27     0%   1-119
-src/services/project.py                              47     47     0%   1-89
-src/services/qa_usecase.py                          146    146     0%   1-268
-src/services/refactor_usecase.py                     61     61     0%   1-120
-src/services/self_critic_evaluator.py                59     59     0%   1-100
-src/services/tracing.py                              12     12     0%   1-21
-src/services/uat_usecase.py                         100    100     0%   1-204
-src/services/workflow.py                            426    426     0%   1-780
-src/session_manager.py                               65     48    26%   25, 29-38, 44-50, 56-64, 68-75, 83-107
-src/state.py                                        232     45    81%   26-28, 33-35, 128, 132, 136, 140, 144, 148, 152, 156, 160, 164, 168, 172, 176, 180, 184, 188, 192, 196, 200, 204, 208, 212, 216, 220, 224, 232, 236, 240, 244, 248, 252, 256, 260, 264, 268, 272, 276, 280, 283, 296, 332
-src/state_manager.py                                 94     76    19%   25-37, 46-62, 74-91, 107-113, 117-120, 132-140, 156-181, 193-211
-src/state_validators.py                              36     20    44%   11-12, 18-24, 29-35, 45-46, 49-50
-src/tools.py                                         21     21     0%   1-48
-src/utils.py                                         72     54    25%   31-56, 65-78, 83-102, 112-113, 118-142, 151-160
-src/utils_sanitization.py                            13      1    92%   14
-src/validators.py                                    41     41     0%   3-86
--------------------------------------------------------------------------------
-TOTAL                                              5731   4592    20%
-============================== 5 passed in 8.91s ===============================
+Name                                               Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------------
+src/__init__.py                                        0      0   100%
+src/agents.py                                         63     39    38%   16-19, 24-44, 49-57, 66-76, 83, 99-111, 136
+src/cli.py                                            17      0   100%
+src/config.py                                        361     90    75%   17-26, 39-66, 81-87, 93-97, 104-108, 115-119, 127, 131, 135, 139-151, 157-158, 199-201, 204-205, 567, 569, 587, 589, 594, 598-601, 608-613, 621, 627, 651, 658, 679-681, 687, 691
+src/contracts/__init__.py                              0      0   100%
+src/domain_models/__init__.py                         16      0   100%
+src/domain_models/architecture.py                     11      0   100%
+src/domain_models/config.py                            6      0   100%
+src/domain_models/critic.py                            6      0   100%
+src/domain_models/execution.py                        20      0   100%
+src/domain_models/file_ops.py                         19      0   100%
+src/domain_models/fix_plan_schema.py                   8      0   100%
+src/domain_models/manifest.py                         27      0   100%
+src/domain_models/mcp_config.py                       21      2    90%   21-22
+src/domain_models/multimodal_artifact_schema.py       22      2    91%   26-27
+src/domain_models/observability_config.py             29      7    76%   37-43
+src/domain_models/refactor.py                          6      0   100%
+src/domain_models/review.py                           28      0   100%
+src/domain_models/spec.py                             26      0   100%
+src/domain_models/tracing.py                          17      0   100%
+src/domain_models/uat_execution_state.py               8      0   100%
+src/domain_models/verification_schema.py              31      1    97%   57
+src/enums.py                                          32      0   100%
+src/error_messages.py                                  7      7     0%   4-18
+src/graph.py                                          75     56    25%   19-21, 25-26, 30-60, 64-155, 158, 161, 165-190, 193
+src/graph_nodes.py                                    74     16    78%   67, 77, 82, 85, 88, 94, 97, 100, 106, 109, 115, 118, 121, 124, 127, 130
+src/hash_utils.py                                     25     25     0%   1-30
+src/interfaces.py                                      5      0   100%
+src/jules_session_graph.py                            45     20    56%   15-21, 28-30, 37-39, 46-52
+src/jules_session_nodes.py                           328    308     6%   26-32, 36-211, 224-242, 248-257, 261-314, 318-393, 404-444, 454-490, 499-542, 546-624
+src/jules_session_state.py                            46      3    93%   10-12
+src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
+src/nodes/__init__.py                                 10      0   100%
+src/nodes/architect.py                                97     61    37%   26-49, 73-75, 97-117, 127, 134-188
+src/nodes/architect_critic.py                         33     23    30%   18-62
+src/nodes/auditor.py                                  14      6    57%   13-20
+src/nodes/coder.py                                     9      3    67%   11-14
+src/nodes/coder_critic.py                             42     32    24%   18-71
+src/nodes/committee.py                                 7      0   100%
+src/nodes/global_refactor.py                          18     10    44%   19-35
+src/nodes/master_integrator.py                        20     20     0%   1-39
+src/nodes/qa.py                                       15      6    60%   13-16, 19-22
+src/nodes/routers.py                                  68     35    49%   9, 14-18, 22-27, 31, 46, 50-63, 74-79, 90
+src/nodes/sandbox_evaluator.py                        54      5    91%   52, 72, 84, 138-139
+src/nodes/uat.py                                       9      3    67%   11-14
+src/process_runner.py                                 30     24    20%   25-62
+src/service_container.py                              18      0   100%
+src/services/__init__.py                               6      0   100%
+src/services/artifacts.py                             14      8    43%   17-28
+src/services/ast_analyzer.py                         109     14    87%   32-33, 45-46, 54, 60, 109, 121, 126, 131-133, 140, 174
+src/services/async_dispatcher.py                      56      3    95%   78-83
+src/services/audit_orchestrator.py                    76     60    21%   30-31, 41-125, 131-147
+src/services/auditor_usecase.py                      154     77    50%   45-46, 63, 68, 99-102, 126-257, 280, 285-286, 294-296
+src/services/coder_usecase.py                        200     55    72%   38-39, 71-77, 85, 125, 130-135, 146, 150, 157, 168-176, 198, 213-218, 227-228, 240, 257-258, 301-305, 312-315, 337, 354-386, 434
+src/services/committee_usecase.py                     50      8    84%   22-25, 62-66, 87-91
+src/services/conflict_manager.py                      68     20    71%   38-40, 53, 57-61, 80, 84-88, 105-107, 115-116
+src/services/contracts.py                             26     21    19%   16-43
+src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
+src/services/git/base.py                              37     14    62%   20-25, 35-36, 41-44, 47, 50, 53, 56-57
+src/services/git/branching.py                        111     55    50%   10-13, 17, 23-38, 55-59, 87-97, 112-139, 159-160, 180-194
+src/services/git/checkout.py                         114     54    53%   18-21, 25, 29-31, 63-72, 79-97, 101-105, 113-118, 126-134, 138-143, 147-150
+src/services/git/merging.py                          127     59    54%   18-22, 30-31, 38-39, 42-43, 46-47, 50-51, 55-56, 73-81, 94-122, 141-144, 182-183, 218-219, 241-242
+src/services/git/state.py                             56     25    55%   27-68, 79-80, 90-92
+src/services/git_ops.py                                9      0   100%
+src/services/integration_usecase.py                   63      5    92%   24, 30-31, 48, 116
+src/services/jules/api.py                            127    100    21%   22-23, 26, 29, 36-50, 53-58, 62, 74-102, 105-106, 109-113, 124-135, 139-141, 144-167, 172-203
+src/services/jules/context_builder.py                 81     68    16%   20-32, 36-46, 50-80, 84-92, 101-138
+src/services/jules/git_context.py                     42     17    60%   23-26, 39-54, 59-60
+src/services/jules/inquiry_handler.py                143     83    42%   43-46, 54, 67, 72-77, 107, 113-138, 142-175, 186-221, 244, 252, 277-286
+src/services/jules_client.py                         393    200    49%   10-11, 73-74, 84, 92, 103, 107, 111-117, 128-159, 163-182, 186-191, 258-285, 342-349, 356, 378-390, 419-420, 428, 433, 452-453, 469-485, 492-506, 521-522, 527, 530-535, 541, 547, 559-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
+src/services/llm_reviewer.py                         106     29    73%   30-31, 41, 46-48, 52-53, 57-58, 76, 107-111, 119, 167-168, 188, 207, 219-233
+src/services/mcp_client_manager.py                    32      0   100%
+src/services/plan_auditor.py                          27      5    81%   15-17, 63, 112-113
+src/services/project.py                               47     30    36%   22-45, 68-89
+src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 50-57, 61-78
+src/services/project_setup/permission_manager.py      77     21    73%   24-25, 35-36, 39-47, 56-57, 72-73, 75-76, 90-91
+src/services/project_setup/template_manager.py        84      2    98%   84-85
+src/services/qa_usecase.py                           189    189     0%   1-347
+src/services/refactor_usecase.py                      61      5    92%   85, 94, 117-120
+src/services/self_critic_evaluator.py                 59     19    68%   16-17, 25, 27, 32-36, 41, 50, 57-65, 91, 98-100
+src/services/tracing.py                               12      0   100%
+src/services/uat_usecase.py                          104     29    72%   36-37, 54, 58-60, 71-72, 92-93, 113-114, 119-120, 124-125, 156, 162-164, 173-175, 183-184, 191-193, 210-211
+src/services/workflow.py                             436    388    11%   38, 43-126, 137-146, 154-204, 214-262, 266-273, 277-287, 300-326, 330-332, 342-380, 383-431, 437-501, 504-521, 527-586, 591-662, 669-691, 694-705, 708-725, 728-752, 755-761, 764-766, 769-776
+src/session_manager.py                                65      7    89%   48-50, 70, 85-86, 105
+src/state.py                                         243     26    89%   26-28, 33-35, 153, 157, 161, 189, 197, 201, 205, 209, 233, 241, 269, 277, 281, 285, 289, 305, 346-352
+src/state_manager.py                                  94     25    73%   32-37, 55-57, 60-61, 89-91, 119, 193-211
+src/state_validators.py                               36     20    44%   11-12, 18-24, 29-35, 45-46, 49-50
+src/tools.py                                          21     21     0%   1-48
+src/utils.py                                          72     45    38%   31-56, 65-78, 88, 93-94, 100, 112-113, 118-142, 151-160
+src/utils_sanitization.py                             11      1    91%   10
+src/validators.py                                     41      1    98%   56
+--------------------------------------------------------------------------------
+TOTAL                                               5918   2709    54%
+=========================== short test summary info ============================
+FAILED tests/unit/test_cycle01_observability.py::test_verify_environment_success
+FAILED tests/unit/test_cycle01_observability.py::test_verify_environment_failure_tracing
+FAILED tests/unit/test_cycle01_observability.py::test_verify_environment_spec_dependency_success
+FAILED tests/unit/test_cycle01_observability.py::test_verify_environment_spec_dependency_failure
+FAILED tests/unit/test_cycle03_mechanical_gate.py::test_sandbox_evaluator_all_pass
+FAILED tests/unit/test_cycle03_mechanical_gate.py::test_sandbox_evaluator_lint_fails
+FAILED tests/unit/test_cycle03_mechanical_gate.py::test_sandbox_evaluator_handles_exception
+FAILED tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_success_fails
+FAILED tests/unit/test_sandbox_evaluator.py::test_evaluate_red_phase_failure_passes
+FAILED tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_success_passes
+FAILED tests/unit/test_sandbox_evaluator.py::test_evaluate_green_phase_failure_fails
+FAILED tests/ac_cdd/integration/test_git_robustness.py::test_create_feature_branch_idempotency
+FAILED tests/ac_cdd/integration/test_git_robustness.py::test_smart_checkout_dirty_recovery
+FAILED tests/ac_cdd/unit/test_jules_client_logic.py::TestJulesClientLogic::test_deduplication_of_existing_activities
+FAILED tests/ac_cdd/unit/test_jules_client_logic.py::TestJulesClientLogic::test_prioritize_inquiry_over_completed_state
+FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_batching
+FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_returns_early_on_change
+FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_validate_completion_stale_detection
+FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_validate_completion_stale_but_new_transition
+FAILED tests/ac_cdd/unit/test_jules_session_fixes.py::test_monitor_session_avoids_validation_loop
+FAILED tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_in_progress
+FAILED tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_completed
+FAILED tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
+FAILED tests/ac_cdd/unit/test_llm_reviewer.py::test_review_code_success - Ass...
+FAILED tests/ac_cdd/unit/test_llm_reviewer.py::test_review_code_api_failure
+FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_completed_session_for_auditor_reject
+FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_create_new_session_if_failed
+FAILED tests/ac_cdd/unit/test_session_reuse.py::TestSessionReuse::test_reuse_in_progress_session
+ERROR tests/ac_cdd/unit/test_audit_orchestrator.py::test_run_session_approved_first_try
+ERROR tests/ac_cdd/unit/test_audit_orchestrator.py::test_run_session_rejected_then_approved
+ERROR tests/ac_cdd/unit/test_audit_orchestrator.py::test_max_retries_exceeded
+ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_in_progress
+ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_completed
+ERROR tests/ac_cdd/unit/test_jules_session_state.py::TestSessionStateValidation::test_get_session_state_on_error
+============ 28 failed, 169 passed, 4 warnings, 6 errors in 47.19s =============
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/ast.py:52: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+  return compile(source, filename, mode, flags,
+RuntimeWarning: Enable tracemalloc to get the object allocation traceback

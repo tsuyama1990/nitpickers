@@ -5,6 +5,7 @@ from .execution import ConflictRegistryItem, CycleStatus, E2BExecutionResult, Ua
 from .file_ops import FileArtifact, FileCreate, FileOperation, FilePatch
 from .fix_plan_schema import FixPlanSchema
 from .manifest import CycleManifest, ProjectManifest
+from .mcp_config import McpServerConfig, ToolExecutionError
 from .multimodal_artifact_schema import MultiModalArtifact
 from .observability_config import ObservabilityConfig
 from .refactor import GlobalRefactorResult
@@ -30,6 +31,7 @@ __all__ = [
     "FilePatch",
     "FixPlanSchema",
     "GlobalRefactorResult",
+    "McpServerConfig",
     "MultiModalArtifact",
     "ObservabilityConfig",
     "PlanAuditResult",
@@ -39,7 +41,8 @@ __all__ = [
     "StructuredSpec",
     "SystemArchitecture",
     "TechnicalConstraint",
+    "ToolExecutionError",
     "UatAnalysis",
     "UatExecutionState",
-    "VerificationResult",
+    "VerificationResult"
 ]
