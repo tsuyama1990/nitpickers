@@ -26,7 +26,7 @@ async def test_uat_02_01_successful_critic_evaluation_loop(mock_jules: MagicMock
         "raw": {"outputs": [{"text": '{"is_approved": true}'}]},
     }
 
-    node = ArchitectCriticNodes(mock_jules)
+    node = ArchitectCriticNodes()
     result = await node.architect_critic_node(state)
 
     assert result["status"] == "architect_completed"
@@ -49,7 +49,7 @@ async def test_uat_02_02_vulnerable_spec_regeneration(mock_jules: MagicMock) -> 
         },
     }
 
-    node = ArchitectCriticNodes(mock_jules)
+    node = ArchitectCriticNodes()
     result = await node.architect_critic_node(state)
 
     assert result["status"] == "architect_critic_rejected"
@@ -70,7 +70,7 @@ async def test_uat_02_03_critic_max_retries_limit(mock_jules: MagicMock) -> None
         },
     }
 
-    node = ArchitectCriticNodes(mock_jules)
+    node = ArchitectCriticNodes()
     result = await node.architect_critic_node(state)
 
     # Should forcefully fail or complete

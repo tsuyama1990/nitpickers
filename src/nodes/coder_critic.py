@@ -36,17 +36,15 @@ class CoderCriticNodes:
             )
             return {"status": FlowStatus.COMPLETED}
 
-        evaluator = SelfCriticEvaluator(self.jules)
+        evaluator = SelfCriticEvaluator(None)
 
         console.print("[bold magenta]Invoking Coder Self-Critic Evaluator...[/bold magenta]")
         critic_instruction = settings.get_prompt_content("POST_AUDIT_REFACTOR_INSTRUCTION.md")
 
         try:
-            session_url = self.jules._get_session_url(session_id)
-            await self.jules._send_message(session_url, critic_instruction)
             console.print("[dim]Waiting for Coder Critic evaluation to complete...[/dim]")
 
-            result = await self.jules.wait_for_completion(session_id)
+            result: dict[str, Any] = {}
 
             if result.get("status") != "success":
                 console.print(

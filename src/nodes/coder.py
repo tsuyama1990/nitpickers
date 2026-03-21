@@ -15,5 +15,5 @@ class CoderNodes:
     async def coder_session_node(self, state: CycleState) -> dict[str, Any]:
         from src.services.coder_usecase import CoderUseCase
 
-        usecase = CoderUseCase(self.jules, e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
+        usecase = CoderUseCase(None, e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
         return dict(await usecase.execute(state))
