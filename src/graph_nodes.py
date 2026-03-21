@@ -37,9 +37,10 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(self, sandbox_runner: Any, jules_client: JulesClient, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+    def __init__(self, sandbox_runner: Any, jules_client: JulesClient, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None) -> None:
         self.jules = jules_client
         self.e2b_tools = e2b_tools
+        self.github_read_tools = github_read_tools
 
         from src.service_container import ServiceContainer
 
@@ -51,11 +52,11 @@ class CycleNodes(IGraphNodes):
         self.llm_reviewer = LLMReviewer()
         self.audit_orchestrator = AuditOrchestrator(jules_client, None)
 
-        self._architect = ArchitectNodes(self.jules, self.git)
+        self._architect = ArchitectNodes(self.jules, self.git, github_read_tools=self.github_read_tools)
         self._architect_critic = ArchitectCriticNodes(self.jules)
-        self._coder = CoderNodes(self.jules)
+        self._coder = CoderNodes(self.jules, github_read_tools=self.github_read_tools, e2b_tools=self.e2b_tools)
         self._coder_critic = CoderCriticNodes(self.jules)
-        self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools)
+        self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
         self._committee = CommitteeNodes()
         self._uat = UatNodes(self.git, e2b_tools=self.e2b_tools)
         self._sandbox_evaluator = SandboxEvaluatorNodes(e2b_tools=self.e2b_tools)

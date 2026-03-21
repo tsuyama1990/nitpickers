@@ -29,7 +29,7 @@ console = Console()
 
 
 class WorkflowService:
-    def __init__(self, services: ServiceContainer | None = None, e2b_tools: "Sequence[BaseTool] | None" = None) -> None:
+    def __init__(self, services: ServiceContainer | None = None, e2b_tools: "Sequence[BaseTool] | None" = None, github_read_tools: "Sequence[BaseTool] | None" = None) -> None:
         self.services = services or ServiceContainer.default()
 
         self.builder = GraphBuilder(
@@ -37,6 +37,7 @@ class WorkflowService:
             None,
             self.services.jules if self.services.jules else JulesClient(),
             e2b_tools=e2b_tools,
+            github_read_tools=github_read_tools,
         )
         self.git = GitManager()
 
@@ -137,16 +138,18 @@ class WorkflowService:
         project_session_id: str | None,
         parallel: bool = False,
         e2b_tools: "Sequence[BaseTool] | None" = None,
+        github_read_tools: "Sequence[BaseTool] | None" = None,
     ) -> None:
         self.verify_environment_and_observability()
 
         # If tools are passed in at runtime, override the builder
-        if e2b_tools:
+        if e2b_tools or github_read_tools:
             self.builder = GraphBuilder(
                 self.services,
                 None,
                 self.services.jules if self.services.jules else JulesClient(),
                 e2b_tools=e2b_tools,
+                github_read_tools=github_read_tools,
             )
         try:
             # Default to "all" behavior (resume pending) if no ID provided

@@ -6,7 +6,7 @@ from typing import Any
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from src.mcp_router.schemas import E2bMcpConfig
+from src.mcp_router.schemas import E2bMcpConfig, GitHubMcpConfig
 
 
 class McpClientManager:
@@ -57,19 +57,30 @@ class McpClientManager:
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
         """Provides an asynchronous context manager for the MCP client with robust error handling."""
-        config = E2bMcpConfig()  # type: ignore[call-arg]
+        from pydantic import ValidationError
+        import logging
+        logger = logging.getLogger(__name__)
 
         # Override the env with sanitized environment to prevent leakages
         sanitized_env = self._sanitize_environment()
 
-        # Build dynamic connections from the config
-        connection_config = config.get_connection_config(sanitized_env)
+        # Build dynamic connections from the configs
+        connection_config = {}
+
+        try:
+            config = E2bMcpConfig()  # type: ignore[call-arg]
+            connection_config.update(config.get_connection_config(sanitized_env))
+        except ValidationError as e:
+            logger.warning(f"E2B MCP server configuration missing or invalid. E2B tools will be disabled. Error: {e}")
+
+        try:
+            github_config = GitHubMcpConfig()  # type: ignore[call-arg]
+            connection_config.update(github_config.get_connection_config(sanitized_env))
+        except ValidationError as e:
+            logger.warning(f"GitHub MCP server configuration missing or invalid. GitHub tools will be disabled. Error: {e}")
 
         max_retries = 3
         base_delay = 1.0
-
-        import logging
-        logger = logging.getLogger(__name__)
 
         client = None
         for attempt in range(max_retries):

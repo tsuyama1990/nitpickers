@@ -191,6 +191,7 @@ class LLMReviewer:
         instruction: str,
         model: str,
         e2b_tools: Sequence[BaseTool] | None = None,
+        github_read_tools: Sequence[BaseTool] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -208,7 +209,13 @@ class LLMReviewer:
 
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
-        tools_param = self._convert_tools_to_litellm(e2b_tools)
+        all_tools = []
+        if e2b_tools:
+            all_tools.extend(e2b_tools)
+        if github_read_tools:
+            all_tools.extend(github_read_tools)
+
+        tools_param = self._convert_tools_to_litellm(all_tools) if all_tools else None
 
         from src.config import settings
         system_prompt = settings.get_template("REVIEWER_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("REVIEWER_INSTRUCTION.md").exists() else (
@@ -226,7 +233,7 @@ class LLMReviewer:
                 ]
 
                 content_str = await self._execute_litellm_tool_loop(
-                    model, messages, tools_param, e2b_tools
+                    model, messages, tools_param, all_tools
                 )
 
                 if content_str is None:

@@ -33,11 +33,13 @@ class CoderUseCase:
     Encapsulates the logic and interactions with the Coder AI (Jules).
     """
 
-    def __init__(self, jules_client: JulesClient) -> None:
+    def __init__(self, jules_client: JulesClient, e2b_tools: Any | None = None, github_read_tools: Any | None = None) -> None:
         if not jules_client:
             msg = "JulesClient must be injected into CoderUseCase"
             raise ValueError(msg)
         self.jules = jules_client
+        self.e2b_tools = e2b_tools
+        self.github_read_tools = github_read_tools
 
     # ------------------------------------------------------------------ #
     #  Public entry point                                                  #
@@ -257,13 +259,25 @@ class CoderUseCase:
             msg = f"Invalid session_req_id format: {session_req_id}"
             raise ValueError(msg)
 
-        result = await self.jules.run_session(
-            session_id=session_req_id,
-            prompt=instruction,
-            target_files=target_files,
-            context_files=context_files,
-            require_plan_approval=False,
-        )
+        # Pass tools dynamically if run_session supports them
+        run_args = {
+            "session_id": session_req_id,
+            "prompt": instruction,
+            "target_files": target_files,
+            "context_files": context_files,
+            "require_plan_approval": False,
+        }
+
+        all_tools = []
+        if self.github_read_tools:
+            all_tools.extend(self.github_read_tools)
+        if self.e2b_tools:
+            all_tools.extend(self.e2b_tools)
+
+        if all_tools:
+            run_args["tools"] = all_tools
+
+        result = await self.jules.run_session(**run_args)
 
         # Capture session_name BEFORE wait_for_completion() overwrites result —
         # wait_for_completion() does NOT include session_name in its return value.

@@ -1,7 +1,9 @@
 import asyncio
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
+from langchain_core.tools import BaseTool
 from rich.console import Console
 
 from src.config import settings
@@ -12,9 +14,10 @@ console = Console()
 
 
 class ArchitectNodes:
-    def __init__(self, jules: Any, git: Any) -> None:
+    def __init__(self, jules: Any, git: Any, github_read_tools: Sequence[BaseTool] | None = None) -> None:
         self.jules = jules
         self.git = git
+        self.github_read_tools = github_read_tools
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Node for Architect Agent (Jules)."""
@@ -80,13 +83,15 @@ class ArchitectNodes:
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        result = await self.jules.execute_command(
-            command="Design the system architecture based on ALL_SPEC.md.",
+        # We pass github_read_tools to the actual interaction method using run_session directly.
+        # execute_command has been deprecated in favor of run_session.
+        result = await self.jules.run_session(
             session_id=f"architect-{timestamp}",
             prompt=instruction,
             target_files=context_files,
             context_files=[],
             require_plan_approval=False,
+            tools=self.github_read_tools,
         )
 
         if (
