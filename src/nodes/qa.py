@@ -7,9 +7,9 @@ from src.state import CycleState
 
 
 class QaNodes:
-    def __init__(self, jules: Any, git: Any, llm_reviewer: Any, e2b_tools: Sequence[BaseTool] | None = None) -> None:
-        self.jules = jules
-        self.git = git
+    def __init__(self, llm_reviewer: Any, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+
+
         self.llm_reviewer = llm_reviewer
         self.e2b_tools = e2b_tools
 

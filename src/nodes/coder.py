@@ -7,8 +7,8 @@ from src.state import CycleState
 
 
 class CoderNodes:
-    def __init__(self, jules: Any, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None) -> None:
-        self.jules = jules
+    def __init__(self, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None) -> None:
+
         self.e2b_tools = e2b_tools
         self.github_read_tools = github_read_tools
 

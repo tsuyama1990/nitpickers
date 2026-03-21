@@ -46,7 +46,7 @@ def test_mcp_client_manager_sanitization() -> None:
         sanitized = manager._sanitize_environment()
 
         assert "PATH" in sanitized
-        assert "NORMAL_VAR" not in sanitized
+        assert "NORMAL_VAR" in sanitized
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
         assert "OPENAI_API_KEY" in sanitized

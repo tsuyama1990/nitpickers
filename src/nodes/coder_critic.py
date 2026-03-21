@@ -10,8 +10,8 @@ console = Console()
 
 
 class CoderCriticNodes:
-    def __init__(self, jules_client: Any) -> None:
-        self.jules = jules_client
+    def __init__(self) -> None:
+        pass
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
         """Node for Coder Critic Evaluation phase."""

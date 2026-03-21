@@ -14,9 +14,9 @@ console = Console()
 
 
 class ArchitectNodes:
-    def __init__(self, jules: Any, git: Any, github_read_tools: Sequence[BaseTool] | None = None) -> None:
-        self.jules = jules
-        self.git = git
+    def __init__(self, github_read_tools: Sequence[BaseTool] | None = None) -> None:
+
+
         self.github_read_tools = github_read_tools
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915

@@ -37,7 +37,7 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMoc
     )
     state = IntegrationState(unresolved_conflicts=[item])
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
 
     # Mock LLM returning clean code on first try
     mock_jules.send_message_to_session.return_value = "```python\nclean_code\n```"
@@ -65,7 +65,7 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Magic
     )
     state = IntegrationState(unresolved_conflicts=[item])
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
 
     # Mock LLM returning bad code on first try, clean code on second
     mock_jules.send_message_to_session.side_effect = [
@@ -98,7 +98,7 @@ async def test_integration_usecase_max_retries_exceeded(
     )
     state = IntegrationState(unresolved_conflicts=[item])
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
 
     # Mock LLM constantly returning bad code
     mock_jules.send_message_to_session.return_value = "```python\n<<<<<<< HEAD\nbad\n=======\n```"

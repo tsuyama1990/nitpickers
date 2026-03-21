@@ -43,7 +43,7 @@ async def test_uat_07_01_successful_stateful_conflict_resolution(tmp_path: Path)
         "```python\nfixedB\n```",
     ]
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
 
     new_state = await usecase.run_integration_loop(state, tmp_path)
 
@@ -79,7 +79,7 @@ async def test_uat_07_02_conflict_marker_retry_loop(tmp_path: Path) -> None:
         "```python\ngood code\n```",
     ]
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
     new_state = await usecase.run_integration_loop(state, tmp_path)
 
     assert new_state.unresolved_conflicts[0].resolved is True
@@ -114,7 +114,7 @@ async def test_uat_07_03_maximum_conflict_retries_exceeded(tmp_path: Path) -> No
         "```python\n<<<<<<< HEAD\nbad code\n=======\n```"
     )
 
-    usecase = IntegrationUsecase(jules_client=mock_jules)
+    usecase = IntegrationUsecase(github_write_tools=[])
 
     with pytest.raises(MaxRetriesExceededError):
         await usecase.run_integration_loop(state, tmp_path)
