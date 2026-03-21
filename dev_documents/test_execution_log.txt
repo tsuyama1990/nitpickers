@@ -6,11 +6,29 @@ plugins: langsmith-0.7.22, base-url-2.1.0, cov-7.0.0, playwright-0.7.2, asyncio-
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
 collected 8 items
 
-tests/unit/test_mcp_router.py ....                                       [ 50%]
+tests/unit/test_mcp_router.py ..F.                                       [ 50%]
 tests/unit/test_sandbox_evaluator.py ..                                  [ 75%]
 tests/ac_cdd/integration/test_mcp_node_integration.py FF                 [100%]
 
 =================================== FAILURES ===================================
+_____________________ test_mcp_client_manager_sanitization _____________________
+
+    def test_mcp_client_manager_sanitization() -> None:
+        # Test that SUDO_* environment variables are stripped out
+        test_env = {
+            "NORMAL_VAR": "value",
+            "SUDO_COMMAND": "secret_injection",
+            "SUDO_USER": "root"
+        }
+
+        with patch.dict(os.environ, test_env, clear=True):
+            manager = McpClientManager()
+            sanitized = manager._sanitize_environment()
+
+>           assert "NORMAL_VAR" in sanitized
+E           AssertionError: assert 'NORMAL_VAR' in {}
+
+tests/unit/test_mcp_router.py:43: AssertionError
 _____________________ test_sandbox_evaluator_tool_binding ______________________
 
     @pytest.mark.asyncio
@@ -31,7 +49,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = DummyE2bTool(), name = 'ainvoke'
-value = <AsyncMock id='139718901899888'>
+value = <AsyncMock id='140609488217600'>
 
     def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
         """Get a handler for setting an attribute on the model instance.
@@ -100,7 +118,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = DummyE2bTool(), name = 'ainvoke'
-value = <AsyncMock id='139718901894848'>
+value = <AsyncMock id='140609553603840'>
 
     def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
         """Get a handler for setting an attribute on the model instance.
@@ -185,7 +203,7 @@ src/jules_session_graph.py                            45     45     0%   3-111
 src/jules_session_nodes.py                           328    328     0%   3-624
 src/jules_session_state.py                            46     46     0%   3-78
 src/mcp_router/__init__.py                             2      0   100%
-src/mcp_router/manager.py                             62     21    66%   70-82, 85-86, 97-106
+src/mcp_router/manager.py                             46      9    80%   45, 74-81, 84-85
 src/mcp_router/schemas.py                             12      0   100%
 src/mcp_router/tools.py                               13      9    31%   10-19
 src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
@@ -244,10 +262,11 @@ src/utils.py                                          72     54    25%   31-56, 
 src/utils_sanitization.py                             11     11     0%   1-31
 src/validators.py                                     41     41     0%   3-86
 --------------------------------------------------------------------------------
-TOTAL                                               5719   4574    20%
+TOTAL                                               5703   4562    20%
 =========================== short test summary info ============================
+FAILED tests/unit/test_mcp_router.py::test_mcp_client_manager_sanitization - ...
 FAILED tests/ac_cdd/integration/test_mcp_node_integration.py::test_sandbox_evaluator_tool_binding
 FAILED tests/ac_cdd/integration/test_mcp_node_integration.py::test_mcp_e2b_error_handling
-========================= 2 failed, 6 passed in 12.65s =========================
+========================= 3 failed, 5 passed in 12.12s =========================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

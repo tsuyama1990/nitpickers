@@ -21,30 +21,34 @@ class McpClientManager:
     def _sanitize_environment(cls) -> dict[str, str]:
         """
         Sanitizes the environment dictionary to prevent leakage of secrets.
-        Uses a strict blacklist approach specifically filtering known credential
-        patterns while allowing benign vars, which ensures critical shell vars aren't dropped.
+        Uses a strict whitelist approach for allowed environment keys as requested.
+        Additionally checks values for potential credential patterns.
         """
         import re
         sanitized = {}
 
-        # Blacklist any environment variable that contains these substrings
-        secret_patterns = re.compile(
-            r"(API_KEY|SECRET|PASSWORD|TOKEN|CREDENTIAL|AUTH|KEY|SUDO_)",
+        # Look for typical credential patterns in values
+        value_secret_patterns = re.compile(
+            r"(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|"  # JWT
+            r"sk-[A-Za-z0-9]{20,}|"                         # OpenAI/similar keys
+            r"ghp_[A-Za-z0-9]{36}|"                         # GitHub classic PAT
+            r"e2b_[a-zA-Z0-9_]+)",                          # E2B Keys
             re.IGNORECASE
         )
 
         for key, value in os.environ.items():
-            if secret_patterns.search(key):
+            # Apply explicit whitelist constraint requested by auditor
+            if key not in cls.SAFE_ENV_KEYS:
+                continue
+            # Apply value sanitization
+            if value_secret_patterns.search(value):
                 continue
             sanitized[key] = value
 
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(f"Sanitized environment. Filtered out {len(os.environ) - len(sanitized)} keys.")
         return sanitized
 
     @asynccontextmanager
-    async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:  # noqa: C901
+    async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
         """Provides an asynchronous context manager for the MCP client with robust error handling."""
         config = E2bMcpConfig()  # type: ignore[call-arg]
 
@@ -67,16 +71,11 @@ class McpClientManager:
                 # Note: MultiServerMCPClient init is synchronous, but we'll wrap it safely
                 client = MultiServerMCPClient(connection_config)
                 break
-            except ConnectionError as e:
-                logger.exception(f"Connection error initializing MultiServerMCPClient (attempt {attempt + 1}/{max_retries})")
+            except Exception:
+                logger.exception(f"Error initializing MCP Client (attempt {attempt + 1}/{max_retries}). Sensitive kwargs omitted.")
                 if attempt == max_retries - 1:
-                    msg = f"Connection failed to MCP servers after {max_retries} attempts: {e}"
-                    raise ConnectionError(msg) from e
-            except Exception as e:
-                logger.exception(f"Unexpected error initializing MultiServerMCPClient (attempt {attempt + 1}/{max_retries})")
-                if attempt == max_retries - 1:
-                    msg = f"Failed to connect to MCP servers after {max_retries} attempts: {e}"
-                    raise RuntimeError(msg) from e
+                    msg = f"Failed to connect to MCP servers after {max_retries} attempts. Initialization aborted safely."
+                    raise RuntimeError(msg) from None
 
             # Exponential backoff
             await asyncio.sleep(base_delay * (2**attempt))
@@ -88,19 +87,7 @@ class McpClientManager:
         try:
             yield client
         finally:
-            # Clean up active subprocesses managed by the client if they exist
-            # LangChain's MultiServerMCPClient manages connections in `client._connections`
-            # or `client.connections` depending on version. We inspect and close them.
-            try:
-                connections = getattr(client, "connections", getattr(client, "_connections", {}))
-                for server_name, connection in connections.items():
-                    logger.debug(f"Attempting to close connection for {server_name}")
-                    # Most connections have a close() or _close() method, or an underlying process
-                    close_method = getattr(connection, "close", getattr(connection, "_close", None))
-                    if close_method:
-                        if asyncio.iscoroutinefunction(close_method):
-                            await asyncio.wait_for(close_method(), timeout=2.0)
-                        else:
-                            close_method()
-            except Exception as cleanup_err:
-                logger.warning(f"Failed to cleanly shutdown MCP connections: {cleanup_err}")
+            # MultiServerMCPClient from langchain-mcp-adapters delegates cleanup natively
+            # to context managers of its internal `session` methods. Reflection-based
+            # teardown is unsafe against library updates.
+            pass
