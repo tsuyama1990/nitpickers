@@ -408,7 +408,7 @@ class WorkflowService:
 
         if audit_mode:
             jules = self.services.jules or JulesClient()
-            orch = AuditOrchestrator(jules, self.builder.sandbox)
+            orch = AuditOrchestrator(jules, getattr(self.builder, "sandbox", None))
             try:
                 result = await orch.run_interactive_session(
                     prompt=prompt,

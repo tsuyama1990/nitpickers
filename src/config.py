@@ -374,6 +374,9 @@ class ToolsConfig(BaseModel):
     conflict_codes: set[str] = Field(
         default_factory=lambda: {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
     )
+    github_allowed_read_tools: set[str] = Field(
+        default_factory=lambda: {"get_file_content", "search_repositories", "get_issue"}
+    )
 
 
 class UATConfig(BaseModel):

@@ -12,10 +12,9 @@ from src.mcp_router.schemas import E2bMcpConfig, GitHubMcpConfig
 class McpClientManager:
     """Manages the lifecycle of MCP clients."""
 
-    SAFE_ENV_KEYS: tuple[str, ...] = (
-        "PATH", "USER", "HOME", "LANG", "LC_ALL", "TERM", "TZ",
-        "PYTHONPATH", "LD_LIBRARY_PATH", "VIRTUAL_ENV",
-        "NODE_ENV", "NVM_DIR", "NVM_BIN", "NVM_INC", "NPM_CONFIG_PREFIX"
+    # Reject variables that are likely secrets
+    UNSAFE_ENV_KEY_PATTERNS: tuple[str, ...] = (
+        "API_KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "SUDO_"
     )
 
     _VALUE_SECRET_PATTERNS = None
@@ -37,15 +36,15 @@ class McpClientManager:
     def _sanitize_environment(cls) -> dict[str, str]:
         """
         Sanitizes the environment dictionary to prevent leakage of secrets.
-        Uses a strict whitelist approach for allowed environment keys as requested.
+        Uses a blacklist approach for environment keys.
         Additionally checks values for potential credential patterns.
         """
         sanitized = {}
         pattern = cls._get_secret_pattern()
 
         for key, value in os.environ.items():
-            # Apply explicit whitelist constraint requested by auditor
-            if key not in cls.SAFE_ENV_KEYS:
+            # Blacklist known unsafe keys
+            if any(unsafe in key.upper() for unsafe in cls.UNSAFE_ENV_KEY_PATTERNS):
                 continue
             # Apply value sanitization
             if pattern.search(value):

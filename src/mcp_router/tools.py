@@ -22,10 +22,8 @@ async def get_e2b_tools() -> Sequence[BaseTool]:
 
 async def get_github_read_tools() -> Sequence[BaseTool]:
     """Retrieves and filters read-only tools from the GitHub MCP server."""
+    from src.config import settings
     manager = McpClientManager()
-
-    # Tools to allow explicitly for read-only operations
-    ALLOWED_READ_TOOLS = {"get_file_content", "search_repositories", "get_issue"}
 
     try:
         async with manager.get_client() as client:
@@ -36,7 +34,7 @@ async def get_github_read_tools() -> Sequence[BaseTool]:
             # 2. Must be in the explicitly allowed non-destructive list
             return [
                 t for t in all_tools
-                if getattr(t, "server_name", "") == "github" and t.name in ALLOWED_READ_TOOLS
+                if getattr(t, "server_name", "") == "github" and t.name in settings.tools.github_allowed_read_tools
             ]
     except Exception:
         import logging

@@ -1,5 +1,6 @@
 import base64
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,7 +13,7 @@ from src.state import CycleState
 
 
 def test_fix_plan_schema_valid() -> None:
-    data = {
+    data: dict[str, Any] = {
         "defect_description": "The button class was misspelled in the test, but the code is correct.",
         "patches": [
             {
@@ -27,7 +28,7 @@ def test_fix_plan_schema_valid() -> None:
 
 
 def test_fix_plan_schema_invalid_extra_field() -> None:
-    data = {
+    data: dict[str, Any] = {
         "defect_description": "Fix it.",
         "patches": [
             {

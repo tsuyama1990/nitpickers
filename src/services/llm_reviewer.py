@@ -92,12 +92,19 @@ class LLMReviewer:
             return None
         tools_param = []
         for tool in e2b_tools:
+            parameters = {"type": "object", "properties": {}}
+            if tool.args_schema:
+                if hasattr(tool.args_schema, "model_json_schema"):
+                    parameters = tool.args_schema.model_json_schema()
+                elif hasattr(tool.args_schema, "schema"):
+                    parameters = tool.args_schema.schema()
+
             tools_param.append({
                 "type": "function",
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
+                    "parameters": parameters,
                 }
             })
         return tools_param
@@ -209,7 +216,7 @@ class LLMReviewer:
 
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
-        all_tools = []
+        all_tools: list[BaseTool] = []
         if e2b_tools:
             all_tools.extend(e2b_tools)
         if github_read_tools:
@@ -227,7 +234,7 @@ class LLMReviewer:
 
         for attempt in range(3):
             try:
-                messages = [
+                messages: list[dict[str, Any]] = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ]
@@ -303,7 +310,7 @@ class LLMReviewer:
 
         for attempt in range(3):
             try:
-                messages = [
+                messages: list[dict[str, Any]] = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": content_parts},
                 ]
@@ -314,9 +321,10 @@ class LLMReviewer:
 
                 if content_str is None:
                     if attempt == 2:
+                        from src.domain_models.fix_plan_schema import FilePatch
                         return FixPlanSchema(
                             defect_description="SYSTEM_ERROR: LLM API request timed out.",
-                            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
+                            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
                         )
                     continue
 
@@ -328,14 +336,16 @@ class LLMReviewer:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
+                    from src.domain_models.fix_plan_schema import FilePatch
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually and provide a fix."}],
+                        patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually and provide a fix.")],
                     )
 
+        from src.domain_models.fix_plan_schema import FilePatch
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
+            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:

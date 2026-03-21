@@ -24,7 +24,7 @@ class DummyGitHubTool(BaseTool):
         return self.return_value
 
 @pytest.mark.asyncio
-async def test_architect_get_file_content():
+async def test_architect_get_file_content() -> None:
     # Test that architect receives and passes github tools correctly down to JulesClient
     state = CycleState(cycle_id="01")
 
@@ -56,7 +56,7 @@ async def test_architect_get_file_content():
 
 
 @pytest.mark.asyncio
-async def test_mcp_github_read_fallback():
+async def test_mcp_github_read_fallback() -> None:
     # This verifies the agent behaves properly or captures the "file not found" string gracefully
     state = CycleState(cycle_id="01")
     tool = DummyGitHubTool()
