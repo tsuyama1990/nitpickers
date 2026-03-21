@@ -29,8 +29,9 @@ def test_e2b_config_success() -> None:
 
 
 def test_mcp_client_manager_sanitization() -> None:
-    # Test that SUDO_* environment variables are stripped out
+    # Test that explicitly defined safe keys are kept while secrets are dropped.
     test_env = {
+        "PATH": "/usr/bin:/bin",
         "NORMAL_VAR": "value",
         "SUDO_COMMAND": "secret_injection",
         "SUDO_USER": "root"
@@ -40,7 +41,8 @@ def test_mcp_client_manager_sanitization() -> None:
         manager = McpClientManager()
         sanitized = manager._sanitize_environment()
 
-        assert "NORMAL_VAR" in sanitized
+        assert "PATH" in sanitized
+        assert "NORMAL_VAR" not in sanitized  # Since we are strictly whitelisting SAFE_ENV_KEYS
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
 

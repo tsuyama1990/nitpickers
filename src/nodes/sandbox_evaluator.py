@@ -18,11 +18,49 @@ class SandboxEvaluatorNodes:
     Uses MCP tools natively to interact with the environment.
     """
 
+    _FORBIDDEN_CHARS = None
+
     def __init__(
         self,
         e2b_tools: Sequence[BaseTool] | None = None,
     ) -> None:
         self.e2b_tools = e2b_tools
+
+    @classmethod
+    def _get_forbidden_chars_pattern(cls) -> Any:
+        if cls._FORBIDDEN_CHARS is None:
+            import re
+            cls._FORBIDDEN_CHARS = re.compile(r"[&|<>;$`\\]")
+        return cls._FORBIDDEN_CHARS
+
+    def _get_execution_tool(self) -> tuple[BaseTool, str] | None:
+        """Finds the tool capable of executing shell commands and its primary argument."""
+        if not self.e2b_tools:
+            return None
+
+        exec_tool = next(
+            (t for t in self.e2b_tools if t.name in {"execute_command", "run_command"}), None
+        )
+
+        if not exec_tool:
+            for tool in self.e2b_tools:
+                if getattr(tool, "args_schema", None):
+                    schema = tool.args_schema.schema()
+                    props = schema.get("properties", {})
+                    if "command" in props or "commandLine" in props:
+                        exec_tool = tool
+                        break
+
+        if not exec_tool:
+            return None
+
+        arg_name = "command"
+        if getattr(exec_tool, "args_schema", None):
+            props = exec_tool.args_schema.schema().get("properties", {})
+            if props:
+                arg_name = next(iter(props.keys()))
+
+        return exec_tool, arg_name
 
     async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """
@@ -59,26 +97,12 @@ class SandboxEvaluatorNodes:
             test_str = " ".join(test_cmd)
 
             try:
-                # Dynamically discover the tool that likely executes commands by looking for parameters
-                exec_tool = None
-                for tool in self.e2b_tools:
-                    if tool.name in {"execute_command", "run_command"}:
-                        exec_tool = tool
-                        break
-
-                # Fallback to schema heuristic if exact name not matched
-                if not exec_tool:
-                    for tool in self.e2b_tools:
-                        if getattr(tool, "args_schema", None):
-                            schema = tool.args_schema.schema()
-                            props = schema.get("properties", {})
-                            if "command" in props or "commandLine" in props:
-                                exec_tool = tool
-                                break
-
-                if not exec_tool:
+                tool_info = self._get_execution_tool()
+                if not tool_info:
                     msg = "Tool with a command schema could not be discovered among e2b_tools."
                     raise ValueError(msg)  # noqa: TRY301
+
+                exec_tool, arg_name = tool_info
 
                 results = {}
                 commands = {
@@ -87,8 +111,7 @@ class SandboxEvaluatorNodes:
                     "test": test_str,
                 }
 
-                import re
-                forbidden_chars = re.compile(r"[&|<>;$`\\]")
+                forbidden_chars = self._get_forbidden_chars_pattern()
 
                 for check_name, cmd_str in commands.items():
                     if not cmd_str or not cmd_str.strip():
@@ -98,13 +121,6 @@ class SandboxEvaluatorNodes:
                     if forbidden_chars.search(cmd_str):
                         msg = f"Dangerous characters detected in {check_name} command."
                         raise ValueError(msg)  # noqa: TRY301
-
-                    # Dynamically discover the argument name from the tool schema
-                    arg_name = "command"
-                    if getattr(exec_tool, "args_schema", None):
-                        props = exec_tool.args_schema.schema().get("properties", {})
-                        if props:
-                            arg_name = next(iter(props.keys()))
 
                     timeout_occurred = False
                     code = 0

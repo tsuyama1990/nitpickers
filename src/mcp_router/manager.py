@@ -2,6 +2,7 @@ import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
@@ -17,6 +18,21 @@ class McpClientManager:
         "NODE_ENV", "NVM_DIR", "NVM_BIN", "NVM_INC", "NPM_CONFIG_PREFIX"
     )
 
+    _VALUE_SECRET_PATTERNS = None
+
+    @classmethod
+    def _get_secret_pattern(cls) -> Any:
+        if cls._VALUE_SECRET_PATTERNS is None:
+            import re
+            cls._VALUE_SECRET_PATTERNS = re.compile(
+                r"(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|"  # JWT
+                r"sk-[A-Za-z0-9]{20,}|"                         # OpenAI/similar keys
+                r"ghp_[A-Za-z0-9]{36}|"                         # GitHub classic PAT
+                r"e2b_[a-zA-Z0-9_]+)",                          # E2B Keys
+                re.IGNORECASE
+            )
+        return cls._VALUE_SECRET_PATTERNS
+
     @classmethod
     def _sanitize_environment(cls) -> dict[str, str]:
         """
@@ -24,24 +40,15 @@ class McpClientManager:
         Uses a strict whitelist approach for allowed environment keys as requested.
         Additionally checks values for potential credential patterns.
         """
-        import re
         sanitized = {}
-
-        # Look for typical credential patterns in values
-        value_secret_patterns = re.compile(
-            r"(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|"  # JWT
-            r"sk-[A-Za-z0-9]{20,}|"                         # OpenAI/similar keys
-            r"ghp_[A-Za-z0-9]{36}|"                         # GitHub classic PAT
-            r"e2b_[a-zA-Z0-9_]+)",                          # E2B Keys
-            re.IGNORECASE
-        )
+        pattern = cls._get_secret_pattern()
 
         for key, value in os.environ.items():
             # Apply explicit whitelist constraint requested by auditor
             if key not in cls.SAFE_ENV_KEYS:
                 continue
             # Apply value sanitization
-            if value_secret_patterns.search(value):
+            if pattern.search(value):
                 continue
             sanitized[key] = value
 

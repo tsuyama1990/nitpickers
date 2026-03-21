@@ -1,5 +1,6 @@
 import base64
 from collections.abc import Sequence
+from typing import Any
 
 import anyio
 import litellm
@@ -85,7 +86,105 @@ class LLMReviewer:
 
         return None
 
-    async def review_code(  # noqa: C901, PLR0912, PLR0915
+    def _convert_tools_to_litellm(self, e2b_tools: Sequence[BaseTool] | None) -> list[dict[str, Any]] | None:
+        """Converts Langchain BaseTool instances to Litellm function dicts."""
+        if not e2b_tools:
+            return None
+        tools_param = []
+        for tool in e2b_tools:
+            tools_param.append({
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
+                }
+            })
+        return tools_param
+
+    async def _execute_litellm_tool_loop(  # noqa: C901, PLR0912
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        tools_param: list[dict[str, Any]] | None,
+        e2b_tools: Sequence[BaseTool] | None,
+        response_format: Any | None = None,
+    ) -> str | None:
+        """
+        Shared abstraction for executing a litellm conversation loop that supports native tool calling.
+        """
+        import asyncio
+        import json
+
+        from src.config import settings
+
+        MAX_TOOL_CALLS = 5
+        for _ in range(MAX_TOOL_CALLS):
+            kwargs = {}
+            if tools_param:
+                kwargs["tools"] = tools_param
+            if response_format:
+                kwargs["response_format"] = response_format
+
+            try:
+                response = await asyncio.wait_for(
+                    litellm.acompletion(
+                        model=model,
+                        messages=messages,
+                        temperature=0.0,
+                        max_tokens=8192,
+                        **kwargs,
+                    ),
+                    timeout=settings.jules.request_timeout
+                )
+            except TimeoutError:
+                logger.error("LLMReviewer timed out waiting for API response.")
+                return None  # Signal timeout
+
+            message = response.choices[0].message
+            if hasattr(message, "model_dump"):
+                message_dict = message.model_dump()
+            elif hasattr(message, "to_dict"):
+                message_dict = message.to_dict()
+            elif isinstance(message, dict):
+                message_dict = message
+            else:
+                message_dict = {"role": "assistant", "content": str(message.content)}
+                if getattr(message, "tool_calls", None):
+                    message_dict["tool_calls"] = message.tool_calls
+
+            if "content" not in message_dict or message_dict["content"] is None:
+                message_dict["content"] = ""
+
+            messages.append(message_dict)
+
+            if not message_dict.get("tool_calls"):
+                break
+
+            for tool_call in message_dict["tool_calls"]:
+                func_name = tool_call["function"]["name"]
+                args = json.loads(tool_call["function"]["arguments"])
+
+                tool_result = f"Error: Tool {func_name} not found"
+                if e2b_tools:
+                    tool = next((t for t in e2b_tools if t.name == func_name), None)
+                    if tool:
+                        try:
+                            logger.info(f"LLMReviewer executing tool {func_name}")
+                            tool_result = str(await tool.ainvoke(args))
+                        except Exception as err:
+                            tool_result = f"Error executing tool {func_name}: {err}"
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "name": func_name,
+                    "content": tool_result
+                })
+
+        return str(messages[-1].get("content", ""))
+
+    async def review_code(
         self,
         target_files: dict[str, str],
         context_docs: dict[str, str],
@@ -109,22 +208,8 @@ class LLMReviewer:
 
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
+        tools_param = self._convert_tools_to_litellm(e2b_tools)
 
-        # Convert Langchain tools to litellm format if present
-        tools_param = None
-        if e2b_tools:
-            tools_param = []
-            for tool in e2b_tools:
-                tools_param.append({
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
-                    }
-                })
-
-        # Retry logic (up to 2 retries, total 3 attempts)
         from src.config import settings
         system_prompt = settings.get_template("REVIEWER_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("REVIEWER_INSTRUCTION.md").exists() else (
             "You are an automated code reviewer. You must strictly follow the "
@@ -136,84 +221,19 @@ class LLMReviewer:
         for attempt in range(3):
             try:
                 messages = [
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ]
 
-                # Tool Loop
-                MAX_TOOL_CALLS = 5
-                for _ in range(MAX_TOOL_CALLS):
-                    kwargs = {}
-                    if tools_param:
-                        kwargs["tools"] = tools_param
+                content_str = await self._execute_litellm_tool_loop(
+                    model, messages, tools_param, e2b_tools
+                )
 
-                    import asyncio
-                    try:
-                        response = await asyncio.wait_for(
-                            litellm.acompletion(
-                                model=model,
-                                messages=messages,
-                                temperature=0.0,
-                                max_tokens=8192,
-                                **kwargs,
-                            ),
-                            timeout=settings.jules.request_timeout
-                        )
-                    except TimeoutError:
-                        logger.error("LLMReviewer timed out waiting for API response.")
-                        if attempt == 2:
-                            return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review request timed out.\n  - Location: `Unknown`\n  - Concrete Fix: Try again later or increase timeout."
-                        break # break tool loop and go to next outer attempt
+                if content_str is None:
+                    if attempt == 2:
+                        return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review request timed out.\n  - Location: `Unknown`\n  - Concrete Fix: Try again later or increase timeout."
+                    continue
 
-                    message = response.choices[0].message
-                    if hasattr(message, "model_dump"):
-                        message_dict = message.model_dump()
-                    elif hasattr(message, "to_dict"):
-                        message_dict = message.to_dict()
-                    elif isinstance(message, dict):
-                        message_dict = message
-                    else:
-                        message_dict = {"role": "assistant", "content": str(message.content)}
-                        if getattr(message, "tool_calls", None):
-                            message_dict["tool_calls"] = message.tool_calls
-
-                    # Some litellm responses drop the content key if it's null, which breaks subsequent calls
-                    if "content" not in message_dict or message_dict["content"] is None:
-                        message_dict["content"] = ""
-
-                    messages.append(message_dict)
-
-                    if not message_dict.get("tool_calls"):
-                        break
-
-                    for tool_call in message_dict["tool_calls"]:
-                        func_name = tool_call["function"]["name"]
-                        import json
-                        args = json.loads(tool_call["function"]["arguments"])
-
-                        tool_result = f"Error: Tool {func_name} not found"
-                        if e2b_tools:
-                            tool = next((t for t in e2b_tools if t.name == func_name), None)
-                            if tool:
-                                try:
-                                    logger.info(f"LLMReviewer executing tool {func_name}")
-                                    tool_result = str(await tool.ainvoke(args))
-                                except Exception as err:
-                                    tool_result = f"Error executing tool {func_name}: {err}"
-
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "name": func_name,
-                            "content": tool_result
-                        })
-
-                content_str = str(messages[-1].get("content", ""))
-
-                # Parse the response safely into our robust Pydantic model
                 report = AuditorReport.model_validate_json(content_str)
                 return self._format_as_markdown(report)
 
@@ -225,7 +245,7 @@ class LLMReviewer:
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
 
-    async def diagnose_uat_failure(  # noqa: C901, PLR0912, PLR0915
+    async def diagnose_uat_failure(
         self,
         uat_state: UatExecutionState,
         instruction: str,
@@ -240,7 +260,6 @@ class LLMReviewer:
 
         from src.utils_sanitization import sanitize_for_llm
 
-        # Robust sanitization to prevent prompt injection and handle API payloads securely
         safe_stdout = sanitize_for_llm(uat_state.stdout)
         safe_stderr = sanitize_for_llm(uat_state.stderr)
         safe_instruction = sanitize_for_llm(instruction)
@@ -252,42 +271,25 @@ class LLMReviewer:
             }
         ]
 
-        # Attach multimodal artifacts
         for artifact in uat_state.artifacts:
             try:
                 img_path = anyio.Path(artifact.screenshot_path)
                 if await img_path.exists():
                     img_data = await img_path.read_bytes()
                     encoded = base64.b64encode(img_data).decode("utf-8")
-                    content_parts.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{encoded}"},
-                        }
-                    )
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{encoded}"},
+                    })
                     safe_traceback = sanitize_for_llm(artifact.traceback)
-                    content_parts.append(
-                        {
-                            "type": "text",
-                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
-                        }
-                    )
+                    content_parts.append({
+                        "type": "text",
+                        "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
+                    })
             except Exception as e:
                 logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
 
-        # Convert Langchain tools to litellm format if present
-        tools_param = None
-        if e2b_tools:
-            tools_param = []
-            for tool in e2b_tools:
-                tools_param.append({
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
-                    }
-                })
+        tools_param = self._convert_tools_to_litellm(e2b_tools)
 
         from src.config import settings
         system_prompt = settings.get_template("DIAGNOSTIC_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("DIAGNOSTIC_INSTRUCTION.md").exists() else "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
@@ -295,123 +297,38 @@ class LLMReviewer:
         for attempt in range(3):
             try:
                 messages = [
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": content_parts},
                 ]
 
-                # Tool Loop
-                MAX_TOOL_CALLS = 5
-                for _ in range(MAX_TOOL_CALLS):
-                    kwargs = {}
-                    if tools_param:
-                        kwargs["tools"] = tools_param
+                content_str = await self._execute_litellm_tool_loop(
+                    model, messages, tools_param, e2b_tools, response_format=FixPlanSchema
+                )
 
-                    import asyncio
-                    try:
-                        response = await asyncio.wait_for(
-                            litellm.acompletion(
-                                model=model,
-                                messages=messages,
-                                response_format=FixPlanSchema,
-                                temperature=0.0,
-                                max_tokens=8192,
-                                **kwargs,
-                            ),
-                            timeout=settings.jules.request_timeout
+                if content_str is None:
+                    if attempt == 2:
+                        return FixPlanSchema(
+                            defect_description="SYSTEM_ERROR: LLM API request timed out.",
+                            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
                         )
-                    except TimeoutError:
-                        logger.error("LLMReviewer diagnose_uat_failure timed out waiting for API response.")
-                        if attempt == 2:
-                            return FixPlanSchema(
-                                defect_description="SYSTEM_ERROR: LLM API request timed out.",
-                                patches=[
-                                    {
-                                        "target_file": "Unknown",
-                                        "git_diff_patch": "Please review the UAT logs manually."
-                                    }
-                                ],
-                            )
-                        break # break tool loop and go to next outer attempt
+                    continue
 
-                    message = response.choices[0].message
-
-                    # litellm structural normalization
-                    if hasattr(message, "model_dump"):
-                        message_dict = message.model_dump()
-                    elif hasattr(message, "to_dict"):
-                        message_dict = message.to_dict()
-                    elif isinstance(message, dict):
-                        message_dict = message
-                    else:
-                        message_dict = {"role": "assistant", "content": str(message.content)}
-                        if getattr(message, "tool_calls", None):
-                            message_dict["tool_calls"] = message.tool_calls
-
-                    if "content" not in message_dict or message_dict["content"] is None:
-                        message_dict["content"] = ""
-
-                    messages.append(message_dict)
-
-                    if not message_dict.get("tool_calls"):
-                        break
-
-                    for tool_call in message_dict["tool_calls"]:
-                        func_name = tool_call["function"]["name"]
-                        import json
-                        args = json.loads(tool_call["function"]["arguments"])
-
-                        tool_result = f"Error: Tool {func_name} not found"
-                        if e2b_tools:
-                            tool = next((t for t in e2b_tools if t.name == func_name), None)
-                            if tool:
-                                try:
-                                    logger.info(f"LLMReviewer executing tool {func_name}")
-                                    tool_result = str(await tool.ainvoke(args))
-                                except Exception as err:
-                                    tool_result = f"Error executing tool {func_name}: {err}"
-
-                        messages.append({
-                            "role": "tool",
-                            "tool_call_id": tool_call["id"],
-                            "name": func_name,
-                            "content": tool_result
-                        })
-
-                content_str = str(messages[-1].get("content", ""))
-
-                # Because we might have mixed text with JSON or the model ignored response_format
-                # we just parse the resulting JSON string
                 if not content_str:
-                    pass  # We'll just try again, it's inside the loop
+                    pass  # Try again
                 else:
                     return FixPlanSchema.model_validate_json(content_str)
             except (ValidationError, Exception) as e:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
-                    # Fallback schema to not break the pipeline entirely, though we ideally raise
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        patches=[
-                            {
-                                "target_file": "Unknown",
-                                "git_diff_patch": "Please review the UAT logs manually and provide a fix."
-                            }
-                        ],
+                        patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually and provide a fix."}],
                     )
 
-        # Unreachable but mypy needs it
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            patches=[
-                {
-                    "target_file": "Unknown",
-                    "git_diff_patch": "Please review the UAT logs manually."
-                }
-            ],
+            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:
