@@ -5,7 +5,6 @@ from langchain_core.tools import BaseTool
 
 from src.nodes.architect import ArchitectNodes
 from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.state import CycleState
 
 

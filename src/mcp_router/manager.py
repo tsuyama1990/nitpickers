@@ -57,8 +57,9 @@ class McpClientManager:
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
         """Provides an asynchronous context manager for the MCP client with robust error handling."""
-        from pydantic import ValidationError
         import logging
+
+        from pydantic import ValidationError
         logger = logging.getLogger(__name__)
 
         # Override the env with sanitized environment to prevent leakages
