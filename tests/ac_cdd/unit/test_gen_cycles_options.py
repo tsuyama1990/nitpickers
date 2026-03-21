@@ -33,7 +33,7 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
@@ -66,10 +66,10 @@ class TestGenCyclesCountOption:
             await nodes.architect_session_node(state)
 
             # Verify run_session was called
-            assert mock_jules.execute_command.called
+            assert mock_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was injected
@@ -83,7 +83,7 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
@@ -125,10 +125,10 @@ class TestGenCyclesCountOption:
             await nodes.architect_session_node(state)
 
             # Verify run_session was called
-            assert mock_jules.execute_command.called
+            assert mock_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was NOT injected
@@ -143,7 +143,7 @@ class TestGenCyclesCountOption:
         # Setup mocks
         mock_sandbox = MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         instruction_content = "Test instruction."
 
@@ -170,7 +170,7 @@ class TestGenCyclesCountOption:
 
             await nodes.architect_session_node(state)
 
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the specific count is in the prompt

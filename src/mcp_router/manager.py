@@ -6,7 +6,7 @@ from typing import Any
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-from src.mcp_router.schemas import E2bMcpConfig
+from src.mcp_router.schemas import E2bMcpConfig, GitHubMcpConfig
 
 
 class McpClientManager:
@@ -57,13 +57,18 @@ class McpClientManager:
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
         """Provides an asynchronous context manager for the MCP client with robust error handling."""
-        config = E2bMcpConfig()  # type: ignore[call-arg]
+        e2b_config = E2bMcpConfig()  # type: ignore[call-arg]
+        github_config = GitHubMcpConfig()  # type: ignore[call-arg]
 
         # Override the env with sanitized environment to prevent leakages
         sanitized_env = self._sanitize_environment()
 
         # Build dynamic connections from the config
-        connection_config = config.get_connection_config(sanitized_env)
+        connection_config = e2b_config.get_connection_config(sanitized_env)
+        github_connection_config = github_config.get_connection_config(sanitized_env)
+
+        # Merge connection configs
+        connection_config.update(github_connection_config)
 
         max_retries = 3
         base_delay = 1.0

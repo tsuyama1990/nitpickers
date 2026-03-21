@@ -80,7 +80,7 @@ class ArchitectNodes:
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        result = await self.jules.execute_command(
+        result = await self.jules.run_session(
             command="Design the system architecture based on ALL_SPEC.md.",
             session_id=f"architect-{timestamp}",
             prompt=instruction,
