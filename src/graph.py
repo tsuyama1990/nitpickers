@@ -10,16 +10,26 @@ from .enums import FlowStatus
 from .graph_nodes import CycleNodes
 from .interfaces import IGraphNodes
 from .service_container import ServiceContainer
-from .services.jules_client import JulesClient
 from .state import CycleState
 
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: Any, jules: JulesClient, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None
+        self,
+        services: ServiceContainer,
+        sandbox: Any,
+        e2b_tools: Sequence[BaseTool] | None = None,
+        github_read_tools: Sequence[BaseTool] | None = None,
+        github_write_tools: Sequence[BaseTool] | None = None,
+        jules_tools: Sequence[BaseTool] | None = None,
     ) -> None:
-        self.jules = jules
-        self.nodes: IGraphNodes = CycleNodes(None, self.jules, e2b_tools=e2b_tools, github_read_tools=github_read_tools)
+        self.nodes: IGraphNodes = CycleNodes(
+            None,
+            e2b_tools=e2b_tools,
+            github_read_tools=github_read_tools,
+            github_write_tools=github_write_tools,
+            jules_tools=jules_tools,
+        )
 
     async def cleanup(self) -> None:
         """Cleanup resources, specifically the sandbox."""
