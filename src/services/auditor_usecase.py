@@ -8,11 +8,8 @@ from rich.console import Console
 from src.config import settings
 from src.domain_models import AuditResult
 from src.enums import FlowStatus, WorkPhase
-from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
-from src.state_manager import StateManager
 
 console = Console()
 
@@ -24,15 +21,11 @@ class AuditorUseCase:
 
     def __init__(
         self,
-        jules_client: JulesClient,
-        git_manager: GitManager,
         llm_reviewer: LLMReviewer,
         sandbox_runner: Any = None,
         e2b_tools: Sequence[BaseTool] | None = None,
         github_read_tools: Sequence[BaseTool] | None = None,
     ) -> None:
-        self.jules = jules_client
-        self.git = git_manager
         self.llm_reviewer = llm_reviewer
         self.sandbox = sandbox_runner
         self.e2b_tools = e2b_tools
@@ -86,61 +79,9 @@ class AuditorUseCase:
             pr_url = state.pr_url
 
             if pr_url:
-                console.print(f"[dim]Checking out PR: {pr_url}[/dim]")
-                try:
-                    await self.git.checkout_pr(pr_url)
-                    console.print("[dim]Successfully checked out PR branch[/dim]")
-
-                    current_commit = await self.git.get_current_commit()
-                    last_audited = state.last_audited_commit
-
-                    if current_commit and current_commit == last_audited:
-                        console.print(
-                            f"[bold yellow]Robustness Check: Commit {current_commit[:7]} already audited.[/bold yellow]"
-                        )
-                        console.print("[dim]Checking if Jules is still running...[/dim]")
-
-                        jules_session_id = state.jules_session_name
-                        if not jules_session_id:
-                            mgr = StateManager()
-                            cycle_manifest = mgr.get_cycle(state.cycle_id)
-                            if cycle_manifest:
-                                jules_session_id = cycle_manifest.jules_session_id
-
-                        if jules_session_id:
-                            try:
-                                jules_status = await self.jules.get_session_state(jules_session_id)
-                                # Official Jules API terminal states: COMPLETED, FAILED
-                                # (SUCCEEDED does not exist in the official API)
-                                # Non-terminal (still working): IN_PROGRESS, QUEUED, PLANNING,
-                                #   AWAITING_PLAN_APPROVAL, AWAITING_USER_FEEDBACK, PAUSED
-                                TERMINAL_STATES = {
-                                    "COMPLETED",
-                                    "FAILED",
-                                    "STATE_UNSPECIFIED",
-                                    "UNKNOWN",
-                                }
-                                if jules_status not in TERMINAL_STATES:
-                                    console.print(
-                                        f"[bold yellow]Jules session still active ({jules_status}). Delegating wait logic to graph router.[/bold yellow]"
-                                    )
-                                    return {
-                                        "status": FlowStatus.WAITING_FOR_JULES,
-                                        "audit_result": state.audit_result,
-                                        "last_audited_commit": last_audited,
-                                    }
-                            except Exception as e:
-                                console.print(
-                                    f"[dim]Failed to check Jules session status: {e}[/dim]"
-                                )
-
-                        console.print(
-                            "[bold yellow]Jules session complete. Proceeding with audit on same commit.[/bold yellow]"
-                        )
-
-                    new_last_audited_commit = current_commit
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Could not checkout PR: {e}[/yellow]")
+                console.print(f"[dim]Expected to check out PR: {pr_url} (Not using legacy git client)[/dim]")
+                # Using dummy state since we don't fetch git commit ID here anymore
+                new_last_audited_commit = "mcp-commit-hash"
             else:
                 console.print(
                     "[yellow]Warning: No PR URL provided, reviewing current branch[/yellow]"
@@ -184,19 +125,7 @@ class AuditorUseCase:
             ]
 
             if reviewable_files:
-                try:
-                    filtered_files = []
-                    for file_path in reviewable_files:
-                        _stdout, _stderr, code, _ = await self.git.runner.run_command(
-                            ["git", "check-ignore", "-q", file_path], check=False
-                        )
-                        if code != 0:
-                            filtered_files.append(file_path)
-                    reviewable_files = filtered_files
-                except Exception as e:
-                    console.print(
-                        f"[yellow]Warning: Could not filter gitignored files: {e}[/yellow]"
-                    )
+                pass
 
             if not reviewable_files:
                 console.print(

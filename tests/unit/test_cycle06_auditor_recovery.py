@@ -147,7 +147,7 @@ async def test_auditor_usecase_routing() -> None:
 
     from src.services.auditor_usecase import UATAuditorUseCase
 
-    usecase = UATAuditorUseCase(mock_reviewer)
+    usecase = UATAuditorUseCase(mock_reviewer)  # type: ignore
 
     from src.state import UATState
 

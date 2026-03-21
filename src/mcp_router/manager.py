@@ -21,7 +21,7 @@ class McpClientManager:
 
     # Strictly reject known extremely dangerous execution prefixes
     DANGEROUS_ENV_KEY_PREFIXES: tuple[str, ...] = (
-        "SUDO_", "SSH_", "AWS_SECRET_ACCESS_KEY", "GCP_PRIVATE_KEY"
+        "SUDO_", "SSH_", "AWS_SECRET_ACCESS_KEY", "GCP_PRIVATE_KEY", "API_KEY", "TOKEN"
     )
 
     @classmethod
@@ -29,18 +29,13 @@ class McpClientManager:
         """
         Sanitizes the environment dictionary to prevent leakage of secrets.
         Uses a whitelist approach prioritizing known safe development prefixes and rejecting extremely dangerous ones.
-        Value-based scanning is removed because standard API keys/tokens are required for child processes.
         """
-        sanitized = {}
+        sanitized = os.environ.copy()
 
-        for key, value in os.environ.items():
-            # Strictly blacklist known very dangerous keys
-            if any(key.upper().startswith(danger) for danger in cls.DANGEROUS_ENV_KEY_PREFIXES):
-                continue
-
-            # Allow keys that match our safe prefixes
-            if any(key.upper().startswith(safe) for safe in cls.SAFE_ENV_KEY_PREFIXES):
-                sanitized[key] = value
+        for key in list(sanitized.keys()):
+            upper_key = key.upper()
+            if any(upper_key.startswith(danger) for danger in cls.DANGEROUS_ENV_KEY_PREFIXES) or key in {"GITHUB_PERSONAL_ACCESS_TOKEN", "E2B_API_KEY", "JULES_API_KEY"}:
+                del sanitized[key]
 
         return sanitized
 

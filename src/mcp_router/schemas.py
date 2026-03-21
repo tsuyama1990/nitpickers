@@ -4,6 +4,42 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+class JulesMcpConfig(BaseSettings):
+    """Configuration for the Jules MCP server connection."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    JULES_API_KEY: SecretStr = Field(
+        ...,
+        min_length=10,
+        description="Jules API key for authentication",
+    )
+    JULES_COMMAND: str = Field("npx", description="The command to boot the Jules server")
+    JULES_ARGS: list[str] = Field(["-y", "@google/jules-mcp"], description="Arguments for the Jules server command")
+
+    @field_validator("JULES_API_KEY", mode="before")
+    @classmethod
+    def validate_api_key(cls, v: str | SecretStr) -> SecretStr | str:
+        val = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if not val or not str(val).strip():
+            msg = "JULES_API_KEY cannot be empty"
+            raise ValueError(msg)
+        return v
+
+    def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, Any]:
+        """Get the dynamic dictionary connection config for MultiServerMCPClient."""
+        env = dict(base_env or {})
+        env["JULES_API_KEY"] = self.JULES_API_KEY.get_secret_value()
+
+        return {
+            "jules": {
+                "command": self.JULES_COMMAND,
+                "args": self.JULES_ARGS,
+                "env": env,
+                "transport": "stdio",
+            }
+        }
+
 class E2bMcpConfig(BaseSettings):
     """Configuration for the E2B MCP server connection."""
 

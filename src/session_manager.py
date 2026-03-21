@@ -1,12 +1,9 @@
 """Session management utilities for AC-CDD using Git-based state persistence."""
 
-import json
 from datetime import UTC, datetime
 from typing import Any
 
 from src.domain_models import CycleManifest, ProjectManifest
-from src.services.git_ops import GitManager
-from src.utils import logger
 
 
 class SessionValidationError(Exception):
@@ -15,39 +12,23 @@ class SessionValidationError(Exception):
 
 class SessionManager:
     """
-    Manages session persistence using a unified project manifest stored in an orphan branch.
-    No local state files are used.
+    Deprecated class. Use StateManager in state_manager.py instead.
     """
 
     STATE_FILE = "project_state.json"
 
     def __init__(self) -> None:
-        self.git = GitManager()
+        pass
 
     async def load_manifest(self) -> ProjectManifest | None:
-        """Loads manifest from the orphan state branch."""
-        content = await self.git.read_state_file(self.STATE_FILE)
-        if not content:
-            return None
-
-        try:
-            data = json.loads(content)
-            return ProjectManifest(**data)
-        except (json.JSONDecodeError, Exception) as e:
-            logger.error(f"Failed to load project manifest: {e}")
-            return None
+        msg = "SessionManager is deprecated. Use StateManager."
+        raise NotImplementedError(msg)
 
     async def save_manifest(
         self, manifest: ProjectManifest, commit_msg: str = "Update state"
     ) -> None:
-        """Saves manifest to the orphan state branch."""
-        try:
-            manifest.last_updated = datetime.now(UTC)
-            content = manifest.model_dump_json(indent=2)
-            await self.git.save_state_file(self.STATE_FILE, content, commit_msg)
-        except Exception as e:
-            logger.exception(f"Failed to save manifest: {e}")
-            raise
+        msg = "SessionManager is deprecated. Use StateManager."
+        raise NotImplementedError(msg)
 
     async def create_manifest(
         self, project_session_id: str, feature_branch: str, integration_branch: str

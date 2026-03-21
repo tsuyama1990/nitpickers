@@ -35,7 +35,8 @@ def _() -> tuple[Any, ...]:
         ("ok", "", 0, False),  # Pytest passes
     ]
 
-    _node = SandboxEvaluatorNodes(process_runner=_mock_runner)
+    _node = SandboxEvaluatorNodes()
+    _node.runner = _mock_runner  # type: ignore
     _state = CycleState(cycle_id="03_scenario1")
 
     _result = asyncio.run(_node.sandbox_evaluate_node(_state))
@@ -79,7 +80,8 @@ def _(
         ("", "AssertionError: expected True but got False", 1, False),  # Pytest fails
     ]
 
-    _node2 = SandboxEvaluatorNodes(process_runner=_mock_runner2)
+    _node2 = SandboxEvaluatorNodes()
+    _node2.runner = _mock_runner2  # type: ignore
     _state2 = CycleState(cycle_id="03_scenario2")
 
     _result2 = asyncio.run(_node2.sandbox_evaluate_node(_state2))

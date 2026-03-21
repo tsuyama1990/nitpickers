@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 
-from src.services.git_ops import GitManager
 from src.state_manager import StateManager
 from src.utils import logger
 
@@ -60,13 +59,8 @@ class SessionValidator(BaseValidator):
 
         # 2. Remote branch check (optional)
         if self.check_remote:
-            git = GitManager()
-            is_valid_remote, remote_error = await git.validate_remote_branch(
-                self.integration_branch
-            )
-            if not is_valid_remote:
-                # Remote validation is a warning, not a hard failure
-                logger.warning(f"Remote validation warning: {remote_error}")
+            # We don't have local GitManager anymore. Remote check might be skipped or deferred to MCP.
+            logger.warning("Remote branch validation is deferred as native git access is deprecated.")
 
         return True, ""
 

@@ -57,3 +57,14 @@ async def get_github_read_tools(allowed_tools: set[str] | None = None) -> Sequen
         allowed_tools = {"get_file_content", "search_repositories", "get_issue"}
 
     return await _fetch_tools_with_retry("github", allowed_tools=allowed_tools)
+
+
+async def get_github_write_tools() -> Sequence[BaseTool]:
+    """Retrieves and filters write-only mutating tools from the GitHub MCP server."""
+    allowed_tools = {"push_commit", "create_pull_request", "create_branch"}
+    return await _fetch_tools_with_retry("github", allowed_tools=allowed_tools)
+
+
+async def get_jules_tools() -> Sequence[BaseTool]:
+    """Retrieves the Jules tools from the MCP server."""
+    return await _fetch_tools_with_retry("jules")

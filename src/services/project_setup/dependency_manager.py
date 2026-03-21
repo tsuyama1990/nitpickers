@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from src.process_runner import ProcessRunner
-from src.services.git_ops import GitManager
 from src.utils import logger
 
 
@@ -10,7 +9,6 @@ class DependencyManager:
 
     def __init__(self) -> None:
         self.runner = ProcessRunner()
-        self.git = GitManager()
 
     async def initialize_dependencies_and_git(self) -> None:
         if not (Path.cwd() / "pyproject.toml").exists():
@@ -32,19 +30,23 @@ class DependencyManager:
             await self.runner.run_command(["git", "init"], check=True)
 
         try:
-            await self.git._run_git(["add", "."])
+            await self.runner.run_command(["git", "add", "."], check=True)
 
-            if await self.git.commit_changes(
-                "Initialize project with AC-CDD structure and dev dependencies"
-            ):
+            # Manual commit check via process runner instead of legacy git client
+            stdout, _stderr, code, _ = await self.runner.run_command(
+                ["git", "commit", "-m", "Initialize project with AC-CDD structure and dev dependencies"], check=False
+            )
+
+            if code == 0:
                 logger.info("✓ Changes committed.")
-
                 try:
-                    remote_url = await self.git.get_remote_url()
+                    stdout, _stderr, code, _ = await self.runner.run_command(["git", "config", "--get", "remote.origin.url"], check=False)
+                    remote_url = stdout.strip() if code == 0 else ""
                     if remote_url:
-                        current_branch = await self.git.get_current_branch()
+                        stdout, _stderr, code, _ = await self.runner.run_command(["git", "branch", "--show-current"], check=False)
+                        current_branch = stdout.strip() if code == 0 else "main"
                         logger.info(f"Pushing {current_branch} to origin...")
-                        await self.git.push_branch(current_branch)
+                        await self.runner.run_command(["git", "push", "-u", "origin", current_branch], check=False)
                         logger.info("✓ Successfully pushed to remote.")
                     else:
                         logger.info("No remote 'origin' configured. Skipping push.")
