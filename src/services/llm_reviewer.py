@@ -1,10 +1,13 @@
 import base64
+from typing import Sequence
 
 import anyio
 import litellm
 from pydantic import ValidationError
+from langchain_core.tools import BaseTool
 
 from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
+from src.domain_models.fix_plan_schema import FilePatch
 from src.utils import logger
 
 
@@ -65,7 +68,7 @@ class LLMReviewer:
         context_docs: dict[str, str],
         instruction: str,
         model: str,
-        tools: list[object] | None = None,
+        tools: Sequence[BaseTool] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -276,10 +279,10 @@ class LLMReviewer:
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
                         patches=[
-                            {
-                                "target_file": "Unknown",
-                                "git_diff_patch": "Please review the UAT logs manually and provide a fix."
-                            }
+                            FilePatch(
+                                target_file="Unknown",
+                                git_diff_patch="Please review the UAT logs manually and provide a fix."
+                            )
                         ],
                     )
 
@@ -287,10 +290,10 @@ class LLMReviewer:
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
             patches=[
-                {
-                    "target_file": "Unknown",
-                    "git_diff_patch": "Please review the UAT logs manually."
-                }
+                FilePatch(
+                    target_file="Unknown",
+                    git_diff_patch="Please review the UAT logs manually."
+                )
             ],
         )
 

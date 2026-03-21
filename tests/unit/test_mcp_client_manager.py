@@ -1,5 +1,5 @@
 from unittest.mock import AsyncMock, patch
-
+from typing import Any
 import pytest
 from langchain_core.tools import StructuredTool
 
@@ -55,13 +55,16 @@ async def test_mcp_client_manager_get_readonly_tools_truncation() -> None:
     )
     manager = McpClientManager(config=config)
 
+    from typing import Any
     # Mock tool
-    async def mock_arun(*args, **kwargs):
+    async def mock_arun(*args: Any, **kwargs: Any) -> str:
         return "A" * 60000
 
-    def mock_run(*args, **kwargs):
+    def mock_run(*args: Any, **kwargs: Any) -> str:
         return "A" * 60000
 
+    from typing import Any
+    from typing import Any
     from pydantic import BaseModel, Field
     class MockArgs(BaseModel):
         path: str = Field(...)
@@ -106,7 +109,8 @@ async def test_mcp_client_manager_get_readonly_tools_filtering() -> None:
     class MockArgs(BaseModel):
         path: str = Field(...)
 
-    def mock_run(*args, **kwargs):
+    from typing import Any
+    def mock_run(*args: Any, **kwargs: Any) -> str:
         return "ok"
 
     t1 = StructuredTool(name="github_get_file_content", description="mock", args_schema=MockArgs, func=mock_run)

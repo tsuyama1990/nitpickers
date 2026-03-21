@@ -168,9 +168,9 @@ class CoderUseCase:
             fix_plan_text = (
                 f"## Automated UAT Diagnostic Fix Plan\n"
                 f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
-                f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                f"**Target File:** `{state.current_fix_plan.patches[0].target_file if state.current_fix_plan.patches else 'Unknown'}`\n"
                 f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                f"**Required Changes:**\n```\n{state.current_fix_plan.patches[0].git_diff_patch if state.current_fix_plan.patches else ''}\n```\n\n"
                 f"Please implement these exact changes immediately."
             )
             instruction += "\n\n" + self._build_feedback_injection(
@@ -228,9 +228,9 @@ class CoderUseCase:
                 feedback_payload = (
                     f"## Automated UAT Diagnostic Fix Plan\n"
                     f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
-                    f"**Target File:** `{state.current_fix_plan.target_file}`\n"
+                    f"**Target File:** `{state.current_fix_plan.patches[0].target_file if state.current_fix_plan.patches else 'Unknown'}`\n"
                     f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                    f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                    f"**Required Changes:**\n```\n{state.current_fix_plan.patches[0].git_diff_patch if state.current_fix_plan.patches else ''}\n```\n\n"
                     f"Please implement these exact changes immediately."
                 )
 

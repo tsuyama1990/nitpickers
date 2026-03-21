@@ -173,7 +173,8 @@ class ArchitectNodes:
         if gathered_context:
             final_instruction += f"\n\n=== REPOSITORY CONTEXT ===\n{gathered_context}"
 
-        result = await getattr(self.jules, "execute_command", getattr(self.jules, "run_session", None))(
+        exec_func = getattr(self.jules, "execute_command", getattr(self.jules, "run_session", None))
+        result = await exec_func(  # type: ignore[misc]
             command="Design the system architecture based on ALL_SPEC.md.",
             session_id=f"architect-{timestamp}",
             prompt=final_instruction,

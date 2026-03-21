@@ -59,7 +59,7 @@ class McpClientManager:
                 "transport": "stdio",
             }
 
-        self._client = MultiServerMCPClient(connections=connections)
+        self._client = MultiServerMCPClient(connections=connections)  # type: ignore[arg-type]
 
     async def get_tools(self, server_name: str | None = None) -> list[BaseTool]:
         """
@@ -166,7 +166,7 @@ class McpClientManager:
         return StructuredTool(
             name=tool.name,
             description=tool.description,
-            args_schema=tool.args_schema,
+            args_schema=tool.args_schema,  # type: ignore[arg-type]
             func=proxied_run,
             coroutine=proxied_arun,
         )

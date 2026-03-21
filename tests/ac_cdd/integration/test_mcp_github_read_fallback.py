@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -28,13 +29,13 @@ async def test_mcp_github_read_fallback() -> None:
 
     # Mock litellm to call a tool, then stop
     call_counts = {"count": 0}
-    async def mock_acompletion(*args, **kwargs):
+    async def mock_acompletion(*args: Any, **kwargs: Any) -> Any:
         call_counts["count"] += 1
         class MockChoice:
-            def __init__(self, msg) -> None:
+            def __init__(self, msg: Any) -> None:
                 self.message = msg
         class MockResponse:
-            def __init__(self, choices) -> None:
+            def __init__(self, choices: Any) -> None:
                 self.choices = choices
 
         if call_counts["count"] == 1:
@@ -49,14 +50,14 @@ async def test_mcp_github_read_fallback() -> None:
                 def __init__(self) -> None:
                     self.content = None
                     self.tool_calls = [MockToolCall()]
-                def model_dump(self):
+                def model_dump(self) -> dict[str, Any]:
                     return {"role": "assistant", "tool_calls": [{"id": "call_123", "type": "function", "function": {"name": "github_get_file_content", "arguments": '{"path": "non_existent_file.py"}'}}]}
             return MockResponse([MockChoice(MockMessage())])
         # Return DONE
         class MockMessageDone:
             content = "DONE"
             tool_calls = None
-            def model_dump(self):
+            def model_dump(self) -> dict[str, Any]:
                 return {"role": "assistant", "content": "DONE"}
         return MockResponse([MockChoice(MockMessageDone())])
 
@@ -64,10 +65,10 @@ async def test_mcp_github_read_fallback() -> None:
     class MockArgs(BaseModel):
         path: str = Field(...)
 
-    async def mock_tool_arun(*args, **kwargs):
+    async def mock_tool_arun(*args: Any, **kwargs: Any) -> str:
         return '{"jsonrpc": "2.0", "error": {"code": -32603, "message": "File not found"}}'
 
-    def mock_tool_run(*args, **kwargs):
+    def mock_tool_run(*args: Any, **kwargs: Any) -> str:
         return '{"jsonrpc": "2.0", "error": {"code": -32603, "message": "File not found"}}'
 
     tool = StructuredTool(
