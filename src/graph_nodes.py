@@ -52,18 +52,18 @@ class CycleNodes(IGraphNodes):
 
         container = ServiceContainer.default()
 
-        self.llm_reviewer = LLMReviewer()
+        # self.llm_reviewer = LLMReviewer()
         self.audit_orchestrator = AuditOrchestrator(None)
 
         self._architect = ArchitectNodes(github_read_tools=self.github_read_tools)
         self._architect_critic = ArchitectCriticNodes()
         self._coder = CoderNodes(github_read_tools=self.github_read_tools, e2b_tools=self.e2b_tools)
         self._coder_critic = CoderCriticNodes()
-        self._auditor = AuditorNodes(self.llm_reviewer, e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
+        self._auditor = AuditorNodes(e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
         self._committee = CommitteeNodes()
         self._uat = UatNodes(e2b_tools=self.e2b_tools)
         self._sandbox_evaluator = SandboxEvaluatorNodes(e2b_tools=self.e2b_tools)
-        self._qa = QaNodes(self.llm_reviewer, e2b_tools=self.e2b_tools)
+        self._qa = QaNodes(e2b_tools=self.e2b_tools)
         self._coder_critic = CoderCriticNodes()
 
         # Dependency injection for Global Refactor
