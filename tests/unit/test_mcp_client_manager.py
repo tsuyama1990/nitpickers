@@ -7,7 +7,7 @@ from src.services.mcp_client_manager import McpClientManager
 
 
 @pytest.mark.asyncio
-async def test_mcp_client_manager_initialization():
+async def test_mcp_client_manager_initialization() -> None:
     config = McpServerConfig(
         server_name="test_server",
         command="echo",
@@ -24,7 +24,7 @@ async def test_mcp_client_manager_initialization():
             assert isinstance(tools, list)
 
 @pytest.mark.asyncio
-async def test_mcp_client_manager_timeout():
+async def test_mcp_client_manager_timeout() -> None:
     config = McpServerConfig(
         server_name="test_server",
         command="sleep",

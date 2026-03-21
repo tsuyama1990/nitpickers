@@ -522,7 +522,7 @@ Running Mechanical Verification Blockade...
 Execution Error in Verification Gate: object MagicMock can't be used in 'await'
 expression
 ------------------------------ Captured log call -------------------------------
-WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=mocked_key -e JULES_API_KEY=mocked_key -e OPENROUTER_API_KEY=mocked_key -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
 ______________________ test_sandbox_evaluator_lint_fails _______________________
 
     @pytest.mark.asyncio
@@ -551,7 +551,7 @@ Running Mechanical Verification Blockade...
 Execution Error in Verification Gate: object MagicMock can't be used in 'await'
 expression
 ------------------------------ Captured log call -------------------------------
-WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=mocked_key -e JULES_API_KEY=mocked_key -e OPENROUTER_API_KEY=mocked_key -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
 ___________________ test_sandbox_evaluator_handles_exception ___________________
 
     @pytest.mark.asyncio
@@ -576,7 +576,7 @@ Running Mechanical Verification Blockade...
 Execution Error in Verification Gate: object MagicMock can't be used in 'await'
 expression
 ------------------------------ Captured log call -------------------------------
-WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=sk_e2b_6ea692ec562417fbdbd28f38e302433104a4780c -e JULES_API_KEY=AQ.Ab8RN6KJlVSzBEl1LfxfIhLDejSGA5jM6azpgVJRPR_iZpxdQA -e OPENROUTER_API_KEY=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 -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
+WARNING  langchain_mcp_adapters.sessions:sessions.py:255 env['SUDO_COMMAND'] contains unexpanded variable reference: '/usr/bin/bash -c echo "${BASHPID}"\ntmux new-session -d -s \'default\' -c /app -e E2B_API_KEY=mocked_key -e JULES_API_KEY=mocked_key -e OPENROUTER_API_KEY=mocked_key -e JULES_SESSION_ID=1223281670216047036 -e GIT_TERMINAL_PROMPT=0 && tmux set-option remain-on-exit on'
 ____________________ test_evaluate_red_phase_success_fails _____________________
 
 base_state = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)

@@ -32,7 +32,7 @@ async def test_evaluate_red_phase_success_fails(base_state: CycleState, mock_exe
         stdout="Test passed", stderr="", exit_code=0
     )
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
+    node = SandboxEvaluatorNodes(mcp_client=mock_executor)
     result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.UAT_FAILED
@@ -49,7 +49,7 @@ async def test_evaluate_red_phase_failure_passes(
         stdout="", stderr="Test failed", exit_code=1
     )
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
+    node = SandboxEvaluatorNodes(mcp_client=mock_executor)
     result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.READY_FOR_AUDIT
@@ -65,7 +65,7 @@ async def test_evaluate_green_phase_success_passes(
         stdout="Test passed", stderr="", exit_code=0
     )
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
+    node = SandboxEvaluatorNodes(mcp_client=mock_executor)
     result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.READY_FOR_AUDIT
@@ -81,7 +81,7 @@ async def test_evaluate_green_phase_failure_fails(
         stdout="", stderr="Test failed", exit_code=1
     )
 
-    node = SandboxEvaluatorNodes(executor=mock_executor)
+    node = SandboxEvaluatorNodes(mcp_client=mock_executor)
     result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.UAT_FAILED

@@ -14,10 +14,10 @@ def base_state() -> CycleState:
     return state
 
 @pytest.mark.asyncio
-async def test_mcp_e2b_sandbox_execution(base_state):
+async def test_mcp_e2b_sandbox_execution(base_state: CycleState) -> None:
     node = SandboxEvaluatorNodes()
 
-    with patch("src.nodes.sandbox_evaluator.McpClientManager") as mock_mcp:
+    with patch("src.nodes.sandbox_evaluator.McpClientManager"):
         mock_client = AsyncMock()
         mock_client.__aenter__.return_value = mock_client
         mock_client.__aexit__.return_value = None
