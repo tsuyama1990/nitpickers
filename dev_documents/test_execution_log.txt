@@ -107,6 +107,6 @@ src/utils_sanitization.py                             11     11     0%   1-31
 src/validators.py                                     41     41     0%   3-86
 --------------------------------------------------------------------------------
 TOTAL                                               5696   4391    23%
-============================== 8 passed in 13.20s ==============================
+============================== 8 passed in 13.72s ==============================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
