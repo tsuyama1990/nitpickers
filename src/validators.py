@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 
-from src.services.git_ops import GitManager
 from src.state_manager import StateManager
 from src.utils import logger
 
@@ -60,13 +59,11 @@ class SessionValidator(BaseValidator):
 
         # 2. Remote branch check (optional)
         if self.check_remote:
-            git = GitManager()
-            is_valid_remote, remote_error = await git.validate_remote_branch(
-                self.integration_branch
-            )
-            if not is_valid_remote:
-                # Remote validation is a warning, not a hard failure
-                logger.warning(f"Remote validation warning: {remote_error}")
+            from src.process_runner import ProcessRunner
+            runner = ProcessRunner()
+            _stdout, _stderr, code, _ = await runner.run_command(["git", "ls-remote", "--exit-code", "--heads", "origin", self.integration_branch], check=False)
+            if code != 0:
+                logger.warning(f"Remote validation warning: branch {self.integration_branch} not found on remote origin")
 
         return True, ""
 

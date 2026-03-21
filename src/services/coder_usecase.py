@@ -8,7 +8,6 @@ from rich.console import Console
 from src.config import settings
 from src.domain_models import CycleManifest
 from src.enums import FlowStatus, WorkPhase
-from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
 
@@ -33,10 +32,7 @@ class CoderUseCase:
     Encapsulates the logic and interactions with the Coder AI (Jules).
     """
 
-    def __init__(self, jules_client: JulesClient) -> None:
-        if not jules_client:
-            msg = "JulesClient must be injected into CoderUseCase"
-            raise ValueError(msg)
+    def __init__(self, jules_client: Any) -> None:
         self.jules = jules_client
 
     # ------------------------------------------------------------------ #

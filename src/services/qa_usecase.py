@@ -8,8 +8,6 @@ from rich.panel import Panel
 from src.config import settings
 from src.domain_models import AuditResult
 from src.enums import FlowStatus
-from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 from src.state_manager import StateManager
@@ -23,7 +21,7 @@ class QaUseCase:
     """
 
     def __init__(
-        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer, mcp_client: Any = None
+        self, jules_client: Any, git_manager: Any, llm_reviewer: LLMReviewer, mcp_client: Any = None
     ) -> None:
         if not jules_client or not git_manager or not llm_reviewer:
             msg = "Missing required dependencies injected into QaUseCase"

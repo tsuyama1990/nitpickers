@@ -1,9 +1,11 @@
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from langchain_core.messages import AIMessage, ToolCall
 
-from src.services.git_ops import GitManager
+from src.services.integration_usecase import IntegrationUsecase
+from src.state import IntegrationState
 
 
 @pytest.fixture
@@ -15,57 +17,82 @@ def mock_git_env(tmp_path: Path) -> Path:
 
 
 @pytest.mark.asyncio
-async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
+async def test_master_integrator_mcp_git_writes(mock_git_env: Path) -> None:
     """
-    Verify that create_feature_branch doesn't fail if branch already exists.
+    Scenario UAT-C03-01:
+    Verify the Master Integrator node securely pushes code and creates PRs via MCP Write tools.
     """
-    with patch("pathlib.Path.cwd", return_value=mock_git_env):
-        git = GitManager()
+    from langchain_core.tools import StructuredTool
 
-        # Simulate running git commands
-        # 1. checkout main (ok)
-        # 2. pull (ok)
-        # 3. checkout -b existing_branch -> FAILS
+    from src.services.mcp_client_manager import McpClientManager
 
-        branch_name = "dev/int-test"
+    mock_mcp_client = AsyncMock(spec=McpClientManager)
 
-        # Mock run_command to simulate branch existence
-        async def mock_run_command(cmd: list[str], check: bool = True) -> tuple[str, str, int]:
-            cmd_str = " ".join(cmd)
-            # When checking existence
-            if "rev-parse --verify dev/int-test" in cmd_str:
-                return "", "", 0  # Return 0 = Exists
-            # If it tries to create anyway (fail case)
-            if "checkout -b dev/int-test" in cmd_str:
-                return "", "fatal: A branch named 'dev/int-test' already exists.", 128
-            return "", "", 0
+    # Track invocations
+    invoked_tools = []
 
-        git.runner.run_command = AsyncMock(side_effect=mock_run_command)  # type: ignore[method-assign]
-        git._ensure_no_lock = AsyncMock()  # type: ignore[method-assign]
+    async def mock_push_commit(*args, **kwargs):
+        invoked_tools.append("push_commit")
+        return "Commit successful."
 
-        # Now it should NOT raise
-        await git.create_feature_branch(branch_name)
+    async def mock_create_pr(*args, **kwargs):
+        invoked_tools.append("create_pull_request")
+        return "https://github.com/test/repo/pull/123"
 
-        # Verify checking logic was called
-        # mock_run_command logic was: if rev-parse -> return 0 (exists), 128 (failed)
-        # We need to ensure the test mock reflects "exists".
-        # The logic in create_feature_branch calls rev-parse first.
-        # If I want to simulate "exists", rev-parse should return 0.
+    push_tool = StructuredTool.from_function(
+        name="push_commit",
+        description="Pushes a commit",
+        func=lambda x: "ok",
+        coroutine=mock_push_commit,
+    )
+    pr_tool = StructuredTool.from_function(
+        name="create_pull_request",
+        description="Creates a PR",
+        func=lambda x: "ok",
+        coroutine=mock_create_pr,
+    )
 
+    mock_mcp_client.get_write_tools.return_value = [push_tool, pr_tool]
+    mock_mcp_client.__aenter__.return_value = mock_mcp_client
 
-@pytest.mark.asyncio
-async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
-    """
-    Verify smart checkout recovers from dirty state.
-    """
-    with patch("pathlib.Path.cwd", return_value=mock_git_env):
-        git = GitManager()
-        git.runner.run_command = AsyncMock(return_value=("", "", 0))  # type: ignore[method-assign]
+    usecase = IntegrationUsecase(mcp_client_manager=mock_mcp_client)
+    state = IntegrationState()
 
-        # Mock _auto_commit_if_dirty
-        git._auto_commit_if_dirty = AsyncMock()  # type: ignore[method-assign]
+    # Mock litellm to return ToolCalls invoking both tools
+    tool_calls = [
+        ToolCall(
+            name="push_commit",
+            args={"message": "UAT-C03 test commit"},
+            id="call_1",
+            type="function"
+        ),
+        ToolCall(
+            name="create_pull_request",
+            args={"title": "UAT PR"},
+            id="call_2",
+            type="function"
+        )
+    ]
 
-        # Should call auto-commit and checkout
-        await git.smart_checkout("new-branch")
+    _mock_msg = AIMessage(content="", tool_calls=tool_calls)
 
-        git._auto_commit_if_dirty.assert_called_once()
+    # litellm expects standard openai format. So we map our ToolCall back into a format litellm returns
+    class MockChoice:
+        def __init__(self) -> None:
+            self.message = MagicMock()
+            self.message.tool_calls = [
+                MagicMock(function=MagicMock(name="push_commit", arguments='{"message": "UAT test commit"}')),
+                MagicMock(function=MagicMock(name="create_pull_request", arguments='{"title": "UAT PR"}'))
+            ]
+            self.message.tool_calls[0].function.name = "push_commit"
+            self.message.tool_calls[1].function.name = "create_pull_request"
+
+    class MockResponse:
+        def __init__(self) -> None:
+            self.choices = [MockChoice()]
+
+    with patch("src.services.integration_usecase.acompletion", return_value=MockResponse()):
+        _new_state = await usecase.run_integration_loop(state, mock_git_env)
+
+    assert "push_commit" in invoked_tools
+    assert "create_pull_request" in invoked_tools

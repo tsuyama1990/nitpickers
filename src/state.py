@@ -39,6 +39,7 @@ class SessionPersistenceState(BaseModel):
     jules_session_name: str | None = None
     critic_retry_count: int = 0
     pr_url: str | None = None
+    remote_commit_hash: str | None = None
     resume_mode: bool = False
     active_branch: str | None = None
     project_session_id: str | None = None

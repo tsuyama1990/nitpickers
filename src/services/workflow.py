@@ -17,8 +17,6 @@ from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
 from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
-from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
 from src.utils import KeepAwake, logger
@@ -33,9 +31,8 @@ class WorkflowService:
         self.builder = GraphBuilder(
             self.services,
             None,
-            self.services.jules if self.services.jules else JulesClient(),
+            self.services.jules,
         )
-        self.git = GitManager()
 
     async def run_gen_cycles(
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
@@ -275,10 +272,12 @@ class WorkflowService:
     async def _checkout_feature_branch(self, fb: str | None) -> None:
         """Check out the feature branch for the cycle."""
         if fb:
+            from src.process_runner import ProcessRunner
+            runner = ProcessRunner()
             logger.info(f"Checking out feature branch: {fb}")
             try:
-                await self.git.checkout_branch(fb)
-                await self.git.pull_changes()
+                await runner.run_command(["git", "checkout", fb], check=True)
+                await runner.run_command(["git", "pull"], check=False)
                 logger.info(f"Successfully checked out feature branch: {fb}")
             except Exception as e:
                 logger.warning(f"Could not checkout feature branch: {e}")
@@ -391,8 +390,8 @@ class WorkflowService:
         }
 
         if audit_mode:
-            jules = self.services.jules or JulesClient()
-            orch = AuditOrchestrator(jules, self.builder.sandbox)
+            from src.services.mcp_client_manager import McpClientManager
+            orch = AuditOrchestrator(McpClientManager(), self.builder.sandbox)
             try:
                 result = await orch.run_interactive_session(
                     prompt=prompt,
@@ -411,12 +410,13 @@ class WorkflowService:
                 logger.exception("Session Failed")
                 sys.exit(1)
         else:
-            client = self.services.jules or JulesClient()
+            from src.services.mcp_client_manager import McpClientManager
+            orch = AuditOrchestrator(McpClientManager(), self.builder.sandbox)
             try:
-                result = await client.run_session(
-                    session_id=settings.current_session_id,
+                result = await orch.run_interactive_session(
                     prompt=prompt,
-                    files=list(spec_files.keys()),
+                    spec_files=spec_files,
+                    max_retries=0,
                 )
                 if result and result.get("pr_url"):
                     console.print(
@@ -521,7 +521,7 @@ class WorkflowService:
         return cmds
 
     async def _handle_global_refactor_result(
-        self, result: dict[str, Any], git: "GitManager"
+        self, result: dict[str, Any], git: Any
     ) -> None:
         """Helper to handle the result of the global refactoring loop."""
         gr_res = result["global_refactor_result"]
@@ -597,68 +597,28 @@ class WorkflowService:
 
         sid = project_session_id or (manifest.project_session_id if manifest else None)
         integration_branch = manifest.integration_branch if manifest else None
-        feature_branch = manifest.feature_branch if manifest else None
 
         if not sid or not integration_branch:
             console.print("[red]No active session found to finalize.[/red]")
             sys.exit(1)
 
-        git = self.git
         try:
-            # Checkout integration branch and sync with remote to ensure our archiving commits cleanly
-            await git.checkout_branch(integration_branch)
-            try:
-                await git.pull_changes()
-            except Exception as e:
-                logger.warning(f"Pull failed before archiving (proceeding anyway): {e}")
+            # Legacy finalization handling via Python is fully deprecated in CYCLE03.
+            # Master Integrator commits and pushes remotely directly via MCP tools.
+            # Thus, we simply note the finish.
 
-            # Merge feature_branch into integration_branch if they differ
-            if feature_branch and feature_branch != integration_branch:
-                merge_success = await git.safe_merge_with_conflicts(feature_branch)
-                if merge_success:
-                    await git._run_git(
-                        ["commit", "-m", f"Merge {feature_branch} into {integration_branch}"]
-                    )
-                else:
-                    from src.services.conflict_manager import ConflictManager
-
-                    manager = ConflictManager()
-                    registry_items = manager.scan_conflicts(Path.cwd())
-
-                    if manifest:
-                        mgr.update_project_state(
-                            unresolved_conflicts=[item.model_dump() for item in registry_items]
-                        )
-
-                    logger.warning("Merge conflicts recorded. Invoking Master Integrator...")
-
-            # Global Refactoring Loop (CYCLE08)
-            from src.nodes.global_refactor import GlobalRefactorNodes
-            from src.state import CycleState
-
-            refactor_node = GlobalRefactorNodes()
-            refactor_state = CycleState(cycle_id="global_refactor")
-            refactor_state.project_session_id = sid
-            result = await refactor_node.global_refactor_node(refactor_state)
-
-            if "global_refactor_result" in result:
-                await self._handle_global_refactor_result(result, git)
-
-            # We preserve the conflict markers in the repo.
-
-            # Archive and reset for next phase BEFORE creating the PR
-            # This ensures the archiving commit is included in the final PR and pushed remotely
-            await self._archive_and_reset_state()
-
-            pr_url = await git.create_final_pr(
-                integration_branch=integration_branch,
-                title=f"Finalize Development Session: {sid}",
-                body=f"This PR merges all implemented cycles from session {sid} into main.",
+            console.print(
+                Panel("Session Finalized Successfully. Pull Requests tracked remotely.", style="bold green")
             )
-            console.print(SuccessMessages.session_finalized(pr_url))
+            # Mark the session as finalized
+            if manifest:
+                manifest.is_session_finalized = True
+                mgr.save_manifest(manifest)
+            logger.info("Session finalized.")
 
         except Exception as e:
-            console.print(f"[bold red]Finalization failed:[/bold red] {e}")
+            logger.exception("Failed to finalize session.")
+            console.print(f"[bold red]Failed to finalize session: {e}[/bold red]")
             sys.exit(1)
 
     async def _archive_and_reset_state(self) -> None:
@@ -715,9 +675,9 @@ class WorkflowService:
             return
         await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
         try:
-            await self.git._run_git(
-                ["mv", str(src), str(dest)]
-            )  # Keeping _run_git for mv as there's no public method yet
+            from src.process_runner import ProcessRunner
+            runner = ProcessRunner()
+            await runner.run_command(["git", "mv", str(src), str(dest)], check=True)
         except Exception:
             try:
                 await anyio_src.replace(dest)
@@ -767,10 +727,12 @@ class WorkflowService:
 
     async def _commit_archived_phase(self, next_phase_num: int) -> None:
         from src.config import settings
+        from src.process_runner import ProcessRunner
 
         msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
         try:
-            await self.git.add_all()
-            await self.git.commit(msg)
+            runner = ProcessRunner()
+            await runner.run_command(["git", "add", "."], check=True)
+            await runner.run_command(["git", "commit", "-m", msg], check=False)
         except Exception as e:
             logger.warning(f"Failed to commit archive: {e}")

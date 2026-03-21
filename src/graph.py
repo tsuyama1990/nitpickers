@@ -8,13 +8,12 @@ from .enums import FlowStatus
 from .graph_nodes import CycleNodes
 from .interfaces import IGraphNodes
 from .service_container import ServiceContainer
-from .services.jules_client import JulesClient
 from .state import CycleState
 
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: object, jules: JulesClient
+        self, services: ServiceContainer, sandbox: object, jules: Any
     ) -> None:
         self.sandbox = sandbox
         self.jules = jules

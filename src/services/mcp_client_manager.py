@@ -135,6 +135,66 @@ class McpClientManager:
 
         return filtered
 
+    async def get_write_tools(self, server_name: str) -> list[BaseTool]:
+        """
+        Retrieves write tools specifically for GitHub (or other explicitly permitted servers).
+        """
+        all_tools = await self._client.get_tools()
+        whitelist = ["push_commit", "create_pull_request"]
+
+        filtered = []
+        for tool in all_tools:
+            is_match = False
+            for w in whitelist:
+                if tool.name == w or tool.name.endswith(f"_{w}"):
+                    is_match = True
+                    break
+
+            if not is_match:
+                continue
+
+            # Ensure correct server
+            if (
+                not tool.name.startswith(f"{server_name}_")
+                and tool.name not in whitelist
+                and getattr(tool, "server_name", server_name) != server_name
+            ):
+                continue
+
+            filtered.append(tool)
+
+        return filtered
+
+    async def get_orchestration_tools(self, server_name: str) -> list[BaseTool]:
+        """
+        Retrieves orchestration tools specifically for Jules.
+        """
+        all_tools = await self._client.get_tools()
+        whitelist = ["create_session", "review_changes"]
+
+        filtered = []
+        for tool in all_tools:
+            is_match = False
+            for w in whitelist:
+                if tool.name == w or tool.name.endswith(f"_{w}"):
+                    is_match = True
+                    break
+
+            if not is_match:
+                continue
+
+            # Ensure correct server
+            if (
+                not tool.name.startswith(f"{server_name}_")
+                and tool.name not in whitelist
+                and getattr(tool, "server_name", server_name) != server_name
+            ):
+                continue
+
+            filtered.append(tool)
+
+        return filtered
+
     def _create_proxy_tool(self, tool: BaseTool, max_length: int) -> BaseTool:
         """Wraps a tool to intercept output and prevent token exhaustion/crashes."""
 

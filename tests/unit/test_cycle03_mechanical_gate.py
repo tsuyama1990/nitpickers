@@ -118,3 +118,56 @@ async def test_sandbox_evaluator_handles_exception() -> None:
 
     assert result["status"] == FlowStatus.TDD_FAILED
     assert msg in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_auditor_mechanical_gate_blocks_write_tools() -> None:
+    """
+    Scenario UAT-C03-03:
+    Verify the Principle of Least Privilege by asserting that read-only nodes (e.g., `Auditor`)
+    are mechanically blocked from accessing or invoking GitHub Write tools.
+    """
+    from unittest.mock import patch
+
+    from langchain_core.tools import StructuredTool
+
+    from src.services.mcp_client_manager import McpClientManager
+
+    # Mock the McpClientManager to only return read-only tools
+    mock_mcp_client = AsyncMock(spec=McpClientManager)
+
+    async def mock_coro(*args, **kwargs):
+        return "content"
+
+    mock_tool = StructuredTool.from_function(
+        name="github_get_file_content",
+        description="Reads a file",
+        func=lambda x: "content",
+        coroutine=mock_coro,
+    )
+    mock_mcp_client.get_readonly_tools.return_value = [mock_tool]
+    mock_mcp_client.__aenter__.return_value = mock_mcp_client
+
+    with patch("src.services.auditor_usecase.McpClientManager", return_value=mock_mcp_client):
+        from src.services.auditor_usecase import AuditorUseCase
+        from src.services.llm_reviewer import LLMReviewer
+
+        mock_llm = AsyncMock(spec=LLMReviewer)
+        mock_llm.review_code.return_value = "-> REVIEW_FAILED\n\nBad code."
+
+        usecase = AuditorUseCase(jules_client=None, git_manager=None, llm_reviewer=mock_llm)
+        state = CycleState(cycle_id="01", feature_branch="dev/test")
+
+        with patch("src.config.settings.get_target_files", return_value=["test.py"]), \
+             patch("src.services.auditor_usecase.AuditorUseCase._read_files", new_callable=AsyncMock) as mock_read:
+            mock_read.return_value = ["file content"]
+            _result = await usecase.execute(state)
+
+        # Verify the tools passed to the LLM do not contain push_commit or create_pull_request
+        mock_mcp_client.get_readonly_tools.assert_called_once_with(server_name="github")
+        tools_passed_to_llm = mock_llm.review_code.call_args.kwargs["tools"]
+
+        tool_names = [t.name for t in tools_passed_to_llm]
+        assert "push_commit" not in tool_names
+        assert "create_pull_request" not in tool_names
+        assert "github_get_file_content" in tool_names

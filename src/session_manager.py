@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 from src.domain_models import CycleManifest, ProjectManifest
-from src.services.git_ops import GitManager
 from src.utils import logger
 
 
@@ -21,12 +20,51 @@ class SessionManager:
 
     STATE_FILE = "project_state.json"
 
+    STATE_BRANCH = "ac-cdd/state"
+
     def __init__(self) -> None:
-        self.git = GitManager()
+        from src.process_runner import ProcessRunner
+        self.runner = ProcessRunner()
+
+    async def _read_state_file(self) -> str | None:
+        try:
+            _stdout, _stderr, code, _ = await self.runner.run_command(
+                ["git", "show", f"{self.STATE_BRANCH}:{self.STATE_FILE}"], check=False
+            )
+            if code == 0:
+                return _stdout.strip()
+        except Exception as e:
+            logger.debug(f"Could not read state file: {e}")
+        return None
+
+    async def _save_state_file(self, content: str, commit_msg: str) -> None:
+        try:
+            _stdout, _stderr, _code, _ = await self.runner.run_command(
+                ["git", "branch", "--list", self.STATE_BRANCH], check=False
+            )
+            if not _stdout.strip():
+                # create orphan branch
+                await self.runner.run_command(["git", "checkout", "--orphan", self.STATE_BRANCH], check=True)
+                await self.runner.run_command(["git", "rm", "-rf", "."], check=True)
+
+            # Use worktree to safely modify the state branch without destroying working dir
+            import tempfile
+            from pathlib import Path
+
+            import anyio
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                await self.runner.run_command(["git", "worktree", "add", "-f", tmp_dir, self.STATE_BRANCH], check=True)
+                file_path = Path(tmp_dir) / self.STATE_FILE
+                await anyio.Path(file_path).write_text(content, encoding="utf-8")
+                await self.runner.run_command(["git", "-C", tmp_dir, "add", self.STATE_FILE], check=True)
+                await self.runner.run_command(["git", "-C", tmp_dir, "commit", "-m", commit_msg], check=True)
+                await self.runner.run_command(["git", "worktree", "remove", "-f", tmp_dir], check=True)
+        except Exception as e:
+            logger.warning(f"Could not save state file natively: {e}")
 
     async def load_manifest(self) -> ProjectManifest | None:
         """Loads manifest from the orphan state branch."""
-        content = await self.git.read_state_file(self.STATE_FILE)
+        content = await self._read_state_file()
         if not content:
             return None
 
@@ -44,7 +82,7 @@ class SessionManager:
         try:
             manifest.last_updated = datetime.now(UTC)
             content = manifest.model_dump_json(indent=2)
-            await self.git.save_state_file(self.STATE_FILE, content, commit_msg)
+            await self._save_state_file(content, commit_msg)
         except Exception as e:
             logger.exception(f"Failed to save manifest: {e}")
             raise

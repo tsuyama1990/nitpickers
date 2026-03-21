@@ -2,16 +2,16 @@ from pathlib import Path
 from typing import Any
 
 from src.services.integration_usecase import IntegrationUsecase, MaxRetriesExceededError
-from src.services.jules_client import JulesClient
+from src.services.mcp_client_manager import McpClientManager
 from src.state import IntegrationState
 
 
 class MasterIntegratorNodes:
     """Nodes for the Master Integrator conflict resolution flow."""
 
-    def __init__(self, jules_client: JulesClient | None = None) -> None:
-        self.jules = jules_client or JulesClient()
-        self.usecase = IntegrationUsecase(self.jules)
+    def __init__(self, mcp_client_manager: McpClientManager | None = None) -> None:
+        self.mcp_client_manager = mcp_client_manager or McpClientManager()
+        self.usecase = IntegrationUsecase(self.mcp_client_manager)
 
     async def master_integrator_node(self, state: IntegrationState) -> dict[str, Any]:
         """

@@ -4,14 +4,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.enums import FlowStatus, WorkPhase
-from src.services.git_ops import GitManager
 from src.services.uat_usecase import UatUseCase
 from src.state import CycleState
 
 
 @pytest.fixture
 def mock_git_manager() -> MagicMock:
-    git_mgr = MagicMock(spec=GitManager)
+    git_mgr = MagicMock()
     git_mgr.merge_pr = AsyncMock()
     return git_mgr
 
