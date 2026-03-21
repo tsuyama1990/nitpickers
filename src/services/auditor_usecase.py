@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Any
 
 from langchain_core.tools import BaseTool
@@ -10,6 +9,7 @@ from src.domain_models import AuditResult
 from src.enums import FlowStatus, WorkPhase
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
+from src.utils import logger
 
 console = Console()
 
@@ -86,26 +86,15 @@ class AuditorUseCase:
                     "[yellow]Warning: No PR URL provided, reviewing current branch[/yellow]"
                 )
 
-            base_branch = state.feature_branch or state.integration_branch or "main"
-            if pr_url:
-                try:
-                    pr_base = await self.git.get_pr_base_branch(pr_url)
-                    if pr_base:
-                        console.print(f"[dim]Detected PR base branch: {pr_base}[/dim]")
-                        base_branch = pr_base
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Could not get PR base branch: {e}[/yellow]")
-
             if is_refactor_phase:
                 # Refactor Auditor reviews all application files for overarching architecture review
                 all_target_files = settings.get_target_files()
                 reviewable_files = [str(f) for f in all_target_files]
             else:
-                changed_file_paths = await self.git.get_changed_files(base_branch=base_branch)
-                reviewable_extensions = settings.auditor.reviewable_extensions
-                reviewable_files = [
-                    f for f in changed_file_paths if Path(f).suffix in reviewable_extensions
-                ]
+                # Without direct local git manager, auditor falls back to global code checking or read tools.
+                logger.warning("Local git diffing disabled; relying on full target_files for context.")
+                all_target_files = settings.get_target_files()
+                reviewable_files = [str(f) for f in all_target_files]
 
             excluded_patterns = settings.auditor.excluded_patterns
 
@@ -123,8 +112,7 @@ class AuditorUseCase:
                 if not any(pattern in f for pattern in build_artifact_patterns)
             ]
 
-            if reviewable_files:
-                pass
+            # Not using legacy git client to filter ignored files for now
 
             if not reviewable_files:
                 console.print(
@@ -182,10 +170,7 @@ class AuditorUseCase:
 
         feature_branch = state.feature_branch
         if feature_branch:
-            try:
-                await self.git.checkout_branch(feature_branch)
-            except Exception as e:
-                console.print(f"[yellow]Warning: Could not return to feature branch: {e}[/yellow]")
+            console.print(f"[dim]Expected to Revert to feature branch {feature_branch} after QA Audit (Not using legacy git client).[/dim]")
 
         status_enum = FlowStatus.APPROVED if status == "approved" else FlowStatus.REJECTED
 

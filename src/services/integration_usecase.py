@@ -1,10 +1,9 @@
-from pathlib import Path
-
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
-from langchain_core.tools import BaseTool
 import litellm
+from langchain_core.tools import BaseTool
 
 from src.config import settings
 from src.domain_models.execution import ConflictRegistryItem
@@ -40,7 +39,7 @@ class IntegrationUsecase:
 
     async def run_integration_loop(
         self, state: IntegrationState, repo_path: Path
-    ) -> IntegrationState:
+    ) -> IntegrationState:  # noqa: C901, PLR0912
         """
         Runs the Master Integrator loop.
         Sends unresolved conflicts sequentially to litellm agents using MCP tools.
@@ -64,17 +63,19 @@ class IntegrationUsecase:
             state.unresolved_conflicts[i] = item
 
         # Finally, orchestrate MCP commit & PR creation
-        await self._create_pull_request()
+        import json
 
-        return state
+        from src.mcp_router.manager import McpClientManager
 
-    async def _create_pull_request(self) -> None:
-        """Uses litellm to instruct the agent to push commits and create a PR via github_write_tools."""
         logger.info("Executing GitHub PR generation via MCP...")
 
         if not self.github_write_tools:
             logger.warning("No github write tools provided, skipping PR generation.")
-            return
+            return state
+
+        # Connect using McpClientManager context exactly as architecture demands.
+        # Ensure we bind the tools appropriately without bypassing MCP Client Manager
+        manager = McpClientManager()
 
         instruction = settings.get_prompt_content("MASTER_INTEGRATOR_INSTRUCTION.md")
         messages: list[dict[str, Any]] = [
@@ -85,66 +86,74 @@ class IntegrationUsecase:
             },
         ]
 
-        tools_schema = []
-        for tool in self.github_write_tools:
-            parameters = {"type": "object", "properties": {}}
-            if hasattr(tool, "args_schema") and hasattr(tool.args_schema, "model_json_schema"):
-                parameters = tool.args_schema.model_json_schema()  # type: ignore[union-attr]
+        try:
+            async with manager.get_client() as _client:
+                tools_schema = []
+                for tool in self.github_write_tools:
+                    parameters = {"type": "object", "properties": {}}
+                    if hasattr(tool, "args_schema") and hasattr(tool.args_schema, "model_json_schema"):
+                        parameters = tool.args_schema.model_json_schema()  # type: ignore[union-attr]
 
-            tools_schema.append({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": parameters,
-                }
-            })
+                    tools_schema.append({
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": tool.description,
+                            "parameters": parameters,
+                        }
+                    })
 
-        for _ in range(3):  # Tool execution loop
-            try:
-                response = await litellm.acompletion(
-                    model=settings.reviewer.smart_model,
-                    messages=messages,
-                    tools=tools_schema if tools_schema else None,
-                    temperature=settings.reviewer.master_integrator_temperature,
-                )
-
-                choice = response.choices[0]
-                message = choice.message
-                messages.append(message.to_dict())
-
-                if message.tool_calls:
-                    for tool_call in message.tool_calls:
-                        func_name = tool_call.function.name
-                        func_args = tool_call.function.arguments
-
-                        tool_instance = next(
-                            (t for t in self.github_write_tools if t.name == func_name), None
+                for _ in range(3):  # Tool execution loop
+                    try:
+                        response = await litellm.acompletion(
+                            model=settings.reviewer.smart_model,
+                            messages=messages,
+                            tools=tools_schema if tools_schema else None,
+                            temperature=settings.reviewer.master_integrator_temperature,
                         )
 
-                        if tool_instance:
-                            import json
-                            args_dict = json.loads(func_args)
-                            tool_result = await tool_instance.ainvoke(args_dict)
-                            messages.append({
-                                "role": "tool",
-                                "name": func_name,
-                                "tool_call_id": tool_call.id,
-                                "content": str(tool_result),
-                            })
+                        choice = response.choices[0]
+                        message = choice.message
+                        messages.append(message.to_dict())
+
+                        if message.tool_calls:
+                            for tool_call in message.tool_calls:
+                                func_name = tool_call.function.name
+                                func_args = tool_call.function.arguments
+
+                                # Find matching base tool wrapper which contains the client binding
+                                tool_instance = next(
+                                    (t for t in self.github_write_tools if t.name == func_name), None
+                                )
+
+                                if tool_instance:
+                                    args_dict = json.loads(func_args)
+                                    # Execute the tool which is properly bound to MCP Client
+                                    tool_result = await tool_instance.ainvoke(args_dict)
+                                    messages.append({
+                                        "role": "tool",
+                                        "name": func_name,
+                                        "tool_call_id": tool_call.id,
+                                        "content": str(tool_result),
+                                    })
+                                else:
+                                    messages.append({
+                                        "role": "tool",
+                                        "name": func_name,
+                                        "tool_call_id": tool_call.id,
+                                        "content": f"Error: Tool {func_name} not found.",
+                                    })
                         else:
-                            messages.append({
-                                "role": "tool",
-                                "name": func_name,
-                                "tool_call_id": tool_call.id,
-                                "content": f"Error: Tool {func_name} not found.",
-                            })
-                else:
-                    # Agent finished successfully
-                    break
-            except Exception as e:
-                logger.error(f"Error communicating with LLM during PR creation: {e}")
-                break
+                            # Agent finished successfully
+                            break
+                    except Exception as e:
+                        logger.error(f"Error communicating with LLM during PR creation: {e}")
+                        break
+
+        except Exception as e:
+            logger.error(f"Error connecting to MCP Client Manager: {e}")
+
+        return state
 
     async def _resolve_single_file(
         self, item: ConflictRegistryItem, repo_path: Path

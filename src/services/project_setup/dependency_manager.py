@@ -30,23 +30,19 @@ class DependencyManager:
             await self.runner.run_command(["git", "init"], check=True)
 
         try:
-            await self.runner.run_command(["git", "add", "."], check=True)
+            await self.git._run_git(["add", "."])
 
-            # Manual commit check via process runner instead of legacy git client
-            stdout, _stderr, code, _ = await self.runner.run_command(
-                ["git", "commit", "-m", "Initialize project with AC-CDD structure and dev dependencies"], check=False
-            )
-
-            if code == 0:
+            if await self.git.commit_changes(
+                "Initialize project with AC-CDD structure and dev dependencies"
+            ):
                 logger.info("✓ Changes committed.")
+
                 try:
-                    stdout, _stderr, code, _ = await self.runner.run_command(["git", "config", "--get", "remote.origin.url"], check=False)
-                    remote_url = stdout.strip() if code == 0 else ""
+                    remote_url = await self.git.get_remote_url()
                     if remote_url:
-                        stdout, _stderr, code, _ = await self.runner.run_command(["git", "branch", "--show-current"], check=False)
-                        current_branch = stdout.strip() if code == 0 else "main"
+                        current_branch = await self.git.get_current_branch()
                         logger.info(f"Pushing {current_branch} to origin...")
-                        await self.runner.run_command(["git", "push", "-u", "origin", current_branch], check=False)
+                        await self.git.push_branch(current_branch)
                         logger.info("✓ Successfully pushed to remote.")
                     else:
                         logger.info("No remote 'origin' configured. Skipping push.")

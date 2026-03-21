@@ -127,7 +127,7 @@ class UatUseCase:
         # Ensure a clean state before executing dynamic UAT
         if getattr(settings.uat, "db_reset_cmd", None):
             logger.debug("Resetting sandbox database state...")
-            await runner.run_command(shlex.split(settings.uat.db_reset_cmd), check=True)
+            await runner.run_command(shlex.split(settings.uat.db_reset_cmd or ""), check=True)
 
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)

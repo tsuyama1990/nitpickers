@@ -1,21 +1,23 @@
-import secrets
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+
+import litellm
+from langchain_core.tools import BaseTool
 
 from src.config import settings
 from src.domain_models.refactor import GlobalRefactorResult
 from src.services.ast_analyzer import ASTAnalyzer
-from src.services.jules_client import JulesClient
 from src.utils import logger
 
 
 class RefactorUsecase:
-    """Uses the AST analyzer to identify global refactoring opportunities and delegates to Jules."""
+    """Uses the AST analyzer to identify global refactoring opportunities and delegates to litellm agents using Jules MCP tools."""
 
     def __init__(
-        self, jules_client: JulesClient | None = None, base_dir: Path | None = None
+        self, jules_tools: Sequence[BaseTool] | None = None, base_dir: Path | None = None
     ) -> None:
-        self.jules_client = jules_client or JulesClient()
+        self.jules_tools = jules_tools or []
         self.base_dir = (base_dir or settings.paths.src).resolve()
 
     def _format_duplicates(self, duplicates: list[list[dict[str, Any]]]) -> str:
@@ -100,14 +102,9 @@ class RefactorUsecase:
             f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules..."
         )
 
-        # Securely generate Session ID to prevent session fixation attacks
-        secure_token = secrets.token_urlsafe(32)
-        session_id = f"master-integrator-{settings.current_session_id}-{secure_token}"
-
         try:
-            await self.jules_client.run_session(
-                session_id=session_id, prompt=prompt, files=list(modified_files)
-            )
+            # Run the litellm session to dispatch workers via Jules MCP tools
+            await self._run_llm_refactoring(prompt, list(modified_files))
 
             return GlobalRefactorResult(
                 refactorings_applied=True,
@@ -121,3 +118,87 @@ class RefactorUsecase:
                 refactorings_applied=False,
                 summary=f"Refactoring failed during LLM execution. Error Type: {type(e).__name__}",
             )
+
+    async def _run_llm_refactoring(self, prompt: str, modified_files: list[str]) -> None:
+        import json
+
+        from src.mcp_router.manager import McpClientManager
+
+        logger.info("Executing Global Refactoring generation via MCP...")
+
+        if not self.jules_tools:
+            logger.warning("No Jules tools provided, refactoring may not work natively as expected.")
+
+        system_instruction = settings.get_prompt_content("REFACTOR_INSTRUCTION.md")
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system_instruction},
+            {
+                "role": "user",
+                "content": f"Please perform global refactoring using the `create_session` and `dispatch_workers` tools.\nFiles involved: {', '.join(modified_files)}\n\nInstructions:\n{prompt}",
+            },
+        ]
+
+        manager = McpClientManager()
+        try:
+            async with manager.get_client() as _client:
+                tools_schema = []
+                for tool in self.jules_tools:
+                    parameters = {"type": "object", "properties": {}}
+                    if hasattr(tool, "args_schema") and hasattr(tool.args_schema, "model_json_schema"):
+                        parameters = tool.args_schema.model_json_schema()  # type: ignore[union-attr]
+
+                    tools_schema.append({
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": tool.description,
+                            "parameters": parameters,
+                        }
+                    })
+
+                for _ in range(5):  # Tool execution loop
+                    try:
+                        response = await litellm.acompletion(
+                            model=settings.reviewer.smart_model,
+                            messages=messages,
+                            tools=tools_schema if tools_schema else None,
+                            temperature=0.0,
+                        )
+
+                        choice = response.choices[0]
+                        message = choice.message
+                        messages.append(message.to_dict())
+
+                        if message.tool_calls:
+                            for tool_call in message.tool_calls:
+                                func_name = tool_call.function.name
+                                func_args = tool_call.function.arguments
+
+                                tool_instance = next(
+                                    (t for t in self.jules_tools if t.name == func_name), None
+                                )
+
+                                if tool_instance:
+                                    args_dict = json.loads(func_args)
+                                    tool_result = await tool_instance.ainvoke(args_dict)
+                                    messages.append({
+                                        "role": "tool",
+                                        "name": func_name,
+                                        "tool_call_id": tool_call.id,
+                                        "content": str(tool_result),
+                                    })
+                                else:
+                                    messages.append({
+                                        "role": "tool",
+                                        "name": func_name,
+                                        "tool_call_id": tool_call.id,
+                                        "content": f"Error: Tool {func_name} not found.",
+                                    })
+                        else:
+                            break
+                    except Exception as e:
+                        logger.error(f"Error communicating with LLM during refactoring orchestration: {e}")
+                        raise
+        except Exception as e:
+            logger.error(f"Error initializing MCP Manager context: {e}")
+            raise

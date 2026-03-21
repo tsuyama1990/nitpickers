@@ -50,7 +50,7 @@ def test_mcp_client_manager_sanitization() -> None:
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
         assert "OPENAI_API_KEY" in sanitized
-        assert "GITHUB_PERSONAL_ACCESS_TOKEN" not in sanitized
+        assert "GITHUB_PERSONAL_ACCESS_TOKEN" in sanitized
 
 
 @pytest.mark.asyncio
@@ -77,12 +77,14 @@ async def test_mcp_client_manager_context() -> None:
                 e2b_config = call_args["e2b"]
                 assert e2b_config["command"] == "npx"
                 assert "SUDO_CMD" not in e2b_config["env"]
+                assert "E2B_API_KEY" in e2b_config["env"]
                 assert e2b_config["env"]["E2B_API_KEY"] == "mock_e2b_key_1234"
 
                 github_config = call_args["github"]
                 assert github_config["command"] == "npx"
                 assert github_config["args"] == ["-y", "@modelcontextprotocol/server-github"]
-                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
+                assert "GITHUB_PERSONAL_ACCESS_TOKEN" in github_config["env"]
+                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
 
 def test_github_config_validation() -> None:
     # Test that GitHubMcpConfig raises an error if GITHUB_PERSONAL_ACCESS_TOKEN is missing

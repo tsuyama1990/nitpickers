@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from pydantic import Field, SecretStr, field_validator
@@ -24,11 +25,18 @@ class JulesMcpConfig(BaseSettings):
         if not val or not str(val).strip():
             msg = "JULES_API_KEY cannot be empty"
             raise ValueError(msg)
+        # Jules API keys typically match a specific structure (e.g., alphanumeric with dashes)
+        if not re.match(r"^[A-Za-z0-9_-]+$", str(val)):
+            msg = "JULES_API_KEY format is invalid"
+            raise ValueError(msg)
         return v
 
     def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, Any]:
         """Get the dynamic dictionary connection config for MultiServerMCPClient."""
+
         env = dict(base_env or {})
+        # Rather than storing plaintext in memory long-term if we don't have to,
+        # we still have to pass it to the Node.js process environment dictionary.
         env["JULES_API_KEY"] = self.JULES_API_KEY.get_secret_value()
 
         return {
@@ -39,6 +47,7 @@ class JulesMcpConfig(BaseSettings):
                 "transport": "stdio",
             }
         }
+
 
 class E2bMcpConfig(BaseSettings):
     """Configuration for the E2B MCP server connection."""
