@@ -32,7 +32,7 @@ class WorkflowService:
 
         self.builder = GraphBuilder(
             self.services,
-            SandboxRunner(),
+            None,
             self.services.jules if self.services.jules else JulesClient(),
         )
         self.git = GitManager()
