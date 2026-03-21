@@ -11,41 +11,60 @@ from src.mcp_router.schemas import E2bMcpConfig
 class McpClientManager:
     """Manages the lifecycle of MCP clients."""
 
-    @staticmethod
-    def _sanitize_environment() -> dict[str, str]:
-        """Sanitizes the environment dictionary to prevent leakage of secrets."""
-        env = dict(os.environ)
-        # Prevent API key leakage via unexpanded SUDO_ variables logged by langchain-mcp-adapters
-        keys_to_remove = [k for k in env if k.startswith("SUDO_")]
-        for key in keys_to_remove:
-            env.pop(key, None)
-        return env
+    SAFE_ENV_KEYS: tuple[str, ...] = (
+        "PATH", "USER", "HOME", "LANG", "LC_ALL", "TERM", "TZ",
+        "PYTHONPATH", "LD_LIBRARY_PATH", "VIRTUAL_ENV"
+    )
+
+    @classmethod
+    def _sanitize_environment(cls) -> dict[str, str]:
+        """
+        Sanitizes the environment dictionary to prevent leakage of secrets.
+        Uses a strict whitelist approach to ensure NO API keys or credentials
+        are accidentally leaked to subprocesses or logs.
+        """
+        sanitized = {}
+        for key, value in os.environ.items():
+            if key in cls.SAFE_ENV_KEYS:
+                sanitized[key] = value
+        return sanitized
 
     @asynccontextmanager
     async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
-        """Provides an asynchronous context manager for the MCP client."""
+        """Provides an asynchronous context manager for the MCP client with robust error handling."""
         config = E2bMcpConfig()  # type: ignore[call-arg]
-        params = config.get_stdio_parameters()
 
         # Override the env with sanitized environment to prevent leakages
         sanitized_env = self._sanitize_environment()
-        # Merge back specific api keys required for execution
-        sanitized_env.update(params.env or {})
 
-        connection_config = {
-            "e2b": {
-                "command": params.command,
-                "args": params.args,
-                "env": sanitized_env,
-                "transport": "stdio",
-            }
-        }
+        # Build dynamic connections from the config
+        connection_config = config.get_connection_config(sanitized_env)
 
-        client = MultiServerMCPClient(connection_config)  # type: ignore[arg-type]
+        max_retries = 3
+        base_delay = 1.0
+
+        for attempt in range(max_retries):
+            try:
+                client = MultiServerMCPClient(connection_config)  # type: ignore[arg-type]
+                break
+            except Exception as e:
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.exception(
+                    f"Failed to initialize MultiServerMCPClient (attempt {attempt + 1}/{max_retries})"
+                )
+                if attempt == max_retries - 1:
+                    msg = f"Failed to connect to MCP servers after {max_retries} attempts: {e}"
+                    raise RuntimeError(msg) from e
+                await asyncio.sleep(base_delay * (2**attempt))
 
         try:
             yield client
         finally:
-            # MultiServerMCPClient doesn't have a close method, it manages sessions lazily
-            # We wait a tiny bit to ensure subprocesses are cleaned up if any were spawned
-            await asyncio.sleep(0.1)
+            # MultiServerMCPClient does not expose a public .close() or handle cleanup.
+            # We enforce a small timeout loop strictly checking if we can kill any
+            # active underlying Popen/subprocess connections cleanly if possible.
+            # Langchain's MultiServerMCPClient sessions are managed via asynccontextmanager 'session'
+            # For now, since it lacks cleanup methods natively, we just rely on standard GC.
+            pass

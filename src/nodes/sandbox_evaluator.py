@@ -24,7 +24,7 @@ class SandboxEvaluatorNodes:
     ) -> None:
         self.e2b_tools = e2b_tools
 
-    async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
+    async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """
         Executes the mechanical verification blockade: Linting, Type Checking, and Testing.
         All checks must pass with exit code 0 to proceed to the audit phase.
@@ -75,22 +75,17 @@ class SandboxEvaluatorNodes:
                 }
 
                 for check_name, cmd_str in commands.items():
-                    # Invoke the langchain tool
-                    # The payload structure depends on the tool schema. Often it's {"command": "..."}
-                    # We can use .ainvoke
+                    # Dynamically discover the argument name from the tool schema
+                    arg_name = "command"
+                    if getattr(exec_tool, "args_schema", None):
+                        props = exec_tool.args_schema.schema().get("properties", {})
+                        if props:
+                            arg_name = next(iter(props.keys()))
 
                     try:
-                        # Sometimes it expects 'command', sometimes 'commandLine' etc.
-                        # For e2b/mcp-server, the tool is typically called `execute_command` with arg `command`
-                        # Let's just pass {"command": cmd_str}
-                        tool_result = await exec_tool.ainvoke({"command": cmd_str})
+                        tool_result = await exec_tool.ainvoke({arg_name: cmd_str})
                     except Exception as invoke_err:
                         tool_result = str(invoke_err)
-
-                    # Parse the tool result. The MCP execute_command typically returns a string or a JSON with stdout/stderr
-                    # If it's a string from e2b, we can parse it roughly or just assume 0 exit code if no error text is thrown.
-                    # Wait, litellm or langchain with tools usually returns a string.
-                    # e2b execute_command returns stdout and stderr.
 
                     # For safety, since MCP execution might wrap things, let's treat the tool_result as stdout.
                     # If an exception was raised, it's a non-zero exit code.

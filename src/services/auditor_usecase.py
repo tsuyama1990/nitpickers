@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+from langchain_core.tools import BaseTool
 from rich.console import Console
 
 from src.config import settings
@@ -11,10 +13,6 @@ from src.services.jules_client import JulesClient
 from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 from src.state_manager import StateManager
-
-from collections.abc import Sequence
-
-from langchain_core.tools import BaseTool
 
 console = Console()
 

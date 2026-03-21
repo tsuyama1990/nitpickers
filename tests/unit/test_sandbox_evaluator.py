@@ -24,8 +24,7 @@ def mock_fail_tool() -> Any:
 
 @pytest.fixture
 def base_state() -> CycleState:
-    state = CycleState(cycle_id="01")
-    return state
+    return CycleState(cycle_id="01")
 
 @pytest.mark.asyncio
 async def test_evaluate_success_passes(
