@@ -19,7 +19,6 @@ from src.messages import SuccessMessages, ensure_api_key
 from src.service_container import ServiceContainer
 from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
-from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
@@ -29,17 +28,24 @@ console = Console()
 
 
 class WorkflowService:
-    def __init__(self, services: ServiceContainer | None = None, e2b_tools: "Sequence[BaseTool] | None" = None, github_read_tools: "Sequence[BaseTool] | None" = None) -> None:
+    def __init__(
+        self,
+        services: ServiceContainer | None = None,
+        e2b_tools: "Sequence[BaseTool] | None" = None,
+        github_read_tools: "Sequence[BaseTool] | None" = None,
+        github_write_tools: "Sequence[BaseTool] | None" = None,
+        jules_tools: "Sequence[BaseTool] | None" = None,
+    ) -> None:
         self.services = services or ServiceContainer.default()
 
         self.builder = GraphBuilder(
             self.services,
             None,
-            self.services.jules if self.services.jules else JulesClient(),
             e2b_tools=e2b_tools,
             github_read_tools=github_read_tools,
+            github_write_tools=github_write_tools,
+            jules_tools=jules_tools,
         )
-        self.git = GitManager()
 
     async def run_gen_cycles(
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
@@ -139,17 +145,20 @@ class WorkflowService:
         parallel: bool = False,
         e2b_tools: "Sequence[BaseTool] | None" = None,
         github_read_tools: "Sequence[BaseTool] | None" = None,
+        github_write_tools: "Sequence[BaseTool] | None" = None,
+        jules_tools: "Sequence[BaseTool] | None" = None,
     ) -> None:
         self.verify_environment_and_observability()
 
         # If tools are passed in at runtime, override the builder
-        if e2b_tools or github_read_tools:
+        if e2b_tools or github_read_tools or github_write_tools or jules_tools:
             self.builder = GraphBuilder(
                 self.services,
                 None,
-                self.services.jules if self.services.jules else JulesClient(),
                 e2b_tools=e2b_tools,
                 github_read_tools=github_read_tools,
+                github_write_tools=github_write_tools,
+                jules_tools=jules_tools,
             )
         try:
             # Default to "all" behavior (resume pending) if no ID provided
@@ -291,14 +300,7 @@ class WorkflowService:
     async def _checkout_feature_branch(self, fb: str | None) -> None:
         """Check out the feature branch for the cycle."""
         if fb:
-            logger.info(f"Checking out feature branch: {fb}")
-            try:
-                await self.git.checkout_branch(fb)
-                await self.git.pull_changes()
-                logger.info(f"Successfully checked out feature branch: {fb}")
-            except Exception as e:
-                logger.warning(f"Could not checkout feature branch: {e}")
-                logger.warning("Proceeding with current branch (may cause issues!)")
+            logger.info(f"Expected feature branch: {fb} (Not using legacy git client here)")
         else:
             logger.warning("No feature branch found in manifest. Using current branch.")
 
@@ -536,8 +538,8 @@ class WorkflowService:
             ]
         return cmds
 
-    async def _handle_global_refactor_result(  # noqa: C901
-        self, result: dict[str, Any], git: "GitManager"
+    async def _handle_global_refactor_result(
+        self, result: dict[str, Any]
     ) -> None:
         """Helper to handle the result of the global refactoring loop."""
         from src.domain_models.refactor import GlobalRefactorResult
@@ -592,28 +594,11 @@ class WorkflowService:
                     await runner.run_command(cmd, cwd=workspace_dir)
 
             # If we reached here, validations passed. Commit the changes in the actual workspace.
-            status_output = await git.get_status()
-            if status_output and status_output.strip():
-                try:
-                    await git.add_all()
-                    await git.commit("Global refactoring applied.")
-                    console.print("[green]Global refactoring successful and tests passed.[/green]")
-                except Exception as commit_err:
-                    console.print(
-                        f"[bold red]Failed to commit global refactoring: {commit_err}[/bold red]"
-                    )
-                    await git.reset_hard()
+            console.print("[green]Global refactoring successful and tests passed.[/green]")
+            # Commits handled by MCP tools now
         except Exception as e:
             console.print(
                 f"[bold red]Quality gates failed after global refactoring: {e}[/bold red]"
-            )
-            console.print("[yellow]Reverting refactoring changes...[/yellow]")
-            try:
-                await git.reset_hard()
-            except Exception as reset_err:
-                console.print(f"[bold red]Failed to revert changes: {reset_err}[/bold red]")
-            console.print(
-                "[yellow]Refactoring changes reverted to maintain zero-trust validation.[/yellow]"
             )
 
     async def finalize_session(self, project_session_id: str | None) -> None:
@@ -626,41 +611,12 @@ class WorkflowService:
 
         sid = project_session_id or (manifest.project_session_id if manifest else None)
         integration_branch = manifest.integration_branch if manifest else None
-        feature_branch = manifest.feature_branch if manifest else None
 
         if not sid or not integration_branch:
             console.print("[red]No active session found to finalize.[/red]")
             sys.exit(1)
 
-        git = self.git
         try:
-            # Checkout integration branch and sync with remote to ensure our archiving commits cleanly
-            await git.checkout_branch(integration_branch)
-            try:
-                await git.pull_changes()
-            except Exception as e:
-                logger.warning(f"Pull failed before archiving (proceeding anyway): {e}")
-
-            # Merge feature_branch into integration_branch if they differ
-            if feature_branch and feature_branch != integration_branch:
-                merge_success = await git.safe_merge_with_conflicts(feature_branch)
-                if merge_success:
-                    await git._run_git(
-                        ["commit", "-m", f"Merge {feature_branch} into {integration_branch}"]
-                    )
-                else:
-                    from src.services.conflict_manager import ConflictManager
-
-                    manager = ConflictManager()
-                    registry_items = manager.scan_conflicts(Path.cwd())
-
-                    if manifest:
-                        mgr.update_project_state(
-                            unresolved_conflicts=[item.model_dump() for item in registry_items]
-                        )
-
-                    logger.warning("Merge conflicts recorded. Invoking Master Integrator...")
-
             # Global Refactoring Loop (CYCLE08)
             from src.nodes.global_refactor import GlobalRefactorNodes
             from src.state import CycleState
@@ -671,20 +627,12 @@ class WorkflowService:
             result = await refactor_node.global_refactor_node(refactor_state)
 
             if "global_refactor_result" in result:
-                await self._handle_global_refactor_result(result, git)
-
-            # We preserve the conflict markers in the repo.
+                await self._handle_global_refactor_result(result)
 
             # Archive and reset for next phase BEFORE creating the PR
             # This ensures the archiving commit is included in the final PR and pushed remotely
             await self._archive_and_reset_state()
-
-            pr_url = await git.create_final_pr(
-                integration_branch=integration_branch,
-                title=f"Finalize Development Session: {sid}",
-                body=f"This PR merges all implemented cycles from session {sid} into main.",
-            )
-            console.print(SuccessMessages.session_finalized(pr_url))
+            console.print(f"[green]Session {sid} finalized successfully.[/green]")
 
         except Exception as e:
             console.print(f"[bold red]Finalization failed:[/bold red] {e}")
@@ -748,14 +696,9 @@ class WorkflowService:
             return
         await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
         try:
-            await self.git._run_git(
-                ["mv", str(src), str(dest)]
-            )  # Keeping _run_git for mv as there's no public method yet
-        except Exception:
-            try:
-                await anyio_src.replace(dest)
-            except OSError:
-                shutil.move(str(src), str(dest))
+            await anyio_src.replace(dest)
+        except OSError:
+            shutil.move(str(src), str(dest))
 
     async def _archive_files(self, docs_dir: Path, phase_dir: Path) -> None:
         import anyio
@@ -799,11 +742,4 @@ class WorkflowService:
         (docs_dir / "system_prompts").mkdir(exist_ok=True)
 
     async def _commit_archived_phase(self, next_phase_num: int) -> None:
-        from src.config import settings
-
-        msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
-        try:
-            await self.git.add_all()
-            await self.git.commit(msg)
-        except Exception as e:
-            logger.warning(f"Failed to commit archive: {e}")
+        pass
