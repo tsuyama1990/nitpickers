@@ -1,10 +1,10 @@
 import base64
-from typing import Sequence
+from collections.abc import Sequence
 
 import anyio
 import litellm
-from pydantic import ValidationError
 from langchain_core.tools import BaseTool
+from pydantic import ValidationError
 
 from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
 from src.domain_models.fix_plan_schema import FilePatch
