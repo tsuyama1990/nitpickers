@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,7 +9,7 @@ class E2bMcpConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    E2B_API_KEY: str = Field(
+    E2B_API_KEY: SecretStr = Field(
         ...,
         min_length=10,
         description="E2B API key for authentication",
@@ -17,10 +17,19 @@ class E2bMcpConfig(BaseSettings):
     E2B_COMMAND: str = Field("npx", description="The command to boot the E2B server")
     E2B_ARGS: list[str] = Field(["-y", "@e2b/mcp-server"], description="Arguments for the E2B server command")
 
+    @field_validator("E2B_API_KEY", mode="before")
+    @classmethod
+    def validate_api_key(cls, v: str | SecretStr) -> SecretStr | str:
+        val = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if not val or not str(val).strip():
+            msg = "E2B_API_KEY cannot be empty"
+            raise ValueError(msg)
+        return v
+
     def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, Any]:
         """Get the dynamic dictionary connection config for MultiServerMCPClient."""
         env = dict(base_env or {})
-        env["E2B_API_KEY"] = self.E2B_API_KEY
+        env["E2B_API_KEY"] = self.E2B_API_KEY.get_secret_value()
 
         return {
             "e2b": {
@@ -37,7 +46,7 @@ class GitHubMcpConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    GITHUB_PERSONAL_ACCESS_TOKEN: str = Field(
+    GITHUB_PERSONAL_ACCESS_TOKEN: SecretStr = Field(
         ...,
         min_length=10,
         description="GitHub Personal Access Token for authentication",
@@ -45,10 +54,19 @@ class GitHubMcpConfig(BaseSettings):
     GITHUB_COMMAND: str = Field("npx", description="The command to boot the GitHub server")
     GITHUB_ARGS: list[str] = Field(["-y", "@modelcontextprotocol/server-github"], description="Arguments for the GitHub server command")
 
+    @field_validator("GITHUB_PERSONAL_ACCESS_TOKEN", mode="before")
+    @classmethod
+    def validate_github_token(cls, v: str | SecretStr) -> SecretStr | str:
+        val = v.get_secret_value() if isinstance(v, SecretStr) else v
+        if not val or not str(val).strip():
+            msg = "GITHUB_PERSONAL_ACCESS_TOKEN cannot be empty"
+            raise ValueError(msg)
+        return v
+
     def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, Any]:
         """Get the dynamic dictionary connection config for MultiServerMCPClient."""
         env = dict(base_env or {})
-        env["GITHUB_PERSONAL_ACCESS_TOKEN"] = self.GITHUB_PERSONAL_ACCESS_TOKEN
+        env["GITHUB_PERSONAL_ACCESS_TOKEN"] = self.GITHUB_PERSONAL_ACCESS_TOKEN.get_secret_value()
 
         return {
             "github": {

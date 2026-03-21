@@ -31,14 +31,14 @@ def test_e2b_config_success() -> None:
 
 
 def test_mcp_client_manager_sanitization() -> None:
-    # Test that implicitly safe keys are kept while secrets are dropped based on blacklisting.
+    # Test that explicitly safe keys are kept while dangerous or unrelated keys are dropped based on whitelisting/blacklisting.
     test_env = {
         "PATH": "/usr/bin:/bin",
         "NORMAL_VAR": "value",
         "SUDO_COMMAND": "secret_injection",
         "SUDO_USER": "root",
-        "API_KEY": "some_key",
-        "GITHUB_TOKEN": "some_token"
+        "OPENAI_API_KEY": "some_key",
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "some_token"
     }
 
     with patch.dict(os.environ, test_env, clear=True):
@@ -46,11 +46,11 @@ def test_mcp_client_manager_sanitization() -> None:
         sanitized = manager._sanitize_environment()
 
         assert "PATH" in sanitized
-        assert "NORMAL_VAR" in sanitized
+        assert "NORMAL_VAR" not in sanitized
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
-        assert "API_KEY" not in sanitized
-        assert "GITHUB_TOKEN" not in sanitized
+        assert "OPENAI_API_KEY" in sanitized
+        assert "GITHUB_PERSONAL_ACCESS_TOKEN" in sanitized
 
 
 @pytest.mark.asyncio
@@ -60,7 +60,12 @@ async def test_mcp_client_manager_context() -> None:
         manager = McpClientManager()
 
         # We mock the MultiServerMCPClient to avoid actually starting node processes
+        from unittest.mock import AsyncMock
         with patch("src.mcp_router.manager.MultiServerMCPClient") as mock_client_cls:
+            # Setting up the mock so that connect_all works without exception
+            mock_client_instance = mock_client_cls.return_value
+            mock_client_instance.connect_all = AsyncMock()
+
             async with manager.get_client() as _client:
                 mock_client_cls.assert_called_once()
 
@@ -77,7 +82,7 @@ async def test_mcp_client_manager_context() -> None:
                 github_config = call_args["github"]
                 assert github_config["command"] == "npx"
                 assert github_config["args"] == ["-y", "@modelcontextprotocol/server-github"]
-                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
+                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
 
 def test_github_config_validation() -> None:
     # Test that GitHubMcpConfig raises an error if GITHUB_PERSONAL_ACCESS_TOKEN is missing
@@ -91,7 +96,7 @@ def test_github_config_success() -> None:
         config = GitHubMcpConfig()  # type: ignore[call-arg]
         params = config.get_connection_config()
         assert "github" in params
-        assert params["github"]["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
+        assert params["github"]["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
 
 @pytest.mark.asyncio
 async def test_get_github_read_tools_filtering() -> None:

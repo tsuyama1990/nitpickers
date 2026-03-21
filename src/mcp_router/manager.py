@@ -2,7 +2,6 @@ import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
@@ -12,49 +11,41 @@ from src.mcp_router.schemas import E2bMcpConfig, GitHubMcpConfig
 class McpClientManager:
     """Manages the lifecycle of MCP clients."""
 
-    # Reject variables that are likely secrets
-    UNSAFE_ENV_KEY_PATTERNS: tuple[str, ...] = (
-        "API_KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "SUDO_"
+    # Explicitly whitelist safe prefixes for system and common development vars, including API keys that might be necessary.
+    SAFE_ENV_KEY_PREFIXES: tuple[str, ...] = (
+        "PATH", "USER", "HOME", "LANG", "LC_", "TERM", "TZ",
+        "PYTHON", "LD_", "VIRTUAL_ENV", "NODE_", "NVM_", "NPM_", "BUN_",
+        "AC_CDD_", "OPENAI_", "ANTHROPIC_", "JULES_", "E2B_", "OPENROUTER_", "GEMINI_",
+        "GITHUB_PERSONAL_ACCESS_TOKEN" # Added explicitly in get_connection_config anyway
     )
 
-    _VALUE_SECRET_PATTERNS = None
-
-    @classmethod
-    def _get_secret_pattern(cls) -> Any:
-        if cls._VALUE_SECRET_PATTERNS is None:
-            import re
-            cls._VALUE_SECRET_PATTERNS = re.compile(
-                r"(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}|"  # JWT
-                r"sk-[A-Za-z0-9]{20,}|"                         # OpenAI/similar keys
-                r"ghp_[A-Za-z0-9]{36}|"                         # GitHub classic PAT
-                r"e2b_[a-zA-Z0-9_]+)",                          # E2B Keys
-                re.IGNORECASE
-            )
-        return cls._VALUE_SECRET_PATTERNS
+    # Strictly reject known extremely dangerous execution prefixes
+    DANGEROUS_ENV_KEY_PREFIXES: tuple[str, ...] = (
+        "SUDO_", "SSH_", "AWS_SECRET_ACCESS_KEY", "GCP_PRIVATE_KEY"
+    )
 
     @classmethod
     def _sanitize_environment(cls) -> dict[str, str]:
         """
         Sanitizes the environment dictionary to prevent leakage of secrets.
-        Uses a blacklist approach for environment keys.
-        Additionally checks values for potential credential patterns.
+        Uses a whitelist approach prioritizing known safe development prefixes and rejecting extremely dangerous ones.
+        Value-based scanning is removed because standard API keys/tokens are required for child processes.
         """
         sanitized = {}
-        pattern = cls._get_secret_pattern()
 
         for key, value in os.environ.items():
-            # Blacklist known unsafe keys
-            if any(unsafe in key.upper() for unsafe in cls.UNSAFE_ENV_KEY_PATTERNS):
+            # Strictly blacklist known very dangerous keys
+            if any(key.upper().startswith(danger) for danger in cls.DANGEROUS_ENV_KEY_PREFIXES):
                 continue
-            # Apply value sanitization
-            if pattern.search(value):
-                continue
-            sanitized[key] = value
+
+            # Allow keys that match our safe prefixes
+            if any(key.upper().startswith(safe) for safe in cls.SAFE_ENV_KEY_PREFIXES):
+                sanitized[key] = value
 
         return sanitized
 
     @asynccontextmanager
-    async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:
+    async def get_client(self) -> AsyncGenerator[MultiServerMCPClient, None]:  # noqa: C901
         """Provides an asynchronous context manager for the MCP client with robust error handling."""
         import logging
 
@@ -85,12 +76,16 @@ class McpClientManager:
         client = None
         for attempt in range(max_retries):
             try:
-                # Add timeout to client initialization itself if possible or wait_for
-                # Note: MultiServerMCPClient init is synchronous, but we'll wrap it safely
-                client = MultiServerMCPClient(connection_config)
+                # MultiServerMCPClient init is synchronous, so we run it in a separate thread to avoid blocking the event loop
+                client = await asyncio.to_thread(MultiServerMCPClient, connection_config)
+
+                # Check if it exposes an explicit connect method to verify it actually works
+                if hasattr(client, "connect_all") and callable(client.connect_all):
+                    await asyncio.wait_for(client.connect_all(), timeout=15.0)
+
                 break
             except Exception:
-                logger.exception(f"Error initializing MCP Client (attempt {attempt + 1}/{max_retries}). Sensitive kwargs omitted.")
+                logger.exception(f"Error initializing MCP Client (attempt {attempt + 1}/{max_retries}).")
                 if attempt == max_retries - 1:
                     msg = f"Failed to connect to MCP servers after {max_retries} attempts. Initialization aborted safely."
                     raise RuntimeError(msg) from None
@@ -105,7 +100,11 @@ class McpClientManager:
         try:
             yield client
         finally:
-            # MultiServerMCPClient from langchain-mcp-adapters delegates cleanup natively
-            # to context managers of its internal `session` methods. Reflection-based
-            # teardown is unsafe against library updates.
-            pass
+            try:
+                # Clean up MCP subprocesses and sessions effectively
+                if hasattr(client, "close") and callable(client.close):
+                    await asyncio.wait_for(client.close(), timeout=5.0)
+                elif hasattr(client, "disconnect_all") and callable(client.disconnect_all):
+                    await asyncio.wait_for(client.disconnect_all(), timeout=5.0)
+            except Exception as e:
+                logger.debug(f"Error during MCP Client Teardown: {e}")

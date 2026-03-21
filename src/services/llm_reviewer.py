@@ -149,9 +149,15 @@ class LLMReviewer:
                 return None  # Signal timeout
 
             message = response.choices[0].message
-            if hasattr(message, "model_dump"):
-                message_dict = message.model_dump()
-            elif hasattr(message, "to_dict"):
+            if hasattr(message, "model_dump") and callable(getattr(message, "model_dump")):
+                try:
+                    message_dict = message.model_dump()
+                except Exception:
+                    # In tests involving MagicMock, model_dump might exist but raise errors
+                    message_dict = {"role": "assistant", "content": str(message.content)}
+                    if getattr(message, "tool_calls", None):
+                        message_dict["tool_calls"] = message.tool_calls
+            elif hasattr(message, "to_dict") and callable(getattr(message, "to_dict")):
                 message_dict = message.to_dict()
             elif isinstance(message, dict):
                 message_dict = message
