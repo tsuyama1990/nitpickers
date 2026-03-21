@@ -4,7 +4,7 @@ import asyncio
 
 import typer
 
-from src.mcp_router.manager import McpClientManager
+from src.mcp_router.tools import get_e2b_tools, get_github_read_tools
 from src.services.workflow import WorkflowService
 
 app = typer.Typer()
@@ -18,7 +18,10 @@ def gen_cycles(
     """Generate architecture and development cycles."""
 
     async def _run() -> None:
-        service = WorkflowService()
+        from src.config import settings
+        github_read_tools = await get_github_read_tools(allowed_tools=settings.tools.github_allowed_read_tools)
+
+        service = WorkflowService(github_read_tools=github_read_tools)
         await service.run_gen_cycles(cycles, project_session_id=session)
 
     asyncio.run(_run())
@@ -42,18 +45,22 @@ def run_cycle(
     service.verify_environment_and_observability()
 
     async def _run() -> None:
-        manager = McpClientManager()
-        async with manager.get_client() as client:
-            tools = await client.get_tools()
-            await service.run_cycle(
-                cycle_id=cycle_id,
-                resume=resume,
-                auto=auto,
-                start_iter=start_iter,
-                project_session_id=session,
-                parallel=parallel,
-                e2b_tools=tools,
-            )
+        from src.config import settings
+        e2b_tools = await get_e2b_tools()
+        github_read_tools = await get_github_read_tools(allowed_tools=settings.tools.github_allowed_read_tools)
+
+        # Re-init WorkflowService with tools because it was inited early above
+        service_with_tools = WorkflowService(e2b_tools=e2b_tools, github_read_tools=github_read_tools)
+        await service_with_tools.run_cycle(
+            cycle_id=cycle_id,
+            resume=resume,
+            auto=auto,
+            start_iter=start_iter,
+            project_session_id=session,
+            parallel=parallel,
+            e2b_tools=e2b_tools,
+            github_read_tools=github_read_tools,
+        )
 
     asyncio.run(_run())
 

@@ -16,10 +16,10 @@ from .state import CycleState
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: Any, jules: JulesClient, e2b_tools: Sequence[BaseTool] | None = None
+        self, services: ServiceContainer, sandbox: Any, jules: JulesClient, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None
     ) -> None:
         self.jules = jules
-        self.nodes: IGraphNodes = CycleNodes(None, self.jules, e2b_tools=e2b_tools)
+        self.nodes: IGraphNodes = CycleNodes(None, self.jules, e2b_tools=e2b_tools, github_read_tools=github_read_tools)
 
     async def cleanup(self) -> None:
         """Cleanup resources, specifically the sandbox."""
