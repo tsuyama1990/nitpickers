@@ -336,3 +336,31 @@ If any End-to-End integration test fails critically due to an upstream MCP serve
 Maintain the legacy src/services/ folders in a deprecated state (feature-flagged) for exactly one minor version release (e.g., v2.0-beta).
 
 Configure src/config.py with an USE_LEGACY_API_WRAPPERS=True environment toggle that dynamically skips MCP tool binding and falls back to manual JSON schema prompts.
+
+
+**BE CAREFUL ON APIKEY LEAKAGE**
+during the last developments I got a notice from github as below:
+So make sure the API key / token are not leaked via output texts etc...
+Please resolve these alerts
+
+Anyone with read access can view exposed secrets. Consider rotating and revoking each valid secret to avoid any irreversible damage.
+
+GCP API Key Bound to a Service Account Review secret detected in ...ents/test_execution_log.txt#L1316 • commit 668952d0 OpenRouter API Key Review secret detected in ...ents/test_execution_log.txt#L1316 • commit 668952d0
+
+this is because of you! I registered several apikeys to have you test with local enviroments.
+
+in the other sessions, we you have already identified the issue. pls fix the problem as the branch is not integrated. pls make sure the problem is now completely fixed.
+
+I've identified that the langchain-mcp-adapters library logs warnings that contain the complete environment when it detects unexpanded variables in environment variables like SUDO_COMMAND. Since SUDO_COMMAND contains commands with API keys injected via the environment in your specific setup, it leads to the keys being leaked into test logs.
+
+I have updated the McpClientManager to sanitize the environment by actively filtering out variables starting with SUDO_ before passing them to the MCP sub-process. This prevents the warning and subsequent log leakage.
+
+I am now returning to Phase 4 to finish removing legacy modules.
+
+I understand the urgency and the API key leakage issue.
+
+The leakage in test_execution_log.txt was caused by langchain-mcp-adapters logging the env dictionary when the MultiServerMCPClient is initialized with unexpanded environment variables like SUDO_COMMAND, which contained the injected test API keys.
+
+I've already patched McpClientManager to sanitize os.environ before merging it into the subprocess config, ensuring SUDO_* commands (and thus the injected keys) are not passed or logged. I also removed the existing test_execution_log.txt which contained the leaked keys.
+
+I am finalizing Phase 4 now (removing legacy modules completely) and will proceed to open the Pull Request immediately after resolving the remaining import errors.
