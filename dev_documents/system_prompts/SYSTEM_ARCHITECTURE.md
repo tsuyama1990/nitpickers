@@ -10,14 +10,14 @@ The primary objectives of this architectural shift are to reduce maintenance ove
 2. **Native LLM Tool Calling:** Leverage the built-in function-calling capabilities of modern LLMs. MCP servers will advertise their available tools, semantic descriptions, and strongly-typed required schemas directly to the LLM upon initialization.
 3. **Resilience and Determinism:** Eliminate the fragility associated with custom parsers breaking on edge-case API responses (e.g., Git merge conflicts, E2B timeout stack traces). The MCP servers will execute operations securely and return natively formatted context payloads back to the LLMs.
 4. **Seamless Integration:** The architectural transition must strictly preserve the existing 8-cycle workflow from the user's perspective. No changes will be made to the fundamental user experience, state persistence (e.g., `project_state.json`), or out-of-scope external tools (like web search).
-5. **Secure Execution:** API keys and sensitive environment variables will be securely managed and routed only to the specific MCP subprocesses that require them, reducing authentication sprawl across the Python codebase.
+5. **Secure Execution:** API keys and sensitive environment variables will be securely managed and routed only to the specific MCP subprocesses that require them, reducing authentication sprawl across the Python codebase. A strict sanitization layer must strip injected variables (like `SUDO_COMMAND`) to prevent leakage during subprocess boot.
 
 ## System Architecture
 The new system architecture introduces three standalone Node.js MCP Server sidecars (`@modelcontextprotocol/server-github`, `@e2b/mcp-server`, `@google/jules-mcp`) communicating with the main Python application via the `stdio` transport layer.
 
-- **MCP Client Manager (`src/mcp_client_manager.py`):** A newly introduced core component responsible for the lifecycle of the MCP subprocesses. It securely loads credentials, manages concurrent connection pooling, and exposes standardized `get_tools()` interfaces to dynamic agent nodes.
-- **LangGraph Agents:** The existing LangGraph nodes (e.g., Coder, Auditor, Master Integrator, Sandbox Evaluator) will be heavily refactored. They will dynamically bind to the tools exposed by the MCP Client Manager using `.bind_tools()`.
-- **Explicit Boundary Management:** Write tools (e.g., `push_commit`, `create_pull_request`) are strictly constrained to write-enabled nodes like the Master Integrator. Read-only nodes (e.g., Architect) will only receive read-only tools.
+- **MCP Router Module (`src/mcp_router/`):** A modular package responsible for the lifecycle of the MCP subprocesses. It uses `pydantic-settings` to securely load credentials, manages concurrent connection pooling via `asynccontextmanager` to prevent zombie Node processes, and exposes cleanly filtered toolsets via Dependency Injection to dynamic agent nodes.
+- **LangGraph Agents:** The existing LangGraph nodes (e.g., Coder, Auditor, Master Integrator, Sandbox Evaluator) will be heavily refactored. They will dynamically bind to the isolated tool arrays injected by the workflow builder (`src/cli.py` or `src/workflow/`).
+- **Explicit Boundary Management (Mechanical Gates):** Write tools (e.g., `push_commit`, `create_pull_request`) are strictly constrained to write-enabled nodes like the Master Integrator. Read-only nodes (e.g., Architect) will only receive read-only tools, physically preventing hallucinated destructive actions.
 
 ```mermaid
 graph TD
@@ -33,10 +33,16 @@ graph TD
     end
 
     subgraph Core Python Backend [MCP Router via LangGraph]
-        MCM[MCP Client Manager]
-        MCM -->|stdio| G_MCP
-        MCM -->|stdio| E_MCP
-        MCM -->|stdio| J_MCP
+        subgraph MCP_Router [src/mcp_router/]
+            Config[Pydantic Settings]
+            Manager[Lifecycle Manager]
+            Tools[Tool Filtering]
+            Config --> Manager --> Tools
+        end
+
+        Manager -->|stdio| G_MCP
+        Manager -->|stdio| E_MCP
+        Manager -->|stdio| J_MCP
 
         subgraph Agents [LangGraph Nodes]
             C[Coder Agent]
@@ -45,7 +51,7 @@ graph TD
             SE[Sandbox Evaluator]
         end
 
-        Agents -->|bind_tools| MCM
+        Tools -->|Injects filtered toolsets| Agents
     end
 
     subgraph External APIs
@@ -59,80 +65,84 @@ graph TD
     J_MCP --> Jules
 
     TR -.-> Agents
-    TR -.-> MCM
+    TR -.-> Manager
 ```
 
 ## Design Architecture
-The file structure and component design reflect the transition from custom services to standard MCP integrations.
+The file structure and component design reflect the transition from custom services to standard, robust MCP integrations utilizing explicit modularity.
 
 ```text
 /
 ├── dev_documents/
 │   ├── ALL_SPEC.md
 │   ├── USER_TEST_SCENARIO.md
+│   ├── ARCHITECT_CRITIC_REVIEW.md
 │   └── system_prompts/
 │       ├── SYSTEM_ARCHITECTURE.md
 │       ├── CYCLE01/
 │       ├── CYCLE02/
 │       └── CYCLE03/
 ├── src/
-│   ├── cli.py
+│   ├── cli.py                 (REFACTORED: Initializes MCP context and injects tools into graph)
+│   ├── mcp_router/            (NEW MODULE: Replaces legacy monolithic managers)
+│   │   ├── __init__.py
+│   │   ├── schemas.py         (NEW: Pydantic Settings for API validation)
+│   │   ├── manager.py         (NEW: Async Context Manager for subprocesses)
+│   │   └── tools.py           (NEW: Mechanical gate tool filtering)
 │   ├── domain_models/
-│   │   ├── mcp_schema.py      (NEW: Defines MCP connection parameters & strict types)
 │   │   └── project_state.py   (EXISTING: Kept as-is for state persistence)
-│   ├── mcp_client_manager.py  (NEW: Lifecycle manager for MCP sidecars)
 │   ├── nodes/
-│   │   ├── architect.py       (REFACTORED: Binds to read-only GitHub MCP tools)
-│   │   ├── auditor.py         (REFACTORED: Binds to read-only tools)
-│   │   ├── coder.py           (REFACTORED: Binds to E2B and read-only GitHub MCP tools)
-│   │   ├── master_integrator.py (REFACTORED: Binds to GitHub write MCP tools)
-│   │   └── sandbox_evaluator.py (REFACTORED: Binds strictly to E2B MCP tools)
-│   └── templates/             (REFACTORED: System prompts updated to utilize tool calling natively)
+│   │   ├── architect.py       (REFACTORED: Receives injected read-only GitHub MCP tools)
+│   │   ├── auditor.py         (REFACTORED: Receives injected read-only tools)
+│   │   ├── coder.py           (REFACTORED: Receives injected E2B and GitHub read tools)
+│   │   ├── master_integrator.py (REFACTORED: Receives injected GitHub write MCP tools)
+│   │   └── sandbox_evaluator.py (REFACTORED: Receives strictly injected E2B MCP tools)
+│   └── templates/             (REFACTORED: System prompts updated to utilize native tool calling)
 ├── tests/
 │   ├── unit/
-│   │   └── test_mcp_client_manager.py
+│   │   └── test_mcp_router.py
 │   └── ac_cdd/
 │       └── integration/
 │           ├── test_mcp_node_integration.py
 │           └── test_end_to_end_workflow.py
-├── pyproject.toml
+├── pyproject.toml             (MODIFIED: Adds pydantic-settings, mcp, langchain-mcp-adapters)
 ├── Dockerfile                 (REFACTORED: Adds Node.js runtime and global MCP servers)
 └── docker-compose.yml
 ```
 
 ### Core Domain Pydantic Models Structure and Typing
-The existing `domain_models` will be extended with `mcp_schema.py`. This new schema file will define robust Pydantic models for configuration parameters required by the `McpClientManager`.
-- `McpServerConfig`: Validates environment variables (e.g., `GITHUB_PERSONAL_ACCESS_TOKEN`, `E2B_API_KEY`) and server commands (`npx`).
-- Existing objects like `CycleState` and `ProjectManifest` remain untouched, ensuring the state tracker does not require an overhaul. The new models integrate purely to configure the MCP environment, leaving business logic state strictly separated.
+The configuration module `src/mcp_router/schemas.py` utilizes `pydantic-settings` to robustly parse the `.env` file and validate state before subprocess execution.
+- `E2BMcpConfig`, `GitHubMcpConfig`, `JulesMcpConfig`: Subclasses of `BaseSettings` ensuring environment variables (e.g., `GITHUB_PERSONAL_ACCESS_TOKEN`, `E2B_API_KEY`) are present, failing immediately on application boot if they are missing or blank.
+- The existing objects like `CycleState` and `ProjectManifest` remain untouched, ensuring the state tracker does not require an overhaul. The new models integrate purely to configure the MCP environment, separating configuration concerns from business logic state.
 
 ## Implementation Plan
 The migration follows a strict strangler fig pattern, implemented over three specific cycles to ensure the stability of the 8-cycle workflow.
 
 - **CYCLE01: E2B Sandbox Isolation**
   - **Focus:** Low Impact, High Yield. Migrate sandbox evaluation and QA nodes to the `@e2b/mcp-server`.
-  - **Actions:** Update Dockerfile to include Node.js and `@e2b/mcp-server`. Implement the foundational `src/mcp_client_manager.py` targeting E2B. Refactor `sandbox_evaluator.py` and `qa.py` to bind E2B tools (`run_code`, `execute_command`). Deprecate legacy E2B services.
+  - **Actions:** Update Dockerfile to include Node.js and `@e2b/mcp-server`. Implement the foundational `src/mcp_router/` module targeting E2B. Implement strict subprocess lifecycle using `asynccontextmanager`. Refactor `sandbox_evaluator.py` and `qa.py` to accept injected E2B tools (`run_code`, `execute_command`). Deprecate legacy E2B services.
 
 - **CYCLE02: GitHub Read-Only Operations**
   - **Focus:** Medium Impact. Migrate context gathering and repository reads to `@modelcontextprotocol/server-github`.
-  - **Actions:** Add `@modelcontextprotocol/server-github` to the Docker environment. Extend `mcp_client_manager.py` to handle GitHub read connections. Refactor `architect.py`, `coder.py`, and `auditor.py` to use `get_file_content` natively. Remove prompt logic that manually asked the backend for file contents.
+  - **Actions:** Add `@modelcontextprotocol/server-github` to the Docker environment. Extend `schemas.py` and `manager.py` to handle GitHub read connections. Implement `tools.py` filtering logic. Refactor `architect.py`, `coder.py`, and `auditor.py` to natively use `get_file_content` via Dependency Injection. Remove prompt logic that manually asked the backend for file contents.
 
 - **CYCLE03: GitHub Write Operations & Jules Orchestration**
   - **Focus:** High Risk. Complete the migration by moving write-enabled Git operations and parallel agent sessions to the MCP paradigm.
-  - **Actions:** Add `@google/jules-mcp`. Refactor `master_integrator.py` to use GitHub write tools (`push_commit`, `create_pull_request`). Refactor `global_refactor.py` to orchestrate sessions via Jules MCP. Finally, delete the legacy `src/services/git/` and `src/services/jules/` directory trees entirely.
+  - **Actions:** Add `@google/jules-mcp`. Extend `schemas.py`. Refactor `tools.py` to isolate `push_commit` and `create_pull_request` strictly for `master_integrator.py`. Refactor `global_refactor.py` to orchestrate sessions via Jules MCP. Finally, delete the legacy `src/services/git/` and `src/services/jules/` directory trees entirely.
 
 ## Test Strategy
 
 ### CYCLE01
-- **Unit Testing:** Create `tests/unit/test_mcp_client_manager.py` to ensure the `MultiMCPClient` connects successfully to standard I/O streams without real network calls. Test the `StdioServerParameters` with mocked environments.
-- **Integration Testing:** Create `tests/ac_cdd/integration/test_mcp_node_integration.py` using dummy Node.js processes mimicking E2B schema.
-- **Side-Effect Management:** Run executions purely on mock stdio pipes. The real E2B server will be isolated in the sandbox environments.
+- **Unit Testing:** Create `tests/unit/test_mcp_router.py` to ensure `McpClientManager` sanitizes `os.environ` properly (dropping `SUDO_*` variables), correctly tears down subprocesses upon context exit, and correctly parses `pydantic-settings`.
+- **Integration Testing:** Create `tests/ac_cdd/integration/test_mcp_node_integration.py` using dummy Node.js processes mimicking the E2B schema.
+- **Side-Effect Management:** Run executions purely on mock stdio pipes. The real E2B server will be isolated in real sandbox environments during UAT.
 
 ### CYCLE02
-- **Unit Testing:** Verify tool schemas provided by the mock GitHub read-only server are accurately mapped to the LangGraph node states.
-- **Integration Testing:** Implement `test_mcp_github_read_fallback()` to simulate `get_file_content` failure (file not found) and assert that `architect.py` gracefully requests alternative context.
+- **Unit Testing:** Verify `tools.py` successfully filters the GitHub read-only toolset to ensure `push_commit` is absent.
+- **Integration Testing:** Implement `test_mcp_github_read_fallback()` simulating `get_file_content` failure (404) and asserting that `architect.py` gracefully recovers.
 - **Side-Effect Management:** Provide a local, temporary directory with dummy text files for the mock GitHub MCP to read, preventing it from touching the real repository.
 
 ### CYCLE03
-- **Unit Testing:** Test mechanical gates ensuring write permissions are strictly limited to `master_integrator.py` and reject attempts from `auditor.py`.
-- **Integration/E2E Testing:** Execute `test_mcp_jules_session_dispatch()` and `test_end_to_end_workflow.py` pointing the system to a dedicated, isolated test repository. Ensure PRs are successfully opened and sessions are managed cleanly.
-- **Side-Effect Management:** Target an explicit, standalone GitHub repository created solely for automated testing. Validate that environment variables are strictly filtered (e.g., dropping `SUDO_*` commands) to prevent API key leakage into logs.
+- **Unit Testing:** Test mechanical gates ensuring write tools are successfully injected only into `master_integrator.py`.
+- **Integration/E2E Testing:** Execute `test_mcp_jules_session_dispatch()` and `test_end_to_end_workflow.py` pointing the system to an isolated test repository. Ensure PRs are successfully opened and sessions are managed cleanly.
+- **Side-Effect Management:** Target an explicit, standalone GitHub repository created solely for automated testing. Validation of telemetry parsing across the graph bounds.

@@ -1,27 +1,29 @@
 # Cycle 02: GitHub Read-Only Operations
 
 ## Summary
-Cycle 02 focuses on migrating the context-gathering phase of the multi-agent workflow to the `@modelcontextprotocol/server-github` server. In the previous architecture, agents explicitly asked the custom Python backend for file contents by emitting custom JSON payloads, requiring dedicated parser wrappers. Now, the `architect.py`, `coder.py`, and `auditor.py` nodes will be provided read-only tools natively via `.bind_tools()`. This allows the LLM to autonomously explore the repository via standard function calling (`get_file_content`, `search_repositories`), vastly improving robustness and eliminating manual prompt instructions regarding backend communication.
+Cycle 02 focuses on migrating the context-gathering phase of the multi-agent workflow to the `@modelcontextprotocol/server-github` server. In the previous architecture, agents explicitly asked the custom Python backend for file contents by emitting custom JSON payloads, requiring dedicated parser wrappers. Now, the `architect.py`, `coder.py`, and `auditor.py` nodes will be provided injected, read-only tools natively via `.bind_tools()`. This allows the LLM to autonomously explore the repository via standard function calling (`get_file_content`, `search_repositories`), vastly improving robustness and eliminating manual prompt instructions regarding backend communication.
 
 ## System Architecture
 
 ```text
 /
 ├── src/
-│   ├── domain_models/
-│   │   └── **mcp_schema.py**      (MODIFIED: Adds GitHub read-only config types)
-│   ├── **mcp_client_manager.py**  (MODIFIED: Handles GitHub MCP connections)
+│   ├── cli.py                 (MODIFIED: Injects GitHub Read tools into the graph)
+│   ├── mcp_router/
+│   │   ├── **schemas.py**     (MODIFIED: Adds GitHubMcpConfig via BaseSettings)
+│   │   ├── **manager.py**     (MODIFIED: Handles GitHub MCP subprocess context)
+│   │   └── **tools.py**       (MODIFIED: Implements specific filtering logic for read tools)
 │   ├── nodes/
-│   │   ├── **architect.py**       (MODIFIED: Binds GitHub read-only tools)
-│   │   ├── **coder.py**           (MODIFIED: Binds GitHub read-only & E2B tools)
-│   │   └── **auditor.py**         (MODIFIED: Binds GitHub read-only tools)
+│   │   ├── **architect.py**   (MODIFIED: Receives injected GitHub read-only tools)
+│   │   ├── **coder.py**       (MODIFIED: Receives injected GitHub read-only & E2B tools)
+│   │   └── **auditor.py**     (MODIFIED: Receives injected GitHub read-only tools)
 │   ├── templates/
 │   │   ├── **ARCHITECT_INSTRUCTION.md** (MODIFIED: Removes manual backend file requests)
 │   │   ├── **CODER_INSTRUCTION.md**     (MODIFIED: Removes manual backend file requests)
 │   │   └── **AUDITOR_INSTRUCTION.md**   (MODIFIED: Removes manual backend file requests)
 ├── tests/
 │   ├── unit/
-│   │   └── **test_mcp_client_manager.py** (MODIFIED: Tests GitHub configs)
+│   │   └── **test_mcp_router.py** (MODIFIED: Tests GitHub configs and tool filtering)
 │   └── ac_cdd/
 │       └── integration/
 │           └── **test_mcp_github_read.py** (CREATED: Tests GitHub mock integrations)
@@ -29,38 +31,41 @@ Cycle 02 focuses on migrating the context-gathering phase of the multi-agent wor
 
 ## Design Architecture
 
-### Pydantic Schema Design: `mcp_schema.py`
-Extend the existing `mcp_schema.py` (created in Cycle 01) to support GitHub.
-- **`GitHubMcpConfig`**: A validated Pydantic model enforcing that the `GITHUB_PERSONAL_ACCESS_TOKEN` is present in the environment.
+### Pydantic Settings Design: `schemas.py`
+Extend `schemas.py` to securely configure the GitHub server.
+- **`GitHubMcpConfig`**: A validated subclass of `BaseSettings` enforcing `GITHUB_PERSONAL_ACCESS_TOKEN`.
 - **Invariants and Constraints**:
-  - `api_key` must match basic GitHub token patterns.
-  - `command` is set to `npx` with strict arguments `["-y", "@modelcontextprotocol/server-github"]`.
-- **Consumers**: `McpClientManager` consumes this configuration to instantiate the GitHub connections.
+  - `api_key` must match basic GitHub token string lengths/formats and must not be empty. Fail fast on instantiation.
+  - `command` is explicitly locked to `npx` with `["-y", "@modelcontextprotocol/server-github"]`.
 
-### Component Design: `mcp_client_manager.py`
-- Extend the manager to initialize the `@modelcontextprotocol/server-github` via a new async method `get_github_read_tools()`.
-- Explicitly map only read-capable tools (e.g., `get_file_content`, `search_repositories`, `get_issue`) to return to the `architect.py`, `coder.py`, and `auditor.py` nodes. Write tools must be strictly filtered out to prevent hallucinated changes at this stage.
+### Component Design: `manager.py` & `tools.py`
+- Update `McpClientManager` to asynchronously connect and terminate the GitHub client.
+- `tools.py` must expose `get_github_read_tools()`. This method retrieves the complete toolset from the client and physically filters it. It returns *only* non-destructive tools (`get_file_content`, `search_repositories`, `get_issue`). Any tools related to writing (e.g., `push_commit`) must be programmatically excluded before returning the array to prevent LLM hallucination and enforce a mechanical security gate.
 
 ## Implementation Approach
 
 1. **Schema and Config Update**:
-   - Update `src/domain_models/mcp_schema.py` to add `GitHubMcpConfig`.
+   - Update `src/mcp_router/schemas.py` to add `GitHubMcpConfig`.
 2. **Manager Extension**:
-   - Update `src/mcp_client_manager.py` to initialize the `@modelcontextprotocol/server-github` connection and implement `get_github_read_tools()` that returns only non-destructive reading capabilities.
-3. **Agent Node Refactoring**:
-   - Refactor `src/nodes/architect.py`, `src/nodes/coder.py`, and `src/nodes/auditor.py` to instantiate the `McpClientManager`, call `get_github_read_tools()`, and bind them via `.bind_tools()`.
-4. **Prompt Updates**:
-   - Update the system prompts (`ARCHITECT_INSTRUCTION.md`, `CODER_INSTRUCTION.md`, `AUDITOR_INSTRUCTION.md`) to instruct the LLMs to use the bound tools autonomously to fetch file contents, removing legacy JSON payload instructions. Add specific instructions to mitigate token exhaustion (e.g., reading specific line numbers or chunks when possible, though initial testing will rely on standard `get_file_content`).
+   - Update `src/mcp_router/manager.py` to handle the `@modelcontextprotocol/server-github` `stdio` connection alongside E2B. Ensure the context manager tears down both successfully.
+3. **Tool Filtering Implementation**:
+   - Update `src/mcp_router/tools.py` to implement `get_github_read_tools()`. Implement list comprehension filtering to explicitly block write tools.
+4. **App Initialization & Injection**:
+   - Update `src/cli.py` to fetch `github_read_tools` and pass them into the state graph configuration for `architect.py`, `coder.py`, and `auditor.py`.
+5. **Agent Node Refactoring**:
+   - Refactor `architect.py`, `coder.py`, and `auditor.py` closures to accept `github_read_tools` and bind them via `llm.bind_tools(github_read_tools)`.
+6. **Prompt Updates**:
+   - Update `ARCHITECT_INSTRUCTION.md`, `CODER_INSTRUCTION.md`, and `AUDITOR_INSTRUCTION.md` to instruct the LLMs to use the bound tools autonomously, removing legacy JSON payload instructions. Add explicit token mitigation directives (e.g., requesting specific line numbers when supported).
 
 ## Test Strategy
 
 ### Unit Testing Approach
-- **Objective**: Ensure `McpClientManager` initializes the GitHub connection correctly and correctly filters out write tools.
-- **Implementation**: Update `tests/unit/test_mcp_client_manager.py`. Mock the `StdioServerParameters` and assert that `get_github_read_tools()` only returns functions like `get_file_content` and explicitly excludes tools like `push_commit`. Test the validation of `GitHubMcpConfig`.
+- **Objective**: Ensure the `mcp_router` initializes the GitHub connection securely and `tools.py` successfully filters write capabilities.
+- **Implementation**: Update `tests/unit/test_mcp_router.py`. Validate `GitHubMcpConfig`. Mock the tool response from a dummy `MultiServerMCPClient` containing both `get_file_content` and `push_commit`. Assert that `get_github_read_tools()` successfully isolates and returns *only* `get_file_content`.
 
 ### Integration Testing Approach
-- **Objective**: Verify that LangGraph nodes correctly bind GitHub read tools and that context generation gracefully handles read failures.
-- **Implementation**: Create `tests/ac_cdd/integration/test_mcp_github_read.py`. This test will implement a lightweight, dummy Node.js script mimicking the `@modelcontextprotocol/server-github` interface.
+- **Objective**: Verify that LangGraph nodes correctly utilize the injected read tools and handle connection/file failures cleanly.
+- **Implementation**: Create `tests/ac_cdd/integration/test_mcp_github_read.py`. This test relies on a mocked Node.js script mimicking the `@modelcontextprotocol/server-github` interface.
 - **Tests**:
-  - `test_architect_get_file_content`: Ensures that the `architect` node natively uses `get_file_content` via a `ToolCall` and successfully processes the mocked file content returned by the server.
-  - `test_mcp_github_read_fallback`: Simulates a `file not found` error returned by the mock server. Verifies that the `architect.py` node correctly processes the error string and requests alternative context without crashing the LangGraph execution.
+  - `test_architect_get_file_content`: Ensures `architect` natively emits a `ToolCall` for `get_file_content` and successfully processes the mocked text returned by the dummy script.
+  - `test_mcp_github_read_fallback`: Simulates a `file not found` standard MCP error string returned by the mock server. Verifies the `architect.py` node traps the string, avoids JSON parsing crashes, and gracefully requests alternative context.
