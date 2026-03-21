@@ -1,7 +1,9 @@
 import base64
+from collections.abc import Sequence
 
 import anyio
 import litellm
+from langchain_core.tools import BaseTool
 from pydantic import ValidationError
 
 from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
@@ -59,12 +61,13 @@ class LLMReviewer:
 
         return None
 
-    async def review_code(
+    async def review_code(  # noqa: C901, PLR0912, PLR0915
         self,
         target_files: dict[str, str],
         context_docs: dict[str, str],
         instruction: str,
         model: str,
+        e2b_tools: Sequence[BaseTool] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -83,28 +86,95 @@ class LLMReviewer:
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
 
+        # Convert Langchain tools to litellm format if present
+        tools_param = None
+        if e2b_tools:
+            tools_param = []
+            for tool in e2b_tools:
+                tools_param.append({
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
+                    }
+                })
+
         # Retry logic (up to 2 retries, total 3 attempts)
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are an automated code reviewer. You must strictly follow the "
-                                "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                                "MAXIMUM of 10 issues to prevent excessively large JSON generation."
-                            ),
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.0,  # Deterministic output for reviews
-                    max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
-                )
+                messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an automated code reviewer. You must strictly follow the "
+                            "provided instructions and only review the target code. You MUST return valid JSON. "
+                            "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
+                            "MAXIMUM of 10 issues to prevent excessively large JSON generation."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ]
 
-                content_str = response.choices[0].message.content
+                # Tool Loop
+                MAX_TOOL_CALLS = 5
+                for _ in range(MAX_TOOL_CALLS):
+                    kwargs = {}
+                    if tools_param:
+                        kwargs["tools"] = tools_param
+
+                    response = await litellm.acompletion(
+                        model=model,
+                        messages=messages,
+                        temperature=0.0,
+                        max_tokens=8192,
+                        **kwargs,
+                    )
+
+                    message = response.choices[0].message
+                    if hasattr(message, "model_dump"):
+                        message_dict = message.model_dump()
+                    elif hasattr(message, "to_dict"):
+                        message_dict = message.to_dict()
+                    elif isinstance(message, dict):
+                        message_dict = message
+                    else:
+                        message_dict = {"role": "assistant", "content": str(message.content)}
+                        if getattr(message, "tool_calls", None):
+                            message_dict["tool_calls"] = message.tool_calls
+
+                    # Some litellm responses drop the content key if it's null, which breaks subsequent calls
+                    if "content" not in message_dict or message_dict["content"] is None:
+                        message_dict["content"] = ""
+
+                    messages.append(message_dict)
+
+                    if not message_dict.get("tool_calls"):
+                        break
+
+                    for tool_call in message_dict["tool_calls"]:
+                        func_name = tool_call["function"]["name"]
+                        import json
+                        args = json.loads(tool_call["function"]["arguments"])
+
+                        tool_result = f"Error: Tool {func_name} not found"
+                        if e2b_tools:
+                            tool = next((t for t in e2b_tools if t.name == func_name), None)
+                            if tool:
+                                try:
+                                    logger.info(f"LLMReviewer executing tool {func_name}")
+                                    tool_result = str(await tool.ainvoke(args))
+                                except Exception as err:
+                                    tool_result = f"Error executing tool {func_name}: {err}"
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call["id"],
+                            "name": func_name,
+                            "content": tool_result
+                        })
+
+                content_str = str(messages[-1].get("content", ""))
 
                 # Parse the response safely into our robust Pydantic model
                 report = AuditorReport.model_validate_json(content_str)
@@ -118,11 +188,12 @@ class LLMReviewer:
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
 
-    async def diagnose_uat_failure(
+    async def diagnose_uat_failure(  # noqa: C901, PLR0912, PLR0915
         self,
         uat_state: UatExecutionState,
         instruction: str,
         model: str,
+        e2b_tools: Sequence[BaseTool] | None = None,
     ) -> FixPlanSchema:
         """
         Stateless diagnostic outer loop. Analyzes UAT execution logs and Multi-Modal artifacts
@@ -167,23 +238,94 @@ class LLMReviewer:
             except Exception as e:
                 logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
 
+        # Convert Langchain tools to litellm format if present
+        tools_param = None
+        if e2b_tools:
+            tools_param = []
+            for tool in e2b_tools:
+                tools_param.append({
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
+                    }
+                })
+
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
-                        },
-                        {"role": "user", "content": content_parts},
-                    ],
-                    response_format=FixPlanSchema,
-                    temperature=0.0,
-                    max_tokens=8192,
-                )
+                messages = [
+                    {
+                        "role": "system",
+                        "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
+                    },
+                    {"role": "user", "content": content_parts},
+                ]
 
-                content_str = response.choices[0].message.content
+                # Tool Loop
+                MAX_TOOL_CALLS = 5
+                for _ in range(MAX_TOOL_CALLS):
+                    kwargs = {}
+                    if tools_param:
+                        kwargs["tools"] = tools_param
+
+                    response = await litellm.acompletion(
+                        model=model,
+                        messages=messages,
+                        response_format=FixPlanSchema,
+                        temperature=0.0,
+                        max_tokens=8192,
+                        **kwargs,
+                    )
+
+                    message = response.choices[0].message
+
+                    # litellm structural normalization
+                    if hasattr(message, "model_dump"):
+                        message_dict = message.model_dump()
+                    elif hasattr(message, "to_dict"):
+                        message_dict = message.to_dict()
+                    elif isinstance(message, dict):
+                        message_dict = message
+                    else:
+                        message_dict = {"role": "assistant", "content": str(message.content)}
+                        if getattr(message, "tool_calls", None):
+                            message_dict["tool_calls"] = message.tool_calls
+
+                    if "content" not in message_dict or message_dict["content"] is None:
+                        message_dict["content"] = ""
+
+                    messages.append(message_dict)
+
+                    if not message_dict.get("tool_calls"):
+                        break
+
+                    for tool_call in message_dict["tool_calls"]:
+                        func_name = tool_call["function"]["name"]
+                        import json
+                        args = json.loads(tool_call["function"]["arguments"])
+
+                        tool_result = f"Error: Tool {func_name} not found"
+                        if e2b_tools:
+                            tool = next((t for t in e2b_tools if t.name == func_name), None)
+                            if tool:
+                                try:
+                                    logger.info(f"LLMReviewer executing tool {func_name}")
+                                    tool_result = str(await tool.ainvoke(args))
+                                except Exception as err:
+                                    tool_result = f"Error executing tool {func_name}: {err}"
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call["id"],
+                            "name": func_name,
+                            "content": tool_result
+                        })
+
+                content_str = str(messages[-1].get("content", ""))
+
+                # Because we might have mixed text with JSON or the model ignored response_format
+                # we just parse the resulting JSON string
                 if not content_str:
                     pass  # We'll just try again, it's inside the loop
                 else:

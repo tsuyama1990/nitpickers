@@ -1,9 +1,11 @@
 import asyncio
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
@@ -27,14 +29,14 @@ console = Console()
 
 
 class WorkflowService:
-    def __init__(self, services: ServiceContainer | None = None) -> None:
+    def __init__(self, services: ServiceContainer | None = None, e2b_tools: "Sequence[BaseTool] | None" = None) -> None:
         self.services = services or ServiceContainer.default()
-        from src.sandbox import SandboxRunner
 
         self.builder = GraphBuilder(
             self.services,
-            SandboxRunner(),
+            None,
             self.services.jules if self.services.jules else JulesClient(),
+            e2b_tools=e2b_tools,
         )
         self.git = GitManager()
 
@@ -134,8 +136,18 @@ class WorkflowService:
         start_iter: int,
         project_session_id: str | None,
         parallel: bool = False,
+        e2b_tools: "Sequence[BaseTool] | None" = None,
     ) -> None:
         self.verify_environment_and_observability()
+
+        # If tools are passed in at runtime, override the builder
+        if e2b_tools:
+            self.builder = GraphBuilder(
+                self.services,
+                None,
+                self.services.jules if self.services.jules else JulesClient(),
+                e2b_tools=e2b_tools,
+            )
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":

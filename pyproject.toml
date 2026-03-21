@@ -26,6 +26,8 @@ dependencies = [
     "mypy>=1.19.0",
     "pydantic-ai-slim[anthropic]>=1.60.0",
     "anthropic>=0.86.0",
+    "mcp>=1.26.0",
+    "langchain-mcp-adapters>=0.2.2",
 ]
 
 [tool.uv]

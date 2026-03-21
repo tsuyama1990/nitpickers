@@ -13,6 +13,7 @@ Your job is to audit the **Marimo Tutorial** (`tutorials/UAT_AND_TUTORIAL.py`) g
 
 ## Scope Rules
 - ✅ **REVIEW_PASSED** ONLY if the tutorial is **PERFECT**:
+    - You MUST execute the tutorial code using the `run_code` or `execute_command` MCP tool to verify it runs without errors.
     - Runs from top to bottom without errors (logically).
     - Explanation text (markdown cells in Marimo) is clear and helpful.
     - Code matches the API of `src/`.
