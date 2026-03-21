@@ -31,7 +31,7 @@ def test_e2b_config_success() -> None:
 
 
 def test_mcp_client_manager_sanitization() -> None:
-    # Test that explicitly safe keys are kept while dangerous or unrelated keys are dropped based on whitelisting/blacklisting.
+    # Test that explicitly safe keys are kept while dangerous keys are dropped based on blacklisting.
     test_env = {
         "PATH": "/usr/bin:/bin",
         "NORMAL_VAR": "value",
@@ -46,11 +46,11 @@ def test_mcp_client_manager_sanitization() -> None:
         sanitized = manager._sanitize_environment()
 
         assert "PATH" in sanitized
-        assert "NORMAL_VAR" not in sanitized
+        assert "NORMAL_VAR" in sanitized
         assert "SUDO_COMMAND" not in sanitized
         assert "SUDO_USER" not in sanitized
         assert "OPENAI_API_KEY" in sanitized
-        assert "GITHUB_PERSONAL_ACCESS_TOKEN" in sanitized
+        assert "GITHUB_PERSONAL_ACCESS_TOKEN" not in sanitized
 
 
 @pytest.mark.asyncio

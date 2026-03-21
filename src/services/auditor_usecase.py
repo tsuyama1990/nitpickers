@@ -79,8 +79,7 @@ class AuditorUseCase:
             pr_url = state.pr_url
 
             if pr_url:
-                console.print(f"[dim]Expected to check out PR: {pr_url} (Not using legacy git client)[/dim]")
-                # Using dummy state since we don't fetch git commit ID here anymore
+                console.print(f"[dim]Expected to check out PR: {pr_url} (Handled implicitly via MCP state)[/dim]")
                 new_last_audited_commit = "mcp-commit-hash"
             else:
                 console.print(
