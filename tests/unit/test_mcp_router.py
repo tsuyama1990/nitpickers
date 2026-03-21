@@ -12,19 +12,20 @@ def test_e2b_config_validation() -> None:
     # Test that E2bMcpConfig raises an error if E2B_API_KEY is missing
     with patch.dict(os.environ, clear=True):
         with pytest.raises(ValidationError) as exc:
-            E2bMcpConfig()
+            E2bMcpConfig()  # type: ignore[call-arg]
         assert "E2B_API_KEY" in str(exc.value)
 
 
 def test_e2b_config_success() -> None:
     # Test valid configuration
-    with patch.dict(os.environ, {"E2B_API_KEY": "valid_key"}):
-        config = E2bMcpConfig()
-        params = config.get_stdio_parameters()
-        assert params.command == "npx"
-        assert params.args == ["-y", "@e2b/mcp-server"]
-        assert params.env is not None
-        assert params.env["E2B_API_KEY"] == "valid_key"
+    with patch.dict(os.environ, {"E2B_API_KEY": "e2b_valid_key123"}):
+        config = E2bMcpConfig()  # type: ignore[call-arg]
+        params = config.get_connection_config()
+        e2b = params["e2b"]
+        assert e2b["command"] == "npx"
+        assert e2b["args"] == ["-y", "@e2b/mcp-server"]
+        assert e2b["env"] is not None
+        assert e2b["env"]["E2B_API_KEY"] == "e2b_valid_key123"
 
 
 def test_mcp_client_manager_sanitization() -> None:
@@ -47,7 +48,7 @@ def test_mcp_client_manager_sanitization() -> None:
 @pytest.mark.asyncio
 async def test_mcp_client_manager_context() -> None:
     # Test that the context manager yields a client with correct parameters
-    with patch.dict(os.environ, {"E2B_API_KEY": "test_key", "SUDO_CMD": "secret"}):
+    with patch.dict(os.environ, {"E2B_API_KEY": "e2b_test_key123", "SUDO_CMD": "secret"}):
         manager = McpClientManager()
 
         # We mock the MultiServerMCPClient to avoid actually starting node processes
@@ -62,4 +63,4 @@ async def test_mcp_client_manager_context() -> None:
                 e2b_config = call_args["e2b"]
                 assert e2b_config["command"] == "npx"
                 assert "SUDO_CMD" not in e2b_config["env"]
-                assert e2b_config["env"]["E2B_API_KEY"] == "test_key"
+                assert e2b_config["env"]["E2B_API_KEY"] == "e2b_test_key123"

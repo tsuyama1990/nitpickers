@@ -59,12 +59,25 @@ class SandboxEvaluatorNodes:
             test_str = " ".join(test_cmd)
 
             try:
-                # We directly invoke the execute_command tool to run bash commands
-                exec_tool = next(
-                    (t for t in self.e2b_tools if t.name in {"execute_command", "run_command"}), None
-                )
+                # Dynamically discover the tool that likely executes commands by looking for parameters
+                exec_tool = None
+                for tool in self.e2b_tools:
+                    if tool.name in {"execute_command", "run_command"}:
+                        exec_tool = tool
+                        break
+
+                # Fallback to schema heuristic if exact name not matched
                 if not exec_tool:
-                    msg = "execute_command tool not found in e2b_tools"
+                    for tool in self.e2b_tools:
+                        if getattr(tool, "args_schema", None):
+                            schema = tool.args_schema.schema()
+                            props = schema.get("properties", {})
+                            if "command" in props or "commandLine" in props:
+                                exec_tool = tool
+                                break
+
+                if not exec_tool:
+                    msg = "Tool with a command schema could not be discovered among e2b_tools."
                     raise ValueError(msg)  # noqa: TRY301
 
                 results = {}
@@ -82,8 +95,14 @@ class SandboxEvaluatorNodes:
                         if props:
                             arg_name = next(iter(props.keys()))
 
+                    timeout_occurred = False
                     try:
-                        tool_result = await exec_tool.ainvoke({arg_name: cmd_str})
+                        import asyncio
+                        # Using wait_for to prevent infinite hanging
+                        tool_result = await asyncio.wait_for(exec_tool.ainvoke({arg_name: cmd_str}), timeout=settings.sandbox.timeout)
+                    except TimeoutError:
+                        tool_result = f"Error: Command timed out after {settings.sandbox.timeout} seconds"
+                        timeout_occurred = True
                     except Exception as invoke_err:
                         tool_result = str(invoke_err)
 
@@ -103,7 +122,7 @@ class SandboxEvaluatorNodes:
                         exit_code=code,
                         stdout=stdout,
                         stderr=stderr,
-                        timeout_occurred=False,
+                        timeout_occurred=timeout_occurred,
                     )
 
             except Exception as e:

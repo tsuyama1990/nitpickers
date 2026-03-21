@@ -6,111 +6,11 @@ plugins: langsmith-0.7.22, base-url-2.1.0, cov-7.0.0, playwright-0.7.2, asyncio-
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
 collected 8 items
 
-tests/unit/test_mcp_router.py .FFF                                       [ 50%]
+tests/unit/test_mcp_router.py ..F.                                       [ 50%]
 tests/unit/test_sandbox_evaluator.py ..                                  [ 75%]
-tests/ac_cdd/integration/test_mcp_node_integration.py ..                 [100%]
+tests/ac_cdd/integration/test_mcp_node_integration.py FF                 [100%]
 
 =================================== FAILURES ===================================
-___________________________ test_e2b_config_success ____________________________
-
-    def test_e2b_config_success() -> None:
-        # Test valid configuration
-        with patch.dict(os.environ, {"E2B_API_KEY": "valid_key"}):
->           config = E2bMcpConfig()
-                     ^^^^^^^^^^^^^^
-
-tests/unit/test_mcp_router.py:22:
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-__pydantic_self__ = E2bMcpConfig(), _case_sensitive = None
-_nested_model_default_partial_update = None, _env_prefix = None
-_env_prefix_target = None, _env_file = PosixPath('.'), _env_file_encoding = None
-_env_ignore_empty = None, _env_nested_delimiter = None
-_env_nested_max_split = None, _env_parse_none_str = None
-_env_parse_enums = None, _cli_prog_name = None, _cli_parse_args = None
-_cli_settings_source = None, _cli_parse_none_str = None
-_cli_hide_none_type = None, _cli_avoid_json = None, _cli_enforce_required = None
-_cli_use_class_docs_for_groups = None, _cli_exit_on_error = None
-_cli_prefix = None, _cli_flag_prefix_char = None, _cli_implicit_flags = None
-_cli_ignore_unknown_args = None, _cli_kebab_case = None, _cli_shortcuts = None
-_secrets_dir = None, _build_sources = None, values = {}
-sources = (InitSettingsSource(init_kwargs={}), EnvSettingsSource(env_nested_delimiter=None, env_prefix_len=0), DotEnvSettingsSou...efix_len=0), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
-init_kwargs = {}
-
-    def __init__(
-        __pydantic_self__,
-        _case_sensitive: bool | None = None,
-        _nested_model_default_partial_update: bool | None = None,
-        _env_prefix: str | None = None,
-        _env_prefix_target: EnvPrefixTarget | None = None,
-        _env_file: DotenvType | None = ENV_FILE_SENTINEL,
-        _env_file_encoding: str | None = None,
-        _env_ignore_empty: bool | None = None,
-        _env_nested_delimiter: str | None = None,
-        _env_nested_max_split: int | None = None,
-        _env_parse_none_str: str | None = None,
-        _env_parse_enums: bool | None = None,
-        _cli_prog_name: str | None = None,
-        _cli_parse_args: bool | list[str] | tuple[str, ...] | None = None,
-        _cli_settings_source: CliSettingsSource[Any] | None = None,
-        _cli_parse_none_str: str | None = None,
-        _cli_hide_none_type: bool | None = None,
-        _cli_avoid_json: bool | None = None,
-        _cli_enforce_required: bool | None = None,
-        _cli_use_class_docs_for_groups: bool | None = None,
-        _cli_exit_on_error: bool | None = None,
-        _cli_prefix: str | None = None,
-        _cli_flag_prefix_char: str | None = None,
-        _cli_implicit_flags: bool | Literal['dual', 'toggle'] | None = None,
-        _cli_ignore_unknown_args: bool | None = None,
-        _cli_kebab_case: bool | Literal['all', 'no_enums'] | None = None,
-        _cli_shortcuts: Mapping[str, str | list[str]] | None = None,
-        _secrets_dir: PathType | None = None,
-        _build_sources: tuple[tuple[PydanticBaseSettingsSource, ...], dict[str, Any]] | None = None,
-        **values: Any,
-    ) -> None:
-        sources, init_kwargs = (
-            _build_sources
-            if _build_sources is not None
-            else __pydantic_self__.__class__._settings_init_sources(
-                _case_sensitive=_case_sensitive,
-                _nested_model_default_partial_update=_nested_model_default_partial_update,
-                _env_prefix=_env_prefix,
-                _env_prefix_target=_env_prefix_target,
-                _env_file=_env_file,
-                _env_file_encoding=_env_file_encoding,
-                _env_ignore_empty=_env_ignore_empty,
-                _env_nested_delimiter=_env_nested_delimiter,
-                _env_nested_max_split=_env_nested_max_split,
-                _env_parse_none_str=_env_parse_none_str,
-                _env_parse_enums=_env_parse_enums,
-                _cli_prog_name=_cli_prog_name,
-                _cli_parse_args=_cli_parse_args,
-                _cli_settings_source=_cli_settings_source,
-                _cli_parse_none_str=_cli_parse_none_str,
-                _cli_hide_none_type=_cli_hide_none_type,
-                _cli_avoid_json=_cli_avoid_json,
-                _cli_enforce_required=_cli_enforce_required,
-                _cli_use_class_docs_for_groups=_cli_use_class_docs_for_groups,
-                _cli_exit_on_error=_cli_exit_on_error,
-                _cli_prefix=_cli_prefix,
-                _cli_flag_prefix_char=_cli_flag_prefix_char,
-                _cli_implicit_flags=_cli_implicit_flags,
-                _cli_ignore_unknown_args=_cli_ignore_unknown_args,
-                _cli_kebab_case=_cli_kebab_case,
-                _cli_shortcuts=_cli_shortcuts,
-                _secrets_dir=_secrets_dir,
-                **values,
-            )
-        )
-
->       super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
-E       pydantic_core._pydantic_core.ValidationError: 1 validation error for E2bMcpConfig
-E       E2B_API_KEY
-E         String should have at least 10 characters [type=string_too_short, input_value='valid_key', input_type=str]
-E           For further information visit https://errors.pydantic.dev/2.11/v/string_too_short
-
-.venv/lib/python3.12/site-packages/pydantic_settings/main.py:242: ValidationError
 _____________________ test_mcp_client_manager_sanitization _____________________
 
     def test_mcp_client_manager_sanitization() -> None:
@@ -128,119 +28,145 @@ _____________________ test_mcp_client_manager_sanitization _____________________
 >           assert "NORMAL_VAR" in sanitized
 E           AssertionError: assert 'NORMAL_VAR' in {}
 
-tests/unit/test_mcp_router.py:42: AssertionError
-_______________________ test_mcp_client_manager_context ________________________
+tests/unit/test_mcp_router.py:43: AssertionError
+_____________________ test_sandbox_evaluator_tool_binding ______________________
 
     @pytest.mark.asyncio
-    async def test_mcp_client_manager_context() -> None:
-        # Test that the context manager yields a client with correct parameters
-        with patch.dict(os.environ, {"E2B_API_KEY": "test_key", "SUDO_CMD": "secret"}):
-            manager = McpClientManager()
+    async def test_sandbox_evaluator_tool_binding() -> None:
+        # Simulates ensuring the LLM or tool executor works with e2b tools correctly
+        state = CycleState(cycle_id="01")
 
-            # We mock the MultiServerMCPClient to avoid actually starting node processes
-            with patch("src.mcp_router.manager.MultiServerMCPClient") as mock_client_cls:
->               async with manager.get_client() as _client:
-                           ^^^^^^^^^^^^^^^^^^^^
+        # We provide a mock tool that simulates a successful run_code/execute_command tool
+        tool = DummyE2bTool()
+>       tool.ainvoke = AsyncMock(return_value="Success")  # type: ignore
+        ^^^^^^^^^^^^
 
-tests/unit/test_mcp_router.py:55:
+tests/ac_cdd/integration/test_mcp_node_integration.py:29:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-/home/jules/.pyenv/versions/3.12.13/lib/python3.12/contextlib.py:210: in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-src/mcp_router/manager.py:35: in get_client
-    config = E2bMcpConfig()  # type: ignore[call-arg]
-             ^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pydantic/main.py:997: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-__pydantic_self__ = E2bMcpConfig(), _case_sensitive = None
-_nested_model_default_partial_update = None, _env_prefix = None
-_env_prefix_target = None, _env_file = PosixPath('.'), _env_file_encoding = None
-_env_ignore_empty = None, _env_nested_delimiter = None
-_env_nested_max_split = None, _env_parse_none_str = None
-_env_parse_enums = None, _cli_prog_name = None, _cli_parse_args = None
-_cli_settings_source = None, _cli_parse_none_str = None
-_cli_hide_none_type = None, _cli_avoid_json = None, _cli_enforce_required = None
-_cli_use_class_docs_for_groups = None, _cli_exit_on_error = None
-_cli_prefix = None, _cli_flag_prefix_char = None, _cli_implicit_flags = None
-_cli_ignore_unknown_args = None, _cli_kebab_case = None, _cli_shortcuts = None
-_secrets_dir = None, _build_sources = None, values = {}
-sources = (InitSettingsSource(init_kwargs={}), EnvSettingsSource(env_nested_delimiter=None, env_prefix_len=0), DotEnvSettingsSou...efix_len=0), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
-init_kwargs = {}
+self = DummyE2bTool(), name = 'ainvoke'
+value = <AsyncMock id='139901931836752'>
 
-    def __init__(
-        __pydantic_self__,
-        _case_sensitive: bool | None = None,
-        _nested_model_default_partial_update: bool | None = None,
-        _env_prefix: str | None = None,
-        _env_prefix_target: EnvPrefixTarget | None = None,
-        _env_file: DotenvType | None = ENV_FILE_SENTINEL,
-        _env_file_encoding: str | None = None,
-        _env_ignore_empty: bool | None = None,
-        _env_nested_delimiter: str | None = None,
-        _env_nested_max_split: int | None = None,
-        _env_parse_none_str: str | None = None,
-        _env_parse_enums: bool | None = None,
-        _cli_prog_name: str | None = None,
-        _cli_parse_args: bool | list[str] | tuple[str, ...] | None = None,
-        _cli_settings_source: CliSettingsSource[Any] | None = None,
-        _cli_parse_none_str: str | None = None,
-        _cli_hide_none_type: bool | None = None,
-        _cli_avoid_json: bool | None = None,
-        _cli_enforce_required: bool | None = None,
-        _cli_use_class_docs_for_groups: bool | None = None,
-        _cli_exit_on_error: bool | None = None,
-        _cli_prefix: str | None = None,
-        _cli_flag_prefix_char: str | None = None,
-        _cli_implicit_flags: bool | Literal['dual', 'toggle'] | None = None,
-        _cli_ignore_unknown_args: bool | None = None,
-        _cli_kebab_case: bool | Literal['all', 'no_enums'] | None = None,
-        _cli_shortcuts: Mapping[str, str | list[str]] | None = None,
-        _secrets_dir: PathType | None = None,
-        _build_sources: tuple[tuple[PydanticBaseSettingsSource, ...], dict[str, Any]] | None = None,
-        **values: Any,
-    ) -> None:
-        sources, init_kwargs = (
-            _build_sources
-            if _build_sources is not None
-            else __pydantic_self__.__class__._settings_init_sources(
-                _case_sensitive=_case_sensitive,
-                _nested_model_default_partial_update=_nested_model_default_partial_update,
-                _env_prefix=_env_prefix,
-                _env_prefix_target=_env_prefix_target,
-                _env_file=_env_file,
-                _env_file_encoding=_env_file_encoding,
-                _env_ignore_empty=_env_ignore_empty,
-                _env_nested_delimiter=_env_nested_delimiter,
-                _env_nested_max_split=_env_nested_max_split,
-                _env_parse_none_str=_env_parse_none_str,
-                _env_parse_enums=_env_parse_enums,
-                _cli_prog_name=_cli_prog_name,
-                _cli_parse_args=_cli_parse_args,
-                _cli_settings_source=_cli_settings_source,
-                _cli_parse_none_str=_cli_parse_none_str,
-                _cli_hide_none_type=_cli_hide_none_type,
-                _cli_avoid_json=_cli_avoid_json,
-                _cli_enforce_required=_cli_enforce_required,
-                _cli_use_class_docs_for_groups=_cli_use_class_docs_for_groups,
-                _cli_exit_on_error=_cli_exit_on_error,
-                _cli_prefix=_cli_prefix,
-                _cli_flag_prefix_char=_cli_flag_prefix_char,
-                _cli_implicit_flags=_cli_implicit_flags,
-                _cli_ignore_unknown_args=_cli_ignore_unknown_args,
-                _cli_kebab_case=_cli_kebab_case,
-                _cli_shortcuts=_cli_shortcuts,
-                _secrets_dir=_secrets_dir,
-                **values,
+    def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
             )
-        )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
 
->       super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
-E       pydantic_core._pydantic_core.ValidationError: 1 validation error for E2bMcpConfig
-E       E2B_API_KEY
-E         String should have at least 10 characters [type=string_too_short, input_value='test_key', input_type=str]
-E           For further information visit https://errors.pydantic.dev/2.11/v/string_too_short
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
 
-.venv/lib/python3.12/site-packages/pydantic_settings/main.py:242: ValidationError
+        _check_frozen(cls, name, value)
+
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+>               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "DummyE2bTool" object has no field "ainvoke"
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:1044: ValueError
+_________________________ test_mcp_e2b_error_handling __________________________
+
+    @pytest.mark.asyncio
+    async def test_mcp_e2b_error_handling() -> None:
+        # Simulates a stderr failure returning from the node script / dummy tool
+        state = CycleState(cycle_id="01")
+
+        # We provide a mock tool that simulates an error
+        tool = DummyE2bTool()
+>       tool.ainvoke = AsyncMock(return_value="Error: Command failed with exit code: 1")  # type: ignore
+        ^^^^^^^^^^^^
+
+tests/ac_cdd/integration/test_mcp_node_integration.py:49:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/pydantic/main.py:997: in __setattr__
+    elif (setattr_handler := self._setattr_handler(name, value)) is not None:
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = DummyE2bTool(), name = 'ainvoke'
+value = <AsyncMock id='139901931846112'>
+
+    def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
+        """Get a handler for setting an attribute on the model instance.
+
+        Returns:
+            A handler for setting an attribute on the model instance. Used for memoization of the handler.
+            Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`
+            Returns `None` when memoization is not safe, then the attribute is set directly.
+        """
+        cls = self.__class__
+        if name in cls.__class_vars__:
+            raise AttributeError(
+                f'{name!r} is a ClassVar of `{cls.__name__}` and cannot be set on an instance. '
+                f'If you want to set a value on the class, use `{cls.__name__}.{name} = value`.'
+            )
+        elif not _fields.is_valid_field_name(name):
+            if (attribute := cls.__private_attributes__.get(name)) is not None:
+                if hasattr(attribute, '__set__'):
+                    return lambda model, _name, val: attribute.__set__(model, val)
+                else:
+                    return _SIMPLE_SETATTR_HANDLERS['private']
+            else:
+                _object_setattr(self, name, value)
+                return None  # Can not return memoized handler with possibly freeform attr names
+
+        attr = getattr(cls, name, None)
+        # NOTE: We currently special case properties and `cached_property`, but we might need
+        # to generalize this to all data/non-data descriptors at some point. For non-data descriptors
+        # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
+        # to the instance's `__dict__`, but other non-data descriptors might do things differently.
+        if isinstance(attr, cached_property):
+            return _SIMPLE_SETATTR_HANDLERS['cached_property']
+
+        _check_frozen(cls, name, value)
+
+        # We allow properties to be set only on non frozen models for now (to match dataclasses).
+        # This can be changed if it ever gets requested.
+        if isinstance(attr, property):
+            return lambda model, _name, val: attr.__set__(model, val)
+        elif cls.model_config.get('validate_assignment'):
+            return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+        elif name not in cls.__pydantic_fields__:
+            if cls.model_config.get('extra') != 'allow':
+                # TODO - matching error
+>               raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
+E               ValueError: "DummyE2bTool" object has no field "ainvoke"
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:1044: ValueError
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.13-final-0 _______________
 
@@ -277,8 +203,8 @@ src/jules_session_graph.py                            45     45     0%   3-111
 src/jules_session_nodes.py                           328    328     0%   3-624
 src/jules_session_state.py                            46     46     0%   3-78
 src/mcp_router/__init__.py                             2      0   100%
-src/mcp_router/manager.py                             37     20    46%   29, 38-70
-src/mcp_router/schemas.py                             11      3    73%   21-24
+src/mcp_router/manager.py                             37      8    78%   50-60
+src/mcp_router/schemas.py                             12      0   100%
 src/mcp_router/tools.py                                7      3    57%   10-12
 src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
 src/nodes/__init__.py                                 10      0   100%
@@ -292,7 +218,7 @@ src/nodes/global_refactor.py                          18     18     0%   1-35
 src/nodes/master_integrator.py                        20     20     0%   1-39
 src/nodes/qa.py                                       18     10    44%   11-14, 17-20, 23-26
 src/nodes/routers.py                                  68     57    16%   7-18, 22-27, 31, 35-46, 50-63, 67-70, 74-79, 83-90
-src/nodes/sandbox_evaluator.py                        67     17    75%   35, 52-55, 67-68, 81-83, 87-88, 109-111, 134-136
+src/nodes/sandbox_evaluator.py                        84     27    68%   35, 52-55, 71-77, 80-81, 94-96, 103-107, 128-130, 153-155
 src/nodes/uat.py                                      12      5    58%   11-12, 15-18
 src/process_runner.py                                 30     24    20%   25-62
 src/service_container.py                              18     18     0%   1-22
@@ -315,7 +241,7 @@ src/services/git/state.py                             56     45    20%   21-68, 
 src/services/git_ops.py                                9      1    89%   20
 src/services/integration_usecase.py                   63     63     0%   1-116
 src/services/jules_client.py                         393    393     0%   1-732
-src/services/llm_reviewer.py                         188    173     8%   22-26, 31-62, 77-189, 202-349, 361-375, 385-397
+src/services/llm_reviewer.py                         197    182     8%   22-26, 31-73, 88-203, 216-366, 378-392, 402-414
 src/services/plan_auditor.py                          27     27     0%   1-119
 src/services/project.py                               47     36    23%   22-45, 49-62, 68-89
 src/services/project_setup/dependency_manager.py      50     42    16%   12-13, 16-57, 61-78
@@ -326,7 +252,7 @@ src/services/refactor_usecase.py                      61     61     0%   1-120
 src/services/self_critic_evaluator.py                 59     47    20%   15-18, 21-37, 40-65, 80-100
 src/services/tracing.py                               12     12     0%   1-21
 src/services/uat_usecase.py                          107    107     0%   1-216
-src/services/workflow.py                             440    440     0%   1-789
+src/services/workflow.py                             453    453     0%   1-806
 src/session_manager.py                                65     65     0%   3-110
 src/state.py                                         243     53    78%   26-28, 33-35, 129, 133, 137, 141, 145, 149, 153, 157, 161, 165, 169, 173, 177, 181, 185, 189, 193, 197, 201, 205, 209, 213, 217, 221, 225, 229, 233, 237, 241, 245, 249, 253, 257, 261, 265, 269, 273, 277, 281, 285, 289, 292, 305, 346-352
 src/state_manager.py                                  94     94     0%   3-211
@@ -336,11 +262,11 @@ src/utils.py                                          72     54    25%   31-56, 
 src/utils_sanitization.py                             11     11     0%   1-31
 src/validators.py                                     41     41     0%   3-86
 --------------------------------------------------------------------------------
-TOTAL                                               5613   4508    20%
+TOTAL                                               5653   4525    20%
 =========================== short test summary info ============================
-FAILED tests/unit/test_mcp_router.py::test_e2b_config_success - pydantic_core...
 FAILED tests/unit/test_mcp_router.py::test_mcp_client_manager_sanitization - ...
-FAILED tests/unit/test_mcp_router.py::test_mcp_client_manager_context - pydan...
-========================= 3 failed, 5 passed in 11.98s =========================
+FAILED tests/ac_cdd/integration/test_mcp_node_integration.py::test_sandbox_evaluator_tool_binding
+FAILED tests/ac_cdd/integration/test_mcp_node_integration.py::test_mcp_e2b_error_handling
+========================= 3 failed, 5 passed in 9.56s ==========================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

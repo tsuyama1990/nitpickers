@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,7 +18,7 @@ class E2bMcpConfig(BaseSettings):
     E2B_COMMAND: str = Field("npx", description="The command to boot the E2B server")
     E2B_ARGS: list[str] = Field(["-y", "@e2b/mcp-server"], description="Arguments for the E2B server command")
 
-    def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, dict[str, str | list[str]]]:
+    def get_connection_config(self, base_env: dict[str, str] | None = None) -> dict[str, Any]:
         """Get the dynamic dictionary connection config for MultiServerMCPClient."""
         env = dict(base_env or {})
         env["E2B_API_KEY"] = self.E2B_API_KEY

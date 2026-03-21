@@ -533,11 +533,24 @@ class WorkflowService:
             ]
         return cmds
 
-    async def _handle_global_refactor_result(
+    async def _handle_global_refactor_result(  # noqa: C901
         self, result: dict[str, Any], git: "GitManager"
     ) -> None:
         """Helper to handle the result of the global refactoring loop."""
-        gr_res = result["global_refactor_result"]
+        from src.domain_models.refactor import GlobalRefactorResult
+        try:
+            raw_res = result["global_refactor_result"]
+            if isinstance(raw_res, dict):
+                gr_res = GlobalRefactorResult.model_validate(raw_res)
+            elif isinstance(raw_res, GlobalRefactorResult):
+                gr_res = raw_res
+            else:
+                msg = "Invalid format for global_refactor_result"
+                raise TypeError(msg)  # noqa: TRY301
+        except Exception as e:
+            logger.error(f"Global refactor result validation failed: {e}")
+            return
+
         if not gr_res.refactorings_applied:
             return
 
@@ -676,8 +689,8 @@ class WorkflowService:
 
     async def _archive_and_reset_state(self) -> None:
         """
-        Archives current session artifacts to dev_documents/system_prompts_phaseNN
-        and resets the state for the next phase safely.
+        Archives current session artifacts and resets the state for the next phase safely.
+        Uses configuration strings and templates rather than hardcoding directory conventions.
         """
         self.verify_environment_and_observability()
         from src.config import settings
@@ -706,15 +719,19 @@ class WorkflowService:
     def _get_next_phase_num(self, docs_dir: Path) -> int:
         import contextlib
 
+        from src.config import settings
+
+        prefix = settings.ARCHIVE_DIR_TEMPLATE.split("{")[0]
+
         existing_phases = [
             d
             for d in docs_dir.iterdir()
-            if d.is_dir() and d.name.startswith("system_prompts_phase")
+            if d.is_dir() and d.name.startswith(prefix)
         ]
         nums = []
         for d in existing_phases:
             with contextlib.suppress(IndexError, ValueError):
-                nums.append(int(d.name.split("_phase")[1]))
+                nums.append(int(d.name.replace(prefix, "")))
         return max(nums) + 1 if nums else 1
 
     async def _safe_move_item(self, src: Path, dest: Path) -> None:

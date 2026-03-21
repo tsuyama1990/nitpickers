@@ -45,7 +45,7 @@ class McpClientManager:
 
         for attempt in range(max_retries):
             try:
-                client = MultiServerMCPClient(connection_config)  # type: ignore[arg-type]
+                client = MultiServerMCPClient(connection_config)
                 break
             except Exception as e:
                 import logging

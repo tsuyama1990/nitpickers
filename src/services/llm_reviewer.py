@@ -25,7 +25,7 @@ class LLMReviewer:
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
 
-    async def _validate_paths(
+    async def _validate_paths(  # noqa: C901
         self, target_files: dict[str, str], context_docs: dict[str, str]
     ) -> str | None:
         if not target_files:
@@ -41,8 +41,19 @@ class LLMReviewer:
         async def _is_path_safe(p: str) -> bool:
             if ".." in p:
                 return False
+
+            allowed_extensions = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".sh", ".env"}
+
             try:
                 p_path = anyio.Path(p)
+                # Verify file extension (if any) is allowed
+                if p_path.suffix and p_path.suffix not in allowed_extensions:
+                    return False
+
+                # Exclude .ac_cdd to protect system metadata
+                if ".ac_cdd" in p_path.parts:
+                    return False
+
                 resolved = await p_path.resolve(strict=False)
                 return resolved.is_relative_to(cwd)
             except Exception as e:
@@ -101,17 +112,20 @@ class LLMReviewer:
                 })
 
         # Retry logic (up to 2 retries, total 3 attempts)
+        from src.config import settings
+        system_prompt = settings.get_template("REVIEWER_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("REVIEWER_INSTRUCTION.md").exists() else (
+            "You are an automated code reviewer. You must strictly follow the "
+            "provided instructions and only review the target code. You MUST return valid JSON. "
+            "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
+            "MAXIMUM of 10 issues to prevent excessively large JSON generation."
+        )
+
         for attempt in range(3):
             try:
                 messages = [
                     {
                         "role": "system",
-                        "content": (
-                            "You are an automated code reviewer. You must strictly follow the "
-                            "provided instructions and only review the target code. You MUST return valid JSON. "
-                            "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                            "MAXIMUM of 10 issues to prevent excessively large JSON generation."
-                        ),
+                        "content": system_prompt,
                     },
                     {"role": "user", "content": prompt},
                 ]
@@ -252,12 +266,15 @@ class LLMReviewer:
                     }
                 })
 
+        from src.config import settings
+        system_prompt = settings.get_template("DIAGNOSTIC_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("DIAGNOSTIC_INSTRUCTION.md").exists() else "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
+
         for attempt in range(3):
             try:
                 messages = [
                     {
                         "role": "system",
-                        "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
+                        "content": system_prompt,
                     },
                     {"role": "user", "content": content_parts},
                 ]
