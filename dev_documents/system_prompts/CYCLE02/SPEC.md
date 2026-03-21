@@ -35,12 +35,12 @@ Cycle 02 focuses on migrating the context-gathering phase of the multi-agent wor
 Extend `schemas.py` to securely configure the GitHub server.
 - **`GitHubMcpConfig`**: A validated subclass of `BaseSettings` enforcing `GITHUB_PERSONAL_ACCESS_TOKEN`.
 - **Invariants and Constraints**:
-  - `api_key` must match basic GitHub token string lengths/formats and must not be empty. Fail fast on instantiation.
+  - `api_key` must be implemented using Pydantic `SecretStr` to prevent accidental credential leakage in logs and must not be empty. Fail fast on instantiation.
   - `command` is explicitly locked to `npx` with `["-y", "@modelcontextprotocol/server-github"]`.
 
 ### Component Design: `manager.py` & `tools.py`
-- Update `McpClientManager` to asynchronously connect and terminate the GitHub client.
-- `tools.py` must expose `get_github_read_tools()`. This method retrieves the complete toolset from the client and physically filters it. It returns *only* non-destructive tools (`get_file_content`, `search_repositories`, `get_issue`). Any tools related to writing (e.g., `push_commit`) must be programmatically excluded before returning the array to prevent LLM hallucination and enforce a mechanical security gate.
+- Update `McpClientManager` to asynchronously connect and terminate the GitHub client, leveraging `asyncio.to_thread` for the synchronous underlying initialization to avoid event loop blocking. Implement a strict environment variable whitelist to safely pass tokens (e.g., `GITHUB_PERSONAL_ACCESS_TOKEN`, `OPENAI_API_KEY`) to child processes while proactively stripping exceptionally dangerous variables (e.g., `SUDO_`, `SSH_`).
+- `tools.py` must expose `get_github_read_tools()`. This method retrieves the complete toolset from the client and physically filters it. It returns *only* non-destructive tools defined dynamically via `settings.tools.github_allowed_read_tools` (`get_file_content`, `search_repositories`, `get_issue`). Any tools related to writing (e.g., `push_commit`) must be programmatically excluded before returning the array to prevent LLM hallucination and enforce a mechanical security gate.
 
 ## Implementation Approach
 

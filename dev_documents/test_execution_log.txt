@@ -8,68 +8,8 @@ collected 14 items
 
 tests/unit/test_mcp_router.py .......                                    [ 50%]
 tests/ac_cdd/integration/test_mcp_github_read.py ..                      [ 64%]
-tests/unit/test_cycle06_auditor_recovery.py ..F..                        [100%]
+tests/unit/test_cycle06_auditor_recovery.py .....                        [100%]
 
-=================================== FAILURES ===================================
-______________________ test_diagnose_uat_failure_success _______________________
-
-tmp_path = PosixPath('/tmp/pytest-of-jules/pytest-4/test_diagnose_uat_failure_succ0')
-
-    @pytest.mark.asyncio
-    async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
-        reviewer = LLMReviewer()
-
-        # Create dummy artifact files
-        img_path = tmp_path / "screenshot.png"
-        img_path.write_bytes(b"dummy image data")
-
-        uat_state = UatExecutionState(
-            exit_code=1,
-            stdout="Tests failed",
-            stderr="Traceback...",
-            artifacts=[
-                MultiModalArtifact(
-                    test_id="test_login",
-                    screenshot_path=str(img_path),
-                    traceback="Button not found",
-                    console_logs=[],
-                )
-            ],
-        )
-
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[
-            0
-        ].message.content = (
-            '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
-        )
-
-        with patch(
-            "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock
-        ) as mock_acompletion:
-            mock_acompletion.return_value = mock_response
-
-            plan = await reviewer.diagnose_uat_failure(uat_state, "Instruction", "model-test")
-
->           assert plan.patches[0].target_file == "src/main.py"
-E           AssertionError: assert 'Unknown' == 'src/main.py'
-E
-E             - src/main.py
-E             + Unknown
-
-tests/unit/test_cycle06_auditor_recovery.py:82: AssertionError
------------------------------- Captured log call -------------------------------
-WARNING  AC-CDD:llm_reviewer.py:336 diagnose_uat_failure attempt 1 failed: 1 validation error for FixPlanSchema
-  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value="<MagicMock name='mock.me...' id='140127367098496'>", input_type=str]
-    For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
-WARNING  AC-CDD:llm_reviewer.py:336 diagnose_uat_failure attempt 2 failed: 1 validation error for FixPlanSchema
-  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value="<MagicMock name='mock.me...' id='140127367098496'>", input_type=str]
-    For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
-WARNING  AC-CDD:llm_reviewer.py:336 diagnose_uat_failure attempt 3 failed: 1 validation error for FixPlanSchema
-  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value="<MagicMock name='mock.me...' id='140127367098496'>", input_type=str]
-    For further information visit https://errors.pydantic.dev/2.11/v/json_invalid
-ERROR    AC-CDD:llm_reviewer.py:338 diagnose_uat_failure failed completely after 3 attempts.
 ================================ tests coverage ================================
 _______________ coverage: platform linux, python 3.12.13-final-0 _______________
 
@@ -77,7 +17,7 @@ Name                                               Stmts   Miss  Cover   Missing
 --------------------------------------------------------------------------------
 src/__init__.py                                        0      0   100%
 src/agents.py                                         63     47    25%   16-19, 24-44, 49-57, 65-85, 99-111, 117-138
-src/cli.py                                            28     28     0%   3-75
+src/cli.py                                            30     30     0%   3-77
 src/config.py                                        362    123    66%   17-26, 39-66, 81-87, 93-97, 104-108, 115-119, 127, 131, 135, 139-151, 157-158, 199-201, 204-205, 545-547, 570, 572, 590, 592, 597, 601-604, 611-616, 623-626, 630, 636, 642, 652-656, 659-684, 687-706
 src/contracts/__init__.py                              0      0   100%
 src/domain_models/__init__.py                         15      0   100%
@@ -108,7 +48,7 @@ src/jules_session_state.py                            46     46     0%   3-78
 src/mcp_router/__init__.py                             2      0   100%
 src/mcp_router/manager.py                             62     14    77%   64-65, 70-71, 87-94, 97-98, 107-108
 src/mcp_router/schemas.py                             37      4    89%   25-26, 62-63
-src/mcp_router/tools.py                               41     23    44%   10-29, 59-65
+src/mcp_router/tools.py                               27      7    74%   38-45, 50
 src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
 src/nodes/__init__.py                                 10      0   100%
 src/nodes/architect.py                               100     52    48%   29-52, 68, 76-78, 119-120, 131-134, 139-193
@@ -148,7 +88,7 @@ src/services/jules/context_builder.py                 81     69    15%   11, 20-
 src/services/jules/git_context.py                     42     32    24%   14, 17-56, 59-60
 src/services/jules/inquiry_handler.py                143    126    12%   20-22, 42-77, 102-107, 113-138, 142-175, 186-221, 239-286
 src/services/jules_client.py                         393    334    15%   10-11, 63-97, 103, 107, 111-117, 128-159, 163-182, 186-191, 205-285, 291-351, 354-356, 378-390, 398-453, 458-485, 488-506, 511-523, 526-537, 541, 546-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
-src/services/llm_reviewer.py                         198    125    37%   32-87, 93-110, 132, 147-149, 154-161, 169, 172-185, 208-260, 303-304, 323-329, 332, 345-346, 353-367, 377-389
+src/services/llm_reviewer.py                         203    130    36%   32-87, 93-110, 132, 147-149, 155-167, 170, 177-191, 214-266, 309-310, 329-335, 338, 351-352, 359-373, 383-395
 src/services/plan_auditor.py                          27     27     0%   1-119
 src/services/project.py                               47     36    23%   22-45, 49-62, 68-89
 src/services/project_setup/dependency_manager.py      50     42    16%   12-13, 16-57, 61-78
@@ -169,9 +109,7 @@ src/utils.py                                          72     54    25%   31-56, 
 src/utils_sanitization.py                             11      1    91%   10
 src/validators.py                                     41     41     0%   3-86
 --------------------------------------------------------------------------------
-TOTAL                                               6186   4721    24%
-=========================== short test summary info ============================
-FAILED tests/unit/test_cycle06_auditor_recovery.py::test_diagnose_uat_failure_success
-======================== 1 failed, 13 passed in 13.78s =========================
+TOTAL                                               6179   4712    24%
+============================= 14 passed in 10.86s ==============================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
