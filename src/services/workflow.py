@@ -29,11 +29,10 @@ console = Console()
 class WorkflowService:
     def __init__(self, services: ServiceContainer | None = None) -> None:
         self.services = services or ServiceContainer.default()
-        from src.sandbox import SandboxRunner
 
         self.builder = GraphBuilder(
             self.services,
-            SandboxRunner(),
+            None,
             self.services.jules if self.services.jules else JulesClient(),
         )
         self.git = GitManager()

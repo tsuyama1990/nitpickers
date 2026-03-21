@@ -21,7 +21,6 @@ from src.nodes import (
 )
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
-from src.sandbox import SandboxRunner
 from src.services.audit_orchestrator import AuditOrchestrator
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -36,7 +35,7 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
+    def __init__(self, sandbox_runner: object, jules_client: JulesClient) -> None:
         self.sandbox = sandbox_runner
         self.jules = jules_client
 
