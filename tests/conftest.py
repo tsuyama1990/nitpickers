@@ -79,9 +79,12 @@ def pytest_runtest_makereport(
 
 
 @pytest.fixture(autouse=True)
-def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
     """Set dummy API keys and models before any tests run, to prevent pydantic-ai from complaining
     during module import and inspection without leaking to the global environment."""
+    if "live" in request.node.keywords:
+        return
+
     import uuid
 
     # Set random strings for mock validation so no credentials can be leaked.
