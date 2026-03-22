@@ -19,6 +19,12 @@ class LLMReviewer:
         # even if not strictly used by this class (files are passed as content)
         self.sandbox = sandbox_runner
 
+        import os
+
+        # Enable LangSmith supervision natively through litellm if configured
+        if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
+            litellm.success_callback = ["langsmith"]
+
         # We rely on litellm's environment variable handling for API keys.
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
