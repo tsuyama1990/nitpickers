@@ -28,21 +28,21 @@ def _validate_env_value(k: str, v: str) -> bool:
 
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
-    """Load configuration from standard .env first, then override with strict .ac_cdd environment."""
-    load_dotenv(override=True)
+    """Load configuration from standard .env first, then override with strict .nitpick environment."""
+    load_dotenv(override=False)
 
-    _ac_cdd_env = Path.cwd() / ".ac_cdd" / ".env"
+    _nitpick_env = Path.cwd() / ".nitpick" / ".env"
 
-    if not _ac_cdd_env.exists():
+    if not _nitpick_env.exists():
         return
 
-    if not _ac_cdd_env.resolve().is_relative_to(Path.cwd()):
-        msg = f"Environment file path escapes current working directory: {_ac_cdd_env}"
+    if not _nitpick_env.resolve().is_relative_to(Path.cwd()):
+        msg = f"Environment file path escapes current working directory: {_nitpick_env}"
         raise ValueError(msg)
 
-    allowed_prefixes = ("AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    allowed_prefixes = ("NITPICK_", "AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
     safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
-    env_vars = dotenv_values(_ac_cdd_env)
+    env_vars = dotenv_values(_nitpick_env)
 
     safe_updates = {}
     for key, value in env_vars.items():
@@ -60,7 +60,8 @@ def _load_env() -> None:
                     f"Ignoring environment variable {key} failed type-specific security validation."
                 )
                 continue
-            safe_updates[key] = value
+            if key not in os.environ:
+                safe_updates[key] = value
 
     if safe_updates:
         os.environ.update(safe_updates)
@@ -305,6 +306,7 @@ class AuditorConfig(BaseModel):
         default_factory=lambda: [
             "dev_src/",
             "dev_documents/",
+            "tests/nitpick/",
             "tests/ac_cdd/",
             ".github/",
             "pyproject.toml",
@@ -430,11 +432,11 @@ class ASTAnalyzerConfig(BaseModel):
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
         default="openai:gpt-4o",
-        alias="AC_CDD_AUDITOR_MODEL",
+        alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
         default="openai:gpt-4o",
-        alias="AC_CDD_QA_ANALYST_MODEL",
+        alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
@@ -442,12 +444,12 @@ class AgentsConfig(BaseSettings):
 class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
         default="openai:gpt-4o",
-        alias="AC_CDD_REVIEWER__SMART_MODEL",
+        alias="NITPICK_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
         default="openai:gpt-4o-mini",
-        alias="AC_CDD_REVIEWER__FAST_MODEL",
+        alias="NITPICK_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
     master_integrator_temperature: float = Field(
@@ -570,7 +572,7 @@ class Settings(BaseSettings):
         return values
 
     model_config = SettingsConfigDict(
-        env_prefix="AC_CDD_",
+        env_prefix="NITPICK_",
         env_nested_delimiter="__",
         extra="ignore",
         env_file=".env",

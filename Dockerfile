@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y \
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Set working directory for the tool installation
-# We install the tool into /opt/ac_cdd/ac_cdd_core
-WORKDIR /opt/ac_cdd/ac_cdd_core
+# We install the tool into /opt/nitpick/nitpick_core
+WORKDIR /opt/nitpick/nitpick_core
 
 # Copy project files for the tool
 COPY pyproject.toml .
@@ -30,8 +30,8 @@ COPY dev_src/ ./dev_src/
 RUN uv pip install --system .
 
 # Copy system prompts to internal template directory
-RUN mkdir -p /opt/ac_cdd/templates
-COPY dev_src/ac_cdd_core/templates/*.md /opt/ac_cdd/templates/
+RUN mkdir -p /opt/nitpick/templates
+COPY dev_src/ac_cdd_core/templates/*.md /opt/nitpick/templates/
 
 # Create /app for user mount
 WORKDIR /app
@@ -42,8 +42,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
-ENV AC_CDD_TEMPLATE_PATH=/opt/ac_cdd/templates
-# AC_CDD_CONFIG_PATH is no longer needed
+ENV NITPICK_TEMPLATE_PATH=/opt/nitpick/templates
+# NITPICK_CONFIG_PATH is no longer needed
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["ac-cdd"]
+CMD ["nitpick"]

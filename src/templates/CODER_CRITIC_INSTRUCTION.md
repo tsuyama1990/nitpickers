@@ -32,7 +32,7 @@ Review your code critically against the following checklists:
 ### 1. Functional Implementation & Scope
 - [ ] **Requirement Coverage**: Are ALL functional requirements listed in `SPEC.md` implemented?
 - [ ] **Logic Correctness**: Does the logic actually work? Is the logic correct, optimal and efficient?
-- [ ] **System Integrity**: Did you accidentally delete or modify the `.ac_cdd/` directory? **Check your git status and ensures it is UNTOUCHED.** If your PR contains a deletion of `.ac_cdd/`, YOU MUST FIX IT IMMEDIATELY.
+- [ ] **System Integrity**: Did you accidentally delete or modify the `.nitpick/` directory? **Check your git status and ensures it is UNTOUCHED.** If your PR contains a deletion of `.nitpick/`, YOU MUST FIX IT IMMEDIATELY.
 - [ ] **Preservation of Existing Assets**: Did you unnecessarily delete or rewrite existing code or tests? Ensure your changes maximize compatibility and affinity with existing assets. Changes should be additive where possible.
 
 ### 2. Architecture, Design & Maintainability

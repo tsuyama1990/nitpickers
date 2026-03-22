@@ -96,7 +96,7 @@ def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureR
     monkeypatch.setenv("JULES_API_KEY", f"sk-test-{uuid.uuid4().hex}")
     monkeypatch.setenv("E2B_API_KEY", f"e2b-test-{uuid.uuid4().hex}")
 
-    monkeypatch.setenv("AC_CDD_AUDITOR_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_QA_ANALYST_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_REVIEWER__SMART_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")
+    monkeypatch.setenv("NITPICK_AUDITOR_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_QA_ANALYST_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_REVIEWER__SMART_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")

@@ -24,7 +24,7 @@ You must follow the architectural hierarchy in your reasoning process:
 ## 2. Unified Schema & Contract Alignment
 - **Domain Integrity**: Clean up `src/domain_models/` (or equivalent). Ensure there are no duplicate models, conflicting interfaces, or circular dependencies introduced during rapid cycle development.
 - **Contract Enforcement**: Ensure all Pydantic models, Protocols, and Type Definitions are strictly used at system boundaries.
-- [ ] **System Integrity**: Did you accidentally delete or modify the `.ac_cdd/` directory? (Ensure it is untouched and contains `project_state_local.json`).
+- [ ] **System Integrity**: Did you accidentally delete or modify the `.nitpick/` directory? (Ensure it is untouched and contains `project_state_local.json`).
 - [ ] **Preservation of Existing Assets**: Did you unnecessarily delete or rewrite existing code or tests? Ensure your changes maximize compatibility and affinity with existing assets. Changes should be additive where possible.
 
 ## 3. Total Test Suite Consolidation
@@ -34,7 +34,7 @@ You must follow the architectural hierarchy in your reasoning process:
 - **Final Coverage**: Verify that global test coverage meets or exceeds the target (aim for >80% overall, 100% on critical domain logic).
 
 ## 4. Production Hardening (SOLID & Hygiene)
-- **SYSTEM METADATA PROTECTION (CRITICAL)**: DO NOT delete, modify, or move any files inside the `.ac_cdd/` directory. These files are critical for the system's state management.
+- **SYSTEM METADATA PROTECTION (CRITICAL)**: DO NOT delete, modify, or move any files inside the `.nitpick/` directory. These files are critical for the system's state management.
 - **Anti-Mock Enforcement (ZERO TOLERANCE)**: Actively hunt down and remove any `mock`, `dummy`, `TODO`, `FIXME`, or stubbed logic (`pass`, `...`) in the production code.
 - **Logic Verification**: Ensure that every "Simulated" or "Fake" implementation used during development has been replaced with actual, functional production logic.
 - **Dead Code Elimination**: Scour the codebase for unused imports, unreachable functions, and obsolete classes that were left behind from previous iterations.
