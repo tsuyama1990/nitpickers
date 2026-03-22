@@ -70,8 +70,9 @@ class GraphBuilder:
             "coder_session_node",
             "sandbox_evaluate_node",
             "auditor_node",
-            "coder_critic_node",
-            "global_refactor_node",
+            "self_critic_node",
+            "refactor_node",
+            "final_critic_node",
         ]
         for n in required_nodes:
             if not getattr(self.nodes, n, None):
@@ -180,7 +181,7 @@ class GraphBuilder:
         """Create the graph for Phase 3: Integration."""
         from src.state import IntegrationState
 
-        workflow = StateGraph(IntegrationState)
+        workflow = StateGraph(IntegrationState)  # type: ignore[arg-type, valid-type]
 
         workflow.add_node("git_merge_node", self.nodes.git_merge_node)
         workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
