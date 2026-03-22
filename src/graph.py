@@ -85,9 +85,9 @@ class GraphBuilder:
         workflow.add_node("coder_session", self.nodes.coder_session_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
-        workflow.add_node("self_critic", self.nodes.self_critic_node)
+        workflow.add_node("self_critic_node", self.nodes.self_critic_node)
         workflow.add_node("refactor_node", self.nodes.refactor_node)
-        workflow.add_node("final_critic", self.nodes.final_critic_node)
+        workflow.add_node("final_critic_node", self.nodes.final_critic_node)
 
         workflow.add_edge(START, "coder_session")
 
@@ -96,24 +96,24 @@ class GraphBuilder:
             "coder_session",
             self.nodes.check_coder_outcome,
             {
-                "self_critic": "self_critic",
+                "self_critic": "self_critic_node",
                 settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
                 FlowStatus.FAILED.value: END,
                 FlowStatus.CODER_RETRY.value: "coder_session",
             },
         )
 
-        # self_critic -> sandbox_evaluate
-        workflow.add_edge("self_critic", settings.node_sandbox_evaluate)
+        # self_critic_node -> sandbox_evaluate
+        workflow.add_edge("self_critic_node", settings.node_sandbox_evaluate)
 
-        # Sandbox Evaluate -> Auditor, final_critic, failed, or coder_session
+        # Sandbox Evaluate -> Auditor, final_critic_node, failed, or coder_session
         workflow.add_conditional_edges(
             settings.node_sandbox_evaluate,
             self.nodes.route_sandbox_evaluate,
             {
                 "auditor": "auditor",
                 "coder_session": "coder_session",
-                "final_critic": "final_critic",
+                "final_critic": "final_critic_node",
                 "failed": END,
             },
         )
@@ -132,9 +132,9 @@ class GraphBuilder:
         # refactor_node -> sandbox_evaluate
         workflow.add_edge("refactor_node", settings.node_sandbox_evaluate)
 
-        # final_critic -> end or coder_session
+        # final_critic_node -> end or coder_session
         workflow.add_conditional_edges(
-            "final_critic",
+            "final_critic_node",
             self.nodes.route_final_critic,
             {
                 "approve": END,
@@ -180,7 +180,7 @@ class GraphBuilder:
         """Create the graph for Phase 3: Integration."""
         from src.state import IntegrationState
 
-        workflow = StateGraph(IntegrationState)  # type: ignore
+        workflow = StateGraph(IntegrationState)
 
         workflow.add_node("git_merge_node", self.nodes.git_merge_node)
         workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
