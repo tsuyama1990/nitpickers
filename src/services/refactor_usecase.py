@@ -1,10 +1,11 @@
 import secrets
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from src.config import settings
-from typing import Sequence
 from langchain_core.tools import BaseTool
+
+from src.config import settings
 from src.domain_models.refactor import GlobalRefactorResult
 from src.services.ast_analyzer import ASTAnalyzer
 from src.utils import logger
@@ -101,10 +102,6 @@ class RefactorUsecase:
             f"Found {len(duplicates)} duplicate groups and {len(complex_funcs)} complex functions. Triggering Jules..."
         )
 
-        # Securely generate Session ID to prevent session fixation attacks
-        secure_token = secrets.token_urlsafe(32)
-        session_id = f"master-integrator-{settings.current_session_id}-{secure_token}"
-
         try:
             # Here we just use litellm.acompletion dynamically with jules_tools bound
             # In actual MCP architecture, jules_tools manages this session interaction
@@ -112,7 +109,7 @@ class RefactorUsecase:
             from litellm import acompletion
             if self.jules_tools:
                 messages = [{"role": "user", "content": prompt}]
-                tools_schema = [{"type": "function", "function": {"name": t.name, "description": t.description}} for t in self.jules_tools] # type: ignore[attr-defined]
+                tools_schema = [{"type": "function", "function": {"name": t.name, "description": t.description}} for t in self.jules_tools]
                 await acompletion(
                     model="gpt-4o",
                     messages=messages,

@@ -39,7 +39,6 @@ class CoderCriticNodes:
         evaluator = SelfCriticEvaluator(None)
 
         console.print("[bold magenta]Invoking Coder Self-Critic Evaluator...[/bold magenta]")
-        critic_instruction = settings.get_prompt_content("POST_AUDIT_REFACTOR_INSTRUCTION.md")
 
         try:
             console.print("[dim]Waiting for Coder Critic evaluation to complete...[/dim]")

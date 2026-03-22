@@ -1,6 +1,6 @@
 # Nitpickers: MCP-Routed Code Development Environment
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. Nitpickers uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards. This next-generation version is entirely powered by the **Model Context Protocol (MCP)**, allowing agents to natively and deterministically interact with external tools.
+An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. Nitpickers utilises static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards. This next-generation version is entirely powered by the **Model Context Protocol (MCP)**, allowing agents to natively and deterministically interact with external tools.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -15,7 +15,7 @@ An AI-native development environment based on a highly robust methodology design
 
 ## Architecture Overview
 
-The Nitpickers pipeline utilizes an `MCP Client Manager` to bridge LangGraph-based workflow nodes directly to robust, vendor-maintained MCP sidecars via the `stdio` transport layer.
+The Nitpickers pipeline utilises an `MCP Client Manager` to bridge LangGraph-based workflow nodes directly to robust, vendor-maintained MCP sidecars via the `stdio` transport layer.
 
 ```mermaid
 graph TD
@@ -25,9 +25,9 @@ graph TD
     end
 
     subgraph MCP Sidecars [Node.js MCP Servers via stdio]
-        G_MCP[@modelcontextprotocol/server-github]
-        E_MCP[@e2b/mcp-server]
-        J_MCP[@google/jules-mcp]
+        G_MCP["@modelcontextprotocol/server-github"]
+        E_MCP["@e2b/mcp-server"]
+        J_MCP["@google/jules-mcp"]
     end
 
     subgraph Core Python Backend [MCP Router via LangGraph]
@@ -83,7 +83,7 @@ Ensure the following tools are available on your system:
    cd <your-repository>
    ```
 
-2. Sync the dependencies and initialize the virtual environment:
+2. Sync the dependencies and initialise the virtual environment:
    ```bash
    uv sync
    ```

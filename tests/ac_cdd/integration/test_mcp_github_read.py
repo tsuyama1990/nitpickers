@@ -2,9 +2,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
+from src.services.git_ops import GitManager
 
 from src.nodes.architect import ArchitectNodes
-from src.services.git_ops import GitManager
 from src.state import CycleState
 
 
@@ -40,7 +40,7 @@ async def test_architect_get_file_content() -> None:
 
     dummy_tools = [tool]
 
-    node = ArchitectNodes(jules=jules_mock, git=git_mock, github_read_tools=dummy_tools)
+    node = ArchitectNodes(github_read_tools=dummy_tools)
 
     with patch("src.nodes.architect.ProjectManager") as _:
         result = await node.architect_session_node(state)
@@ -67,7 +67,7 @@ async def test_mcp_github_read_fallback() -> None:
 
     git_mock = AsyncMock(spec=GitManager)
 
-    node = ArchitectNodes(jules=jules_mock, git=git_mock, github_read_tools=[tool])
+    node = ArchitectNodes(github_read_tools=[tool])
     with patch("src.nodes.architect.ProjectManager") as _:
         result = await node.architect_session_node(state)
 

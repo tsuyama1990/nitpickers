@@ -37,7 +37,7 @@ def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchest
 
     mock_sandbox = AsyncMock(spec=SandboxRunner)
     return AuditOrchestrator(
-        jules_client=mock_jules, sandbox_runner=mock_sandbox, plan_auditor=mock_auditor
+        jules_tools=[], sandbox_runner=mock_sandbox, plan_auditor=mock_auditor
     )
 
 

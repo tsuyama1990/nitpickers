@@ -14,5 +14,5 @@ class UatNodes:
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         from src.services.uat_usecase import UatUseCase
 
-        usecase = UatUseCase(self.git, e2b_tools=self.e2b_tools)
+        usecase = UatUseCase(None, e2b_tools=self.e2b_tools)
         return dict(await usecase.execute(state))

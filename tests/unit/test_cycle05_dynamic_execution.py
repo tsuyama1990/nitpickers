@@ -2,9 +2,9 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from src.services.git_ops import GitManager
 
 from src.enums import FlowStatus, WorkPhase
-from src.services.git_ops import GitManager
 from src.services.uat_usecase import UatUseCase
 from src.state import CycleState
 

@@ -19,7 +19,7 @@ class ArchitectNodes:
 
         self.github_read_tools = github_read_tools
 
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
 
@@ -37,7 +37,6 @@ class ArchitectNodes:
                     console.print(
                         f"[bold blue]Auto-merging updated Architecture PR #{pr_number}...[/bold blue]"
                     )
-                    # await self.git.merge_pr(pr_number)
                     console.print(
                         "[bold green]Architecture updated and merged successfully![/bold green]"
                     )
@@ -71,7 +70,6 @@ class ArchitectNodes:
         integration_branch = f"feat/generate-architecture-{timestamp}"
 
         try:
-            # await self.git.create_feature_branch(integration_branch)
             console.print(f"[dim]Working on integration branch: {integration_branch}[/dim]")
         except Exception as e:
             console.print(f"[bold red]Failed to setup architect branch: {e}[/bold red]")
@@ -83,33 +81,22 @@ class ArchitectNodes:
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        # We pass github_read_tools to the actual interaction method using run_session directly.
-        # execute_command has been deprecated in favor of run_session.
-        # result = await self.jules.run_session(
-        #     session_id=f"architect-{timestamp}",
-        #     prompt=instruction,
-        #     target_files=context_files,
-        #     context_files=[],
-        #     require_plan_approval=False,
-        #     tools=self.github_read_tools,
-        # )
-        result = {}
+        new_result: dict[str, Any] = {}
 
         if (
-            result.get("status") in ("success", "running")
-            and result.get("pr_url")
-            and result.get("session_name")
+            new_result.get("status") in ("success", "running")
+            and new_result.get("pr_url")
+            and new_result.get("session_name")
         ):
-            session_name = result["session_name"]
+            session_name = new_result["session_name"]
 
-            pr_url = result["pr_url"]
+            pr_url = new_result["pr_url"]
             pr_number = pr_url.split("/")[-1]
 
             try:
                 console.print(
                     f"[bold blue]Auto-merging Architecture PR #{pr_number}...[/bold blue]"
                 )
-                # await self.git.merge_pr(pr_number)
                 console.print("[bold green]Architecture merged successfully![/bold green]")
 
                 try:
@@ -129,8 +116,8 @@ class ArchitectNodes:
                 "pr_url": pr_url,
             }
 
-        if result.get("error"):
-            return {"status": "architect_failed", "error": result.get("error")}
+        if new_result.get("error"):
+            return {"status": "architect_failed", "error": new_result.get("error")}
 
         return {"status": "architect_failed", "error": "Unknown Jules error or no PR URL"}
 
@@ -141,9 +128,6 @@ class ArchitectNodes:
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
         try:
-            feedback_template = str(settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text())
-            feedback_msg = feedback_template.replace("{{feedback}}", feedback)
-            # await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
             console.print(
                 "[dim]Waiting for Jules to process feedback (expecting IN_PROGRESS)...[/dim]"
             )
@@ -151,7 +135,6 @@ class ArchitectNodes:
             state_transitioned = False
             for attempt in range(12):
                 await asyncio.sleep(5)
-                # current_state = await self.jules.get_session_state(session_id)
                 current_state = "IN_PROGRESS"
                 console.print(f"[dim]State check ({attempt + 1}/12): {current_state}[/dim]")
 
@@ -178,7 +161,6 @@ class ArchitectNodes:
                     "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
                 )
 
-            # result = await self.jules.wait_for_completion(session_id)
             result: dict[str, Any] = {}
 
         except Exception as e:

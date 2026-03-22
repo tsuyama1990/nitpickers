@@ -23,10 +23,10 @@ def main() -> None:
     patcher = FilePatcher()
 
     start_time = time.time()
-    result = patcher.read_src_files(dest_dir)
+    patcher.read_src_files(dest_dir)
     end_time = time.time()
 
-    duration = end_time - start_time
+    _duration = end_time - start_time
 
     # Cleanup
     shutil.rmtree(dest_dir)

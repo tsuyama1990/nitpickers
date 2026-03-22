@@ -24,7 +24,6 @@ from src.nodes import (
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.services.audit_orchestrator import AuditOrchestrator
-from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 
 console = Console()
@@ -52,7 +51,6 @@ class CycleNodes(IGraphNodes):
 
         container = ServiceContainer.default()
 
-        # self.llm_reviewer = LLMReviewer()
         self.audit_orchestrator = AuditOrchestrator(None)
 
         self._architect = ArchitectNodes(github_read_tools=self.github_read_tools)

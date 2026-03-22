@@ -1,12 +1,10 @@
-import asyncio
+from collections.abc import Sequence
 from typing import Any
 
+from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
-from src.config import settings
-from langchain_core.tools import BaseTool
-from typing import Sequence
 from src.services.plan_auditor import PlanAuditor
 
 console = Console()
@@ -34,8 +32,6 @@ class AuditOrchestrator:
         Starts a session with plan approval requirement and manages the audit loop.
         """
         console.print(Panel("[bold cyan]Starting AI-on-AI Audit Session[/bold cyan]", expand=False))
-
-        file_paths = list(spec_files.keys())
 
         # Placeholder logic:
         # In actual MCP architecture, jules_tools manages this session interaction

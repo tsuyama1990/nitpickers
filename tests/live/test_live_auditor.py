@@ -9,7 +9,7 @@ from src.state import CycleState
 @pytest.mark.live
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_live_uat_auditor_diagnosis():
+async def test_live_uat_auditor_diagnosis() -> None:
     # Arrange
     llm_reviewer = LLMReviewer()
     uat_auditor = UATAuditorUseCase(llm_reviewer)
@@ -23,10 +23,10 @@ async def test_live_uat_auditor_diagnosis():
     )
 
     state = CycleState(
-        cycle_id="01",
-        project_session_id="proj-session-123",
-        uat_execution_state=uat_state
+        cycle_id="01"
     )
+    state.project_session_id = "proj-session-123"
+    state.uat_execution_state = uat_state
 
     # Act
     result = await uat_auditor.execute(state)

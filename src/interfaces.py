@@ -36,9 +36,6 @@ class IGraphNodes(Protocol):
 
     def route_qa(self, state: CycleState) -> str: ...
 
-    # Define as a variable, not a property, to avoid runtime setter conflicts
-    llm_reviewer: Any
-
 
 class IWorkflowOrchestrator(Protocol):
     async def run_gen_cycles(self, cycles: int, project_session_id: str | None) -> None: ...
