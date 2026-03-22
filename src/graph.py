@@ -89,7 +89,7 @@ class GraphBuilder:
 
         workflow.add_node("coder_session", self.nodes.coder_session_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
-        workflow.add_node("auditor", self.nodes.auditor_node)
+        workflow.add_node("auditor_node", self.nodes.auditor_node)
         workflow.add_node("self_critic_node", self.nodes.self_critic_node)
         workflow.add_node("refactor_node", self.nodes.refactor_node)
         workflow.add_node("final_critic_node", self.nodes.final_critic_node)
@@ -116,20 +116,20 @@ class GraphBuilder:
             settings.node_sandbox_evaluate,
             self.nodes.route_sandbox_evaluate,
             {
-                "auditor": "auditor",
+                "auditor_node": "auditor_node",
                 "coder_session": "coder_session",
-                "final_critic": "final_critic_node",
+                "final_critic_node": "final_critic_node",
                 "failed": END,
             },
         )
 
         # Auditor -> Conditional routing (rejection loop, next auditor, or refactor)
         workflow.add_conditional_edges(
-            "auditor",
+            "auditor_node",
             self.nodes.route_auditor,
             {
                 "reject": "coder_session",
-                "next_auditor": "auditor",
+                "next_auditor": "auditor_node",
                 "pass_all": "refactor_node",
             },
         )

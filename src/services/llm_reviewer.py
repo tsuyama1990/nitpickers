@@ -133,7 +133,7 @@ class LLMReviewer:
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
 
-    async def diagnose_uat_failure(  # noqa: C901
+    async def diagnose_uat_failure(
         self,
         uat_state: UatExecutionState,
         instruction: str,

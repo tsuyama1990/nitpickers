@@ -404,7 +404,7 @@ class JulesClient:
                 logger.warning(f"Failed to get session state for {session_id}: {e}")
                 return "UNKNOWN"
 
-    async def _initialize_processed_ids(  # noqa: C901
+    async def _initialize_processed_ids(
         self,
         session_url: str,
         processed_ids: set[str],
@@ -674,7 +674,7 @@ class JulesClient:
 
             return content_str
 
-    async def _create_manual_pr(self, session_url: str) -> str | None:  # noqa: C901
+    async def _create_manual_pr(self, session_url: str) -> str | None:
         """
         Ask Jules to commit changes and create PR when auto-PR creation fails.
 

@@ -9,7 +9,7 @@ from src.utils import logger
 class PermissionManager:
     """Manages file permissions and ownership."""
 
-    async def fix_permissions(self, *paths: Path) -> None:  # noqa: PLR0912, PLR0915, C901
+    async def fix_permissions(self, *paths: Path) -> None:
         """Fix file ownership to current user if created with elevated privileges."""
         uid: int | None = None
         gid: int | None = None

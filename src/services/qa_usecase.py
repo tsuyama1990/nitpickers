@@ -92,7 +92,7 @@ class QaUseCase:
             )
         return None
 
-    async def execute_qa_session(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0912, PLR0915, C901
+    async def execute_qa_session(self, state: CycleState) -> dict[str, Any]:
         """Node logic for QA Agent session."""
         console.print("[bold cyan]Starting QA Session (Tutorial Generation)...[/bold cyan]")
 

@@ -19,13 +19,13 @@ def test_route_sandbox_evaluate() -> None:
     state = CycleState(cycle_id="01")
     state.status = FlowStatus.READY_FOR_AUDIT
     state.is_refactoring = False
-    assert route_sandbox_evaluate(state) == "auditor"
+    assert route_sandbox_evaluate(state) == "auditor_node"
 
     # Test READY_FOR_AUDIT, is refactoring
     state = CycleState(cycle_id="01")
     state.status = FlowStatus.READY_FOR_AUDIT
     state.is_refactoring = True
-    assert route_sandbox_evaluate(state) == "final_critic"
+    assert route_sandbox_evaluate(state) == "final_critic_node"
 
 
 def test_route_auditor() -> None:

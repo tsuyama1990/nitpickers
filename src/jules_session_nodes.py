@@ -31,7 +31,7 @@ class JulesSessionNodes:
                 updates[field] = new_val
         return updates
 
-    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: PLR0915, PLR0912, C901
+    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:
         """Monitor Jules session and detect state changes with batched polling."""
         from src.config import settings
 
@@ -313,7 +313,7 @@ class JulesSessionNodes:
         state.status = SessionStatus.MONITORING
         return self._compute_diff(_state_in, state)
 
-    async def validate_completion(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901
+    async def validate_completion(self, _state_in: JulesSessionState) -> dict[str, Any]:
         """Validate if COMPLETED state is genuine or if work is still ongoing."""
         state = _state_in.model_copy(deep=True)
 
@@ -541,7 +541,7 @@ class JulesSessionNodes:
         state.fallback_elapsed_seconds = 0
         return self._compute_diff(_state_in, state)
 
-    async def wait_for_pr(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: PLR0912, C901
+    async def wait_for_pr(self, _state_in: JulesSessionState) -> dict[str, Any]:
         """Wait for PR creation after manual request, with session state re-validation."""
         state = _state_in.model_copy(deep=True)
 

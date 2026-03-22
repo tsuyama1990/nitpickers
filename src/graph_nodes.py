@@ -155,27 +155,27 @@ class CycleNodes(IGraphNodes):
         return await integrator.master_integrator_node(state)
 
     async def global_sandbox_node(self, state: "IntegrationState") -> dict[str, Any]:
-        from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+        from pathlib import Path
 
-        sandbox = SandboxEvaluatorNodes()
-        # Since sandbox_evaluate expects CycleState, we must extract/map what we can or
-        # adapt sandbox to accept either. For now, sandbox evaluator extracts project state,
-        # so passing a minimal dummy CycleState with real parameters works if we must,
-        # but to satisfy "mocking CycleState instead of using IntegrationState" we should pass the actual state
-        # if the evaluator was updated. Wait, SandboxEvaluator expects CycleState type.
-        # But we are in a Phase 3 specific graph now, we should adapt the call or map properly.
-        # Given we just need to run `pytest`, we can execute it directly or construct a properly typed state.
+        from src.config import settings
+        from src.enums import FlowStatus
+        from src.process_runner import ProcessRunner
+        from src.utils import logger
 
-        # Let's map IntegrationState fields to a dummy CycleState that SandboxEvaluator expects
-        # so that it tests the global repository accurately.
-        from src.state import CycleState
+        # Decouple from CycleState mock and run integration tests natively via ProcessRunner
+        # testing the global repository state after integration.
+        logger.info("Running global integration sandbox validation...")
+        runner = ProcessRunner()
+        cmd = settings.sandbox.test_cmd.split()
 
-        # Convert to ensure compatibility while using IntegrationState object structure
-        mapped_state = CycleState(cycle_id="00")
-        res = await sandbox.sandbox_evaluate_node(mapped_state)
+        stdout, stderr, exit_code, timeout = await runner.run_command(cmd, cwd=Path.cwd(), check=False)
 
-        # Propagate result to IntegrationState keys
-        return {"status": res.get("status")}
+        if exit_code != 0 or timeout:
+            logger.error(f"Global sandbox failed with exit code {exit_code}")
+            return {"status": FlowStatus.FAILED.value}
+
+        logger.info("Global sandbox validation passed.")
+        return {"status": FlowStatus.COMPLETED.value}
 
     def route_merge(self, state: "IntegrationState") -> str:
         # Properly check for git conflict detection mapping

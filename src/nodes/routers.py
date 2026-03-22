@@ -38,11 +38,10 @@ def route_sandbox_evaluate(state: CycleState) -> str:
     sandbox_status = state.get("sandbox_status", state.status)
     if sandbox_status in ("failed", FlowStatus.TDD_FAILED):
         return "coder_session"
-        return "coder_session"
 
     if state.is_refactoring:
-        return "final_critic"
-    return "auditor"
+        return "final_critic_node"
+    return "auditor_node"
 
 
 def route_auditor(state: CycleState) -> str:
