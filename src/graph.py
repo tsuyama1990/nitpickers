@@ -176,11 +176,11 @@ class GraphBuilder:
     def build_qa_graph(self) -> CompiledStateGraph[CycleState, Any, Any, Any]:
         return self._create_qa_graph().compile(checkpointer=MemorySaver())
 
-    def _create_integration_graph(self) -> StateGraph[Any]:
+    def _create_integration_graph(self) -> StateGraph["Any"]:
         """Create the graph for Phase 3: Integration."""
         from src.state import IntegrationState
 
-        workflow = StateGraph(IntegrationState)
+        workflow = StateGraph(IntegrationState)  # type: ignore
 
         workflow.add_node("git_merge_node", self.nodes.git_merge_node)
         workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
