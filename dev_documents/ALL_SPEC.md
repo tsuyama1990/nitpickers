@@ -1,366 +1,328 @@
-Requirement Definition: MCP Architecture Integration for Nitpickers
+nitpickers ワークフロー 「5フェーズ構成」リファクタリング詳細要件定義書
 
-1. Project Overview
+1. 概要
 
-Objective: Refactor the core infrastructure of the nitpickers repository to natively utilize the Model Context Protocol (MCP) for all external environment interactions. This specifically targets GitHub (Version Control), E2B (Cloud Sandboxing), and Jules (Agent Fleet & Session Orchestration).
+本要件定義書は、LangGraphを用いた現在のAIエージェントワークフローを、安定性と役割分担を強化した「5フェーズ構成」へリファクタリングするための具体的な実装仕様を定義する。
 
-Goal: Substantially reduce the codebase's maintenance overhead and technical debt, improve the overall robustness of the multi-agent system, and transition the Python backend from managing brittle, raw API requests (acting as an "API Wrapper") to dynamically routing standardized tools directly to the LLM agents (acting as an "MCP Router").
+1.1 目標とする5フェーズ
 
-Context & Rationale: The nitpickers system currently orchestrates a complex, 8-cycle multi-agent workflow (Cycles 01-08) involving specialized nodes: an Architect, Coder, Auditor, Master Integrator, and Sandbox Evaluator. As the system scales and the complexity of these cycles increases, manually wrapping REST APIs and proprietary SDKs (like e2b and github endpoints) within custom Python services has proven severely fragile.
+Phase 0: Init Phase (CLIによる静的セットアップ)
 
-Upstream API changes break custom parsers, and injecting state manually requires bloated, hard-coded prompt engineering. By adopting an MCP architecture, we delegate the heavy lifting of tool execution, payload formatting, authentication, and standard error handling to standardized, vendor-maintained MCP servers. This allows the core Python codebase to focus exclusively on what it does best: multi-agent orchestration, state management, and graph logic using LangGraph.
+Phase 1: Architect Graph (要件分割と計画レビュー)
 
-2. Architectural Paradigm Shift
+Phase 2: Coder Graph (並列実装、直列Audit、リファクタリングループ)
 
-2.1 Current Architecture (The Legacy "API Wrapper" Approach)
+Phase 3: Integration Phase (3-Way Diff統合、Global Sandbox)
 
-In the current implementation, the Python application acts as a heavy intermediary (middleware) between the AI models and the external world. This tightly couples the business logic with infrastructure concerns.
+Phase 4: UAT & QA Graph (統合環境での動的E2Eテスト)
 
-Rigid Tool Definitions: Developers must manually write complex Pydantic models or JSON schemas to describe tools to the LLM. If GitHub adds a new parameter to their Pull Request API, the Pydantic schema in Python must be manually updated.
+2. 状態管理（State）の改修要件
 
-Manual Orchestration: LLMs generate JSON payloads based on custom system prompts (e.g., CODER_INSTRUCTION.md). Python services like src/services/git_ops.py and src/services/e2b_executor.py must intercept this JSON, perform validation, format it into raw HTTP requests or proprietary SDK calls, and execute them over the network.
+LangGraph間で持ち回る状態（TypedDict等）に、直列制御およびリファクタリング制御のための変数を追加する。
 
-Context Injection: Responses from these APIs must be manually parsed, formatted into readable markdown or text, and injected back into the LLM's prompt context window. This often results in token bloat.
+対象ファイル: src/state.py
 
-Pain Points: * High Maintenance: Every new operational feature requires updating the prompt, the tool schema, the response parser, and the execution logic.
+CycleState クラスに以下のフィールドを追加・初期化する。
 
-Fragility: Unpredictable edge cases in API responses (like obscure Git merge conflicts, E2B timeout stack traces, or Jules session drops) often break the custom parsing logic, crashing the entire agent cycle.
+is_refactoring: bool (初期値: False)
 
-Authentication Sprawl: API keys (GITHUB_TOKEN, E2B_API_KEY) must be managed and injected at the request level throughout various deeply nested Python service classes.
+用途: Sandboxテストを通過した際、次に「Auditorへ行くか（実装段階）」「FinalCriticへ行くか（リファクタ段階）」を判定するためのフラグ。
 
-2.2 New Architecture (The "MCP Router" Approach)
+current_auditor_index: int (初期値: 1)
 
-The MCP architecture fundamentally decouples the LLM from the underlying API mechanics by introducing the universal JSON-RPC 2.0 standard directly to the AI model.
+用途: 直列Auditにおいて、現在何番目のAuditor（1〜3）がレビュー中かを管理する。
 
-Sidecar Servers: Three standalone Node.js MCP Server sidecars are introduced to the Docker environment, running as long-lived background subprocesses communicating via the stdio transport layer.
+audit_attempt_count: int (初期値: 0)
 
-Dynamic Discovery: The Python application uses an MCP Client (such as Anthropic's official mcp Python SDK and LangChain's langchain-mcp-adapters) to connect to these servers. The servers automatically advertise their available tools, semantic descriptions, and strongly-typed required schemas directly to the LLM upon initialization.
+用途: 同一Auditorからの指摘（Reject）による修正往復回数をカウントする（無限ループ防止、最大2回を想定）。
 
-Native Execution: The LLM natively generates tool calls via its built-in Function Calling capabilities. The MCP client transparently forwards these calls to the sidecar server. The server securely executes the logic (e.g., running a sandboxed bash command in E2B or committing a file payload to GitHub) and returns a natively formatted context payload directly back to the LLM.
+3. グラフ定義（Graph）の改修要件
 
-Benefits: Complete elimination of repetitive boilerplate code. The LLM exclusively handles the "what to do," the MCP server robustly handles the "how to do it," and the Python graph simply wires the network topologies together.
+LangGraphのエッジ（遷移）を5フェーズ仕様に再配線する。
 
-3. Scope of Work
+対象ファイル: src/graph.py
 
-3.1 In-Scope Implementations
+3.1 _create_coder_graph (Phase 2) の再配線
 
-GitHub MCP Server (@modelcontextprotocol/server-github):
+既存の committee_manager や uat_evaluate を削除し、直列ループを構築する。
 
-Target Nodes: Bound to the master_integrator, architect, and coder nodes.
+【追加・使用するノード】
 
-Capabilities: Handles reading repository structures, fetching file contents, querying issues, creating branches, pushing commits, and generating Pull Requests.
+coder_session
 
-E2B MCP Server (@e2b/mcp-server):
+self_critic (新規、または既存流用。初回実装のみ通す想定)
 
-Target Nodes: Bound to the sandbox_evaluator and qa nodes.
+sandbox_evaluate (Localでの静的テスト・単体テスト)
 
-Capabilities: Manages ephemeral cloud sandboxed code execution, safe bash command execution, filesystem modifications within the sandbox, and isolated unit testing.
+auditor_node (OpenRouter。直列で1〜3を順に実行)
 
-Jules MCP Server (@google/jules-mcp):
+refactor_node (新規。固定プロンプトによるリファクタ指示)
 
-Target Nodes: Bound to the global_refactor and audit_orchestrator components.
+final_critic_node (新規。自己最終レビュー)
 
-Capabilities: Handles scaling dynamic agent fleets, dispatching distributed worker sessions, tracking session telemetry, and performing complex multi-file reconciliation across a repository.
+【エッジ定義 (Edges & Conditional Edges)】
 
-Infrastructure Setup: Updating docker-compose.yml and Dockerfile to manage the Node.js runtime, ensuring local dependencies for the MCP sidecar lifecycles via stdio are met.
+START: START → coder_session
 
-LLM Tool Binding: Deep refactoring of the LangGraph/Agent nodes in src/nodes/*.py to bind MCP tools dynamically using .bind_tools().
+Coderからの分岐: coder_session → self_critic (初回のみ) → sandbox_evaluate。または2回目以降は直接 sandbox_evaluate。
 
-3.2 Out-of-Scope Configurations
+Sandboxからの分岐: sandbox_evaluate → route_sandbox_evaluate (Conditional)
 
-To ensure a safe, deterministic, and stable migration, the following items are strictly deferred to future phases:
+"failed" → coder_session (差し戻し)
 
-Memory MCP / Knowledge Graph Integrations: Replacing the core file-based state management (e.g., dev_documents/system_prompts_phase04/project_state.json, ALL_SPEC.md). The existing src/state_manager.py and src/state_validators.py will continue to handle inter-cycle state persistence.
+"auditor" (成功 & is_refactoring == False) → auditor_node
 
-Web Search / Browser Automation MCPs: Introducing external internet access via tools like Puppeteer or Brave Search introduces non-deterministic behavior and broad security risks that require a separate, extensive evaluation phase.
+"final_critic" (成功 & is_refactoring == True) → final_critic_node
 
-Workflow Alterations: Altering the fundamental 8-cycle multi-agent workflow. The architectural transition between Cycles 01 through 08 must remain conceptually and functionally identical to the end user.
+Auditorからの分岐: auditor_node → route_auditor (Conditional)
 
-4. Component Refactoring Plan
+"reject" → coder_session (修正指示)
 
-4.1 GitHub Operations Refactoring
+"next_auditor" → auditor_node (ループ、次のAuditorへ)
 
-Goal: Completely delegate all Git state tracking, branch creation, pulling, pushing, and PR management to the official GitHub MCP server.
+"pass_all" → refactor_node
 
-Additions:
+Refactorから: refactor_node → sandbox_evaluate
 
-Initialize @modelcontextprotocol/server-github within the new MCP client manager.
+※ refactor_node の中で state["is_refactoring"] = True に更新すること。
 
-Map tools such as get_file_content, create_branch, push_commit, and create_pull_request to specific agent nodes based on their strict required permissions (e.g., architect is read-only, master_integrator is write-enabled).
+Final Criticからの分岐: final_critic_node → route_final_critic (Conditional)
 
-Required Environment Variable: GITHUB_PERSONAL_ACCESS_TOKEN.
+"reject" → coder_session
 
-Deprecations / Deletions (High Volume):
+"approve" → END
 
-src/services/git_ops.py (Delete entirely)
+3.2 _create_integration_graph (Phase 3) の新設
 
-src/services/git/base.py (Delete entirely)
+すべての並列サイクルが完了した後に実行される、統合用の新しいグラフ。
 
-src/services/git/branching.py (Delete entirely)
+【ノード構成】
 
-src/services/git/checkout.py (Delete entirely)
+git_merge_node: int ブランチ等への標準的なGit Mergeを試行。
 
-src/services/git/merging.py (Delete entirely)
+master_integrator_node: JULESによる3-Way Diff競合解消。
 
-src/services/git/state.py (Delete entirely)
+global_sandbox_node: 統合後の全体静的解析（Linter/Pytest）。
 
-src/services/integration_usecase.py (Substantially refactor to remove manual git subprocess orchestrations; replace with MCP router logic mapping).
+【エッジ定義】
 
-4.2 E2B Sandbox Refactoring
+START → git_merge_node
 
-Goal: Delegate deterministic code execution, bash environment interactions, and test suite evaluations entirely to the E2B MCP server, preventing the LLM from hallucinating output formats or requiring custom SDK wrappers.
+git_merge_node → route_merge (Conditional)
 
-Additions:
+"conflict" → master_integrator_node
 
-Initialize @e2b/mcp-server.
+"success" → global_sandbox_node
 
-Expose the run_code and execute_command tools primarily to src/nodes/sandbox_evaluator.py and src/nodes/qa.py.
+master_integrator_node → git_merge_node (再試行)
 
-Required Environment Variable: E2B_API_KEY.
+global_sandbox_node → route_global_sandbox (Conditional)
 
-Deprecations / Deletions:
+"failed" → master_integrator_node (統合によるエンバグ修正)
 
-src/contracts/e2b_executor.py (Delete entirely)
+"pass" → END
 
-src/services/e2b_executor.py (Delete entirely)
+3.3 _create_qa_graph (Phase 4) の調整
 
-src/sandbox.py (Delete entirely)
+Phase 3が成功した後に独立して呼ばれる。現状の実装（UAT実行 → エラーならQA Auditor → JULESで修正）を維持。
 
-src/services/sandbox/sync.py (Delete entirely)
+4. ルーティング関数（Routers）の実装要件
 
-Remove any logic manually parsing stdout/stderr from standard shell executions.
+グラフの条件分岐エッジで使用される関数を定義する。
 
-4.3 Jules Session Orchestration Refactoring
+対象ファイル: src/nodes/routers.py
 
-Goal: Delegate ephemeral agent sessions, cloud workspace synchronization, and parallel agent dispatching to the Jules MCP.
+route_sandbox_evaluate(state: CycleState) -> str:
 
-Additions:
+state.get("sandbox_status") == "failed" なら "failed" を返す。
 
-Connect to @google/jules-mcp.
+成功時、state.get("is_refactoring") == True なら "final_critic" を返す。
 
-Bind orchestration tools (create_session, review_changes, list_sessions) to higher-level orchestrator nodes like src/nodes/global_refactor.py.
+それ以外は "auditor" を返す。
 
-Required Environment Variable: JULES_API_KEY.
+route_auditor(state: CycleState) -> str: (新規作成)
 
-Deprecations / Deletions:
+現在のAuditorのレビュー結果が「Reject（指摘あり）」なら、audit_attempt_count を+1し "reject" を返す（試行上限を超えた場合のフォールバック処理も考慮）。
 
-src/services/jules/api.py (Delete entirely)
+結果が「Approve（承認）」なら、current_auditor_index を+1する。
 
-src/services/jules_client.py (Delete entirely)
+current_auditor_index > 3 (最大数超過) になれば、全承認とみなし "pass_all" を返す。
 
-src/services/jules/session.py (Delete entirely)
+それ以外は "next_auditor" を返す。
 
-src/jules_session_state.py (Refactor to remove manual HTTP polling and pagination loops; rely on MCP tool execution states and Server-Sent Events if applicable).
+route_final_critic(state: CycleState) -> str: (新規作成)
 
-5. Technical Requirements & Implementation Details
+自己評価がNGなら "reject"、OKなら "approve" を返す。
 
-5.1 Infrastructure Changes (Dockerfile & docker-compose.yml)
+5. ユースケース（Services / Usecases）の改修要件
 
-The selected MCP servers operate as Node.js processes. To communicate via the highly efficient stdio (Standard Input/Output) transport layer, the main Python container must be capable of launching Node applications via npx without cross-container network latency.
+5.1 3-Way Diff 統合ロジックの実装
 
-Update the main Dockerfile:
+コンフリクトマーカー（<<<<<<<）を含むファイル全体を渡すのではなく、Baseと両者のDiffを分離してLLMに渡す。
 
-# Add Node.js runtime to the existing Python environment
-RUN apt-get update && apt-get install -y ca-certificates curl gnupg
-RUN curl -fsSL [https://deb.nodesource.com/setup_18.x](https://deb.nodesource.com/setup_18.x) | bash -
-RUN apt-get install -y nodejs
+対象ファイル: src/services/conflict_manager.py
 
-# Pre-install MCP servers globally to lock versions, prevent runtime downloading,
-# and drastically improve agent startup speeds
-RUN npm install -g @modelcontextprotocol/server-github @e2b/mcp-server @google/jules-mcp
+scan_conflicts メソッドは維持。
 
+build_conflict_package メソッドの改修:
+Gitコマンドを使用して、コンフリクトファイルの3つの状態を取得し、プロンプトを構築する。
 
-5.2 Python Dependencies (pyproject.toml)
+Baseコード取得コマンド例: git show :1:{file_path}
 
-Add the required communication adapters to bridge the LangGraph agents to the standard MCP servers.
+Local (Cycle A) 取得: git show :2:{file_path}
 
-[tool.poetry.dependencies]
-mcp = "^1.0.0"
-langchain-mcp-adapters = "^0.1.0" # Crucial for seamlessly binding tools to LangGraph models
+Remote (Cycle B) 取得: git show :3:{file_path}
 
+構築するプロンプトの構成案:
 
-5.3 MCP Client Manager (src/mcp_client_manager.py)
+あなた（Master Integrator）の任務は、Gitのコンフリクトを安全に解消することです。
+以下の共通祖先（Base）のコードに対して、Branch AとBranch Bの変更意図を両立させた、最終的な完全なコードを生成してください。
 
-A new singleton or dependency-injected managed service must be created to handle the lifecycle of the MCP subprocesses. This manager ensures they boot sequentially when the system starts and terminate cleanly without zombie processes when execution finishes.
+### Base (元のコード)
+```python
+{base_code}
+```
 
-Key Responsibilities:
+### Branch A の変更 (Local)
+```python
+{local_code}
+```
 
-Securely load .env credentials dynamically.
+### Branch B の変更 (Remote)
+```python
+{remote_code}
+```
 
-Manage concurrent connection pooling using the StdioServerParameters implementation.
 
-Expose standardized get_tools() interfaces to retrieve tool lists for dynamic agent initialization.
 
-Conceptual Implementation Snippet:
+5.2 UATフェーズの分離
 
-import os
-from mcp import StdioServerParameters
-from langchain_mcp_adapters.client import MultiMCPClient
+対象ファイル: src/services/uat_usecase.py
 
-async def initialize_mcp_clients() -> MultiMCPClient:
-    client = MultiMCPClient()
+Phase 2 (Coder Phase) から呼ばれていたトリガーを排除。
+
+Phase 3の統合が完了した後の Phase 4 (QA Graph) 専用のユースケース として振る舞うように、入力状態（State）の受け取り方を調整する。
+
+6. オーケストレーション（CLI / WorkflowService）の改修要件
+
+システム全体の実行順序を制御する。
+
+対象ファイル: src/cli.py および src/services/workflow.py
+
+run_cycle コマンド（または全体実行コマンド）のフローを以下のように変更する。
+
+並列実行: 各Cycleの build_coder_graph を並列（非同期）で実行し、すべてが END に到達するのを待機する。
+
+統合フェーズ呼出: すべてのPRが揃ったら、新設した build_integration_graph を単一プロセスで実行する。
+
+UATフェーズ呼出: 統合グラフが成功裡に終了した場合のみ、build_qa_graph を実行し、最終的なE2Eテストを行う。
+
+
+最終的なフローは下記を想定している
+
+flowchart TD
+    %% フェーズ0: 初期セットアップ (CLI)
+    subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
+        direction TB
+        InitCmd([CLI: nitpick init])
+        GenTemplates[".env.sample / .gitignore, strict ruff, mypy settings (Local)"]
+        UpdateDocker["add .env path on docker-compose.yml (User)"]
+        PrepareSpec["define ALL_SPEC.md (User)"]
+        
+        InitCmd --> GenTemplates --> UpdateDocker --> PrepareSpec
+    end
+
+    %% Phase1: Architect Graph
+    subgraph Phase1 ["Phase 1: Architect Graph"]
+        direction TB
+        InitCmd2([CLI: nitpick gen-cycles])
+        
+        subgraph Architect_Phase ["JULES: Architect Phase"]
+            ArchSession["architect_session\n(要件をN個のサイクルに分割)"]
+            ArchCritic{"self-critic review\n(固定プロンプトで計画レビュー)"}
+        end
+        
+        OutputSpecs[/"各サイクルの SPEC.md\n全体 UAT_SCENARIO.md"/]
+
+        PrepareSpec --> InitCmd2 --> ArchSession
+        ArchSession --> ArchCritic
+        ArchCritic -- "Reject" --> ArchSession
+        ArchCritic -- "Approve" --> OutputSpecs
+    end
+
+    %% フェーズ2: Coder Graph
+    subgraph Phase2 ["Phase 2: Coder Graph (並列実行: Cycle 1...N)"]
+        direction TB
+        CoderSession["JULES: coder_session\n(実装 & PR作成)"]
+        SelfCritic["JULES: SelfCriticReview\n(初期実装のレビュー)"]
+        SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
+        
+        AuditorNode{"OpenRouter: auditor_node\n(直列: Auditor 1→2→3)"}
+        RefactorNode["JULES: refactor_node\n(固定プロンプトでリファクタ)"]
+        FinalCritic{"JULES: Final Self-critic\n(自己最終レビュー)"}
+
+        OutputSpecs -->|サイクルNとして開始| CoderSession
+        
+        CoderSession -- "1回目" --> SelfCritic --> SandboxEval
+        CoderSession -- "2回目以降" --> SandboxEval
+        
+        SandboxEval -- "Fail" --> CoderSession
+        SandboxEval -- "Pass (実装中)" --> AuditorNode
+        SandboxEval -- "Pass (リファクタ済)" --> FinalCritic
+        
+        AuditorNode -- "Reject (各最大2回)" --> CoderSession
+        AuditorNode -- "Pass All" --> RefactorNode
+        
+        RefactorNode --> SandboxEval
+        
+        FinalCritic -- "Reject" --> CoderSession
+    end
+
+    %% フェーズ3: Integration Phase
+    subgraph Phase3 ["Phase 3: Integration Phase"]
+        direction TB
+        MergeTry{"Local: Git PR Merge\n(intブランチへ統合)"}
+        MasterIntegrator["JULES: master_integrator\n(3-Way Diffで競合解消)"]
+        GlobalSandbox{"LOCAL: global_sandbox\n(統合後の全体Linter/Pytest)"}
+    end
+
+    %% フェーズ4: UAT & QA Graph
+    subgraph Phase4 ["Phase 4: UAT & QA Graph"]
+        direction TB
+        UatEval{"LOCAL: uat_evaluate\n(Playwright E2Eテスト等)"}
+        QaAuditor["OpenRouter: qa_auditor\n(エラーログ/画像解析)"]
+        QaSession["JULES: qa_session\n(統合環境での修正)"]
+        EndNode(((END: 開発完了)))
+    end
+
+    %% ==========================================
+    %% フェーズ間の接続（エラー防止のため外側に記述）
+    %% ==========================================
     
-    # 1. Initialize GitHub MCP (Using pre-installed global npm package)
-    await client.connect(
-        "github",
-        StdioServerParameters(
-            command="npx",
-            args=["-y", "@modelcontextprotocol/server-github"],
-            env={"GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN")}
-        )
-    )
+    FinalCritic -- "Approve\n(全PR出揃う)" --> MergeTry
     
-    # 2. Initialize E2B MCP
-    await client.connect(
-        "e2b",
-        StdioServerParameters(
-            command="npx",
-            args=["-y", "@e2b/mcp-server"],
-            env={"E2B_API_KEY": os.getenv("E2B_API_KEY")}
-        )
-    )
+    MergeTry -- "Conflict" --> MasterIntegrator
+    MasterIntegrator --> MergeTry
     
-    return client
-
-# Typical Usage in a LangGraph Node (e.g., src/nodes/coder.py)
-# tools = await client.get_tools()
-# agent_with_tools = llm.bind_tools(tools)
-
-
-6. Migration Strategy (Phased Approach)
-
-A "big bang" rewrite poses an unacceptable risk to the integrity of the 8-cycle workflow. The migration will follow a strict strangler fig pattern, replacing domains sequentially and relying heavily on the existing test suites (e.g., tests/ac_cdd/integration/test_end_to_end_workflow.py).
-
-Phase 0: Infrastructure Prep & Tool Discovery Validation
-
-Update Dockerfile and pyproject.toml.
-
-Implement src/mcp_client_manager.py.
-
-Exit Criteria: Verify that the Docker container can successfully spin up the MCP stdio processes, fetch the complete tool schemas, and log them without blocking the main asyncio event loop.
-
-Phase 1: E2B Sandbox Isolation (Low Impact, High Yield)
-
-Inject the E2B MCP tools into the sandbox_evaluator.py agent.
-
-Update the QA_AUDITOR_INSTRUCTION.md and UAT_AUDITOR_INSTRUCTION.md prompts to explicitly instruct the agent to use the provided run_code MCP tool instead of generating custom JSON payloads.
-
-Exit Criteria: tests/unit/test_sandbox_evaluator.py and tests/unit/test_e2b_executor.py (rewritten for MCP) pass reliably. The evaluator can read test failures and output logic correctly via MCP context.
-
-Cleanup: Delete src/contracts/e2b_executor.py.
-
-Phase 2: GitHub Read-Only Operations (Medium Impact)
-
-Expose read-only tools (get_file_content, search_repositories) from the GitHub MCP to architect.py and auditor.py.
-
-Remove prompt logic instructing the LLM to ask the custom Python backend for file contents. Let the LLM execute the tools autonomously during its reasoning loops.
-
-Exit Criteria: Context injection matches the expectations of Cycle 01 and Cycle 02 in test_end_to_end_workflow.py.
-
-Phase 3: GitHub Write Operations & Jules Orchestration (High Risk)
-
-Refactor master_integrator.py to utilize create_pull_request and push_commit natively.
-
-Refactor global_refactor.py and audit_orchestrator.py to dispatch and monitor parallel worker sessions via the Jules MCP.
-
-Exit Criteria: End-to-end conflict resolution and branching logic works flawlessly in tests/ac_cdd/integration/test_git_robustness.py.
-
-Cleanup: Conduct the final deletion of the src/services/git/ and src/services/jules/ directory trees.
-
-7. Risk Management & Mitigation Strategies
-
-While MCP drastically reduces custom Python code, delegating execution to black-box external servers introduces new operational risks that must be handled gracefully.
-
-7.1 Context Window Exhaustion (Token Limits)
-
-Risk: MCP tools execute dynamically. If an agent calls get_file_content on a massive, minified, or auto-generated file (e.g., package-lock.json), the MCP server will return it in its entirety, potentially blowing out the LLM's token limit and crashing the graph execution.
-
-Mitigation: Implement strict prompt engineering guardrails in system prompts (e.g., ARCHITECT_INSTRUCTION.md), requiring the LLM to use line-number limits or chunking parameters when reading files. Alternatively, implement an interception/middleware layer in mcp_client_manager.py that truncates exceptionally large tool responses before they are injected into the LLM context.
-
-7.2 Tool Hallucination & Security Escalation
-
-Risk: The LLM might hallucinate an MCP tool schema, pass incorrect parameters, or attempt to call a destructive tool (e.g., push_commit to the main branch) prematurely before a review cycle is completed.
-
-Mitigation: Rely on the Mechanical Gates tested in tests/unit/test_cycle03_mechanical_gate.py. Crucially, only bind destructive write tools to specific nodes (master_integrator.py) that are authorized to use them. Read-only nodes (architect.py) must be strictly supplied with read-only toolsets.
-
-7.3 Debugging Opacity & Telemetry Loss
-
-Risk: Because the communication happens over stdio binary streams rather than standard HTTP, tracing exactly what the LLM sent to the MCP server and what it received back becomes difficult, breaking the deep visibility required for LOG_ANALYSIS.md and test_execution_log.txt.
-
-Mitigation: Utilize LangSmith, LangFuse, or custom LangChain callbacks within the mcp_client_manager.py to meticulously log the intermediate ToolCall and ToolMessage events natively within the LangGraph state execution.
-
-8. Testing Strategy for Safe MCP Migration
-
-To ensure the migration does not regress the highly stable 8-cycle architecture, a dedicated testing suite must be generated and executed prior to full deployment.
-
-8.1 Unit Testing the MCP Router Components
-
-The core logic shift requires new unit tests focused on tool binding and client initialization.
-
-Target: tests/unit/test_mcp_client_manager.py (New File)
-
-Strategy: Mock the StdioServerParameters to verify that the MultiMCPClient correctly discovers and registers tools from a mock stdio stream without making actual external network calls. Ensure timeout and retry mechanisms for server boot failures are active.
-
-8.2 Integration Testing with Mock MCP Servers
-
-To test the LangGraph nodes without exhausting API limits or mutating real repositories.
-
-Target: tests/ac_cdd/integration/test_mcp_node_integration.py (New File)
-
-Strategy: Create a lightweight, dummy Node.js MCP server that mimics the schemas of GitHub and E2B.
-
-Specific Tests to Generate:
-
-test_mcp_github_read_fallback(): Simulates a scenario where get_file_content fails (e.g., file not found). Verifies that the architect.py node gracefully handles the MCP error response and requests alternative context rather than crashing.
-
-test_mechanical_gate_permissions(): Attempts to invoke a push_commit action from the auditor.py node, asserting that the tool execution is firmly rejected or omitted from the toolset.
-
-8.3 End-to-End Shadow Testing
-
-Ensure the functional parity of the new MCP Router vs. the legacy API Wrapper.
-
-Target: tests/ac_cdd/integration/test_end_to_end_workflow.py
-
-Strategy: Run the existing e2e test suite pointing the system at a dedicated, isolated test repository.
-
-Specific Tests to Validate:
-
-test_mcp_e2b_sandbox_execution(): Asserts that when the sandbox_evaluator generates a broken Python script, the E2B MCP tool correctly traps the exception and feeds the stderr back into the graph, resulting in a successful Cycle 04 failure categorization.
-
-test_mcp_jules_session_dispatch(): Triggers a massive refactor that relies on global_refactor.py. Asserts that the Jules MCP correctly dispatches parallel agents and returns the reconciled session diffs without dropping state.
-
-8.4 Rollback Protocol
-
-If any End-to-End integration test fails critically due to an upstream MCP server bug:
-
-Maintain the legacy src/services/ folders in a deprecated state (feature-flagged) for exactly one minor version release (e.g., v2.0-beta).
-
-Configure src/config.py with an USE_LEGACY_API_WRAPPERS=True environment toggle that dynamically skips MCP tool binding and falls back to manual JSON schema prompts.
-
-
-**BE CAREFUL ON APIKEY LEAKAGE**
-during the last developments I got a notice from github as below:
-So make sure the API key / token are not leaked via output texts etc...
-Please resolve these alerts
-
-Anyone with read access can view exposed secrets. Consider rotating and revoking each valid secret to avoid any irreversible damage.
-
-GCP API Key Bound to a Service Account Review secret detected in ...ents/test_execution_log.txt#L1316 • commit 668952d0 OpenRouter API Key Review secret detected in ...ents/test_execution_log.txt#L1316 • commit 668952d0
-
-this is because of you! I registered several apikeys to have you test with local enviroments.
-
-in the other sessions, we you have already identified the issue. pls fix the problem as the branch is not integrated. pls make sure the problem is now completely fixed.
-
-I've identified that the langchain-mcp-adapters library logs warnings that contain the complete environment when it detects unexpanded variables in environment variables like SUDO_COMMAND. Since SUDO_COMMAND contains commands with API keys injected via the environment in your specific setup, it leads to the keys being leaked into test logs.
-
-I have updated the McpClientManager to sanitize the environment by actively filtering out variables starting with SUDO_ before passing them to the MCP sub-process. This prevents the warning and subsequent log leakage.
-
-I am now returning to Phase 4 to finish removing legacy modules.
-
-I understand the urgency and the API key leakage issue.
-
-The leakage in test_execution_log.txt was caused by langchain-mcp-adapters logging the env dictionary when the MultiServerMCPClient is initialized with unexpanded environment variables like SUDO_COMMAND, which contained the injected test API keys.
-
-I've already patched McpClientManager to sanitize os.environ before merging it into the subprocess config, ensuring SUDO_* commands (and thus the injected keys) are not passed or logged. I also removed the existing test_execution_log.txt which contained the leaked keys.
-
-I am finalizing Phase 4 now (removing legacy modules completely) and will proceed to open the Pull Request immediately after resolving the remaining import errors.
+    MergeTry -- "Success" --> GlobalSandbox
+    GlobalSandbox -- "Fail (統合による破壊)" --> MasterIntegrator
+    
+    GlobalSandbox -- "Pass" --> UatEval
+    
+    UatEval -- "Fail" --> QaAuditor
+    QaAuditor --> QaSession
+    QaSession --> UatEval
+    
+    UatEval -- "Pass" --> EndNode
+
+    %% ==========================================
+    %% スタイリング
+    %% ==========================================
+    classDef graphNode fill:#f9f9f9,stroke:#333,stroke-width:1px;
+    classDef conditional fill:#fff3cd,stroke:#ffeeba,stroke-width:2px;
+    classDef success fill:#d4edda,stroke:#c3e6cb,stroke-width:2px;
+    classDef highlight fill:#e1f5fe,stroke:#03a9f4,stroke-width:2px;
+    
+    class ArchCritic,SandboxEval,AuditorNode,FinalCritic,MergeTry,GlobalSandbox,UatEval conditional;
+    class EndNode success;
+    class GlobalSandbox highlight;
