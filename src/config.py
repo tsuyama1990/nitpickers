@@ -40,7 +40,15 @@ def _load_env() -> None:
         msg = f"Environment file path escapes current working directory: {_nitpick_env}"
         raise ValueError(msg)
 
-    allowed_prefixes = ("NITPICK_", "AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    allowed_prefixes = (
+        "NITPICK_",
+        "AC_CDD_",
+        "JULES_",
+        "E2B_",
+        "OPENROUTER_",
+        "OPENAI_",
+        "ANTHROPIC_",
+    )
     safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
     env_vars = dotenv_values(_nitpick_env)
 

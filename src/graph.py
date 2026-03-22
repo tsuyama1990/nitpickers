@@ -158,7 +158,6 @@ class GraphBuilder:
         workflow.add_node("qa_session", self.nodes.qa_session_node)
         workflow.add_node("qa_auditor", self.nodes.qa_auditor_node)
 
-
         workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
 
         workflow.add_edge(START, "uat_evaluate")

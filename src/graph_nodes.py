@@ -111,6 +111,7 @@ class CycleNodes(IGraphNodes):
 
     async def git_merge_node(self, state: "Any") -> dict[str, Any]:
         from src.services.git_ops import GitManager
+
         try:
             gm = GitManager()
             await gm.merge_pr("1")
@@ -122,11 +123,13 @@ class CycleNodes(IGraphNodes):
     async def master_integrator_node(self, state: "Any") -> dict[str, Any]:
         from src.nodes.master_integrator import MasterIntegratorNodes
         from src.services.jules_client import JulesClient
+
         integrator = MasterIntegratorNodes(jules_client=JulesClient())
         return await integrator.master_integrator_node(state)
 
     async def global_sandbox_node(self, state: "Any") -> dict[str, Any]:
         from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+
         sandbox = SandboxEvaluatorNodes()
         # Mocking CycleState to fit sandbox_evaluate_node expectation
         return await sandbox.sandbox_evaluate_node(CycleState(cycle_id="00"))
@@ -172,4 +175,5 @@ class CycleNodes(IGraphNodes):
 
     def route_coder_critic(self, state: CycleState) -> str:
         from src.nodes.routers import route_coder_critic
+
         return route_coder_critic(state)
