@@ -22,6 +22,7 @@ except ImportError:
 
 app = marimo.App()
 
+
 @app.cell
 def test_ux_flow_cycle_01() -> None:
     # Verify Coder_Phase_01 Happy Path (Initial Coder -> Sandbox -> 3 Auditors -> Refactor -> Sandbox -> Final Critic)

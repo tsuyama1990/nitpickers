@@ -23,6 +23,19 @@ class ConflictRegistryItem(BaseModel):
     conflict_markers: list[str] = Field(..., description="List of markers detected")
     resolution_attempts: int = Field(default=0, description="Number of attempts to resolve")
     resolved: bool = Field(default=False, description="Whether the conflict is resolved")
+    base_content: str | None = Field(default=None, description="Code from common ancestor")
+    local_content: str | None = Field(default=None, description="Code from local branch")
+    remote_content: str | None = Field(default=None, description="Code from remote branch")
+
+
+class ConflictResolutionSchema(BaseModel):
+    """Schema for LLM to return resolved code for a conflict."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    resolved_code: str = Field(
+        ..., description="The fully resolved file content with no conflict markers"
+    )
 
 
 class E2BExecutionResult(BaseModel):

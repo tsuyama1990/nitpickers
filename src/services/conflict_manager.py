@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 from src.domain_models.execution import ConflictRegistryItem
+from src.process_runner import ProcessRunner
 from src.utils import logger
 
 
@@ -14,6 +15,7 @@ class ConflictManager:
 
     def __init__(self) -> None:
         self.conflict_marker_pattern = re.compile(r"^(<{7}\s.*|={7}|>{7}\s.*)$", re.MULTILINE)
+        self.runner = ProcessRunner()
 
     def scan_conflicts(self, repo_path: Path) -> list[ConflictRegistryItem]:
         """
@@ -93,21 +95,35 @@ class ConflictManager:
 
         return True
 
-    def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
+    async def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
         """
-        Builds the conflict resolution prompt package for the Jules Master Integrator session.
-        Reads the conflicted file's current state and potentially incorporates context.
+        Builds the conflict resolution prompt package using a 3-Way Diff strategy.
+        Retrieves the Base, Local, and Remote file contents from Git.
         """
-        file_path = repo_path / item.file_path
-
         try:
-            content = file_path.read_text(encoding="utf-8")
-        except Exception as e:
-            logger.error(f"Failed to read file for conflict package: {e}")
-            content = "Error reading file content."
+            from src.config import settings
 
-        # Read specific instructions from MASTER_INTEGRATOR_PROMPT.md if available
-        # or fall back to an inline prompt.
+            git_cmd = settings.tools.git_cmd
+        except ImportError:
+            git_cmd = "git"
+
+        # Helper to get file content from git show
+        async def _get_git_content(stage: int) -> str:
+            stdout, _stderr, exit_code, _timeout = await self.runner.run_command(
+                [git_cmd, "show", f":{stage}:{item.file_path}"], cwd=repo_path, check=False
+            )
+            if exit_code != 0 or not stdout:
+                return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
+            return stdout
+
+        base_code = await _get_git_content(1)
+        local_code = await _get_git_content(2)
+        remote_code = await _get_git_content(3)
+
+        item.base_content = base_code
+        item.local_content = local_code
+        item.remote_content = remote_code
+
         try:
             from src.config import settings
 
@@ -117,18 +133,26 @@ class ConflictManager:
 
         if not prompt_template:
             prompt_template = (
-                "You are the Master Integrator. Resolve the Git conflicts in this file.\n"
-                "Do not just pick A or B; understand the intent of both branches.\n"
-                "Apply DRY principles. Return the completely unified file without any `<<<<<<<` markers.\n"
-                "Respond ONLY with the complete fixed file content wrapped in a markdown code block."
+                "あなた(Master Integrator)の任務は、Gitのコンフリクトを安全に解消することです。\n"
+                "以下の共通祖先(Base)のコードに対して、Branch AとBranch Bの変更意図を両立させた、"
+                "最終的な完全なコードを生成してください。\n"
+                "コードにはコンフリクトマーカー(<<<<<<<)を含めないでください。"
             )
 
         return f"""{prompt_template}
 
-###################
-File: {item.file_path}
-
+### Base (元のコード)
+```python
+{base_code}
 ```
-{content}
+
+### Branch A の変更 (Local)
+```python
+{local_code}
+```
+
+### Branch B の変更 (Remote)
+```python
+{remote_code}
 ```
 """

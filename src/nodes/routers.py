@@ -22,7 +22,11 @@ def check_coder_outcome(state: CycleState) -> str:
         return settings.node_sandbox_evaluate
     if status == FlowStatus.READY_FOR_AUDIT:
         # Route to self_critic only on the first attempt
-        if state.iteration_count <= 1 and state.audit_attempt_count == 0 and state.current_auditor_index == 1:
+        if (
+            state.iteration_count <= 1
+            and state.audit_attempt_count == 0
+            and state.current_auditor_index == 1
+        ):
             return "self_critic"
         return settings.node_sandbox_evaluate
     return settings.node_uat_evaluate
@@ -68,8 +72,6 @@ def route_final_critic(state: CycleState) -> str:
     if status == FlowStatus.COMPLETED:
         return "approve"
     return "reject"
-
-
 
 
 def route_qa(state: CycleState) -> str:

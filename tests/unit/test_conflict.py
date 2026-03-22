@@ -16,13 +16,16 @@ def test_scan_conflicts(conflict_manager: ConflictManager, tmp_path: Path) -> No
     """Test scan_conflicts extracts git markers correctly."""
     # Create a mock conflicted file
     conflicted_file = tmp_path / "test_file.py"
-    conflicted_content = """def my_func():
-<<<<<<< HEAD
-    return 1
-=======
-    return 2
->>>>>>> feature_branch
-"""
+    lines = [
+        "def my_func():",
+        "<<<<<<< HEAD",
+        "    return 1",
+        "=======",
+        "    return 2",
+        ">>>>>>> feature_branch",
+        "",
+    ]
+    conflicted_content = "\n".join(lines)
     conflicted_file.write_text(conflicted_content)
 
     # Clean file
@@ -56,14 +59,70 @@ def test_validate_resolution_success(conflict_manager: ConflictManager, tmp_path
 def test_validate_resolution_failure(conflict_manager: ConflictManager, tmp_path: Path) -> None:
     """Test validate_resolution on a file with markers."""
     conflicted_file = tmp_path / "conflicted_file.py"
-    conflicted_content = """def my_func():
-<<<<<<< HEAD
-    return 1
-=======
-    return 2
->>>>>>> feature_branch
-"""
+    lines = [
+        "def my_func():",
+        "<<<<<<< HEAD",
+        "    return 1",
+        "=======",
+        "    return 2",
+        ">>>>>>> feature_branch",
+        "",
+    ]
+    conflicted_content = "\n".join(lines)
     conflicted_file.write_text(conflicted_content)
 
     with pytest.raises(ConflictMarkerRemainsError, match="still contains git conflict markers"):
         conflict_manager.validate_resolution(conflicted_file)
+
+
+@pytest.mark.asyncio
+async def test_build_conflict_package_all_exist(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
+    from src.domain_models.execution import ConflictRegistryItem
+
+    item = ConflictRegistryItem(
+        file_path="test_file.py", conflict_markers=["<<<<<<<", "=======", ">>>>>>>"]
+    )
+
+    with patch("src.process_runner.ProcessRunner.run_command") as mock_run:
+        # Mocking ProcessRunner to return code for base, local, remote respectively
+        mock_run.side_effect = [
+            ("def base():\n    pass", "", 0, False),
+            ("def local():\n    pass", "", 0, False),
+            ("def remote():\n    pass", "", 0, False),
+        ]
+
+        prompt = await conflict_manager.build_conflict_package(item, tmp_path)
+
+        assert "Base" in prompt
+        assert "def base():\n    pass" in prompt
+        assert "Local" in prompt
+        assert "def local():\n    pass" in prompt
+        assert "Remote" in prompt
+        assert "def remote():\n    pass" in prompt
+
+
+@pytest.mark.asyncio
+async def test_build_conflict_package_no_base(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
+    from src.domain_models.execution import ConflictRegistryItem
+
+    item = ConflictRegistryItem(
+        file_path="new_file.py", conflict_markers=["<<<<<<<", "=======", ">>>>>>>"]
+    )
+
+    with patch("src.process_runner.ProcessRunner.run_command") as mock_run:
+        # Mocking ProcessRunner to return code, base fails (new file)
+        mock_run.side_effect = [
+            ("", "fatal: path 'new_file.py' does not exist in 'HEAD'", 128, False),
+            ("def local():\n    pass", "", 0, False),
+            ("def remote():\n    pass", "", 0, False),
+        ]
+
+        prompt = await conflict_manager.build_conflict_package(item, tmp_path)
+
+        assert "<FILE_NOT_IN_BASE>" in prompt
+        assert "Local" in prompt
+        assert "Remote" in prompt

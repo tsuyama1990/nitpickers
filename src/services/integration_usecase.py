@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.domain_models.execution import ConflictRegistryItem
+from src.domain_models.execution import ConflictRegistryItem, ConflictResolutionSchema
 from src.services.conflict_manager import ConflictManager, ConflictMarkerRemainsError
 from src.services.file_ops import FilePatcher
 from src.services.jules_client import JulesClient
@@ -62,13 +62,19 @@ class IntegrationUsecase:
         self, session_id: str, item: ConflictRegistryItem, repo_path: Path
     ) -> None:
         max_retries = self.max_retries
-        # message history for this file context inside the session.
-        # we can just use the global session, but for specific files, we might need a fresh context
-        # or we just rely on the LLM's capacity if we maintain one list. For Master Integrator,
-        # we'll maintain history just for this file's resolution to keep context window manageable.
         message_history: list[dict[str, str]] = []
 
-        prompt = self.conflict_manager.build_conflict_package(item, repo_path)
+        prompt = await self.conflict_manager.build_conflict_package(item, repo_path)
+
+        # Enforce JSON output for validation against schema
+        prompt += (
+            "\n\nReturn the exact JSON object strictly matching this schema:\n"
+            f"{ConflictResolutionSchema.model_json_schema()}"
+        )
+
+        from src.config import settings
+
+        model = settings.reviewer.smart_model
 
         while item.resolution_attempts < max_retries:
             item.resolution_attempts += 1
@@ -76,19 +82,35 @@ class IntegrationUsecase:
                 f"Resolving {item.file_path} (Attempt {item.resolution_attempts}/{max_retries})"
             )
 
-            # Send to Jules
             response_code = await self.jules.send_message_to_session(
-                session_id, prompt, message_history
+                session_id, prompt, message_history, model=model
             )
 
-            # Extract code block if any
-            clean_code = self._extract_code_block(response_code)
+            clean_code = None
+            try:
+                # Clean up markdown JSON blocks if present
+                import re
 
-            # Apply to file
+                json_str = response_code
+                match = re.search(r"```(?:json)?\n(.*?)```", response_code, re.DOTALL)
+                if match:
+                    json_str = match.group(1).strip()
+
+                resolution = ConflictResolutionSchema.model_validate_json(json_str)
+                clean_code = resolution.resolved_code
+            except Exception as e:
+                logger.warning(f"Failed to parse or validate schema: {e}")
+                prompt = (
+                    "Your response did not match the strictly required JSON schema or was malformed.\n"
+                    f"Error: {e}\n"
+                    "Ensure your entire response is a single valid JSON object strictly matching:\n"
+                    f"{ConflictResolutionSchema.model_json_schema()}"
+                )
+                continue
+
             target_file = repo_path / item.file_path
             target_file.write_text(clean_code, encoding="utf-8")
 
-            # Validate
             try:
                 if self.conflict_manager.validate_resolution(target_file):
                     logger.info(f"Successfully resolved {item.file_path}.")
@@ -101,16 +123,5 @@ class IntegrationUsecase:
                     "Fix it. Ensure the output does not contain standard Git conflict markers."
                 )
 
-        # If loop exits without returning, max retries reached.
         msg = f"Maximum conflict retries exceeded for {item.file_path}."
         raise MaxRetriesExceededError(msg)
-
-    def _extract_code_block(self, response: str) -> str:
-        """Extracts python/markdown code block if present."""
-        import re
-
-        match = re.search(r"```(?:\w+\n)?(.*?)```", response, re.DOTALL)
-        if match:
-            return match.group(1).strip()
-        # Fallback to returning the whole response if no markdown block
-        return response.strip()
