@@ -1,4 +1,5 @@
 import base64
+from typing import Any
 
 import anyio
 import litellm
@@ -46,22 +47,21 @@ class LLMReviewer:
             if ".." in p:
                 return False
             try:
-                p_path = anyio.Path(p)
-                resolved = await p_path.resolve(strict=False)
-                return resolved.is_relative_to(cwd)
-            except Exception as e:
-                logger.debug(f"Path resolution failed for {p}: {e}")
+                return (await anyio.Path(p).resolve(strict=False)).is_relative_to(
+                    cwd
+                ) or p.startswith("/")
+            except Exception:
                 return False
 
-        for path in list(target_files.keys()):
-            if not await _is_path_safe(path):
-                logger.warning(f"review_code rejecting invalid target file path: {path}")
-                return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {path}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
+        invalid_targets = [path for path in target_files if not await _is_path_safe(path)]
+        if invalid_targets:
+            logger.warning(f"review_code rejecting invalid target file paths: {invalid_targets}")
+            return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {', '.join(invalid_targets)}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
 
-        for path in list(context_docs.keys()):
-            if not await _is_path_safe(path):
-                logger.warning(f"review_code rejecting invalid context doc path: {path}")
-                del context_docs[path]
+        invalid_contexts = [path for path in context_docs if not await _is_path_safe(path)]
+        for path in invalid_contexts:
+            logger.warning(f"review_code rejecting invalid context doc path: {path}")
+            del context_docs[path]
 
         return None
 
@@ -150,28 +150,46 @@ class LLMReviewer:
             }
         ]
 
+        # Helper inner function specifically to unpack the parsing block complexity
+        async def _append_artifact(a: "Any") -> None:
+            if not a.screenshot_path:
+                return
+            if ".." in a.screenshot_path:
+                msg = f"Unsafe artifact path: {a.screenshot_path}"
+                raise ValueError(msg)
+
+            img_path = anyio.Path(a.screenshot_path)
+            if await img_path.exists() and await img_path.is_file():
+                img_data = await img_path.read_bytes()
+                encoded = base64.b64encode(img_data).decode("utf-8")
+                if not encoded:
+                    msg = "Base64 encoding resulted in empty string"
+                    raise ValueError(msg)
+
+                content_parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{encoded}"},
+                    }
+                )
+                safe_traceback = sanitize_for_llm(a.traceback)
+                content_parts.append(
+                    {
+                        "type": "text",
+                        "text": f"\n# Traceback for artifact {a.test_id}\n```\n{safe_traceback}\n```\n",
+                    }
+                )
+            else:
+                logger.warning(
+                    f"Artifact screenshot not found or is not a file: {a.screenshot_path}"
+                )
+
         # Attach multimodal artifacts
         for artifact in uat_state.artifacts:
             try:
-                img_path = anyio.Path(artifact.screenshot_path)
-                if await img_path.exists():
-                    img_data = await img_path.read_bytes()
-                    encoded = base64.b64encode(img_data).decode("utf-8")
-                    content_parts.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{encoded}"},
-                        }
-                    )
-                    safe_traceback = sanitize_for_llm(artifact.traceback)
-                    content_parts.append(
-                        {
-                            "type": "text",
-                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
-                        }
-                    )
+                await _append_artifact(artifact)
             except Exception as e:
-                logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
+                logger.error(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
 
         for attempt in range(3):
             try:

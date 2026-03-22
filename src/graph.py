@@ -210,5 +210,5 @@ class GraphBuilder:
 
         return workflow
 
-    def build_integration_graph(self) -> CompiledStateGraph[Any, Any, Any, Any]:
+    def build_integration_graph(self) -> CompiledStateGraph["Any", Any, Any, Any]:
         return self._create_integration_graph().compile(checkpointer=MemorySaver())

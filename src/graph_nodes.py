@@ -135,13 +135,19 @@ class CycleNodes(IGraphNodes):
         return await sandbox.sandbox_evaluate_node(CycleState(cycle_id="00"))
 
     def route_merge(self, state: "Any") -> str:
-        status = state.get("conflict_status")
+        status = (
+            state.get("conflict_status", None)
+            if hasattr(state, "get")
+            else getattr(state, "conflict_status", None)
+        )
         if status == "conflict_detected":
             return "conflict"
         return "success"
 
     def route_global_sandbox(self, state: "Any") -> str:
-        status = state.get("status")
+        status = (
+            state.get("status", None) if hasattr(state, "get") else getattr(state, "status", None)
+        )
         if status == "tdd_failed":
             return "failed"
         return "pass"

@@ -120,7 +120,9 @@ class IntegrationUsecase:
                 logger.warning(f"Resolution failed for {item.file_path}: {e}")
                 prompt = (
                     "Your resolution failed. Conflict markers `<<<<<<<` still exist. "
-                    "Fix it. Ensure the output does not contain standard Git conflict markers."
+                    "Fix it. Ensure the output does not contain standard Git conflict markers.\n"
+                    "Return the exact JSON object strictly matching this schema:\n"
+                    f"{ConflictResolutionSchema.model_json_schema()}"
                 )
 
         msg = f"Maximum conflict retries exceeded for {item.file_path}."

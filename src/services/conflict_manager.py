@@ -109,12 +109,18 @@ class ConflictManager:
 
         # Helper to get file content from git show
         async def _get_git_content(stage: int) -> str:
-            stdout, _stderr, exit_code, _timeout = await self.runner.run_command(
-                [git_cmd, "show", f":{stage}:{item.file_path}"], cwd=repo_path, check=False
-            )
-            if exit_code != 0 or not stdout:
+            try:
+                stdout, _stderr, exit_code, _timeout = await self.runner.run_command(
+                    [git_cmd, "show", f":{stage}:{item.file_path}"], cwd=repo_path, check=False
+                )
+                if exit_code != 0 or not stdout:
+                    return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
+                return str(stdout)
+            except Exception as e:
+                logger.warning(
+                    f"Error executing git show for stage {stage} on {item.file_path}: {e}"
+                )
                 return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
-            return stdout
 
         base_code = await _get_git_content(1)
         local_code = await _get_git_content(2)

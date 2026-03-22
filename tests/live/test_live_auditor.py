@@ -35,15 +35,21 @@ async def test_live_uat_auditor_diagnosis(monkeypatch: pytest.MonkeyPatch) -> No
     state.project_session_id = "proj-session-123"
     state.uat = UATState(uat_execution_state=uat_state)
 
-    # Act
-    result = await uat_auditor.execute(state)
+    try:
+        # Act
+        result = await uat_auditor.execute(state)
 
-    # Assert
-    assert "current_fix_plan" in result, "Expected 'current_fix_plan' in result"
-    fix_plan = result["current_fix_plan"]
+        # Assert
+        assert "current_fix_plan" in result, "Expected 'current_fix_plan' in result"
+        fix_plan = result["current_fix_plan"]
 
-    # Assert it's a valid FixPlanSchema and has at least one patch
-    assert isinstance(fix_plan, FixPlanSchema), f"Expected FixPlanSchema, got {type(fix_plan)}"
-    assert hasattr(fix_plan, "defect_description")
-    assert isinstance(fix_plan.defect_description, str)
-    assert len(fix_plan.patches) > 0, "Expected at least one patch in the fix plan"
+        # Assert it's a valid FixPlanSchema and has at least one patch
+        assert isinstance(fix_plan, FixPlanSchema), f"Expected FixPlanSchema, got {type(fix_plan)}"
+        assert hasattr(fix_plan, "defect_description")
+        assert isinstance(fix_plan.defect_description, str)
+        assert len(fix_plan.patches) > 0, "Expected at least one patch in the fix plan"
+    finally:
+        import litellm
+
+        litellm.success_callback = []
+        litellm.failure_callback = []
