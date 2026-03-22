@@ -66,7 +66,7 @@ async def test_sandbox_evaluator_all_pass() -> None:
     mock_runner = AsyncMock(spec=ProcessRunner)
     mock_runner.run_command.return_value = ("ok", "", 0, False)
 
-    node = SandboxEvaluatorNodes(e2b_tools=[])
+    node = SandboxEvaluatorNodes(process_runner=mock_runner)
     state = CycleState(cycle_id="01")
 
     result = await node.sandbox_evaluate_node(state)
@@ -89,7 +89,7 @@ async def test_sandbox_evaluator_lint_fails() -> None:
         ("ok", "", 0, False),  # pytest
     ]
 
-    node = SandboxEvaluatorNodes(e2b_tools=[])
+    node = SandboxEvaluatorNodes(process_runner=mock_runner)
     state = CycleState(cycle_id="01")
 
     result = await node.sandbox_evaluate_node(state)
@@ -111,7 +111,7 @@ async def test_sandbox_evaluator_handles_exception() -> None:
     msg = "Simulated crash"
     mock_runner.run_command.side_effect = Exception(msg)
 
-    node = SandboxEvaluatorNodes(e2b_tools=[])
+    node = SandboxEvaluatorNodes(process_runner=mock_runner)
     state = CycleState(cycle_id="01")
 
     result = await node.sandbox_evaluate_node(state)

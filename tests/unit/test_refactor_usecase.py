@@ -17,7 +17,7 @@ def mock_jules_client() -> AsyncMock:
 
 @pytest.mark.asyncio
 async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: AsyncMock) -> None:
-    usecase = RefactorUsecase(jules_tools=[], base_dir=tmp_path)
+    usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
     with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
         instance = mock_analyzer.return_value
@@ -36,7 +36,7 @@ async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: Asy
 async def test_refactor_usecase_with_duplicates(
     tmp_path: Path, mock_jules_client: AsyncMock
 ) -> None:
-    usecase = RefactorUsecase(jules_tools=[], base_dir=tmp_path)
+    usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
     with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
         instance = mock_analyzer.return_value
@@ -67,7 +67,7 @@ async def test_refactor_usecase_with_duplicates(
 async def test_refactor_usecase_with_complex_functions(
     tmp_path: Path, mock_jules_client: AsyncMock
 ) -> None:
-    usecase = RefactorUsecase(jules_tools=[], base_dir=tmp_path)
+    usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
     with patch("src.services.refactor_usecase.ASTAnalyzer") as mock_analyzer:
         instance = mock_analyzer.return_value

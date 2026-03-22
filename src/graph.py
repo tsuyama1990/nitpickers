@@ -1,7 +1,5 @@
-from collections.abc import Sequence
 from typing import Any
 
-from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -9,6 +7,7 @@ from langgraph.graph.state import CompiledStateGraph
 from .enums import FlowStatus
 from .graph_nodes import CycleNodes
 from .interfaces import IGraphNodes
+from .sandbox import SandboxRunner
 from .service_container import ServiceContainer
 from .services.jules_client import JulesClient
 from .state import CycleState
@@ -16,13 +15,16 @@ from .state import CycleState
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: Any, jules: JulesClient, e2b_tools: Sequence[BaseTool] | None = None
+        self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient
     ) -> None:
+        self.sandbox = sandbox
         self.jules = jules
-        self.nodes: IGraphNodes = CycleNodes(None, self.jules, e2b_tools=e2b_tools)
+        self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
 
     async def cleanup(self) -> None:
         """Cleanup resources, specifically the sandbox."""
+        if self.sandbox:
+            await self.sandbox.cleanup()
 
     def _create_architect_graph(self) -> StateGraph[CycleState]:
         """Create the graph for the Architect phase (gen-cycles)."""

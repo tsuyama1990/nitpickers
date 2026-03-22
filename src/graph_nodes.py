@@ -1,7 +1,5 @@
-from collections.abc import Sequence
 from typing import Any
 
-from langchain_core.tools import BaseTool
 from rich.console import Console
 
 from src.interfaces import IGraphNodes
@@ -23,6 +21,7 @@ from src.nodes import (
 )
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+from src.sandbox import SandboxRunner
 from src.services.audit_orchestrator import AuditOrchestrator
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -37,9 +36,9 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(self, sandbox_runner: Any, jules_client: JulesClient, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
+        self.sandbox = sandbox_runner
         self.jules = jules_client
-        self.e2b_tools = e2b_tools
 
         from src.service_container import ServiceContainer
 
@@ -48,18 +47,18 @@ class CycleNodes(IGraphNodes):
         self.git = (
             container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
         )
-        self.llm_reviewer = LLMReviewer()
-        self.audit_orchestrator = AuditOrchestrator(jules_client, None)
+        self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
+        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
         self._architect = ArchitectNodes(self.jules, self.git)
         self._architect_critic = ArchitectCriticNodes(self.jules)
         self._coder = CoderNodes(self.jules)
         self._coder_critic = CoderCriticNodes(self.jules)
-        self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools)
+        self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer)
         self._committee = CommitteeNodes()
-        self._uat = UatNodes(self.git, e2b_tools=self.e2b_tools)
-        self._sandbox_evaluator = SandboxEvaluatorNodes(e2b_tools=self.e2b_tools)
-        self._qa = QaNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools)
+        self._uat = UatNodes(self.git)
+        self._sandbox_evaluator = SandboxEvaluatorNodes()
+        self._qa = QaNodes(self.jules, self.git, self.llm_reviewer)
         self._coder_critic = CoderCriticNodes(self.jules)
 
         # Dependency injection for Global Refactor

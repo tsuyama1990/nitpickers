@@ -29,7 +29,9 @@ async def test_uat_usecase_dynamic_execution_success(
     mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
     mock_settings.uat.db_reset_cmd = None
 
-    state = CycleState(cycle_id="01", current_phase=WorkPhase.CODER)
+    state = CycleState(
+        cycle_id="01", current_phase=WorkPhase.CODER
+    )
     state.pr_url = "https://github.com/owner/repo/pull/1"
 
     use_case = UatUseCase(mock_git_manager)

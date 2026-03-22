@@ -23,7 +23,6 @@ Verify code against these standards. **REJECT** violations even if they are NOT 
 2.  **Security**: No hardcoded secrets, No SQL/Shell injection.
 3.  **Maintainability**: No hardcoded paths/settings. Everything must be in `config.py` or Pydantic models.
 4.  **Strict Typing**: Every function MUST have complete type hints. No `Any` unless absolutely necessary and documented.
-5.  **Bound Tools Usage**: You are provided with injected, read-only tools natively via `.bind_tools()`. You must autonomously explore the repository via standard function calling (`get_file_content`, `search_repositories`) when you need more context. Do NOT emit custom JSON payloads to request file contents. If a file is large, request specific lines when supported.
 
 ## Inputs
 - `dev_documents/SYSTEM_ARCHITECTURE.md` (Architecture Standards)

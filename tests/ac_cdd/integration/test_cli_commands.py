@@ -13,8 +13,6 @@ def test_run_cycle_command() -> None:
     with patch("src.cli.WorkflowService", return_value=mock_workflow):
         result = runner.invoke(app, ["run-cycle", "--id", "01"])
         assert result.exit_code == 0
-        from unittest.mock import ANY
-
         mock_workflow.run_cycle.assert_awaited_once_with(
             cycle_id="01",
             resume=False,
@@ -22,8 +20,4 @@ def test_run_cycle_command() -> None:
             start_iter=1,
             project_session_id=None,
             parallel=False,
-            e2b_tools=ANY,
-            github_read_tools=ANY,
-            github_write_tools=ANY,
-            jules_tools=ANY,
         )

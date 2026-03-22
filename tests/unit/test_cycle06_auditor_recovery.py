@@ -1,6 +1,5 @@
 import base64
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,14 +12,14 @@ from src.state import CycleState
 
 
 def test_fix_plan_schema_valid() -> None:
-    data: dict[str, Any] = {
+    data = {
         "defect_description": "The button class was misspelled in the test, but the code is correct.",
         "patches": [
             {
                 "target_file": "src/main.py",
                 "git_diff_patch": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n- btn = page.locator('.btn-primary')\n+ btn = page.locator('.btn-submit')",
             }
-        ],
+        ]
     }
     schema = FixPlanSchema(**data)
     assert schema.patches[0].target_file == "src/main.py"
@@ -28,7 +27,7 @@ def test_fix_plan_schema_valid() -> None:
 
 
 def test_fix_plan_schema_invalid_extra_field() -> None:
-    data: dict[str, Any] = {
+    data = {
         "defect_description": "Fix it.",
         "patches": [
             {
@@ -68,14 +67,8 @@ async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
     mock_response.choices = [MagicMock()]
     mock_response.choices[
         0
-    ].message.content = '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
-    # Important: Remove tool_calls entirely to avoid truthiness eval of MagicMock
-    mock_response.choices[0].message.tool_calls = None
-    mock_response.choices[0].message.model_dump = MagicMock(
-        return_value={
-            "role": "assistant",
-            "content": '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}',
-        }
+    ].message.content = (
+        '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
     )
 
     with patch(
@@ -120,10 +113,6 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message.content = "Invalid JSON String"
-    mock_response.choices[0].message.tool_calls = None
-    mock_response.choices[0].message.model_dump = MagicMock(
-        return_value={"role": "assistant", "content": "Invalid JSON String"}
-    )
 
     with patch(
         "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock
@@ -139,12 +128,10 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_auditor_usecase_routing() -> None:
     from src.domain_models.fix_plan_schema import FilePatch
-
     mock_reviewer = MagicMock(spec=LLMReviewer)
 
     valid_plan = FixPlanSchema(
-        defect_description="A bug",
-        patches=[FilePatch(target_file="src/test.py", git_diff_patch="patch")],
+        defect_description="A bug", patches=[FilePatch(target_file="src/test.py", git_diff_patch="patch")]
     )
     mock_reviewer.diagnose_uat_failure = AsyncMock(return_value=valid_plan)
 

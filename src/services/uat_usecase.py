@@ -1,10 +1,7 @@
 import re
 import shlex
-from collections.abc import Sequence
 from typing import Any
 from urllib.parse import urlparse
-
-from langchain_core.tools import BaseTool
 
 from src.config import settings
 from src.domain_models.multimodal_artifact_schema import MultiModalArtifact
@@ -28,19 +25,17 @@ class UatUseCase:
         r"^https://github\.com/[\w.-]+/[\w.-]+/pull/\d+/?$"
     )
 
-    def __init__(self, git_manager: GitManager, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+    def __init__(self, git_manager: GitManager) -> None:
         """
         Initializes the UatUseCase.
 
         Args:
             git_manager (GitManager): Instance for executing git operations like PR merges.
-            e2b_tools: Sequence of injected tools.
         """
         if not git_manager:
             msg = "GitManager must be injected into UatUseCase"
             raise ValueError(msg)
         self.git = git_manager
-        self.e2b_tools = e2b_tools
 
     def _scan_artifacts(self, stdout: str, stderr: str) -> list[MultiModalArtifact]:
         """

@@ -27,7 +27,6 @@ You must follow the architectural hierarchy in your reasoning process:
     - **Action**: You are **AUTHORIZED** to downgrade the `requires-python` version in `pyproject.toml` (e.g., change `">=3.12"` to `">=3.10"`).
     - **Prohibition**: DO NOT implement "Mock" classes to bypass dependency errors. You must solve the environment issue.
     - **Verification**: After downgrading, run `uv lock` again to confirm resolution.
-5.  **USE BOUND MCP TOOLS:** You are equipped with natively bound GitHub read-only tools and E2B execution tools. You must autonomously use these tools to gather information about the repository and run commands. **DO NOT** attempt to manually request file contents using custom JSON structures. If the file is large, prefer requesting specific chunks or lines to avoid exceeding token limits.
 
 ## Inputs
 - `dev_documents/SYSTEM_ARCHITECTURE.md`

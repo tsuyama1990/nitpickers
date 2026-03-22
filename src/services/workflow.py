@@ -1,11 +1,9 @@
 import asyncio
 import sys
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
@@ -29,14 +27,14 @@ console = Console()
 
 
 class WorkflowService:
-    def __init__(self, services: ServiceContainer | None = None, e2b_tools: "Sequence[BaseTool] | None" = None) -> None:
+    def __init__(self, services: ServiceContainer | None = None) -> None:
         self.services = services or ServiceContainer.default()
+        from src.sandbox import SandboxRunner
 
         self.builder = GraphBuilder(
             self.services,
-            None,
+            SandboxRunner(),
             self.services.jules if self.services.jules else JulesClient(),
-            e2b_tools=e2b_tools,
         )
         self.git = GitManager()
 
@@ -136,18 +134,8 @@ class WorkflowService:
         start_iter: int,
         project_session_id: str | None,
         parallel: bool = False,
-        e2b_tools: "Sequence[BaseTool] | None" = None,
     ) -> None:
         self.verify_environment_and_observability()
-
-        # If tools are passed in at runtime, override the builder
-        if e2b_tools:
-            self.builder = GraphBuilder(
-                self.services,
-                None,
-                self.services.jules if self.services.jules else JulesClient(),
-                e2b_tools=e2b_tools,
-            )
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
@@ -533,24 +521,11 @@ class WorkflowService:
             ]
         return cmds
 
-    async def _handle_global_refactor_result(  # noqa: C901
+    async def _handle_global_refactor_result(
         self, result: dict[str, Any], git: "GitManager"
     ) -> None:
         """Helper to handle the result of the global refactoring loop."""
-        from src.domain_models.refactor import GlobalRefactorResult
-        try:
-            raw_res = result["global_refactor_result"]
-            if isinstance(raw_res, dict):
-                gr_res = GlobalRefactorResult.model_validate(raw_res)
-            elif isinstance(raw_res, GlobalRefactorResult):
-                gr_res = raw_res
-            else:
-                msg = "Invalid format for global_refactor_result"
-                raise TypeError(msg)  # noqa: TRY301
-        except Exception as e:
-            logger.error(f"Global refactor result validation failed: {e}")
-            return
-
+        gr_res = result["global_refactor_result"]
         if not gr_res.refactorings_applied:
             return
 
@@ -689,8 +664,8 @@ class WorkflowService:
 
     async def _archive_and_reset_state(self) -> None:
         """
-        Archives current session artifacts and resets the state for the next phase safely.
-        Uses configuration strings and templates rather than hardcoding directory conventions.
+        Archives current session artifacts to dev_documents/system_prompts_phaseNN
+        and resets the state for the next phase safely.
         """
         self.verify_environment_and_observability()
         from src.config import settings
@@ -719,19 +694,15 @@ class WorkflowService:
     def _get_next_phase_num(self, docs_dir: Path) -> int:
         import contextlib
 
-        from src.config import settings
-
-        prefix = settings.ARCHIVE_DIR_TEMPLATE.split("{")[0]
-
         existing_phases = [
             d
             for d in docs_dir.iterdir()
-            if d.is_dir() and d.name.startswith(prefix)
+            if d.is_dir() and d.name.startswith("system_prompts_phase")
         ]
         nums = []
         for d in existing_phases:
             with contextlib.suppress(IndexError, ValueError):
-                nums.append(int(d.name.replace(prefix, "")))
+                nums.append(int(d.name.split("_phase")[1]))
         return max(nums) + 1 if nums else 1
 
     async def _safe_move_item(self, src: Path, dest: Path) -> None:

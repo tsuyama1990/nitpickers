@@ -1,6 +1,6 @@
-# Nitpickers: MCP-Routed Code Development Environment
+# NITPICKERS
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. Nitpickers uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards. This next-generation version is entirely powered by the **Model Context Protocol (MCP)**, allowing agents to natively and deterministically interact with external tools.
+An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -8,14 +8,20 @@ An AI-native development environment based on a highly robust methodology design
 
 ## Key Features
 
-- **MCP Router Paradigm:** Completely decoupled infrastructure using Node.js MCP Sidecars. The system inherently maps the latest GitHub, E2B, and Jules interactions directly to the LLM context window using standard JSON-RPC 2.0 tool binding, eliminating brittle legacy Python wrappers.
-- **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code via the deterministic E2B MCP server.
-- **Docs-as-Tests Integration:** Natively parse and execute `uat-scenario` blocks directly from markdown specifications (`ALL_SPEC.md`).
-- **Parallel Fleet Orchestration:** Leveraging the Jules MCP, dispatch cloud worker agents safely and quickly to run repository-scale refactoring tasks with seamless telemetry integration.
+- **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
+- **Docs-as-Tests Integration:** Natively parse and execute `uat-scenario` blocks directly from markdown specifications (`ALL_SPEC.md`), ensuring the implementation accurately reflects the documented requirements.
+- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions. This allows you to effortlessly debug UI tests visually without relying solely on console logs!
+- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent for autonomous remediation.
+- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads, transforming the "Black Box" of agent execution into quantifiable, debuggable datasets.
 
 ## Architecture Overview
 
-The Nitpickers pipeline utilizes an `MCP Client Manager` to bridge LangGraph-based workflow nodes directly to robust, vendor-maintained MCP sidecars via the `stdio` transport layer.
+The NITPICKERS pipeline is designed around a strictly decoupled Worker-Auditor-Observer paradigm.
+
+-   **Stateful Worker (Inner Loop):** Generates code and tests, maintaining project context across iterations.
+-   **Sandbox (Gatekeeper):** A secure execution environment using `ProcessRunner` that mechanically halts the pipeline on any failure, generating multi-modal artifacts when UI tests break.
+-   **Stateless Auditor (Outer Loop):** Diagnoses isolated failures using Vision LLMs and returns precise JSON fix plans to the Worker.
+-   **Observability Layer:** LangSmith silently traces all graph transitions and state mutations to prevent infinite loops and hallucinated logic.
 
 ```mermaid
 graph TD
@@ -23,41 +29,27 @@ graph TD
         direction TB
         TR[Tracer & State Logger]
     end
-
-    subgraph MCP Sidecars [Node.js MCP Servers via stdio]
-        G_MCP[@modelcontextprotocol/server-github]
-        E_MCP[@e2b/mcp-server]
-        J_MCP[@google/jules-mcp]
+    subgraph Worker [Stateful Worker - Inner Loop]
+        C[Coder Agent] -->|Generates Code & Tests| S1[Source Code]
+        C -->|Session Re-use| C
     end
-
-    subgraph Core Python Backend [MCP Router via LangGraph]
-        MCM[MCP Client Manager]
-        MCM -->|stdio| G_MCP
-        MCM -->|stdio| E_MCP
-        MCM -->|stdio| J_MCP
-
-        subgraph Agents [LangGraph Nodes]
-            C[Coder Agent]
-            A[Auditor Agent]
-            MI[Master Integrator]
-            SE[Sandbox Evaluator]
-        end
-
-        Agents -->|bind_tools| MCM
+    subgraph Sandbox [Execution Sandbox]
+        PR[ProcessRunner]
+        PR -->|Runs Static Checks| SA[Ruff / Mypy]
+        PR -->|Runs Tests| PT[Pytest / Playwright]
+        PT -->|On Failure| Artifacts[Logs & Screenshots]
     end
-
-    subgraph External APIs
-        GitHub[GitHub API]
-        E2B[E2B Cloud Sandboxes]
-        Jules[Jules Fleet]
+    subgraph Auditor [Stateless Auditor - Outer Loop]
+        A[Auditor Agent]
     end
-
-    G_MCP --> GitHub
-    E_MCP --> E2B
-    J_MCP --> Jules
-
-    TR -.-> Agents
-    TR -.-> MCM
+    S1 --> PR
+    SA -- Non-zero exit --> C
+    PT -- Failure --> Artifacts
+    Artifacts --> A
+    A -- JSON Fix Plan --> C
+    TR -.-> Worker
+    TR -.-> Sandbox
+    TR -.-> Auditor
 ```
 
 ## Prerequisites
@@ -65,11 +57,11 @@ graph TD
 Ensure the following tools are available on your system:
 - `uv` - The fastest Python package installer and resolver.
 - `git` - Version control for your codebase.
-- `Docker` - Including `Node.js` globally configured via the provided `Dockerfile`.
+- `Docker` - (Optional, depending on sandbox configuration).
 - Valid API keys:
-    - `GITHUB_PERSONAL_ACCESS_TOKEN` (Read/Write Code)
     - `JULES_API_KEY` (Gemini Pro/Worker)
     - `E2B_API_KEY` (Sandbox Execution)
+    - `OPENROUTER_API_KEY` (Auditor/Vision Models)
 - LangSmith Observability Configuration:
     - `LANGCHAIN_TRACING_V2=true`
     - `LANGCHAIN_API_KEY`
@@ -88,7 +80,7 @@ Ensure the following tools are available on your system:
    uv sync
    ```
 
-3. Configure your environment variables. Ensure the `SUDO_COMMAND` or similar injected keys are strictly mapped:
+3. Configure your environment variables. The Gatekeeper explicitly requires LangSmith to be configured before any execution will start:
    ```bash
    cp .env.example .env
    # Edit .env and populate your API keys and LangSmith variables.
@@ -96,12 +88,12 @@ Ensure the following tools are available on your system:
 
 ## Usage
 
-Nitpickers operates primarily through its Command-Line Interface, navigating the development cycles defined by the system architecture.
+NITPICKERS operates primarily through its Command-Line Interface.
 
 ### Interactive Tutorials (UAT Verification)
-To experience the new architecture pipelines interactively, run the definitive Marimo tutorial. It supports both **Mock Mode** (no API keys required) and **Real Mode**.
+To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial. It natively supports both **Mock Mode** (no API keys required) and **Real Mode**.
 ```bash
-uv run marimo run tutorials/automated_uat_pipeline_tutorial.py
+uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
 ```
 
 ### Generate Development Cycles (Phase 1)
@@ -111,10 +103,19 @@ uv run python -m src.cli gen-cycles
 ```
 
 ### Run a Specific Cycle (Phase 2 & 3)
-Execute a specific development cycle (e.g., `01`) defined by the manifest. The system will map standard MCP tools dynamically and evaluate the E2B code executions.
+Execute a specific development cycle (e.g., `01`) defined by the manifest. The system will automatically verify your environment configuration, build the schemas, write tests, and implement logic within the E2B sandbox.
 ```bash
 uv run python -m src.cli run-cycle --id 01
 ```
+
+### Finalize & Refactor
+```bash
+uv run python -m src.cli finalize-session
+```
+
+## Troubleshooting
+
+- **Hard Stop during execution:** If the execution halts with an "Environment & Observability Verification" error, ensure your `.env` is correctly populated with `LANGCHAIN_TRACING_V2=true` and valid LangSmith keys.
 
 ## Development Workflow
 
@@ -127,6 +128,10 @@ uv run python -m src.cli run-cycle --id 01
     ```bash
     uv run pytest
     ```
+-   **Run UATs manually:**
+    ```bash
+    uv run pytest tests/uat/ --browser=chromium
+    ```
 
 ## Project Structure
 
@@ -135,12 +140,12 @@ uv run python -m src.cli run-cycle --id 01
 ├── dev_documents/          # Auto-generated specs, UATs, logs
 ├── src/                    # The main implementation for NITPICKERS
 │   ├── cli.py              # CLI entrypoint
-│   ├── mcp_client_manager.py # Manages lifecycle of MCP sidecars
 │   ├── domain_models/      # Pydantic schemas enforcing interface locks
 │   ├── nodes/              # LangGraph workflow nodes
+│   ├── services/           # Business logic and external API integrations
 │   └── templates/          # System prompts for the agents
 ├── tests/                  # Unit, Integration, and UAT tests
-│   └── ac_cdd/             # Integration tests utilizing mock stdio pipes
+│   └── uat/                # Dynamic UAT scripts (Marimo/Pytest)
 ├── tutorials/              # Marimo-based interactive tutorials
 ├── pyproject.toml          # Project configuration (Dependencies & Linting)
 └── README.md               # User documentation

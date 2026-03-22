@@ -39,7 +39,7 @@ def cell_2() -> Any:
         with tempfile.TemporaryDirectory() as tmp_dir:
             base_dir = Path(tmp_dir)
 
-            usecase = RefactorUsecase(jules_tools=[], base_dir=base_dir)
+            usecase = RefactorUsecase(jules_client=jules_client, base_dir=base_dir)
             nodes = GlobalRefactorNodes(usecase=usecase)
             state = CycleState(cycle_id="08")
             state.project_session_id = "session-1"
@@ -67,7 +67,7 @@ def cell_2() -> Any:
         with tempfile.TemporaryDirectory() as tmp_dir:
             base_dir = Path(tmp_dir)
 
-            usecase = RefactorUsecase(jules_tools=[], base_dir=base_dir)
+            usecase = RefactorUsecase(jules_client=jules_client, base_dir=base_dir)
             nodes = GlobalRefactorNodes(usecase=usecase)
             state = CycleState(cycle_id="08")
             state.project_session_id = "session-1"

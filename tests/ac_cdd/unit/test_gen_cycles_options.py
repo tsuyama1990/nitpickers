@@ -55,7 +55,7 @@ class TestGenCyclesCountOption:
             mock_settings.get_context_files.return_value = []
 
             # Create CycleNodes instance
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_tools=[])
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
             nodes._architect.git = mock_git_instance
 
             # Create state with requested_cycle_count
@@ -105,7 +105,7 @@ class TestGenCyclesCountOption:
             mock_settings.get_context_files.return_value = []
 
             # Create CycleNodes instance
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_tools=[])
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
             nodes._architect.git = mock_git_instance
 
             # Create state WITHOUT requested_cycle_count
@@ -162,7 +162,7 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_tools=[])
+            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
             nodes._architect.git = mock_git_instance
 
             state = CycleState(cycle_id="00")

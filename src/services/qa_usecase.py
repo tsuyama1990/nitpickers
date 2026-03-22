@@ -1,9 +1,7 @@
 import asyncio
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
@@ -25,7 +23,7 @@ class QaUseCase:
     """
 
     def __init__(
-        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer, e2b_tools: Sequence[BaseTool] | None = None
+        self, jules_client: JulesClient, git_manager: GitManager, llm_reviewer: LLMReviewer
     ) -> None:
         if not jules_client or not git_manager or not llm_reviewer:
             msg = "Missing required dependencies injected into QaUseCase"
@@ -33,7 +31,6 @@ class QaUseCase:
         self.jules = jules_client
         self.git = git_manager
         self.llm_reviewer = llm_reviewer
-        self.e2b_tools = e2b_tools
 
     async def _send_audit_feedback_to_session(
         self, session_id: str, feedback: str
@@ -243,7 +240,6 @@ class QaUseCase:
             context_docs=context_files,
             instruction=instruction,
             model=settings.reviewer.fast_model,
-            e2b_tools=self.e2b_tools,
         )
 
         status = FlowStatus.APPROVED
