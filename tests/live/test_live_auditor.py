@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from src.domain_models import FixPlanSchema, UatExecutionState
@@ -9,8 +11,13 @@ from src.state import CycleState
 @pytest.mark.live
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_live_uat_auditor_diagnosis():
-    # Arrange
+async def test_live_uat_auditor_diagnosis(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Arrange: Enable LangSmith Tracing for supervision
+    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
+    if "LANGSMITH_API_KEY" in os.environ:
+        monkeypatch.setenv("LANGCHAIN_API_KEY", os.environ["LANGSMITH_API_KEY"])
+    monkeypatch.setenv("LANGCHAIN_PROJECT", "nitpickers-live-test")
+
     llm_reviewer = LLMReviewer()
     uat_auditor = UATAuditorUseCase(llm_reviewer)
 
