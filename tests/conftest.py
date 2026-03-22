@@ -45,6 +45,7 @@ def pytest_runtest_makereport(
                     # The Accessibility tree is heavily compressed and perfect for LLMs
                     a11y_snapshot = page.accessibility.snapshot()
                     import json
+
                     dom_snapshot_path.write_text(json.dumps(a11y_snapshot, indent=2))
                 except Exception as dom_err:
                     dom_snapshot_path.write_text(f"DOM Capture Failed: {dom_err}")

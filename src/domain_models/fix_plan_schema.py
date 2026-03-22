@@ -18,5 +18,6 @@ class FixPlanSchema(BaseModel):
         ..., description="A clear reasoning and explanation of the defect and the intended fix."
     )
     patches: list[FilePatch] = Field(
-        ..., description="A list of files and their corresponding modifications required to resolve the bug."
+        ...,
+        description="A list of files and their corresponding modifications required to resolve the bug.",
     )

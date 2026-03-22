@@ -12,6 +12,7 @@ import marimo
 __generated_with = "0.21.1"
 app = marimo.App()
 
+
 @app.cell
 def _step_1() -> tuple[object, object]:
     import marimo as mo
@@ -25,6 +26,7 @@ def _step_1() -> tuple[object, object]:
         """
     )
     return intro, mo
+
 
 @app.cell
 def _step_2() -> tuple[object, object, object, object, object]:
@@ -59,8 +61,9 @@ def _step_2() -> tuple[object, object, object, object, object]:
 
     return os, sys, Path, dotenv, repo_root
 
+
 @app.cell
-def _step_3(mo, repo_root): # type: ignore[no-untyped-def]
+def _step_3(mo, repo_root):  # type: ignore[no-untyped-def]
     import asyncio
 
     from src.config import settings
@@ -104,7 +107,7 @@ def _step_3(mo, repo_root): # type: ignore[no-untyped-def]
 
 
 @app.cell
-async def _step_4(execute_live_diagnosis, mo): # type: ignore[no-untyped-def]
+async def _step_4(execute_live_diagnosis, mo):  # type: ignore[no-untyped-def]
     # Run the live diagnosis
     try:
         # We handle asyncio execution natively for marimo context
@@ -127,6 +130,7 @@ async def _step_4(execute_live_diagnosis, mo): # type: ignore[no-untyped-def]
 
     mo.vstack(display)
     return result, status, fix_plan, display
+
 
 if __name__ == "__main__":
     app.run()
