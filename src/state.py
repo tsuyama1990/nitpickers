@@ -109,7 +109,6 @@ class CycleState(BaseModel):
     final_fix: bool = Field(default=False)
     qa_retry_count: int = 0
     is_refactoring: bool = Field(default=False)
-    current_auditor_index: int = Field(default=1, ge=1)
     audit_attempt_count: int = Field(default=0, ge=0)
 
     # Legacy/Optional Fields - kept at root level for legacy backward compatibility easily
@@ -125,6 +124,14 @@ class CycleState(BaseModel):
     coder_report: dict[str, Any] | None = None
 
     # Properties to maintain backward compatibility with legacy top-level accessors
+    @property
+    def current_auditor_index(self) -> int:
+        return self.committee.current_auditor_index
+
+    @current_auditor_index.setter
+    def current_auditor_index(self, value: int) -> None:
+        self.committee.current_auditor_index = value
+
     @property
     def current_auditor_review_count(self) -> int:
         return self.committee.current_auditor_review_count
@@ -364,6 +371,7 @@ class CycleState(BaseModel):
 class IntegrationState(BaseModel):
     """LangGraph state for Master Integrator concurrent execution."""
 
+    branches_to_merge: list[str] = Field(default_factory=list)
     master_integrator_session_id: str | None = None
     unresolved_conflicts: list[ConflictRegistryItem] = Field(default_factory=list)
 

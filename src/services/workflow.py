@@ -204,6 +204,134 @@ class WorkflowService:
 
         console.print("[green]Environment & Observability verified successfully.[/green]")
 
+    async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915
+        """
+        Orchestrates the entire 5-Phase pipeline.
+        Phase 2: Parallel execution of all planned cycles.
+        Phase 3: Integration Graph execution.
+        Phase 4: QA/UAT Graph execution.
+        """
+        self.verify_environment_and_observability()
+        console.rule("[bold cyan]Starting Full Pipeline Orchestration[/bold cyan]")
+
+        mgr = StateManager()
+        manifest = mgr.load_manifest()
+
+        if manifest:
+            cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
+        else:
+            from src.domain_models.manifest import CycleManifest
+
+            cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
+
+        if not cycles_to_run:
+            console.print("[yellow]No pending cycles to run.[/yellow]")
+            return
+
+        # --- Phase 2: Parallel Coder Graph ---
+        console.rule("[bold blue]Phase 2: Parallel Coder Graph[/bold blue]")
+        dispatcher = AsyncDispatcher()
+        batches = dispatcher.resolve_dag(cycles_to_run)
+        console.print(
+            f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
+        )
+
+        # Fail-fast execution via asyncio.gather with return_exceptions=True
+        # We manually raise if any task failed.
+        for i, batch in enumerate(batches, 1):
+            console.print(
+                f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
+            )
+            tasks = [
+                dispatcher.run_with_semaphore(
+                    self._run_single_cycle(
+                        c.id,
+                        resume=False,
+                        auto=True,
+                        start_iter=1,
+                        project_session_id=project_session_id,
+                    )
+                )
+                for c in batch
+            ]
+
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for cycle, result in zip(batch, results, strict=False):
+                if isinstance(result, Exception):
+                    console.print(f"[bold red]Cycle {cycle.id} failed: {result}[/bold red]")
+                    console.print("[bold red]Pipeline halted due to Phase 2 failure.[/bold red]")
+                    sys.exit(1)
+
+            console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
+
+        # --- Phase 3: Integration Graph ---
+        console.rule("[bold blue]Phase 3: Integration Graph[/bold blue]")
+        # Aggregate states and branches
+        # In this implementation, feature_branch holds the state
+        branches_to_merge = []
+        if manifest and manifest.feature_branch:
+            branches_to_merge.append(manifest.feature_branch)
+
+        from src.state import IntegrationState
+
+        integration_state = IntegrationState(branches_to_merge=branches_to_merge)
+        integration_graph = self.builder.build_integration_graph()
+
+        thread_id = f"integration-{project_session_id or 'default'}"
+        metadata = TracingMetadata(session_id=thread_id, execution_type="integration_phase")
+        tracing_config = settings.tracing_service.get_run_config(metadata)
+        config = RunnableConfig(
+            configurable={"thread_id": thread_id},
+            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            **tracing_config,  # type: ignore[typeddict-item]
+        )
+
+        try:
+            final_integration_state = await integration_graph.ainvoke(integration_state, config)
+            if final_integration_state.get("conflict_status") == "failed":
+                console.print(
+                    "[bold red]Integration Phase Failed: Unresolved conflicts.[/bold red]"
+                )
+                sys.exit(1)
+        except Exception as e:
+            console.print(f"[bold red]Integration Graph execution failed: {e}[/bold red]")
+            sys.exit(1)
+
+        # --- Phase 4: QA/UAT Graph ---
+        console.rule("[bold blue]Phase 4: QA/UAT Graph[/bold blue]")
+        qa_graph = self.builder.build_qa_graph()
+
+        initial_qa_state = CycleState(
+            cycle_id="99",
+            current_phase=WorkPhase.QA,
+            status=FlowStatus.START,
+        )
+        initial_qa_state.project_session_id = project_session_id
+
+        qa_thread_id = f"qa-{project_session_id or 'default'}"
+        qa_metadata = TracingMetadata(session_id=qa_thread_id, execution_type="qa_phase")
+        qa_tracing_config = settings.tracing_service.get_run_config(qa_metadata)
+
+        qa_config = RunnableConfig(
+            configurable={"thread_id": qa_thread_id},
+            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            **qa_tracing_config,  # type: ignore[typeddict-item]
+        )
+
+        try:
+            final_qa_state = await qa_graph.ainvoke(initial_qa_state, qa_config)
+            if final_qa_state.get("status") == "failed" or final_qa_state.get("error"):
+                console.print(
+                    f"[bold red]QA Phase Failed: {final_qa_state.get('error')}[/bold red]"
+                )
+                sys.exit(1)
+            console.print(
+                "[bold green]Full Pipeline Execution Completed Successfully.[/bold green]"
+            )
+        except Exception as e:
+            console.print(f"[bold red]QA Graph execution failed: {e}[/bold red]")
+            sys.exit(1)
+
     async def _run_all_cycles(
         self,
         resume: bool,

@@ -1,12 +1,11 @@
 import re
 import shlex
 from typing import Any
-from urllib.parse import urlparse
 
 from src.config import settings
 from src.domain_models.multimodal_artifact_schema import MultiModalArtifact
 from src.domain_models.uat_execution_state import UatExecutionState
-from src.enums import FlowStatus, WorkPhase
+from src.enums import FlowStatus
 from src.process_runner import ProcessRunner
 from src.services.git_ops import GitManager
 from src.state import CycleState
@@ -146,67 +145,7 @@ class UatUseCase:
 
     async def _handle_success(self, state: CycleState) -> dict[str, Any]:
         """
-        Handles the logic when UAT passes, including auto-merging the PR and
-        calculating the correct state transition (Completed vs. Refactoring Phase).
+        Handles the logic when UAT passes.
         """
-        # Auto-Merge Cycle PR
-        pr_url = state.pr_url
-
-        if pr_url:
-            if not settings.session.auto_merge_to_integration:
-                logger.info(
-                    "Auto-merge to integration branch is disabled by policy. Skipping merge."
-                )
-            else:
-                # Security: Validate the PR URL structure strictly
-                if not self.PR_URL_PATTERN.match(pr_url):
-                    msg = f"Invalid PR URL format: {pr_url}"
-                    logger.error(msg)
-                    return {"status": FlowStatus.FAILED, "error": msg}
-
-                parsed_url = urlparse(pr_url)
-                pr_number = parsed_url.path.strip("/").split("/")[-1]
-
-                try:
-                    logger.info(f"Auto-merging Cycle PR #{pr_number}...")
-                    await self.git.merge_pr(pr_number)
-                    logger.info("Cycle PR merged successfully!")
-                except Exception as e:
-                    logger.error(f"Failed to auto-merge Cycle PR: {e}")
-                    return {"status": FlowStatus.FAILED, "error": str(e)}
-
-        # Refactoring Phase Transition Logic
-        current_phase = state.current_phase
-
-        # Determine if this is the last cycle
-        try:
-            cycle_id_int = int(state.cycle_id)
-        except (ValueError, TypeError):
-            cycle_id_int = 0
-
-        planned_count = state.planned_cycle_count or 0
-        is_last_cycle = cycle_id_int >= planned_count
-
-        if current_phase != WorkPhase.REFACTORING:
-            if is_last_cycle:
-                logger.info("All cycles completed. Transitioning to Final Refactoring Phase...")
-                # Clear audit results and reset counters for the refactoring loop
-                return {
-                    "current_phase": WorkPhase.REFACTORING,
-                    "status": FlowStatus.START_REFACTOR,
-                    "iteration_count": 0,
-                    "current_auditor_index": 1,
-                    "current_auditor_review_count": 1,
-                    "audit_result": None,
-                    "audit_pass_count": 0,
-                    "audit_retries": 0,
-                    "final_fix": True,  # Final Refactor phase bypasses committee audit to be "Final"
-                    "last_feedback_time": 0,
-                    "pr_url": None,
-                }
-            logger.info(f"Cycle {state.cycle_id} of {planned_count} completed.")
-            return {"status": FlowStatus.COMPLETED}
-
-        # If we were already in refactoring, we are done
-        logger.info("Refactoring Phase Completed.")
+        logger.info("UAT Execution successfully verified.")
         return {"status": FlowStatus.COMPLETED}

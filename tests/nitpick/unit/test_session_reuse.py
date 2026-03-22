@@ -15,7 +15,7 @@ class TestSessionReuse:
     def mock_jules(self) -> MagicMock:
         jules = MagicMock()
         jules.run_session = AsyncMock()
-        jules.wait_for_completion = AsyncMock()
+        jules.continue_session = AsyncMock()
         jules.get_session_state = AsyncMock()
         jules._send_message = AsyncMock()
         jules._get_session_url = MagicMock(return_value="https://jules/session/url")
@@ -25,7 +25,7 @@ class TestSessionReuse:
     async def test_reuse_completed_session_for_auditor_reject(self, mock_jules: MagicMock) -> None:
         """Should REUSE COMPLETED session for Auditor Reject (send feedback to same session)."""
         mock_jules.get_session_state.return_value = "COMPLETED"
-        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+        mock_jules.continue_session.return_value = {"status": "success", "pr_url": "http://pr"}
 
         mock_manifest = MagicMock()
         mock_manifest.jules_session_id = "sessions/123"
@@ -53,13 +53,13 @@ class TestSessionReuse:
                 result = await usecase.execute(state)
 
         mock_jules.get_session_state.assert_called_with("sessions/123")
-        mock_jules._send_message.assert_called_once()  # Feedback was sent to existing session
+        mock_jules.continue_session.assert_called_once()
 
         # Verify the actual feedback content sent
         sent_message = (
-            mock_jules._send_message.call_args.args[1]
-            if mock_jules._send_message.call_args.args
-            else mock_jules._send_message.call_args.kwargs.get("message", "")
+            mock_jules.continue_session.call_args.args[1]
+            if mock_jules.continue_session.call_args.args
+            else mock_jules.continue_session.call_args.kwargs.get("message", "")
         )
         assert isinstance(sent_message, str) or hasattr(sent_message, "__contains__")
 
@@ -113,7 +113,7 @@ class TestSessionReuse:
     async def test_reuse_in_progress_session(self, mock_jules: MagicMock) -> None:
         """Should REUSE IN_PROGRESS session (original behavior)."""
         mock_jules.get_session_state.return_value = "IN_PROGRESS"
-        mock_jules.wait_for_completion.return_value = {"status": "success", "pr_url": "http://pr"}
+        mock_jules.continue_session.return_value = {"status": "success", "pr_url": "http://pr"}
 
         mock_manifest = MagicMock()
         mock_manifest.jules_session_id = "sessions/123"
@@ -140,13 +140,13 @@ class TestSessionReuse:
                 mock_settings.get_context_files.return_value = []
                 result = await usecase.execute(state)
 
-        mock_jules._send_message.assert_called_once()  # Feedback was sent
+        mock_jules.continue_session.assert_called_once()
 
         # Verify the actual feedback content sent
         sent_message = (
-            mock_jules._send_message.call_args.args[1]
-            if mock_jules._send_message.call_args.args
-            else mock_jules._send_message.call_args.kwargs.get("message", "")
+            mock_jules.continue_session.call_args.args[1]
+            if mock_jules.continue_session.call_args.args
+            else mock_jules.continue_session.call_args.kwargs.get("message", "")
         )
         assert isinstance(sent_message, str) or hasattr(sent_message, "__contains__")
 

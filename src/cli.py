@@ -49,6 +49,17 @@ def run_cycle(
 
 
 @app.command()
+def run_pipeline(
+    session: str | None = typer.Option(
+        None, "--session", help="Session ID (if not using current state)"
+    ),
+) -> None:
+    """Run the complete orchestrated 5-Phase pipeline."""
+    service = WorkflowService()
+    asyncio.run(service.run_full_pipeline(project_session_id=session))
+
+
+@app.command()
 def finalize_session(
     session: str | None = typer.Option(None, "--session", help="Session ID"),
 ) -> None:
