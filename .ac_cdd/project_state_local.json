@@ -19,16 +19,16 @@
     },
     {
       "id": "02",
-      "status": "planned",
+      "status": "in_progress",
       "branch_name": null,
-      "jules_session_id": null,
+      "jules_session_id": "sessions/5473092754706739778",
       "current_iteration": 1,
       "pr_url": null,
-      "last_error": null,
+      "last_error": "Jules Session Failed: Unknown error",
       "session_restart_count": 0,
       "max_session_restarts": 2,
       "created_at": "2026-03-22T17:39:27.210138Z",
-      "updated_at": "2026-03-22T17:39:27.210138Z"
+      "updated_at": "2026-03-22T20:43:10.546985Z"
     },
     {
       "id": "03",
@@ -44,5 +44,5 @@
       "updated_at": "2026-03-22T17:39:27.210140Z"
     }
   ],
-  "last_updated": "2026-03-22T19:55:19.372623Z"
+  "last_updated": "2026-03-22T20:43:10.547003Z"
 }
