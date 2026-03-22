@@ -1,8 +1,9 @@
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from langchain_core.tools import BaseTool
-from typing import Sequence
+
 from src.services.integration_usecase import IntegrationUsecase, MaxRetriesExceededError
 from src.state import IntegrationState
 

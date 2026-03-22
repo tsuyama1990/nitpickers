@@ -18,10 +18,11 @@ def _() -> tuple[Any, ...]:
     os.environ["OPENROUTER_API_KEY"] = "dummy"
     os.environ["TEST_MODE"] = "True"
 
+    from src.e2b_tools import ProcessRunner
+
     from src.domain_models.verification_schema import StructuralGateReport
     from src.enums import FlowStatus
     from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
-    from src.e2b_tools import ProcessRunner
     from src.state import CycleState
 
     # Scenario 1: Static Analysis Blockade (Ruff/Mypy failures)
