@@ -45,10 +45,10 @@ def _step_2() -> tuple[object, object, object, object, object]:
     dotenv.load_dotenv(repo_root / ".env")
 
     # Assert necessary API keys are present (Do not print them!)
-    assert os.getenv("OPENROUTER_API_KEY"), "OPENROUTER_API_KEY is missing"
-    assert os.getenv("JULES_API_KEY"), "JULES_API_KEY is missing"
-    assert os.getenv("E2B_API_KEY"), "E2B_API_KEY is missing"
-    assert os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"), "GITHUB_PERSONAL_ACCESS_TOKEN is missing"
+    assert os.getenv("OPENROUTER_API_KEY"), "OPENROUTER_API_KEY is missing"  # noqa: S101
+    assert os.getenv("JULES_API_KEY"), "JULES_API_KEY is missing"  # noqa: S101
+    assert os.getenv("E2B_API_KEY"), "E2B_API_KEY is missing"  # noqa: S101
+    assert os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"), "GITHUB_PERSONAL_ACCESS_TOKEN is missing"  # noqa: S101
 
     # Ensure LangSmith Tracing is natively configured for tutorials
     os.environ["LANGCHAIN_TRACING_V2"] = "true"

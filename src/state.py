@@ -19,6 +19,8 @@ class CommitteeState(BaseModel):
     current_auditor_index: int = Field(default=1, ge=1)
     current_auditor_review_count: int = Field(default=1, ge=1)
     iteration_count: int = Field(default=0, ge=0)
+    is_refactoring: bool = Field(default=False)
+    audit_attempt_count: int = Field(default=0, ge=0)
 
     @field_validator("current_auditor_index")
     @classmethod
@@ -106,6 +108,9 @@ class CycleState(BaseModel):
     concurrent_dependencies: list[str] = Field(default_factory=list)
     final_fix: bool = Field(default=False)
     qa_retry_count: int = 0
+    is_refactoring: bool = Field(default=False)
+    current_auditor_index: int = Field(default=1, ge=1)
+    audit_attempt_count: int = Field(default=0, ge=0)
 
     # Legacy/Optional Fields - kept at root level for legacy backward compatibility easily
     sandbox_id: str | None = None
@@ -120,14 +125,6 @@ class CycleState(BaseModel):
     coder_report: dict[str, Any] | None = None
 
     # Properties to maintain backward compatibility with legacy top-level accessors
-    @property
-    def current_auditor_index(self) -> int:
-        return self.committee.current_auditor_index
-
-    @current_auditor_index.setter
-    def current_auditor_index(self, value: int) -> None:
-        self.committee.current_auditor_index = value
-
     @property
     def current_auditor_review_count(self) -> int:
         return self.committee.current_auditor_review_count
@@ -309,6 +306,8 @@ class CycleState(BaseModel):
                 "current_auditor_index",
                 "current_auditor_review_count",
                 "iteration_count",
+                "is_refactoring",
+                "audit_attempt_count",
             ],
             "session": [
                 "jules_session_name",

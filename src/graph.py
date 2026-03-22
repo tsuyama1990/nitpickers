@@ -70,9 +70,9 @@ class GraphBuilder:
             "coder_session_node",
             "sandbox_evaluate_node",
             "auditor_node",
-            "committee_manager_node",
-            "coder_critic_node",
-            "uat_evaluate_node",
+            "self_critic_node",
+            "refactor_node",
+            "final_critic_node",
         ]
         for n in required_nodes:
             if not getattr(self.nodes, n, None):
@@ -86,9 +86,9 @@ class GraphBuilder:
         workflow.add_node("coder_session", self.nodes.coder_session_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
-        workflow.add_node("committee_manager", self.nodes.committee_manager_node)
-        workflow.add_node(settings.node_coder_critic, self.nodes.coder_critic_node)
-        workflow.add_node(settings.node_uat_evaluate, self.nodes.uat_evaluate_node)
+        workflow.add_node("self_critic_node", self.nodes.self_critic_node)
+        workflow.add_node("refactor_node", self.nodes.refactor_node)
+        workflow.add_node("final_critic_node", self.nodes.final_critic_node)
 
         workflow.add_edge(START, "coder_session")
 
@@ -97,59 +97,49 @@ class GraphBuilder:
             "coder_session",
             self.nodes.check_coder_outcome,
             {
+                "self_critic": "self_critic_node",
                 settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
                 FlowStatus.FAILED.value: END,
-                settings.node_uat_evaluate: settings.node_uat_evaluate,
                 FlowStatus.CODER_RETRY.value: "coder_session",
             },
         )
 
-        # Sandbox Evaluate -> Auditor or Coder
-        from src.nodes.routers import route_sandbox_evaluate
+        # self_critic_node -> sandbox_evaluate
+        workflow.add_edge("self_critic_node", settings.node_sandbox_evaluate)
 
+        # Sandbox Evaluate -> Auditor, final_critic_node, failed, or coder_session
         workflow.add_conditional_edges(
             settings.node_sandbox_evaluate,
-            route_sandbox_evaluate,
+            self.nodes.route_sandbox_evaluate,
             {
                 "auditor": "auditor",
                 "coder_session": "coder_session",
+                "final_critic": "final_critic_node",
                 "failed": END,
             },
         )
 
-        # Auditor -> Committee Manager
-        workflow.add_edge("auditor", "committee_manager")
-
-        # Conditional edge from committee_manager
+        # Auditor -> Conditional routing (rejection loop, next auditor, or refactor)
         workflow.add_conditional_edges(
-            "committee_manager",
-            self.nodes.route_committee,
+            "auditor",
+            self.nodes.route_auditor,
             {
-                settings.node_coder_critic: settings.node_coder_critic,
-                "auditor": "auditor",
-                "coder_session": "coder_session",
-                "failed": END,
+                "reject": "coder_session",
+                "next_auditor": "auditor",
+                "pass_all": "refactor_node",
             },
         )
 
-        # Conditional edge from coder_critic
-        workflow.add_conditional_edges(
-            settings.node_coder_critic,
-            self.nodes.route_coder_critic,
-            {
-                "coder_session": "coder_session",
-                settings.node_uat_evaluate: settings.node_uat_evaluate,
-            },
-        )
+        # refactor_node -> sandbox_evaluate
+        workflow.add_edge("refactor_node", settings.node_sandbox_evaluate)
 
-        # Conditional edge from uat_evaluate for Refactoring Phase
+        # final_critic_node -> end or coder_session
         workflow.add_conditional_edges(
-            settings.node_uat_evaluate,
-            self.nodes.route_uat,
+            "final_critic_node",
+            self.nodes.route_final_critic,
             {
-                "coder_session": "coder_session",
-                "auditor": "auditor",
-                "end": END,
+                "approve": END,
+                "reject": "coder_session",
             },
         )
 
@@ -168,27 +158,58 @@ class GraphBuilder:
         workflow.add_node("qa_session", self.nodes.qa_session_node)
         workflow.add_node("qa_auditor", self.nodes.qa_auditor_node)
 
-        workflow.add_edge(START, "qa_session")
 
-        # Custom logic for QA session routing (similar to coder_session)
-        # If qa_session fails or succeeds
+        workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
+
+        workflow.add_edge(START, "uat_evaluate")
+
         workflow.add_conditional_edges(
-            "qa_session",
-            lambda state: "qa_auditor" if state.get("status") == "ready_for_audit" else END,
+            "uat_evaluate",
+            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else END,
             {"qa_auditor": "qa_auditor", END: END},
         )
 
-        # Router from Auditor
-        workflow.add_conditional_edges(
-            "qa_auditor",
-            self.nodes.route_qa,
-            {
-                "end": END,
-                "retry_fix": "qa_session",
-                "failed": END,
-            },
-        )
+        workflow.add_edge("qa_auditor", "qa_session")
+        workflow.add_edge("qa_session", "uat_evaluate")
+
         return workflow
 
     def build_qa_graph(self) -> CompiledStateGraph[CycleState, Any, Any, Any]:
         return self._create_qa_graph().compile(checkpointer=MemorySaver())
+
+    def _create_integration_graph(self) -> StateGraph["Any"]:
+        """Create the graph for Phase 3: Integration."""
+        from src.state import IntegrationState
+
+        workflow = StateGraph(IntegrationState)
+
+        workflow.add_node("git_merge_node", self.nodes.git_merge_node)
+        workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
+        workflow.add_node("global_sandbox_node", self.nodes.global_sandbox_node)
+
+        workflow.add_edge(START, "git_merge_node")
+
+        workflow.add_conditional_edges(
+            "git_merge_node",
+            self.nodes.route_merge,
+            {
+                "conflict": "master_integrator_node",
+                "success": "global_sandbox_node",
+            },
+        )
+
+        workflow.add_edge("master_integrator_node", "git_merge_node")
+
+        workflow.add_conditional_edges(
+            "global_sandbox_node",
+            self.nodes.route_global_sandbox,
+            {
+                "failed": "master_integrator_node",
+                "pass": END,
+            },
+        )
+
+        return workflow
+
+    def build_integration_graph(self) -> CompiledStateGraph[Any, Any, Any, Any]:
+        return self._create_integration_graph().compile(checkpointer=MemorySaver())

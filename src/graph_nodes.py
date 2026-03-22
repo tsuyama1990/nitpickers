@@ -12,12 +12,12 @@ from src.nodes import (
     CommitteeNodes,
     QaNodes,
     UatNodes,
-    check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
-    route_committee,
+    route_auditor,
+    route_final_critic,
     route_qa,
-    route_uat,
+    route_sandbox_evaluate,
 )
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
@@ -100,20 +100,63 @@ class CycleNodes(IGraphNodes):
     async def global_refactor_node(self, state: CycleState) -> dict[str, Any]:
         return await self._global_refactor.global_refactor_node(state)
 
+    async def refactor_node(self, state: CycleState) -> dict[str, Any]:
+        return await self.global_refactor_node(state)
+
+    async def self_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder_critic.coder_critic_node(state)
+
+    async def final_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder_critic.coder_critic_node(state)
+
+    async def git_merge_node(self, state: "Any") -> dict[str, Any]:
+        from src.services.git_ops import GitManager
+        try:
+            gm = GitManager()
+            await gm.merge_pr("1")
+        except Exception as e:
+            return {"error": str(e), "status": "conflict"}
+        else:
+            return {"status": "success"}
+
+    async def master_integrator_node(self, state: "Any") -> dict[str, Any]:
+        from src.nodes.master_integrator import MasterIntegratorNodes
+        from src.services.jules_client import JulesClient
+        integrator = MasterIntegratorNodes(jules_client=JulesClient())
+        return await integrator.master_integrator_node(state)
+
+    async def global_sandbox_node(self, state: "Any") -> dict[str, Any]:
+        from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+        sandbox = SandboxEvaluatorNodes()
+        # Mocking CycleState to fit sandbox_evaluate_node expectation
+        return await sandbox.sandbox_evaluate_node(CycleState(cycle_id="00"))
+
+    def route_merge(self, state: "Any") -> str:
+        status = state.get("conflict_status")
+        if status == "conflict_detected":
+            return "conflict"
+        return "success"
+
+    def route_global_sandbox(self, state: "Any") -> str:
+        status = state.get("status")
+        if status == "tdd_failed":
+            return "failed"
+        return "pass"
+
     def check_coder_outcome(self, state: CycleState) -> str:
         return check_coder_outcome(state)
-
-    def check_audit_outcome(self, _state: CycleState) -> str:
-        return check_audit_outcome(_state)
 
     def route_architect_critic(self, state: CycleState) -> str:
         return route_architect_critic(state)
 
-    def route_committee(self, state: CycleState) -> str:
-        return route_committee(state)
+    def route_auditor(self, state: CycleState) -> str:
+        return route_auditor(state)
 
-    def route_uat(self, state: CycleState) -> str:
-        return route_uat(state)
+    def route_final_critic(self, state: CycleState) -> str:
+        return route_final_critic(state)
+
+    def route_sandbox_evaluate(self, state: CycleState) -> str:
+        return route_sandbox_evaluate(state)
 
     async def qa_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._qa.qa_session_node(state)
@@ -125,7 +168,8 @@ class CycleNodes(IGraphNodes):
         return route_qa(state)
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
-        return {}
+        return await self._coder_critic.coder_critic_node(state)
 
     def route_coder_critic(self, state: CycleState) -> str:
-        return ""
+        from src.nodes.routers import route_coder_critic
+        return route_coder_critic(state)
