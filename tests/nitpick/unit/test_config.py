@@ -14,9 +14,9 @@ def mock_env() -> Generator[None, None, None]:
     with patch.dict(
         os.environ,
         {
-            "AC_CDD_REVIEWER__SMART_MODEL": "test-smart-model",
-            "AC_CDD_PATHS__DOCUMENTS_DIR": str(Path.cwd() / "docs_tmp"),
-            "AC_CDD_JULES__TIMEOUT_SECONDS": "999",
+            "NITPICK_REVIEWER__SMART_MODEL": "test-smart-model",
+            "NITPICK_PATHS__DOCUMENTS_DIR": str(Path.cwd() / "docs_tmp"),
+            "NITPICK_JULES__TIMEOUT_SECONDS": "999",
         },
     ):
         yield

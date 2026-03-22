@@ -49,8 +49,8 @@ if [ -n "$GITHUB_TOKEN" ]; then
 fi
 
 # Identity
-git config --system user.name "${GIT_AUTHOR_NAME:-AC-CDD Agent}"
-git config --system user.email "${GIT_AUTHOR_EMAIL:-ac-cdd-agent@localhost}"
+git config --system user.name "${GIT_AUTHOR_NAME:-Nitpick Agent}"
+git config --system user.email "${GIT_AUTHOR_EMAIL:-nitpick-agent@localhost}"
 
 # Execute command as the target user
 exec gosu "$TARGET_USER" "$@"

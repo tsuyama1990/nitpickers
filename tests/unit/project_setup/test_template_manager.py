@@ -185,7 +185,7 @@ def test_copy_default_templates_source_missing(
 def test_create_env_example(template_manager: TemplateManager, mock_cwd: Path) -> None:
     env_example_path = template_manager._create_env_example()
 
-    assert env_example_path == mock_cwd / ".ac_cdd" / ".env.example"
+    assert env_example_path == mock_cwd / ".nitpick" / ".env.example"
     assert env_example_path.exists()
     content = env_example_path.read_text()
     assert "JULES_API_KEY=" in content
@@ -202,7 +202,7 @@ def test_update_gitignore(template_manager: TemplateManager, mock_cwd: Path) -> 
     assert gitignore_path == mock_cwd / ".gitignore"
     assert gitignore_path.exists()
     content = gitignore_path.read_text()
-    assert ".ac_cdd/" in content
+    assert ".nitpick/" in content
     assert "dev_documents/project_state.json" in content
 
     # Existing file with some contents missing
@@ -210,7 +210,7 @@ def test_update_gitignore(template_manager: TemplateManager, mock_cwd: Path) -> 
     template_manager._update_gitignore()
     content = gitignore_path.read_text()
     assert "node_modules/" in content
-    assert ".ac_cdd/" in content
+    assert ".nitpick/" in content
 
     # Existing file with all contents present
     original_content = gitignore_path.read_text()

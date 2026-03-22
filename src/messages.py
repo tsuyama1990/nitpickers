@@ -47,7 +47,7 @@ class RecoveryMessages:
         return RecoveryMessages.merge_failed(pr_url, "the next cycle")
 
     @staticmethod
-    def branch_not_found(branch: str, session_file: str = ".ac_cdd_session.json") -> str:
+    def branch_not_found(branch: str, session_file: str = ".nitpick_session.json") -> str:
         """Error message when integration branch doesn't exist."""
         cmd = get_command_prefix()
         return (

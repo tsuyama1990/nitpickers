@@ -18,15 +18,15 @@ build/
 *.db
 .lancedb/*
 .jules/
-.ac_cdd_session.json
-# AC-CDD State
+.nitpick_session.json
+# Nitpick State
 dev_documents/project_state.json
 dev_documents/project_state_local.json
 
-# AC-CDD Configuration
-.ac_cdd/
+# Nitpick Configuration
+.nitpick/
 
 test_execution_log.txt
-.ac_cdd/project_state_local.json
+.nitpick/project_state_local.json
 uv.lock
-.ac_cdd/.env
+.nitpick/.env

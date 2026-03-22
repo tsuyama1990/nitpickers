@@ -53,8 +53,8 @@ In this final phase, you triage feedback into:
 - [ ] No magic numbers or hardcoded paths.
 
 ### 5. System Integrity Gate (CRITICAL)
-- [ ] **Manifest Preservation**: Ensure the `.ac_cdd/` directory is completely intact and exists on the branch.
-- [ ] **GitIgnore Check**: Ensure `.ac_cdd/` is properly ignored in `.gitignore` to prevent any future accidental removals.
+- [ ] **Manifest Preservation**: Ensure the `.nitpick/` directory is completely intact and exists on the branch.
+- [ ] **GitIgnore Check**: Ensure `.nitpick/` is properly ignored in `.gitignore` to prevent any future accidental removals.
 
 # Reporting Requirements
 - **Pass/Fail**: Start your report with `-> REVIEW_PASSED` or `-> REVIEW_FAILED`.

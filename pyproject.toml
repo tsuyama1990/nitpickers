@@ -32,7 +32,7 @@ dependencies = [
 environments = ["sys_platform == 'linux'"]
 
 [project.scripts]
-ac-cdd = "src.cli:app"
+nitpick = "src.cli:app"
 
 [dependency-groups]
 dev = [

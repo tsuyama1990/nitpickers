@@ -87,12 +87,12 @@ What defines a successful user experience?
                 logger.debug(f"Skipping {template_file} (already exists)")
 
     def _create_env_example(self) -> Path:
-        env_example_path = Path.cwd() / ".ac_cdd" / ".env.example"
+        env_example_path = Path.cwd() / ".nitpick" / ".env.example"
         env_example_path.parent.mkdir(exist_ok=True)
 
         if not env_example_path.exists():
             env_example_content = """# AC-CDD Configuration File
-# Copy this file to .ac_cdd/.env and fill in your actual API keys
+# Copy this file to .nitpick/.env and fill in your actual API keys
 
 # ============================================================================
 # Required API Keys
@@ -146,14 +146,14 @@ FAST_MODEL=openrouter/nousresearch/hermes-3-llama-3.1-405b:free
 # ============================================================================
 # Notes
 # ============================================================================
-# 1. After copying this to .ac_cdd/.env, it will be automatically loaded
+# 1. After copying this to .nitpick/.env, it will be automatically loaded
 # 2. Never commit your actual API keys to version control
-# 3. The .ac_cdd/.env file is already in .gitignore
+# 3. The .nitpick/.env file is already in .gitignore
 """
             env_example_path.write_text(env_example_content, encoding="utf-8")
             logger.info(f"✓ Created .env.example at {env_example_path}")
-            logger.info("  Please copy it to .ac_cdd/.env and fill in your API keys:")
-            logger.info(f"  cp {env_example_path} .ac_cdd/.env")
+            logger.info("  Please copy it to .nitpick/.env and fill in your API keys:")
+            logger.info(f"  cp {env_example_path} .nitpick/.env")
         return env_example_path
 
     def _update_gitignore(self) -> Path:
@@ -161,8 +161,8 @@ FAST_MODEL=openrouter/nousresearch/hermes-3-llama-3.1-405b:free
         gitignore_entries = [
             "# AC-CDD Configuration",
             ".env",
-            ".ac_cdd/",  # Ignore entire state directory
-            ".ac_cdd/project_state_local.json",
+            ".nitpick/",  # Ignore entire state directory
+            ".nitpick/project_state_local.json",
             "dev_documents/project_state.json",
             "dev_documents/project_state_local.json",
         ]
