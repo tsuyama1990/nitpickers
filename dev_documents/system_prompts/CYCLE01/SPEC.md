@@ -61,9 +61,9 @@ The implementation will follow a strict, step-by-step process prioritizing schem
         -   Otherwise, return `"auditor"`.
     -   Create `route_auditor(state: CycleState) -> str`.
         -   Inspect the latest audit result (e.g., from `state.audit.audit_result.status`).
-        -   If `"Reject"`, increment `state.committee.audit_attempt_count`. If it exceeds a threshold (e.g., 2), return `"reject"` (or a fallback node). Otherwise, return `"reject"` to loop back to the coder.
+        -   If `"Reject"`, increment `state.committee.audit_attempt_count`. If it exceeds a threshold (e.g., `settings.NITPICK_MAX_ITERATIONS` or similar configuration), return `"reject"` (to a fallback node, or handle the failure). Otherwise, return `"reject"` to loop back to the coder for another attempt.
         -   If `"Approve"`, increment `state.committee.current_auditor_index`.
-        -   If `state.committee.current_auditor_index > 3` (or the configured max), return `"pass_all"`.
+        -   If `state.committee.current_auditor_index > settings.NITPICK_NUM_AUDITORS` (dynamically query the configuration, do not hardcode 3), return `"pass_all"`.
         -   Otherwise, return `"next_auditor"`.
     -   Create `route_final_critic(state: CycleState) -> str`.
         -   Evaluate the self-critic result; return `"reject"` or `"approve"`.
@@ -75,6 +75,7 @@ The implementation will follow a strict, step-by-step process prioritizing schem
     -   Define edges using the newly created routers. Ensure the cycle flow matches the sequence: `coder_session` $\rightarrow$ `self_critic` $\rightarrow$ `sandbox_evaluate` $\rightarrow$ `route_sandbox_evaluate` $\rightarrow$ (`auditor_node` | `final_critic_node`).
     -   From `auditor_node` $\rightarrow$ `route_auditor` $\rightarrow$ (`coder_session` | `next_auditor` | `refactor_node`).
     -   From `refactor_node` $\rightarrow$ sets `state["is_refactoring"] = True` $\rightarrow$ `sandbox_evaluate`.
+    -   *Crucial Enforcement*: Ensure the LLM interaction within `refactor_node` uses `pydantic-ai` or similar `litellm` capabilities to enforce structured JSON output mapping directly to the `FileOperation` schema, avoiding any raw markdown parsing vulnerabilities.
 
 ## Test Strategy
 

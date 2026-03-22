@@ -21,7 +21,8 @@ src/
 1.  **Workflow Orchestrator (`src/services/workflow.py`)**: The `WorkflowService` must be upgraded from a linear sequence to a parallel-aware orchestrator.
     -   It must spawn multiple `_create_coder_graph` executions asynchronously (using `asyncio.gather` or similar) for each defined cycle in the manifest.
     -   It must `await` the successful completion (reaching the `END` state) of all parallel Coder Phase graphs.
-    -   Once all Coder Phases complete, it must sequentially invoke the Phase 3 `_create_integration_graph`.
+    -   It must implement a **State Aggregator**. This mechanism takes the array of completed `CycleState` objects, extracts the `session.integration_branch` from each, and constructs a new `IntegrationState` where `branches_to_merge` is populated with these targets.
+    -   Once all Coder Phases complete and the state is aggregated, it must sequentially invoke the Phase 3 `_create_integration_graph` using the newly formed `IntegrationState`.
     -   Only upon successful integration, it must invoke Phase 4 `_create_qa_graph` via the `uat_usecase.py`.
 2.  **UAT UseCase (`src/services/uat_usecase.py`)**: This service currently might be invoked from within the Coder Phase. It must be cleanly extracted and modified to accept the final integrated state as its input. It is the sole entry point for Phase 4.
 3.  **CLI (`src/cli.py`)**: The CLI commands must be updated to reflect this new orchestration model, allowing users to run a single cycle (`run-cycle --id 01`) or the entire orchestrated pipeline (`run-pipeline`).
