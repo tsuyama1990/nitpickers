@@ -25,9 +25,8 @@ def cell_2() -> Any:
     from pathlib import Path
     from unittest.mock import AsyncMock, patch
 
-    from src.services.jules_client import JulesClient
-
     from src.nodes.global_refactor import GlobalRefactorNodes
+    from src.services.jules_client import JulesClient
     from src.services.refactor_usecase import RefactorUsecase
     from src.state import CycleState
 

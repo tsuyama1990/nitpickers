@@ -5,7 +5,9 @@ from pathlib import Path
 from src.services.file_ops import FilePatcher
 
 
-def setup_dummy_files(num_files: int = 50000, lines_per_file: int = 100, dest_dir: str = "dummy_src") -> None:
+def setup_dummy_files(
+    num_files: int = 50000, lines_per_file: int = 100, dest_dir: str = "dummy_src"
+) -> None:
     path = Path(dest_dir)
     if path.exists():
         shutil.rmtree(path)
@@ -15,6 +17,7 @@ def setup_dummy_files(num_files: int = 50000, lines_per_file: int = 100, dest_di
 
     for i in range(num_files):
         (path / f"file_{i}.py").write_text(content, encoding="utf-8")
+
 
 def main() -> None:
     dest_dir = "dummy_src"
@@ -30,6 +33,7 @@ def main() -> None:
 
     # Cleanup
     shutil.rmtree(dest_dir)
+
 
 if __name__ == "__main__":
     main()

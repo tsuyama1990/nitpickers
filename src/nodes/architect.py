@@ -1,9 +1,7 @@
 import asyncio
-from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
-from langchain_core.tools import BaseTool
 from rich.console import Console
 
 from src.config import settings
@@ -14,12 +12,11 @@ console = Console()
 
 
 class ArchitectNodes:
-    def __init__(self, github_read_tools: Sequence[BaseTool] | None = None) -> None:
+    def __init__(self, jules: Any, git: Any) -> None:
+        self.jules = jules
+        self.git = git
 
-
-        self.github_read_tools = github_read_tools
-
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
 
@@ -37,7 +34,7 @@ class ArchitectNodes:
                     console.print(
                         f"[bold blue]Auto-merging updated Architecture PR #{pr_number}...[/bold blue]"
                     )
-                    # await self.git.merge_pr(pr_number)
+                    await self.git.merge_pr(pr_number)
                     console.print(
                         "[bold green]Architecture updated and merged successfully![/bold green]"
                     )
@@ -71,7 +68,7 @@ class ArchitectNodes:
         integration_branch = f"feat/generate-architecture-{timestamp}"
 
         try:
-            # await self.git.create_feature_branch(integration_branch)
+            await self.git.create_feature_branch(integration_branch)
             console.print(f"[dim]Working on integration branch: {integration_branch}[/dim]")
         except Exception as e:
             console.print(f"[bold red]Failed to setup architect branch: {e}[/bold red]")
@@ -83,17 +80,14 @@ class ArchitectNodes:
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        # We pass github_read_tools to the actual interaction method using run_session directly.
-        # execute_command has been deprecated in favor of run_session.
-        # result = await self.jules.run_session(
-        #     session_id=f"architect-{timestamp}",
-        #     prompt=instruction,
-        #     target_files=context_files,
-        #     context_files=[],
-        #     require_plan_approval=False,
-        #     tools=self.github_read_tools,
-        # )
-        result = {}
+        result = await self.jules.run_session(
+            command="Design the system architecture based on ALL_SPEC.md.",
+            session_id=f"architect-{timestamp}",
+            prompt=instruction,
+            target_files=context_files,
+            context_files=[],
+            require_plan_approval=False,
+        )
 
         if (
             result.get("status") in ("success", "running")
@@ -109,7 +103,7 @@ class ArchitectNodes:
                 console.print(
                     f"[bold blue]Auto-merging Architecture PR #{pr_number}...[/bold blue]"
                 )
-                # await self.git.merge_pr(pr_number)
+                await self.git.merge_pr(pr_number)
                 console.print("[bold green]Architecture merged successfully![/bold green]")
 
                 try:
@@ -143,7 +137,7 @@ class ArchitectNodes:
         try:
             feedback_template = str(settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text())
             feedback_msg = feedback_template.replace("{{feedback}}", feedback)
-            # await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
+            await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
             console.print(
                 "[dim]Waiting for Jules to process feedback (expecting IN_PROGRESS)...[/dim]"
             )
@@ -151,8 +145,7 @@ class ArchitectNodes:
             state_transitioned = False
             for attempt in range(12):
                 await asyncio.sleep(5)
-                # current_state = await self.jules.get_session_state(session_id)
-                current_state = "IN_PROGRESS"
+                current_state = await self.jules.get_session_state(session_id)
                 console.print(f"[dim]State check ({attempt + 1}/12): {current_state}[/dim]")
 
                 if current_state in {
@@ -178,8 +171,7 @@ class ArchitectNodes:
                     "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
                 )
 
-            # result = await self.jules.wait_for_completion(session_id)
-            result: dict[str, Any] = {}
+            result = await self.jules.wait_for_completion(session_id)
 
         except Exception as e:
             console.print(

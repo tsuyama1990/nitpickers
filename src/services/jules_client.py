@@ -253,7 +253,7 @@ class JulesClient:
 
         try:
             async with asyncio.timeout(self.timeout):
-                final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+                final_state = await graph.ainvoke(initial_state, config)
         except TimeoutError as e:
             msg = f"Wait for completion exceeded global timeout of {self.timeout}s."
             logger.error(msg)

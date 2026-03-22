@@ -19,6 +19,7 @@ class DummyE2bTool(BaseTool):
     async def _arun(self, command: str) -> str:
         return self.return_value
 
+
 @pytest.mark.asyncio
 async def test_sandbox_evaluator_tool_binding() -> None:
     # Simulates ensuring the LLM or tool executor works with e2b tools correctly

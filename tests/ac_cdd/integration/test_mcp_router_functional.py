@@ -56,9 +56,7 @@ async def test_mcp_client_manager_live() -> None:
     jules_key = os.environ.get("JULES_API_KEY")
 
     if not e2b_key or not jules_key:
-        pytest.skip(
-            f"Missing required API keys: E2B={bool(e2b_key)}, JULES={bool(jules_key)}"
-        )
+        pytest.skip(f"Missing required API keys: E2B={bool(e2b_key)}, JULES={bool(jules_key)}")
 
     # GITHUB_PERSONAL_ACCESS_TOKEN might not be available, let's just warn about it
     gh_key = os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN")
@@ -108,10 +106,14 @@ async def test_mcp_client_manager_live() -> None:
                 github_result = await github_tool.ainvoke({})
                 assert isinstance(github_result, (list, str))
             elif github_tool.name == "get_file_contents":
-                with pytest.raises(Exception) as exc_info: # noqa: PT011
+                with pytest.raises(Exception) as exc_info:  # noqa: PT011
                     await github_tool.ainvoke({})
                 # Fails due to missing args, proving JSON RPC is alive
-                assert "validation" in str(exc_info.value).lower() or "required" in str(exc_info.value).lower() or "missing" in str(exc_info.value).lower()
+                assert (
+                    "validation" in str(exc_info.value).lower()
+                    or "required" in str(exc_info.value).lower()
+                    or "missing" in str(exc_info.value).lower()
+                )
 
         # Test Jules: trigger a session listing via Jules MCP toolset
         # It's better to trigger an action with known missing args to verify the server validates the JSON RPC correctly.
@@ -127,4 +129,15 @@ async def test_mcp_client_manager_live() -> None:
         except Exception as e:
             err_str = str(e).lower()
             # mcp_router throws Invalid code interpreter arguments sometimes, which has the phrase invalid
-            assert any(x in err_str for x in ["validation", "required", "missing", "invalid", "argument", "interpreter", "error"])
+            assert any(
+                x in err_str
+                for x in [
+                    "validation",
+                    "required",
+                    "missing",
+                    "invalid",
+                    "argument",
+                    "interpreter",
+                    "error",
+                ]
+            )

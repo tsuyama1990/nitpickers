@@ -2,9 +2,9 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from src.services.git_ops import GitManager
 
 from src.enums import FlowStatus, WorkPhase
+from src.services.git_ops import GitManager
 from src.services.uat_usecase import UatUseCase
 from src.state import CycleState
 
@@ -29,9 +29,7 @@ async def test_uat_usecase_dynamic_execution_success(
     mock_settings.uat.test_cmd = "uv run pytest tests/uat/"
     mock_settings.uat.db_reset_cmd = None
 
-    state = CycleState(
-        cycle_id="01", current_phase=WorkPhase.CODER
-    )
+    state = CycleState(cycle_id="01", current_phase=WorkPhase.CODER)
     state.pr_url = "https://github.com/owner/repo/pull/1"
 
     use_case = UatUseCase(mock_git_manager)

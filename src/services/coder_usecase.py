@@ -33,13 +33,11 @@ class CoderUseCase:
     Encapsulates the logic and interactions with the Coder AI (Jules).
     """
 
-    def __init__(self, jules_client: JulesClient, e2b_tools: Any | None = None, github_read_tools: Any | None = None) -> None:
+    def __init__(self, jules_client: JulesClient) -> None:
         if not jules_client:
             msg = "JulesClient must be injected into CoderUseCase"
             raise ValueError(msg)
         self.jules = jules_client
-        self.e2b_tools = e2b_tools
-        self.github_read_tools = github_read_tools
 
     # ------------------------------------------------------------------ #
     #  Public entry point                                                  #
@@ -170,14 +168,11 @@ class CoderUseCase:
             fix_plan_text = (
                 f"## Automated UAT Diagnostic Fix Plan\n"
                 f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                f"**Target File:** `{state.current_fix_plan.target_file}`\n"
                 f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                f"**Required Changes:**\n"
+                f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                f"Please implement these exact changes immediately."
             )
-            for patch in state.current_fix_plan.patches:
-                fix_plan_text += f"\n**Target File:** `{patch.target_file}`\n```\n{patch.git_diff_patch}\n```\n"
-
-            fix_plan_text += "\nPlease implement these exact changes immediately."
-
             instruction += "\n\n" + self._build_feedback_injection(
                 fix_plan_text, cycle_manifest.pr_url if cycle_manifest else None
             )
@@ -233,12 +228,11 @@ class CoderUseCase:
                 feedback_payload = (
                     f"## Automated UAT Diagnostic Fix Plan\n"
                     f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
+                    f"**Target File:** `{state.current_fix_plan.target_file}`\n"
                     f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                    f"**Required Changes:**\n"
+                    f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
+                    f"Please implement these exact changes immediately."
                 )
-                for patch in state.current_fix_plan.patches:
-                    feedback_payload += f"\n**Target File:** `{patch.target_file}`\n```\n{patch.git_diff_patch}\n```\n"
-                feedback_payload += "\nPlease implement these exact changes immediately."
 
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id, feedback_payload
@@ -263,25 +257,13 @@ class CoderUseCase:
             msg = f"Invalid session_req_id format: {session_req_id}"
             raise ValueError(msg)
 
-        # Pass tools dynamically if run_session supports them
-        run_args: dict[str, Any] = {
-            "session_id": session_req_id,
-            "prompt": instruction,
-            "target_files": target_files,
-            "context_files": context_files,
-            "require_plan_approval": False,
-        }
-
-        all_tools = []
-        if self.github_read_tools:
-            all_tools.extend(self.github_read_tools)
-        if self.e2b_tools:
-            all_tools.extend(self.e2b_tools)
-
-        if all_tools:
-            run_args["tools"] = all_tools
-
-        result = await self.jules.run_session(**run_args)
+        result = await self.jules.run_session(
+            session_id=session_req_id,
+            prompt=instruction,
+            target_files=target_files,
+            context_files=context_files,
+            require_plan_approval=False,
+        )
 
         # Capture session_name BEFORE wait_for_completion() overwrites result —
         # wait_for_completion() does NOT include session_name in its return value.

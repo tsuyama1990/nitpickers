@@ -274,7 +274,9 @@ class UATAuditorUseCase:
     Strictly follows the Single Responsibility Principle.
     """
 
-    def __init__(self, llm_reviewer: LLMReviewer, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+    def __init__(
+        self, llm_reviewer: LLMReviewer, e2b_tools: Sequence[BaseTool] | None = None
+    ) -> None:
         self.llm_reviewer = llm_reviewer
         self.e2b_tools = e2b_tools
 

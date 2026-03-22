@@ -24,6 +24,9 @@ from src.nodes import (
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.services.audit_orchestrator import AuditOrchestrator
+from src.services.git_ops import GitManager
+from src.services.jules_client import JulesClient
+from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 
 console = Console()
@@ -34,36 +37,30 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(
-        self,
-        sandbox_runner: Any,
-        e2b_tools: Sequence[BaseTool] | None = None,
-        github_read_tools: Sequence[BaseTool] | None = None,
-        github_write_tools: Sequence[BaseTool] | None = None,
-        jules_tools: Sequence[BaseTool] | None = None,
-    ) -> None:
+    def __init__(self, sandbox_runner: Any, jules_client: JulesClient, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+        self.jules = jules_client
         self.e2b_tools = e2b_tools
-        self.github_read_tools = github_read_tools
-        self.github_write_tools = github_write_tools
-        self.jules_tools = jules_tools
 
         from src.service_container import ServiceContainer
 
         container = ServiceContainer.default()
 
-        # self.llm_reviewer = LLMReviewer()
-        self.audit_orchestrator = AuditOrchestrator(None)
+        self.git = (
+            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
+        )
+        self.llm_reviewer = LLMReviewer()
+        self.audit_orchestrator = AuditOrchestrator(jules_client, None)
 
-        self._architect = ArchitectNodes(github_read_tools=self.github_read_tools)
-        self._architect_critic = ArchitectCriticNodes()
-        self._coder = CoderNodes(github_read_tools=self.github_read_tools, e2b_tools=self.e2b_tools)
-        self._coder_critic = CoderCriticNodes()
-        self._auditor = AuditorNodes(e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
+        self._architect = ArchitectNodes(self.jules, self.git)
+        self._architect_critic = ArchitectCriticNodes(self.jules)
+        self._coder = CoderNodes(self.jules)
+        self._coder_critic = CoderCriticNodes(self.jules)
+        self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools)
         self._committee = CommitteeNodes()
-        self._uat = UatNodes(e2b_tools=self.e2b_tools)
+        self._uat = UatNodes(self.git, e2b_tools=self.e2b_tools)
         self._sandbox_evaluator = SandboxEvaluatorNodes(e2b_tools=self.e2b_tools)
-        self._qa = QaNodes(e2b_tools=self.e2b_tools)
-        self._coder_critic = CoderCriticNodes()
+        self._qa = QaNodes(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools)
+        self._coder_critic = CoderCriticNodes(self.jules)
 
         # Dependency injection for Global Refactor
         from src.services.refactor_usecase import RefactorUsecase
@@ -71,7 +68,7 @@ class CycleNodes(IGraphNodes):
         if hasattr(container, "resolve"):
             refactor_usecase = container.resolve(RefactorUsecase)
         else:
-            refactor_usecase = RefactorUsecase(jules_tools=self.jules_tools)
+            refactor_usecase = RefactorUsecase(jules_client=self.jules)
 
         self._global_refactor = GlobalRefactorNodes(usecase=refactor_usecase)
 

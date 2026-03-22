@@ -44,8 +44,9 @@ class SandboxEvaluatorNodes:
 
         if not exec_tool:
             for tool in self.e2b_tools:
-                if getattr(tool, "args_schema", None):
-                    schema = tool.args_schema.schema()
+                args_schema = getattr(tool, "args_schema", None)
+                if args_schema is not None and hasattr(args_schema, "schema"):
+                    schema = args_schema.schema()
                     props = schema.get("properties", {})
                     if "command" in props or "commandLine" in props:
                         exec_tool = tool
@@ -55,8 +56,9 @@ class SandboxEvaluatorNodes:
             return None
 
         arg_name = "command"
-        if getattr(exec_tool, "args_schema", None):
-            props = exec_tool.args_schema.schema().get("properties", {})
+        args_schema = getattr(exec_tool, "args_schema", None)
+        if args_schema is not None and hasattr(args_schema, "schema"):
+            props = args_schema.schema().get("properties", {})
             if props:
                 arg_name = next(iter(props.keys()))
 
@@ -130,8 +132,9 @@ class SandboxEvaluatorNodes:
                     try:
                         import asyncio
                         # Using wait_for to prevent infinite hanging
+                        tool_kwargs = {str(arg_name): cmd_str}
                         tool_result = await asyncio.wait_for(
-                            exec_tool.ainvoke({arg_name: cmd_str}),
+                            exec_tool.ainvoke(tool_kwargs),
                             timeout=settings.sandbox.timeout
                         )
                         stdout = str(tool_result)

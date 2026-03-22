@@ -92,19 +92,12 @@ class LLMReviewer:
             return None
         tools_param = []
         for tool in e2b_tools:
-            parameters = {"type": "object", "properties": {}}
-            if tool.args_schema:
-                if hasattr(tool.args_schema, "model_json_schema"):
-                    parameters = tool.args_schema.model_json_schema()
-                elif hasattr(tool.args_schema, "schema"):
-                    parameters = tool.args_schema.schema()
-
             tools_param.append({
                 "type": "function",
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": parameters,
+                    "parameters": tool.args_schema.schema() if tool.args_schema else {"type": "object", "properties": {}},
                 }
             })
         return tools_param
@@ -149,15 +142,9 @@ class LLMReviewer:
                 return None  # Signal timeout
 
             message = response.choices[0].message
-            if hasattr(message, "model_dump") and callable(message.model_dump):
-                try:
-                    message_dict = message.model_dump()
-                except Exception:
-                    # In tests involving MagicMock, model_dump might exist but raise errors
-                    message_dict = {"role": "assistant", "content": str(message.content)}
-                    if getattr(message, "tool_calls", None):
-                        message_dict["tool_calls"] = message.tool_calls
-            elif hasattr(message, "to_dict") and callable(message.to_dict):
+            if hasattr(message, "model_dump"):
+                message_dict = message.model_dump()
+            elif hasattr(message, "to_dict"):
                 message_dict = message.to_dict()
             elif isinstance(message, dict):
                 message_dict = message
@@ -204,7 +191,6 @@ class LLMReviewer:
         instruction: str,
         model: str,
         e2b_tools: Sequence[BaseTool] | None = None,
-        github_read_tools: Sequence[BaseTool] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -222,13 +208,7 @@ class LLMReviewer:
 
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
-        all_tools: list[BaseTool] = []
-        if e2b_tools:
-            all_tools.extend(e2b_tools)
-        if github_read_tools:
-            all_tools.extend(github_read_tools)
-
-        tools_param = self._convert_tools_to_litellm(all_tools) if all_tools else None
+        tools_param = self._convert_tools_to_litellm(e2b_tools)
 
         from src.config import settings
         system_prompt = settings.get_template("REVIEWER_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("REVIEWER_INSTRUCTION.md").exists() else (
@@ -240,13 +220,13 @@ class LLMReviewer:
 
         for attempt in range(3):
             try:
-                messages: list[dict[str, Any]] = [
+                messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ]
 
                 content_str = await self._execute_litellm_tool_loop(
-                    model, messages, tools_param, all_tools
+                    model, messages, tools_param, e2b_tools
                 )
 
                 if content_str is None:
@@ -316,7 +296,7 @@ class LLMReviewer:
 
         for attempt in range(3):
             try:
-                messages: list[dict[str, Any]] = [
+                messages = [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": content_parts},
                 ]
@@ -327,10 +307,9 @@ class LLMReviewer:
 
                 if content_str is None:
                     if attempt == 2:
-                        from src.domain_models.fix_plan_schema import FilePatch
                         return FixPlanSchema(
                             defect_description="SYSTEM_ERROR: LLM API request timed out.",
-                            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
+                            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
                         )
                     continue
 
@@ -342,16 +321,14 @@ class LLMReviewer:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
-                    from src.domain_models.fix_plan_schema import FilePatch
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually and provide a fix.")],
+                        patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually and provide a fix."}],
                     )
 
-        from src.domain_models.fix_plan_schema import FilePatch
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
+            patches=[{"target_file": "Unknown", "git_diff_patch": "Please review the UAT logs manually."}],
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:

@@ -2,10 +2,10 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from src.services.jules_client import JulesClient
 
 from src.domain_models.execution import ConflictRegistryItem
 from src.services.integration_usecase import IntegrationUsecase, MaxRetriesExceededError
+from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 

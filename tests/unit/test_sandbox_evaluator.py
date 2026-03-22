@@ -14,31 +14,32 @@ class MockTool:
         self.return_value = return_value
         self.ainvoke = AsyncMock(return_value=return_value)
 
+
 @pytest.fixture
 def mock_success_tool() -> Any:
     return [MockTool("Test passed")]
+
 
 @pytest.fixture
 def mock_fail_tool() -> Any:
     return [MockTool("Error: Test failed")]
 
+
 @pytest.fixture
 def base_state() -> CycleState:
     return CycleState(cycle_id="01")
 
+
 @pytest.mark.asyncio
-async def test_evaluate_success_passes(
-    base_state: CycleState, mock_success_tool: Any
-) -> None:
+async def test_evaluate_success_passes(base_state: CycleState, mock_success_tool: Any) -> None:
     node = SandboxEvaluatorNodes(e2b_tools=mock_success_tool)
     result = await node.sandbox_evaluate_node(base_state)
 
     assert result["status"] == FlowStatus.READY_FOR_AUDIT
 
+
 @pytest.mark.asyncio
-async def test_evaluate_failure_fails(
-    base_state: CycleState, mock_fail_tool: Any
-) -> None:
+async def test_evaluate_failure_fails(base_state: CycleState, mock_fail_tool: Any) -> None:
     node = SandboxEvaluatorNodes(e2b_tools=mock_fail_tool)
     result = await node.sandbox_evaluate_node(base_state)
 

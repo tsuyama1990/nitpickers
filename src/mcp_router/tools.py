@@ -5,72 +5,66 @@ from langchain_core.tools import BaseTool
 from src.mcp_router.manager import McpClientManager
 
 
-async def _fetch_tools_with_retry(server_name: str, allowed_tools: set[str] | None = None) -> Sequence[BaseTool]:
-    """
-    Internal helper to fetch and filter tools from a specific MCP server with exponential backoff.
-
-    Args:
-        server_name: The name of the server mapping (e.g., 'e2b', 'github').
-        allowed_tools: A set of tool names to whitelist. If None, all tools from the server are allowed.
-
-    Returns:
-        Sequence[BaseTool]: A filtered list of available tools.
-    """
-    import asyncio
-    import logging
-
-    logger = logging.getLogger(__name__)
-    manager = McpClientManager()
-
-    max_retries = 3
-    base_delay = 1.0
-
-    for attempt in range(max_retries):
-        try:
-            async with manager.get_client() as client:
-                all_tools = await asyncio.wait_for(client.get_tools(), timeout=15.0)
-
-                return [
-                    t for t in all_tools
-                    if getattr(t, "server_name", "") == server_name
-                    and (allowed_tools is None or t.name in allowed_tools)
-                ]
-        except TimeoutError:
-            logger.warning(f"Timeout fetching {server_name.upper()} tools (attempt {attempt+1}/{max_retries}).")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(base_delay * (2**attempt))
-            else:
-                logger.warning(f"Failed to retrieve {server_name.upper()} tools due to repeated timeouts. Tools disabled.")
-        except Exception as e:
-            logger.warning(f"Error fetching {server_name.upper()} tools (attempt {attempt+1}/{max_retries}): {e}")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(base_delay * (2**attempt))
-            else:
-                logger.exception(f"Failed to retrieve {server_name.upper()} tools from MCP server after retries. Tools will be disabled.")
-
-    return []
-
-
 async def get_e2b_tools() -> Sequence[BaseTool]:
     """Retrieves the E2B tools from the MCP server with proper error handling."""
-    return await _fetch_tools_with_retry("e2b")
+    manager = McpClientManager()
+    try:
+        async with manager.get_client() as client:
+            # We filter specifically for the e2b server's tools in a multi-server setup
+            tools = await client.get_tools()
 
+            # The tool names from langchain_mcp_adapters are typically namespaced if there are multiple servers,
+            # but MultiServerMCPClient might just return all of them.
+            # E2B tools generally include run_code, execute_command, etc.
+            # We don't strictly filter out GitHub tools here, but for safety, we should.
+            # For simplicity, we'll return tools that belong to E2B (assuming we can distinguish,
+            # or we return all and rely on get_github_read_tools to restrict github tools).
+            # Actually, MultiServerMCPClient get_tools returns a list of all tools from all connected servers.
+            # The names are prefixed with the server name (e.g. "e2b_run_code", "github_get_file_content")
+            # Wait, let's just return all tools that start with "e2b_" or where name doesn't start with "github_"
+            return [t for t in tools if getattr(t, "name", "").startswith("e2b_") or not getattr(t, "name", "").startswith("github_")]
+    except Exception:
+        import logging
 
-async def get_github_read_tools(allowed_tools: set[str] | None = None) -> Sequence[BaseTool]:
-    """Retrieves and filters read-only tools from the GitHub MCP server."""
-    # Default to explicitly known safe read operations to avoid circular dependencies
-    if allowed_tools is None:
-        allowed_tools = {"get_file_content", "search_repositories", "get_issue"}
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to retrieve tools from MCP server. Tools will be disabled")
+        return []
 
-    return await _fetch_tools_with_retry("github", allowed_tools=allowed_tools)
+async def get_github_read_tools() -> Sequence[BaseTool]:
+    """Retrieves only the read-only GitHub tools from the MCP server."""
+    manager = McpClientManager()
+    try:
+        async with manager.get_client() as client:
+            tools = await client.get_tools()
 
+            # The allowed read-only tool names.
+            # In MultiServerMCPClient, tools might be prefixed with the server name, e.g. "github_get_file_content".
+            # We check if the core name is in our allowed list.
+            allowed_core_names = {"get_file_content", "search_repositories", "get_issue", "list_commits", "list_issues", "search_issues", "get_file", "list_branches", "list_pull_requests"}
 
-async def get_github_write_tools() -> Sequence[BaseTool]:
-    """Retrieves and filters write-only mutating tools from the GitHub MCP server."""
-    allowed_tools = {"push_commit", "create_pull_request", "create_branch"}
-    return await _fetch_tools_with_retry("github", allowed_tools=allowed_tools)
+            safe_tools = []
+            for t in tools:
+                name = getattr(t, "name", "")
 
+                # If the tool is an E2B tool, we don't include it in the github read tools list.
+                # We strictly want github read tools.
+                if not name.startswith("github_"):
+                    continue
 
-async def get_jules_tools() -> Sequence[BaseTool]:
-    """Retrieves the Jules tools from the MCP server."""
-    return await _fetch_tools_with_retry("jules")
+                core_name = name.replace("github_", "", 1)
+
+                # Explicitly block write operations
+                if any(write_verb in core_name for write_verb in ["write", "push", "create", "delete", "merge", "update"]):
+                    continue
+
+                if core_name in allowed_core_names or "get" in core_name or "list" in core_name or "search" in core_name:
+                    safe_tools.append(t)
+
+            return safe_tools
+
+    except Exception:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.exception("Failed to retrieve GitHub tools from MCP server. Tools will be disabled")
+        return []

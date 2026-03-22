@@ -38,7 +38,7 @@ def test_mcp_client_manager_sanitization() -> None:
         "SUDO_COMMAND": "secret_injection",
         "SUDO_USER": "root",
         "OPENAI_API_KEY": "some_key",
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "some_token"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "some_token",
     }
 
     with patch.dict(os.environ, test_env, clear=True):
@@ -56,11 +56,19 @@ def test_mcp_client_manager_sanitization() -> None:
 @pytest.mark.asyncio
 async def test_mcp_client_manager_context() -> None:
     # Test that the context manager yields a client with correct parameters
-    with patch.dict(os.environ, {"E2B_API_KEY": "mock_e2b_key_1234", "GITHUB_PERSONAL_ACCESS_TOKEN": "mock_github_key_1234", "SUDO_CMD": "secret"}):
+    with patch.dict(
+        os.environ,
+        {
+            "E2B_API_KEY": "mock_e2b_key_1234",
+            "GITHUB_PERSONAL_ACCESS_TOKEN": "mock_github_key_1234",
+            "SUDO_CMD": "secret",
+        },
+    ):
         manager = McpClientManager()
 
         # We mock the MultiServerMCPClient to avoid actually starting node processes
         from unittest.mock import AsyncMock
+
         with patch("src.mcp_router.manager.MultiServerMCPClient") as mock_client_cls:
             # Setting up the mock so that connect_all works without exception
             mock_client_instance = mock_client_cls.return_value
@@ -82,7 +90,10 @@ async def test_mcp_client_manager_context() -> None:
                 github_config = call_args["github"]
                 assert github_config["command"] == "npx"
                 assert github_config["args"] == ["-y", "@modelcontextprotocol/server-github"]
-                assert github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
+                assert (
+                    github_config["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"
+                )
+
 
 def test_github_config_validation() -> None:
     # Test that GitHubMcpConfig raises an error if GITHUB_PERSONAL_ACCESS_TOKEN is missing
@@ -91,12 +102,14 @@ def test_github_config_validation() -> None:
             GitHubMcpConfig()  # type: ignore[call-arg]
         assert "GITHUB_PERSONAL_ACCESS_TOKEN" in str(exc.value)
 
+
 def test_github_config_success() -> None:
     with patch.dict(os.environ, {"GITHUB_PERSONAL_ACCESS_TOKEN": "mock_github_key_1234"}):
         config = GitHubMcpConfig()  # type: ignore[call-arg]
         params = config.get_connection_config()
         assert "github" in params
         assert params["github"]["env"]["GITHUB_PERSONAL_ACCESS_TOKEN"] == "mock_github_key_1234"  # noqa: S105
+
 
 @pytest.mark.asyncio
 async def test_get_github_read_tools_filtering() -> None:
@@ -116,6 +129,7 @@ async def test_get_github_read_tools_filtering() -> None:
     class MockContextManager:
         async def __aenter__(self) -> MockClient:
             return MockClient()
+
         async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
             pass
 

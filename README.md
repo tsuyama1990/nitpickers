@@ -99,9 +99,9 @@ Ensure the following tools are available on your system:
 Nitpickers operates primarily through its Command-Line Interface, navigating the development cycles defined by the system architecture.
 
 ### Interactive Tutorials (UAT Verification)
-To experience the new MCP Architecture pipelines interactively, run the definitive Marimo tutorial. It supports both **Mock Mode** (no API keys required) and **Real Mode**.
+To experience the new architecture pipelines interactively, run the definitive Marimo tutorial. It supports both **Mock Mode** (no API keys required) and **Real Mode**.
 ```bash
-uv run marimo run tutorials/mcp_architecture_verification.py
+uv run marimo run tutorials/automated_uat_pipeline_tutorial.py
 ```
 
 ### Generate Development Cycles (Phase 1)

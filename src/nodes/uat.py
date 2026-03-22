@@ -7,8 +7,8 @@ from src.state import CycleState
 
 
 class UatNodes:
-    def __init__(self, e2b_tools: Sequence[BaseTool] | None = None) -> None:
-
+    def __init__(self, git: Any, e2b_tools: Sequence[BaseTool] | None = None) -> None:
+        self.git = git
         self.e2b_tools = e2b_tools
 
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:

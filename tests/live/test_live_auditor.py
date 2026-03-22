@@ -19,13 +19,11 @@ async def test_live_uat_auditor_diagnosis():
         exit_code=1,
         stdout="Running tests...\n",
         stderr="ModuleNotFoundError: No module named 'src.missing_module'",
-        artifacts=[]
+        artifacts=[],
     )
 
     state = CycleState(
-        cycle_id="01",
-        project_session_id="proj-session-123",
-        uat_execution_state=uat_state
+        cycle_id="01", project_session_id="proj-session-123", uat_execution_state=uat_state
     )
 
     # Act
