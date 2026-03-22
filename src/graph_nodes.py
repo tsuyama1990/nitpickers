@@ -136,10 +136,7 @@ class CycleNodes(IGraphNodes):
             conflicts = cm.scan_conflicts(repo_path)
             if conflicts:
                 # Actually detected real git conflicts
-                return {
-                    "unresolved_conflicts": conflicts,
-                    "conflict_status": "conflict_detected"
-                }
+                return {"unresolved_conflicts": conflicts, "conflict_status": "conflict_detected"}
 
         except Exception as e:
             logger.error(f"Git merge failed: {e}")
@@ -168,7 +165,9 @@ class CycleNodes(IGraphNodes):
         runner = ProcessRunner()
         cmd = settings.sandbox.test_cmd.split()
 
-        stdout, stderr, exit_code, timeout = await runner.run_command(cmd, cwd=Path.cwd(), check=False)
+        stdout, stderr, exit_code, timeout = await runner.run_command(
+            cmd, cwd=Path.cwd(), check=False
+        )
 
         if exit_code != 0 or timeout:
             logger.error(f"Global sandbox failed with exit code {exit_code}")
@@ -179,14 +178,23 @@ class CycleNodes(IGraphNodes):
 
     def route_merge(self, state: "IntegrationState") -> str:
         # Properly check for git conflict detection mapping
-        status = getattr(state, "conflict_status", None) if hasattr(state, "conflict_status") else getattr(state, "get", lambda x, y: None)("conflict_status", None)
+        status = (
+            getattr(state, "conflict_status", None)
+            if hasattr(state, "conflict_status")
+            else getattr(state, "get", lambda x, y: None)("conflict_status", None)
+        )
         if status == "conflict_detected":
             return "conflict"
         return "success"
 
     def route_global_sandbox(self, state: "IntegrationState") -> str:
         from src.enums import FlowStatus
-        status = getattr(state, "status", None) if hasattr(state, "status") else getattr(state, "get", lambda x, y: None)("status", None)
+
+        status = (
+            getattr(state, "status", None)
+            if hasattr(state, "status")
+            else getattr(state, "get", lambda x, y: None)("status", None)
+        )
         # Sandbox evaluators return FlowStatus.FAILED if general linter/pytest failures occur
         if status in (FlowStatus.FAILED.value, FlowStatus.FAILED, "failed"):
             return "failed"

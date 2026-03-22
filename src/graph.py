@@ -189,7 +189,7 @@ class GraphBuilder:
                 "qa_auditor": "qa_auditor",
                 "refactor_node": "refactor_node",
                 "committee_manager": "committee_manager",
-                END: END
+                END: END,
             },
         )
 

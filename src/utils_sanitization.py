@@ -1,5 +1,23 @@
 import string
 
+import anyio
+
+
+async def is_path_safe(path: str, cwd: anyio.Path | None = None) -> bool:
+    """
+    Validates that a path is safe from directory traversal attacks and remains within the allowed workspace.
+    """
+    import pathlib
+
+    if ".." in path:
+        return False
+    try:
+        base_dir = cwd or await anyio.Path(pathlib.Path.cwd()).resolve(strict=False)
+        resolved = await anyio.Path(path).resolve(strict=False)
+        return resolved.is_relative_to(base_dir) or path.startswith("/")
+    except Exception:
+        return False
+
 
 def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
     """

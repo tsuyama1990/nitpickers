@@ -102,11 +102,8 @@ class ConflictManager:
 
         return True
 
-    async def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
-        """
-        Builds the conflict resolution prompt package using a 3-Way Diff strategy.
-        Retrieves the Base, Local, and Remote file contents from Git.
-        """
+    async def _fetch_git_object(self, file_path: str, stage: int, repo_path: Path) -> str:
+        """Helper to fetch a git object at a specific merge stage."""
         try:
             from src.config import settings
 
@@ -114,24 +111,25 @@ class ConflictManager:
         except ImportError:
             git_cmd = "git"
 
-        # Helper to get file content from git show
-        async def _get_git_content(stage: int) -> str:
-            try:
-                stdout, _stderr, exit_code, _timeout = await self.runner.run_command(
-                    [git_cmd, "show", f":{stage}:{item.file_path}"], cwd=repo_path, check=False
-                )
-                if exit_code != 0 or not stdout:
-                    return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
-                return str(stdout)
-            except Exception as e:
-                logger.warning(
-                    f"Error executing git show for stage {stage} on {item.file_path}: {e}"
-                )
+        try:
+            stdout, _stderr, exit_code, _timeout = await self.runner.run_command(
+                [git_cmd, "show", f":{stage}:{file_path}"], cwd=repo_path, check=False
+            )
+            if exit_code != 0 or not stdout:
                 return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
+            return str(stdout)
+        except Exception as e:
+            logger.warning(f"Error executing git show for stage {stage} on {file_path}: {e}")
+            return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
 
-        base_code = await _get_git_content(1)
-        local_code = await _get_git_content(2)
-        remote_code = await _get_git_content(3)
+    async def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
+        """
+        Builds the conflict resolution prompt package using a 3-Way Diff strategy.
+        Retrieves the Base, Local, and Remote file contents from Git.
+        """
+        base_code = await self._fetch_git_object(item.file_path, 1, repo_path)
+        local_code = await self._fetch_git_object(item.file_path, 2, repo_path)
+        remote_code = await self._fetch_git_object(item.file_path, 3, repo_path)
 
         item.base_content = base_code
         item.local_content = local_code

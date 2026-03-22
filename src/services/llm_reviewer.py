@@ -33,32 +33,19 @@ class LLMReviewer:
     async def _validate_paths(
         self, target_files: dict[str, str], context_docs: dict[str, str]
     ) -> str | None:
+        """Validates all provided paths against directory traversal."""
+        from src.utils_sanitization import is_path_safe
+
         if not target_files:
             logger.warning("review_code called with empty target_files dictionary.")
             return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: No target files provided for review.\n  - Location: `Unknown`\n  - Concrete Fix: Ensure files are modified before requesting an audit."
 
-        import pathlib
-
-        import anyio
-
-        cwd = await anyio.Path(pathlib.Path.cwd()).resolve(strict=False)
-
-        async def _is_path_safe(p: str) -> bool:
-            if ".." in p:
-                return False
-            try:
-                return (await anyio.Path(p).resolve(strict=False)).is_relative_to(
-                    cwd
-                ) or p.startswith("/")
-            except Exception:
-                return False
-
-        invalid_targets = [path for path in target_files if not await _is_path_safe(path)]
+        invalid_targets = [path for path in target_files if not await is_path_safe(path)]
         if invalid_targets:
             logger.warning(f"review_code rejecting invalid target file paths: {invalid_targets}")
             return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Invalid target file path detected: {', '.join(invalid_targets)}\n  - Location: `Unknown`\n  - Concrete Fix: Remove path traversal or unsafe characters."
 
-        invalid_contexts = [path for path in context_docs if not await _is_path_safe(path)]
+        invalid_contexts = [path for path in context_docs if not await is_path_safe(path)]
         for path in invalid_contexts:
             logger.warning(f"review_code rejecting invalid context doc path: {path}")
             del context_docs[path]
@@ -159,11 +146,13 @@ class LLMReviewer:
             }
         ]
 
+        from src.utils_sanitization import is_path_safe
+
         # Helper inner function specifically to unpack the parsing block complexity
         async def _append_artifact(a: "Any") -> None:
             if not a.screenshot_path:
                 return
-            if ".." in a.screenshot_path:
+            if not await is_path_safe(a.screenshot_path):
                 msg = f"Unsafe artifact path: {a.screenshot_path}"
                 raise ValueError(msg)
 

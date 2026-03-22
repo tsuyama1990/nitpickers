@@ -29,12 +29,17 @@ class ConflictRegistryItem(BaseModel):
 
 
 class ConflictResolutionSchema(BaseModel):
-    """Schema for LLM to return resolved code for a conflict."""
+    """
+    Schema for the Master Integrator LLM to return properly resolved file content.
+    This guarantees output is consistently provided as a JSON block, bypassing
+    brittle markdown-scraping mechanisms, avoiding Git marker insertion.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     resolved_code: str = Field(
-        ..., description="The fully resolved file content with no conflict markers"
+        ...,
+        description="The fully resolved file content, entirely free of Git conflict markers (`<<<<<<<`)",
     )
 
 

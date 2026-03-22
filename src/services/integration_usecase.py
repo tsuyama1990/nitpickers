@@ -70,6 +70,18 @@ class IntegrationUsecase:
 
         return state
 
+    def _parse_resolution_response(self, response_code: str) -> str:
+        """Extracts and validates the JSON payload from the LLM output."""
+        import re
+
+        json_str = response_code
+        match = re.search(r"```(?:json)?\n(.*?)```", response_code, re.DOTALL)
+        if match:
+            json_str = match.group(1).strip()
+
+        resolution = ConflictResolutionSchema.model_validate_json(json_str)
+        return str(resolution.resolved_code)
+
     async def _resolve_single_file(
         self, session_id: str, item: ConflictRegistryItem, repo_path: Path
     ) -> None:
@@ -98,18 +110,8 @@ class IntegrationUsecase:
                 session_id, prompt, message_history, model=model
             )
 
-            clean_code = None
             try:
-                # Clean up markdown JSON blocks if present
-                import re
-
-                json_str = response_code
-                match = re.search(r"```(?:json)?\n(.*?)```", response_code, re.DOTALL)
-                if match:
-                    json_str = match.group(1).strip()
-
-                resolution = ConflictResolutionSchema.model_validate_json(json_str)
-                clean_code = resolution.resolved_code
+                clean_code = self._parse_resolution_response(response_code)
             except Exception as e:
                 logger.warning(f"Failed to parse or validate schema: {e}")
                 prompt = (

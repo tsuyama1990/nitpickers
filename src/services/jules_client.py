@@ -254,6 +254,7 @@ class JulesClient:
         # Implement robust timeout and retry/circuit-breaker via asyncio block wrapper
         async def _invoke_with_retry() -> Any:
             import anyio
+
             for _attempt in range(3):
                 try:
                     return await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
