@@ -14,15 +14,15 @@ class QaNodes:
         self.e2b_tools = e2b_tools
 
     async def qa_session_node(self, state: CycleState) -> dict[str, Any]:
-        from src.services.qa_usecase import QaUseCase
         from src.services.llm_reviewer import LLMReviewer
+        from src.services.qa_usecase import QaUseCase
 
         usecase = QaUseCase(None, None, LLMReviewer(), e2b_tools=self.e2b_tools)
         return dict(await usecase.execute_qa_session(state))
 
     async def qa_auditor_node(self, state: CycleState) -> dict[str, Any]:
-        from src.services.qa_usecase import QaUseCase
         from src.services.llm_reviewer import LLMReviewer
+        from src.services.qa_usecase import QaUseCase
 
         usecase = QaUseCase(None, None, LLMReviewer(), e2b_tools=self.e2b_tools)
         return dict(await usecase.execute_qa_audit(state))

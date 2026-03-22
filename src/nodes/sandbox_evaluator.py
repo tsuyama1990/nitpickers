@@ -46,7 +46,7 @@ class SandboxEvaluatorNodes:
             for tool in self.e2b_tools:
                 args_schema = getattr(tool, "args_schema", None)
                 if args_schema:
-                    schema: dict[str, Any] = getattr(args_schema, "schema", lambda: {})()
+                    schema: dict[str, Any] = getattr(args_schema, "schema", dict)()
                     props: dict[str, Any] = schema.get("properties", {})
                     if "command" in props or "commandLine" in props:
                         exec_tool = tool
@@ -58,7 +58,7 @@ class SandboxEvaluatorNodes:
         arg_name = "command"
         args_schema = getattr(exec_tool, "args_schema", None)
         if args_schema:
-            schema_dict: dict[str, Any] = getattr(args_schema, "schema", lambda: {})()
+            schema_dict: dict[str, Any] = getattr(args_schema, "schema", dict)()
             props_dict: dict[str, Any] = schema_dict.get("properties", {})
             if props_dict:
                 arg_name = next(iter(props_dict.keys()))

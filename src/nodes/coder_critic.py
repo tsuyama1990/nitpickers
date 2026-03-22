@@ -2,7 +2,6 @@ from typing import Any
 
 from rich.console import Console
 
-from src.config import settings
 from src.enums import FlowStatus
 from src.state import CycleState
 
