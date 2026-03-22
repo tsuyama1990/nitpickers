@@ -3,6 +3,13 @@ from src.enums import FlowStatus
 from src.state import CycleState
 
 
+def route_coder_critic(state: CycleState) -> str:
+    status = getattr(state, "status", None)
+    if status == FlowStatus.CODER_RETRY:
+        return "coder_session"
+    return settings.node_uat_evaluate
+
+
 def check_coder_outcome(state: CycleState) -> str:
     status = getattr(state, "status", None)
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
@@ -63,48 +70,6 @@ def route_final_critic(state: CycleState) -> str:
     return "reject"
 
 
-def check_audit_outcome(_state: CycleState) -> str:
-    return "rejected_retry"
-
-
-def route_committee(state: CycleState) -> str:
-    status = getattr(state, "status", None)
-    if status == FlowStatus.NEXT_AUDITOR:
-        return "auditor"
-    if status == FlowStatus.CYCLE_APPROVED:
-        return settings.node_coder_critic
-    if status in {
-        FlowStatus.RETRY_FIX,
-        FlowStatus.WAIT_FOR_JULES_COMPLETION,
-        FlowStatus.POST_AUDIT_REFACTOR,
-    }:
-        return "coder_session"
-    return "failed"
-
-
-def route_uat(state: CycleState) -> str:
-    status = getattr(state, "status", None)
-    if status == FlowStatus.START_REFACTOR:
-        return "coder_session"
-    if status == FlowStatus.COMPLETED:
-        return "end"
-    if status == FlowStatus.UAT_FAILED:
-        from src.utils import logger
-
-        retry_count = getattr(state, "uat_retry_count", 0)
-        max_retries = getattr(settings.uat, "max_retries", 3)
-        if retry_count >= max_retries:
-            logger.error(f"UAT Failed {retry_count} times. Halting to prevent infinite loop.")
-            return "failed"
-        return "auditor"
-    return "end"
-
-
-def route_coder_critic(state: CycleState) -> str:
-    status = getattr(state, "status", None)
-    if status == FlowStatus.CODER_RETRY:
-        return "coder_session"
-    return settings.node_uat_evaluate
 
 
 def route_qa(state: CycleState) -> str:

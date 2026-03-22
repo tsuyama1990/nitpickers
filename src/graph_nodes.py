@@ -12,15 +12,12 @@ from src.nodes import (
     CommitteeNodes,
     QaNodes,
     UatNodes,
-    check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
     route_auditor,
-    route_committee,
     route_final_critic,
     route_qa,
     route_sandbox_evaluate,
-    route_uat,
 )
 from src.nodes.global_refactor import GlobalRefactorNodes
 from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
@@ -106,14 +103,8 @@ class CycleNodes(IGraphNodes):
     def check_coder_outcome(self, state: CycleState) -> str:
         return check_coder_outcome(state)
 
-    def check_audit_outcome(self, _state: CycleState) -> str:
-        return check_audit_outcome(_state)
-
     def route_architect_critic(self, state: CycleState) -> str:
         return route_architect_critic(state)
-
-    def route_committee(self, state: CycleState) -> str:
-        return route_committee(state)
 
     def route_auditor(self, state: CycleState) -> str:
         return route_auditor(state)
@@ -123,9 +114,6 @@ class CycleNodes(IGraphNodes):
 
     def route_sandbox_evaluate(self, state: CycleState) -> str:
         return route_sandbox_evaluate(state)
-
-    def route_uat(self, state: CycleState) -> str:
-        return route_uat(state)
 
     async def qa_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._qa.qa_session_node(state)
@@ -137,7 +125,8 @@ class CycleNodes(IGraphNodes):
         return route_qa(state)
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
-        return {}
+        return await self._coder_critic.coder_critic_node(state)
 
     def route_coder_critic(self, state: CycleState) -> str:
-        return ""
+        from src.nodes.routers import route_coder_critic
+        return route_coder_critic(state)
