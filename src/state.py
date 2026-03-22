@@ -19,6 +19,8 @@ class CommitteeState(BaseModel):
     current_auditor_index: int = Field(default=1, ge=1)
     current_auditor_review_count: int = Field(default=1, ge=1)
     iteration_count: int = Field(default=0, ge=0)
+    is_refactoring: bool = Field(default=False)
+    audit_attempt_count: int = Field(default=0, ge=0)
 
     @field_validator("current_auditor_index")
     @classmethod
@@ -143,6 +145,22 @@ class CycleState(BaseModel):
     @iteration_count.setter
     def iteration_count(self, value: int) -> None:
         self.committee.iteration_count = value
+
+    @property
+    def is_refactoring(self) -> bool:
+        return self.committee.is_refactoring
+
+    @is_refactoring.setter
+    def is_refactoring(self, value: bool) -> None:
+        self.committee.is_refactoring = value
+
+    @property
+    def audit_attempt_count(self) -> int:
+        return self.committee.audit_attempt_count
+
+    @audit_attempt_count.setter
+    def audit_attempt_count(self, value: int) -> None:
+        self.committee.audit_attempt_count = value
 
     @property
     def project_session_id(self) -> str | None:
@@ -309,6 +327,8 @@ class CycleState(BaseModel):
                 "current_auditor_index",
                 "current_auditor_review_count",
                 "iteration_count",
+                "is_refactoring",
+                "audit_attempt_count",
             ],
             "session": [
                 "jules_session_name",

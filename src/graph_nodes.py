@@ -15,8 +15,11 @@ from src.nodes import (
     check_audit_outcome,
     check_coder_outcome,
     route_architect_critic,
+    route_auditor,
     route_committee,
+    route_final_critic,
     route_qa,
+    route_sandbox_evaluate,
     route_uat,
 )
 from src.nodes.global_refactor import GlobalRefactorNodes
@@ -111,6 +114,15 @@ class CycleNodes(IGraphNodes):
 
     def route_committee(self, state: CycleState) -> str:
         return route_committee(state)
+
+    def route_auditor(self, state: CycleState) -> str:
+        return route_auditor(state)
+
+    def route_final_critic(self, state: CycleState) -> str:
+        return route_final_critic(state)
+
+    def route_sandbox_evaluate(self, state: CycleState) -> str:
+        return route_sandbox_evaluate(state)
 
     def route_uat(self, state: CycleState) -> str:
         return route_uat(state)

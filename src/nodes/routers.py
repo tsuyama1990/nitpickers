@@ -12,19 +12,48 @@ def check_coder_outcome(state: CycleState) -> str:
         return str(FlowStatus.COMPLETED.value)
 
     if status == FlowStatus.CODER_RETRY:
-        return str(FlowStatus.CODER_RETRY.value)
-    if status == FlowStatus.READY_FOR_AUDIT:
         return settings.node_sandbox_evaluate
+    if status == FlowStatus.READY_FOR_AUDIT:
+        return "self_critic"
     return settings.node_uat_evaluate
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
     status = getattr(state, "status", None)
-    if status == FlowStatus.READY_FOR_AUDIT:
-        return "auditor"
     if status == FlowStatus.TDD_FAILED:
-        return "coder_session"
+        return "failed"
+
+    if status == FlowStatus.READY_FOR_AUDIT:
+        if state.is_refactoring:
+            return "final_critic"
+        return "auditor"
+
     return "failed"
+
+
+def route_auditor(state: CycleState) -> str:
+    # Use explicit audit_result field from state.audit based on trace inspection
+    is_approved = False
+    if state.audit.audit_result is not None:
+        is_approved = state.audit.audit_result.is_approved
+
+    if not is_approved:
+        state.audit_attempt_count += 1
+        return "reject"
+
+    state.current_auditor_index += 1
+    if state.current_auditor_index > settings.NUM_AUDITORS:
+        return "pass_all"
+    return "next_auditor"
+
+
+def route_final_critic(state: CycleState) -> str:
+    status = getattr(state, "status", None)
+    if status == FlowStatus.CODER_RETRY:
+        return "reject"
+    if status == FlowStatus.COMPLETED:
+        return "approve"
+    return "reject"
 
 
 def check_audit_outcome(_state: CycleState) -> str:

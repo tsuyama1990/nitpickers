@@ -32,4 +32,7 @@ class GlobalRefactorNodes:
             else:
                 logger.info("No global refactorings applied.")
 
-            return {"global_refactor_result": result}
+            return {
+                "global_refactor_result": result,
+                "is_refactoring": True,
+            }

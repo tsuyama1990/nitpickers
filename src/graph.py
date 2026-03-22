@@ -70,9 +70,8 @@ class GraphBuilder:
             "coder_session_node",
             "sandbox_evaluate_node",
             "auditor_node",
-            "committee_manager_node",
             "coder_critic_node",
-            "uat_evaluate_node",
+            "global_refactor_node",
         ]
         for n in required_nodes:
             if not getattr(self.nodes, n, None):
@@ -86,9 +85,9 @@ class GraphBuilder:
         workflow.add_node("coder_session", self.nodes.coder_session_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
-        workflow.add_node("committee_manager", self.nodes.committee_manager_node)
-        workflow.add_node(settings.node_coder_critic, self.nodes.coder_critic_node)
-        workflow.add_node(settings.node_uat_evaluate, self.nodes.uat_evaluate_node)
+        workflow.add_node("self_critic", self.nodes.coder_critic_node)
+        workflow.add_node("refactor_node", self.nodes.global_refactor_node)
+        workflow.add_node("final_critic", self.nodes.coder_critic_node)
 
         workflow.add_edge(START, "coder_session")
 
@@ -97,59 +96,49 @@ class GraphBuilder:
             "coder_session",
             self.nodes.check_coder_outcome,
             {
+                "self_critic": "self_critic",
                 settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
                 FlowStatus.FAILED.value: END,
-                settings.node_uat_evaluate: settings.node_uat_evaluate,
                 FlowStatus.CODER_RETRY.value: "coder_session",
             },
         )
 
-        # Sandbox Evaluate -> Auditor or Coder
-        from src.nodes.routers import route_sandbox_evaluate
+        # self_critic -> sandbox_evaluate
+        workflow.add_edge("self_critic", settings.node_sandbox_evaluate)
 
+        # Sandbox Evaluate -> Auditor, final_critic, failed, or coder_session
         workflow.add_conditional_edges(
             settings.node_sandbox_evaluate,
-            route_sandbox_evaluate,
+            self.nodes.route_sandbox_evaluate,
             {
                 "auditor": "auditor",
                 "coder_session": "coder_session",
+                "final_critic": "final_critic",
                 "failed": END,
             },
         )
 
-        # Auditor -> Committee Manager
-        workflow.add_edge("auditor", "committee_manager")
-
-        # Conditional edge from committee_manager
+        # Auditor -> Conditional routing (rejection loop, next auditor, or refactor)
         workflow.add_conditional_edges(
-            "committee_manager",
-            self.nodes.route_committee,
+            "auditor",
+            self.nodes.route_auditor,
             {
-                settings.node_coder_critic: settings.node_coder_critic,
-                "auditor": "auditor",
-                "coder_session": "coder_session",
-                "failed": END,
+                "reject": "coder_session",
+                "next_auditor": "auditor",
+                "pass_all": "refactor_node",
             },
         )
 
-        # Conditional edge from coder_critic
-        workflow.add_conditional_edges(
-            settings.node_coder_critic,
-            self.nodes.route_coder_critic,
-            {
-                "coder_session": "coder_session",
-                settings.node_uat_evaluate: settings.node_uat_evaluate,
-            },
-        )
+        # refactor_node -> sandbox_evaluate
+        workflow.add_edge("refactor_node", settings.node_sandbox_evaluate)
 
-        # Conditional edge from uat_evaluate for Refactoring Phase
+        # final_critic -> end or coder_session
         workflow.add_conditional_edges(
-            settings.node_uat_evaluate,
-            self.nodes.route_uat,
+            "final_critic",
+            self.nodes.route_final_critic,
             {
-                "coder_session": "coder_session",
-                "auditor": "auditor",
-                "end": END,
+                "approve": END,
+                "reject": "coder_session",
             },
         )
 
