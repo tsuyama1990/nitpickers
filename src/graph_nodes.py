@@ -100,6 +100,21 @@ class CycleNodes(IGraphNodes):
     async def global_refactor_node(self, state: CycleState) -> dict[str, Any]:
         return await self._global_refactor.global_refactor_node(state)
 
+    async def git_merge_node(self, state: "Any") -> dict[str, Any]:
+        return {"status": "success"}
+
+    async def master_integrator_node(self, state: "Any") -> dict[str, Any]:
+        return {"status": "resolved"}
+
+    async def global_sandbox_node(self, state: "Any") -> dict[str, Any]:
+        return {"status": "pass"}
+
+    def route_merge(self, state: "Any") -> str:
+        return "success"
+
+    def route_global_sandbox(self, state: "Any") -> str:
+        return "pass"
+
     def check_coder_outcome(self, state: CycleState) -> str:
         return check_coder_outcome(state)
 

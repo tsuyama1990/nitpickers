@@ -157,27 +157,58 @@ class GraphBuilder:
         workflow.add_node("qa_session", self.nodes.qa_session_node)
         workflow.add_node("qa_auditor", self.nodes.qa_auditor_node)
 
-        workflow.add_edge(START, "qa_session")
 
-        # Custom logic for QA session routing (similar to coder_session)
-        # If qa_session fails or succeeds
+        workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
+
+        workflow.add_edge(START, "uat_evaluate")
+
         workflow.add_conditional_edges(
-            "qa_session",
-            lambda state: "qa_auditor" if state.get("status") == "ready_for_audit" else END,
+            "uat_evaluate",
+            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else END,
             {"qa_auditor": "qa_auditor", END: END},
         )
 
-        # Router from Auditor
-        workflow.add_conditional_edges(
-            "qa_auditor",
-            self.nodes.route_qa,
-            {
-                "end": END,
-                "retry_fix": "qa_session",
-                "failed": END,
-            },
-        )
+        workflow.add_edge("qa_auditor", "qa_session")
+        workflow.add_edge("qa_session", "uat_evaluate")
+
         return workflow
 
     def build_qa_graph(self) -> CompiledStateGraph[CycleState, Any, Any, Any]:
         return self._create_qa_graph().compile(checkpointer=MemorySaver())
+
+    def _create_integration_graph(self) -> StateGraph[Any]:
+        """Create the graph for Phase 3: Integration."""
+        from src.state import IntegrationState
+
+        workflow = StateGraph(IntegrationState)
+
+        workflow.add_node("git_merge_node", self.nodes.git_merge_node)
+        workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
+        workflow.add_node("global_sandbox_node", self.nodes.global_sandbox_node)
+
+        workflow.add_edge(START, "git_merge_node")
+
+        workflow.add_conditional_edges(
+            "git_merge_node",
+            self.nodes.route_merge,
+            {
+                "conflict": "master_integrator_node",
+                "success": "global_sandbox_node",
+            },
+        )
+
+        workflow.add_edge("master_integrator_node", "git_merge_node")
+
+        workflow.add_conditional_edges(
+            "global_sandbox_node",
+            self.nodes.route_global_sandbox,
+            {
+                "failed": "master_integrator_node",
+                "pass": END,
+            },
+        )
+
+        return workflow
+
+    def build_integration_graph(self) -> CompiledStateGraph[Any, Any, Any, Any]:
+        return self._create_integration_graph().compile(checkpointer=MemorySaver())
