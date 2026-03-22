@@ -8,7 +8,7 @@ from src.state import AuditState, CycleState
 def test_route_sandbox_evaluate() -> None:
     # Test TDD_FAILED
     state = CycleState(cycle_id="01", status=FlowStatus.TDD_FAILED)
-    assert route_sandbox_evaluate(state) == "failed"
+    assert route_sandbox_evaluate(state) == "coder_session"
 
     # Test READY_FOR_AUDIT, not refactoring
     state = CycleState(cycle_id="01", status=FlowStatus.READY_FOR_AUDIT)
@@ -36,6 +36,13 @@ def test_route_auditor() -> None:
     state.audit_attempt_count = 0
     assert route_auditor(state) == "reject"
     assert state.audit_attempt_count == 1
+
+    # Test rejected by False is_approved max retries
+    audit_res = AuditResult(is_approved=False)
+    state.audit = AuditState(audit_result=audit_res)
+    state.audit_attempt_count = settings.max_audit_retries
+    assert route_auditor(state) == "failed"
+    assert state.audit_attempt_count == settings.max_audit_retries + 1
 
     # Test approved, next_auditor
     audit_res_approved = AuditResult(is_approved=True)

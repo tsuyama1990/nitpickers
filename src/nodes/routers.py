@@ -14,14 +14,17 @@ def check_coder_outcome(state: CycleState) -> str:
     if status == FlowStatus.CODER_RETRY:
         return settings.node_sandbox_evaluate
     if status == FlowStatus.READY_FOR_AUDIT:
-        return "self_critic"
+        # Route to self_critic only on the first attempt
+        if state.iteration_count <= 1 and state.audit_attempt_count == 0 and state.current_auditor_index == 1:
+            return "self_critic"
+        return settings.node_sandbox_evaluate
     return settings.node_uat_evaluate
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
     status = getattr(state, "status", None)
     if status == FlowStatus.TDD_FAILED:
-        return "failed"
+        return "coder_session"
 
     if status == FlowStatus.READY_FOR_AUDIT:
         if state.is_refactoring:
@@ -39,8 +42,12 @@ def route_auditor(state: CycleState) -> str:
 
     if not is_approved:
         state.audit_attempt_count += 1
+        if state.audit_attempt_count > settings.max_audit_retries:
+            return "failed"
         return "reject"
 
+    # Reset attempt count on pass
+    state.audit_attempt_count = 0
     state.current_auditor_index += 1
     if state.current_auditor_index > settings.NUM_AUDITORS:
         return "pass_all"
