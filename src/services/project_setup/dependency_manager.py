@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from src.process_runner import ProcessRunner
 from src.services.git_ops import GitManager
+
+from src.process_runner import ProcessRunner
 from src.utils import logger
 
 

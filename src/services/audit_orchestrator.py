@@ -1,12 +1,10 @@
-import asyncio
+from collections.abc import Sequence
 from typing import Any
 
+from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
-from src.config import settings
-from langchain_core.tools import BaseTool
-from typing import Sequence
 from src.services.plan_auditor import PlanAuditor
 
 console = Console()

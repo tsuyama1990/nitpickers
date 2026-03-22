@@ -1,10 +1,11 @@
 import secrets
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from src.config import settings
-from typing import Sequence
 from langchain_core.tools import BaseTool
+
+from src.config import settings
 from src.domain_models.refactor import GlobalRefactorResult
 from src.services.ast_analyzer import ASTAnalyzer
 from src.utils import logger

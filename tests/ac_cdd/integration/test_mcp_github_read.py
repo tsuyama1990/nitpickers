@@ -2,9 +2,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from langchain_core.tools import BaseTool
+from src.services.git_ops import GitManager
 
 from src.nodes.architect import ArchitectNodes
-from src.services.git_ops import GitManager
 from src.state import CycleState
 
 

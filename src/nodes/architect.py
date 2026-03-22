@@ -19,7 +19,7 @@ class ArchitectNodes:
 
         self.github_read_tools = github_read_tools
 
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
 
