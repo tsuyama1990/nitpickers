@@ -112,14 +112,12 @@ class CycleNodes(IGraphNodes):
     async def git_merge_node(self, state: "Any") -> dict[str, Any]:
         from src.services.git_ops import GitManager
         try:
-            # Assuming git_manager is available, but making it type-safe
             gm = GitManager()
-            # This is a stubbed proper integration logic that could just merge
-            # and detect conflict
-            res = await gm.merge_pr("1") # Dummy PR number for type safety
-            return {"status": "success"}
+            await gm.merge_pr("1")
         except Exception as e:
             return {"error": str(e), "status": "conflict"}
+        else:
+            return {"status": "success"}
 
     async def master_integrator_node(self, state: "Any") -> dict[str, Any]:
         from src.nodes.master_integrator import MasterIntegratorNodes

@@ -181,7 +181,7 @@ class GraphBuilder:
         """Create the graph for Phase 3: Integration."""
         from src.state import IntegrationState
 
-        workflow = StateGraph(IntegrationState)  # type: ignore[arg-type, valid-type]
+        workflow = StateGraph(IntegrationState)
 
         workflow.add_node("git_merge_node", self.nodes.git_merge_node)
         workflow.add_node("master_integrator_node", self.nodes.master_integrator_node)
