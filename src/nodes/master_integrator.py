@@ -1,19 +1,17 @@
-from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from langchain_core.tools import BaseTool
-
 from src.services.integration_usecase import IntegrationUsecase, MaxRetriesExceededError
+from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
 class MasterIntegratorNodes:
     """Nodes for the Master Integrator conflict resolution flow."""
 
-    def __init__(self, github_write_tools: Sequence[BaseTool] | None = None) -> None:
-        self.github_write_tools = github_write_tools or []
-        self.usecase = IntegrationUsecase(self.github_write_tools)
+    def __init__(self, jules_client: JulesClient | None = None) -> None:
+        self.jules = jules_client or JulesClient()
+        self.usecase = IntegrationUsecase(self.jules)
 
     async def master_integrator_node(self, state: IntegrationState) -> dict[str, Any]:
         """

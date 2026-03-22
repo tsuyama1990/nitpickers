@@ -1,11 +1,15 @@
-from collections.abc import Sequence
-from typing import Any
+import asyncio
+from typing import TYPE_CHECKING, Any
 
-from langchain_core.tools import BaseTool
 from rich.console import Console
 from rich.panel import Panel
 
+from src.config import settings
+from src.services.jules_client import JulesClient
 from src.services.plan_auditor import PlanAuditor
+
+if TYPE_CHECKING:
+    from src.sandbox import SandboxRunner
 
 console = Console()
 
@@ -17,11 +21,14 @@ class AuditOrchestrator:
 
     def __init__(
         self,
-        jules_tools: Sequence[BaseTool] | None = None,
-        sandbox_runner: Any | None = None,
+        jules_client: JulesClient,
+        sandbox_runner: "SandboxRunner",
         plan_auditor: PlanAuditor | None = None,
     ) -> None:
-        self.jules_tools = jules_tools or []
+        self.jules = jules_client
+        if not self.jules:
+            msg = "JulesClient must be injected into AuditOrchestrator"
+            raise ValueError(msg)
         self.sandbox = sandbox_runner
         self.auditor = plan_auditor or PlanAuditor()
 
@@ -35,54 +42,106 @@ class AuditOrchestrator:
 
         file_paths = list(spec_files.keys())
 
-        # Placeholder logic:
-        # In actual MCP architecture, jules_tools manages this session interaction
-        # We replace the old jules HTTP wrapper loops with an MCP-based orchestrator flow.
-        from litellm import acompletion
+        session_data = await self.jules.run_session(
+            session_id=settings.current_session_id,
+            prompt=prompt,
+            files=file_paths,
+            require_plan_approval=True,
+        )
 
-        messages: list[dict[str, str]] = [{"role": "user", "content": prompt}]
-        tools_schema = [{"type": "function", "function": {"name": t.name, "description": t.description}} for t in self.jules_tools] if self.jules_tools else None
+        session_name = session_data["session_name"]
+        console.print(f"[green]Session Created: {session_name}[/green]")
 
         retry_count = 0
+        current_plan_id = None
+
         while retry_count <= max_retries:
-            response = await acompletion(
-                model="gpt-4o",
-                messages=messages,
-                tools=tools_schema
-            )
+            console.print(f"\n[bold yellow]--- Audit Round {retry_count + 1} ---[/bold yellow]")
+            console.print("[dim]Waiting for Jules to generate a plan...[/dim]")
 
-            content = response.choices[0].message.content or "No plan provided."
-            plan_details = {"plan": content, "planId": f"plan_{retry_count}"}
-
-            console.print(
-                Panel(
-                    content,
-                    title="[bold cyan]Proposed Plan[/bold cyan]",
-                    expand=False,
+            if current_plan_id:
+                plan_details = await self._wait_for_new_plan(session_name, current_plan_id)
+            else:
+                activity = await self.jules.wait_for_activity_type(
+                    session_name,
+                    target_type="planGenerated",
+                    timeout_seconds=300,
                 )
-            )
+
+                if not activity:
+                    t_msg = "Timed out waiting for plan generation."
+                    raise TimeoutError(t_msg)
+
+                plan_details = activity.get("planGenerated", {})
+
+            if not plan_details:
+                v_msg = "Plan activity found but no details."
+                raise ValueError(v_msg)
+
+            plan_id = plan_details.get("planId")
+            current_plan_id = plan_id
+            console.print(f"[blue]Plan Generated (ID: {plan_id})[/blue]")
 
             audit_result = await self.auditor.audit_plan(
                 plan_details, spec_files, phase="architect"
             )
 
+            style = "green" if audit_result.status == "APPROVED" else "red"
+            console.print(
+                Panel(
+                    f"Status: {audit_result.status}\nReason: {audit_result.reason}",
+                    title="Audit Result",
+                    border_style=style,
+                )
+            )
+
             if audit_result.status == "APPROVED":
-                console.print("[bold green]Plan Approved![/bold green]")
-                return {"status": "SUCCESS"}
+                console.print(
+                    "[bold green]Plan Approved. Proceeding to implementation...[/bold green]"
+                )
+                if plan_id:
+                    await self.jules.approve_plan(session_name, str(plan_id))
+                result = await self.jules.wait_for_completion(session_name)
+                return dict(result)
 
             retry_count += 1
             if retry_count > max_retries:
                 console.print("[bold red]Max retries exceeded. Aborting session.[/bold red]")
-                return {"status": "FAILED_AUDIT_LIMIT", "feedback": audit_result.reason}
+                r_msg = "Max audit retries exceeded."
+                raise RuntimeError(r_msg)
 
+            feedback = audit_result.feedback or audit_result.reason
             feedback_prompt = (
-                f"The plan was REJECTED by the Auditor.\n\nReason:\n{audit_result.reason}\n\n"
-                "Please generate a revised plan based on this feedback."
+                f"Your plan was REJECTED by the Lead Architect.\n"
+                f"Reason: {audit_result.reason}\n"
+                f"Instruction: {feedback}\n"
+                f"Please revise the plan accordingly."
             )
 
-            console.print(f"[magenta]Sending Feedback to Agent:[/magenta] {audit_result.reason}")
-            messages.append({"role": "assistant", "content": content})
-            messages.append({"role": "user", "content": feedback_prompt})
+            console.print(f"[magenta]Sending Feedback to Jules:[/magenta] {feedback}")
+            await self.jules.send_message(session_name, feedback_prompt)
 
         u_msg = "Session ended unexpectedly."
         raise RuntimeError(u_msg)
+
+    async def _wait_for_new_plan(
+        self, session_name: str, current_plan_id: str, timeout_seconds: int = 300
+    ) -> dict[str, Any]:
+        """Helper to poll until a plan with a different ID appears."""
+        console.print("[dim]Waiting for revised plan...[/dim]")
+
+        base_delay = 10
+        max_delay = 60
+        current_delay = base_delay
+
+        try:
+            async with asyncio.timeout(timeout_seconds):
+                while True:
+                    latest = await self.jules.get_latest_plan(session_name)
+                    if latest and latest.get("planId") != current_plan_id:
+                        return dict(latest)
+                    await asyncio.sleep(current_delay)
+                    current_delay = min(current_delay * 2, max_delay)
+        except TimeoutError:
+            t_msg = "Timed out waiting for revised plan."
+            raise TimeoutError(t_msg) from None

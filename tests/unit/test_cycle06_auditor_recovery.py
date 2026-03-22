@@ -1,6 +1,5 @@
 import base64
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,7 +12,7 @@ from src.state import CycleState
 
 
 def test_fix_plan_schema_valid() -> None:
-    data: dict[str, Any] = {
+    data = {
         "defect_description": "The button class was misspelled in the test, but the code is correct.",
         "patches": [
             {
@@ -28,7 +27,7 @@ def test_fix_plan_schema_valid() -> None:
 
 
 def test_fix_plan_schema_invalid_extra_field() -> None:
-    data: dict[str, Any] = {
+    data = {
         "defect_description": "Fix it.",
         "patches": [
             {
@@ -66,15 +65,11 @@ async def test_diagnose_uat_failure_success(tmp_path: Path) -> None:
 
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = (
+    mock_response.choices[
+        0
+    ].message.content = (
         '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
     )
-    # Important: Remove tool_calls entirely to avoid truthiness eval of MagicMock
-    mock_response.choices[0].message.tool_calls = None
-    mock_response.choices[0].message.model_dump = MagicMock(return_value={
-        "role": "assistant",
-        "content": '{"defect_description": "Test", "patches": [{"target_file": "src/main.py", "git_diff_patch": "patch"}]}'
-    })
 
     with patch(
         "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock
@@ -118,11 +113,6 @@ async def test_diagnose_uat_failure_invalid_json(tmp_path: Path) -> None:
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message.content = "Invalid JSON String"
-    mock_response.choices[0].message.tool_calls = None
-    mock_response.choices[0].message.model_dump = MagicMock(return_value={
-        "role": "assistant",
-        "content": "Invalid JSON String"
-    })
 
     with patch(
         "src.services.llm_reviewer.litellm.acompletion", new_callable=AsyncMock

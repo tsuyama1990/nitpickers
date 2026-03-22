@@ -13,9 +13,9 @@ def _imports() -> tuple[Any, Any, Any, Any, Any, Any, Any, Any]:
     from pathlib import Path
 
     import marimo as mo
-    from src.services.git_ops import GitManager
 
     from src.services.conflict_manager import ConflictManager, ConflictMarkerRemainsError
+    from src.services.git_ops import GitManager
 
     manager = ConflictManager()
 

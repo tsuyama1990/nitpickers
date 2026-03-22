@@ -1,25 +1,20 @@
-from collections.abc import Sequence
 from typing import Any
-
-from langchain_core.tools import BaseTool
 
 from src.state import CycleState
 
 
 class AuditorNodes:
-    def __init__(self, e2b_tools: Sequence[BaseTool] | None = None, github_read_tools: Sequence[BaseTool] | None = None) -> None:
-
-
-
-        self.e2b_tools = e2b_tools
-        self.github_read_tools = github_read_tools
+    def __init__(self, jules: Any, git: Any, llm_reviewer: Any) -> None:
+        self.jules = jules
+        self.git = git
+        self.llm_reviewer = llm_reviewer
 
     async def auditor_node(self, state: CycleState) -> dict[str, Any]:
         from src.services.auditor_usecase import AuditorUseCase, UATAuditorUseCase
 
         if getattr(state, "uat_execution_state", None):
-            uat_usecase = UATAuditorUseCase(self.llm_reviewer, e2b_tools=self.e2b_tools)
+            uat_usecase = UATAuditorUseCase(self.llm_reviewer)
             return dict(await uat_usecase.execute(state))
 
-        usecase = AuditorUseCase(self.jules, self.git, self.llm_reviewer, e2b_tools=self.e2b_tools, github_read_tools=self.github_read_tools)
+        usecase = AuditorUseCase(self.jules, self.git, self.llm_reviewer)
         return dict(await usecase.execute(state))
