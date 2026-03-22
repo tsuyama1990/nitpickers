@@ -85,9 +85,9 @@ class GraphBuilder:
         workflow.add_node("coder_session", self.nodes.coder_session_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
-        workflow.add_node("self_critic", self.nodes.coder_critic_node)
-        workflow.add_node("refactor_node", self.nodes.global_refactor_node)
-        workflow.add_node("final_critic", self.nodes.coder_critic_node)
+        workflow.add_node("self_critic", self.nodes.self_critic_node)
+        workflow.add_node("refactor_node", self.nodes.refactor_node)
+        workflow.add_node("final_critic", self.nodes.final_critic_node)
 
         workflow.add_edge(START, "coder_session")
 

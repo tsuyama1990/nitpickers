@@ -100,19 +100,48 @@ class CycleNodes(IGraphNodes):
     async def global_refactor_node(self, state: CycleState) -> dict[str, Any]:
         return await self._global_refactor.global_refactor_node(state)
 
+    async def refactor_node(self, state: CycleState) -> dict[str, Any]:
+        return await self.global_refactor_node(state)
+
+    async def self_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder_critic.coder_critic_node(state)
+
+    async def final_critic_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder_critic.coder_critic_node(state)
+
     async def git_merge_node(self, state: "Any") -> dict[str, Any]:
-        return {"status": "success"}
+        import asyncio
+
+        from src.services.integration_usecase import IntegrationUsecase
+        usecase = IntegrationUsecase()
+        try:
+            return await asyncio.to_thread(usecase.execute)
+        except Exception as e:
+            return {"error": str(e), "status": "failed"}
 
     async def master_integrator_node(self, state: "Any") -> dict[str, Any]:
-        return {"status": "resolved"}
+        from src.nodes.master_integrator import MasterIntegratorNodes
+        from src.services.git_ops import GitManager
+        from src.services.jules_client import JulesClient
+        integrator = MasterIntegratorNodes(jules_client=JulesClient(), git_manager=GitManager())
+        return await integrator.master_integrator_node(state)
 
     async def global_sandbox_node(self, state: "Any") -> dict[str, Any]:
-        return {"status": "pass"}
+        from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+        sandbox = SandboxEvaluatorNodes()
+        # Mocking CycleState to fit sandbox_evaluate_node expectation
+        return await sandbox.sandbox_evaluate_node(CycleState(cycle_id="00"))
 
     def route_merge(self, state: "Any") -> str:
+        status = state.get("conflict_status")
+        if status == "conflict_detected":
+            return "conflict"
         return "success"
 
     def route_global_sandbox(self, state: "Any") -> str:
+        status = state.get("status")
+        if status == "tdd_failed":
+            return "failed"
         return "pass"
 
     def check_coder_outcome(self, state: CycleState) -> str:
