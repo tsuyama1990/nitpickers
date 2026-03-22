@@ -4,6 +4,12 @@ import asyncio
 
 import typer
 
+from src.mcp_router.tools import (
+    get_e2b_tools,
+    get_github_read_tools,
+    get_github_write_tools,
+    get_jules_tools,
+)
 from src.services.workflow import WorkflowService
 
 app = typer.Typer()
@@ -15,8 +21,16 @@ def gen_cycles(
     session: str | None = typer.Option(None, "--session", help="Session ID"),
 ) -> None:
     """Generate architecture and development cycles."""
-    service = WorkflowService()
-    asyncio.run(service.run_gen_cycles(cycles, project_session_id=session))
+
+    async def _run() -> None:
+        from src.config import settings
+        github_read_tools = await get_github_read_tools(allowed_tools=settings.tools.github_allowed_read_tools)
+        jules_tools = await get_jules_tools()
+
+        service = WorkflowService(github_read_tools=github_read_tools, jules_tools=jules_tools)
+        await service.run_gen_cycles(cycles, project_session_id=session)
+
+    asyncio.run(_run())
 
 
 @app.command()
@@ -36,16 +50,34 @@ def run_cycle(
     # Pre-flight environment check
     service.verify_environment_and_observability()
 
-    asyncio.run(
-        service.run_cycle(
+    async def _run() -> None:
+        from src.config import settings
+        e2b_tools = await get_e2b_tools()
+        github_read_tools = await get_github_read_tools(allowed_tools=settings.tools.github_allowed_read_tools)
+        github_write_tools = await get_github_write_tools()
+        jules_tools = await get_jules_tools()
+
+        # Re-init WorkflowService with tools because it was inited early above
+        service_with_tools = WorkflowService(
+            e2b_tools=e2b_tools,
+            github_read_tools=github_read_tools,
+            github_write_tools=github_write_tools,
+            jules_tools=jules_tools,
+        )
+        await service_with_tools.run_cycle(
             cycle_id=cycle_id,
             resume=resume,
             auto=auto,
             start_iter=start_iter,
             project_session_id=session,
             parallel=parallel,
+            e2b_tools=e2b_tools,
+            github_read_tools=github_read_tools,
+            github_write_tools=github_write_tools,
+            jules_tools=jules_tools,
         )
-    )
+
+    asyncio.run(_run())
 
 
 @app.command()
@@ -53,5 +85,8 @@ def finalize_session(
     session: str | None = typer.Option(None, "--session", help="Session ID"),
 ) -> None:
     """Finalize the current working session."""
-    service = WorkflowService()
-    asyncio.run(service.finalize_session(project_session_id=session))
+    async def _run() -> None:
+        service = WorkflowService()
+        await service.finalize_session(project_session_id=session)
+
+    asyncio.run(_run())

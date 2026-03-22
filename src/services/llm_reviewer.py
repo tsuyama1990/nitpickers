@@ -1,7 +1,10 @@
 import base64
+from collections.abc import Sequence
+from typing import Any
 
 import anyio
 import litellm
+from langchain_core.tools import BaseTool
 from pydantic import ValidationError
 
 from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
@@ -23,7 +26,7 @@ class LLMReviewer:
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
 
-    async def _validate_paths(
+    async def _validate_paths(  # noqa: C901
         self, target_files: dict[str, str], context_docs: dict[str, str]
     ) -> str | None:
         if not target_files:
@@ -39,9 +42,33 @@ class LLMReviewer:
         async def _is_path_safe(p: str) -> bool:
             if ".." in p:
                 return False
+
+            # Removed .env to prevent secret leakage
+            allowed_extensions = {".py", ".md", ".txt", ".json", ".toml", ".yaml", ".yml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".sh"}
+
             try:
                 p_path = anyio.Path(p)
+
+                # Verify file extension (if any) is allowed
+                if (
+                    p_path.suffix
+                    and p_path.suffix not in allowed_extensions
+                    and p_path.name not in {"Dockerfile", "Makefile"}
+                ):
+                    return False
+
+                # Exclude .ac_cdd to protect system metadata
+                if ".ac_cdd" in p_path.parts:
+                    return False
+
                 resolved = await p_path.resolve(strict=False)
+
+                # Prevent symlink traversal out of the working directory
+                if await p_path.is_symlink():
+                    symlink_target = await p_path.resolve(strict=True)
+                    if not symlink_target.is_relative_to(cwd):
+                        return False
+
                 return resolved.is_relative_to(cwd)
             except Exception as e:
                 logger.debug(f"Path resolution failed for {p}: {e}")
@@ -59,12 +86,125 @@ class LLMReviewer:
 
         return None
 
+    def _convert_tools_to_litellm(self, e2b_tools: Sequence[BaseTool] | None) -> list[dict[str, Any]] | None:
+        """Converts Langchain BaseTool instances to Litellm function dicts."""
+        if not e2b_tools:
+            return None
+        tools_param = []
+        for tool in e2b_tools:
+            parameters = {"type": "object", "properties": {}}
+            if tool.args_schema:
+                if hasattr(tool.args_schema, "model_json_schema"):
+                    parameters = tool.args_schema.model_json_schema()
+                elif hasattr(tool.args_schema, "schema"):
+                    parameters = tool.args_schema.schema()
+
+            tools_param.append({
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": parameters,
+                }
+            })
+        return tools_param
+
+    async def _execute_litellm_tool_loop(  # noqa: C901, PLR0912
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        tools_param: list[dict[str, Any]] | None,
+        e2b_tools: Sequence[BaseTool] | None,
+        response_format: Any | None = None,
+    ) -> str | None:
+        """
+        Shared abstraction for executing a litellm conversation loop that supports native tool calling.
+        """
+        import asyncio
+        import json
+
+        from src.config import settings
+
+        MAX_TOOL_CALLS = 5
+        for _ in range(MAX_TOOL_CALLS):
+            kwargs = {}
+            if tools_param:
+                kwargs["tools"] = tools_param
+            if response_format:
+                kwargs["response_format"] = response_format
+
+            try:
+                response = await asyncio.wait_for(
+                    litellm.acompletion(
+                        model=model,
+                        messages=messages,
+                        temperature=0.0,
+                        max_tokens=8192,
+                        **kwargs,
+                    ),
+                    timeout=settings.jules.request_timeout
+                )
+            except TimeoutError:
+                logger.error("LLMReviewer timed out waiting for API response.")
+                return None  # Signal timeout
+
+            message = response.choices[0].message
+            if hasattr(message, "model_dump") and callable(message.model_dump):
+                try:
+                    message_dict = message.model_dump()
+                except Exception:
+                    # In tests involving MagicMock, model_dump might exist but raise errors
+                    message_dict = {"role": "assistant", "content": str(message.content)}
+                    if getattr(message, "tool_calls", None):
+                        message_dict["tool_calls"] = message.tool_calls
+            elif hasattr(message, "to_dict") and callable(message.to_dict):
+                message_dict = message.to_dict()
+            elif isinstance(message, dict):
+                message_dict = message
+            else:
+                message_dict = {"role": "assistant", "content": str(message.content)}
+                if getattr(message, "tool_calls", None):
+                    message_dict["tool_calls"] = message.tool_calls
+
+            if "content" not in message_dict or message_dict["content"] is None:
+                message_dict["content"] = ""
+
+            messages.append(message_dict)
+
+            if not message_dict.get("tool_calls"):
+                break
+
+            for tool_call in message_dict["tool_calls"]:
+                func_name = tool_call["function"]["name"]
+                args = json.loads(tool_call["function"]["arguments"])
+
+                tool_result = f"Error: Tool {func_name} not found"
+                if e2b_tools:
+                    tool = next((t for t in e2b_tools if t.name == func_name), None)
+                    if tool:
+                        try:
+                            logger.info(f"LLMReviewer executing tool {func_name}")
+                            tool_result = str(await tool.ainvoke(args))
+                        except Exception as err:
+                            tool_result = f"Error executing tool {func_name}: {err}"
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "name": func_name,
+                    "content": tool_result
+                })
+
+        return str(messages[-1].get("content", ""))
+
     async def review_code(
         self,
         target_files: dict[str, str],
         context_docs: dict[str, str],
         instruction: str,
         model: str,
+        e2b_tools: Sequence[BaseTool] | None = None,
+        github_read_tools: Sequence[BaseTool] | None = None,
     ) -> str:
         """
         Sends file contents and instructions to the LLM for review.
@@ -82,31 +222,38 @@ class LLMReviewer:
 
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
+        all_tools: list[BaseTool] = []
+        if e2b_tools:
+            all_tools.extend(e2b_tools)
+        if github_read_tools:
+            all_tools.extend(github_read_tools)
 
-        # Retry logic (up to 2 retries, total 3 attempts)
+        tools_param = self._convert_tools_to_litellm(all_tools) if all_tools else None
+
+        from src.config import settings
+        system_prompt = settings.get_template("REVIEWER_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("REVIEWER_INSTRUCTION.md").exists() else (
+            "You are an automated code reviewer. You must strictly follow the "
+            "provided instructions and only review the target code. You MUST return valid JSON. "
+            "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
+            "MAXIMUM of 10 issues to prevent excessively large JSON generation."
+        )
+
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are an automated code reviewer. You must strictly follow the "
-                                "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                                "MAXIMUM of 10 issues to prevent excessively large JSON generation."
-                            ),
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.0,  # Deterministic output for reviews
-                    max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
+                messages: list[dict[str, Any]] = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ]
+
+                content_str = await self._execute_litellm_tool_loop(
+                    model, messages, tools_param, all_tools
                 )
 
-                content_str = response.choices[0].message.content
+                if content_str is None:
+                    if attempt == 2:
+                        return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review request timed out.\n  - Location: `Unknown`\n  - Concrete Fix: Try again later or increase timeout."
+                    continue
 
-                # Parse the response safely into our robust Pydantic model
                 report = AuditorReport.model_validate_json(content_str)
                 return self._format_as_markdown(report)
 
@@ -123,6 +270,7 @@ class LLMReviewer:
         uat_state: UatExecutionState,
         instruction: str,
         model: str,
+        e2b_tools: Sequence[BaseTool] | None = None,
     ) -> FixPlanSchema:
         """
         Stateless diagnostic outer loop. Analyzes UAT execution logs and Multi-Modal artifacts
@@ -132,7 +280,6 @@ class LLMReviewer:
 
         from src.utils_sanitization import sanitize_for_llm
 
-        # Robust sanitization to prevent prompt injection and handle API payloads securely
         safe_stdout = sanitize_for_llm(uat_state.stdout)
         safe_stderr = sanitize_for_llm(uat_state.stderr)
         safe_instruction = sanitize_for_llm(instruction)
@@ -144,74 +291,67 @@ class LLMReviewer:
             }
         ]
 
-        # Attach multimodal artifacts
         for artifact in uat_state.artifacts:
             try:
                 img_path = anyio.Path(artifact.screenshot_path)
                 if await img_path.exists():
                     img_data = await img_path.read_bytes()
                     encoded = base64.b64encode(img_data).decode("utf-8")
-                    content_parts.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{encoded}"},
-                        }
-                    )
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{encoded}"},
+                    })
                     safe_traceback = sanitize_for_llm(artifact.traceback)
-                    content_parts.append(
-                        {
-                            "type": "text",
-                            "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
-                        }
-                    )
+                    content_parts.append({
+                        "type": "text",
+                        "text": f"\n# Traceback for artifact {artifact.test_id}\n```\n{safe_traceback}\n```\n",
+                    })
             except Exception as e:
                 logger.warning(f"Failed to process multimodal artifact {artifact.test_id}: {e}")
 
+        tools_param = self._convert_tools_to_litellm(e2b_tools)
+
+        from src.config import settings
+        system_prompt = settings.get_template("DIAGNOSTIC_INSTRUCTION.md").read_text() if settings.paths.templates.joinpath("DIAGNOSTIC_INSTRUCTION.md").exists() else "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema."
+
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
-                        },
-                        {"role": "user", "content": content_parts},
-                    ],
-                    response_format=FixPlanSchema,
-                    temperature=0.0,
-                    max_tokens=8192,
+                messages: list[dict[str, Any]] = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": content_parts},
+                ]
+
+                content_str = await self._execute_litellm_tool_loop(
+                    model, messages, tools_param, e2b_tools, response_format=FixPlanSchema
                 )
 
-                content_str = response.choices[0].message.content
+                if content_str is None:
+                    if attempt == 2:
+                        from src.domain_models.fix_plan_schema import FilePatch
+                        return FixPlanSchema(
+                            defect_description="SYSTEM_ERROR: LLM API request timed out.",
+                            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
+                        )
+                    continue
+
                 if not content_str:
-                    pass  # We'll just try again, it's inside the loop
+                    pass  # Try again
                 else:
                     return FixPlanSchema.model_validate_json(content_str)
             except (ValidationError, Exception) as e:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
-                    # Fallback schema to not break the pipeline entirely, though we ideally raise
+                    from src.domain_models.fix_plan_schema import FilePatch
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
-                        patches=[
-                            {
-                                "target_file": "Unknown",
-                                "git_diff_patch": "Please review the UAT logs manually and provide a fix."
-                            }
-                        ],
+                        patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually and provide a fix.")],
                     )
 
-        # Unreachable but mypy needs it
+        from src.domain_models.fix_plan_schema import FilePatch
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
-            patches=[
-                {
-                    "target_file": "Unknown",
-                    "git_diff_patch": "Please review the UAT logs manually."
-                }
-            ],
+            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")],
         )
 
     def _format_as_markdown(self, report: AuditorReport) -> str:
