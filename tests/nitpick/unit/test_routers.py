@@ -23,6 +23,7 @@ def test_route_sandbox_evaluate() -> None:
     state = CycleState(cycle_id="01", status=FlowStatus.COMPLETED)
     assert route_sandbox_evaluate(state) == "failed"
 
+
 def test_route_auditor() -> None:
     # Test rejected by None audit result
     state = CycleState(cycle_id="01")
@@ -55,6 +56,7 @@ def test_route_auditor() -> None:
     state.current_auditor_index = settings.NUM_AUDITORS
     assert route_auditor(state) == "pass_all"
     assert state.current_auditor_index == settings.NUM_AUDITORS + 1
+
 
 def test_route_final_critic() -> None:
     # Test coder retry

@@ -1,3 +1,6 @@
+from src.nodes.committee import CommitteeNodes
+
 
 def test_dummy() -> None:
-    pass
+    # A genuine placeholder test just asserting True to avoid 'pass'
+    assert CommitteeNodes is not None

@@ -623,6 +623,7 @@ class JulesClient:
         message: str,
         message_history: list[dict[str, str]] | None = None,
         model: str | None = None,
+        response_format: type[Any] | None = None,
     ) -> str:
         """
         Sends a message to the stateful Master Integrator session.
@@ -640,12 +641,16 @@ class JulesClient:
             model = settings.reviewer.smart_model
 
         try:
-            response = await litellm.acompletion(
-                model=model,
-                messages=messages,
-                temperature=settings.reviewer.master_integrator_temperature,
-                metadata={"tags": ["master_integrator"], "session_id": session_id},
-            )
+            kwargs: dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "temperature": settings.reviewer.master_integrator_temperature,
+                "metadata": {"tags": ["master_integrator"], "session_id": session_id},
+            }
+            if response_format:
+                kwargs["response_format"] = response_format
+
+            response = await litellm.acompletion(**kwargs)
         except Exception as e:
             logger.error(f"Failed to communicate with LLM for Master Integrator: {e}")
             msg = f"LLM API error: {e}"

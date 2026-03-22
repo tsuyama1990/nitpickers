@@ -39,8 +39,8 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMoc
 
     usecase = IntegrationUsecase(jules_client=mock_jules)
 
-    # Mock LLM returning clean code on first try
-    mock_jules.send_message_to_session.return_value = "```python\nclean_code\n```"
+    # Mock LLM returning clean JSON on first try
+    mock_jules.send_message_to_session.return_value = '{"resolved_code": "clean_code"}'
 
     new_state = await usecase.run_integration_loop(state, repo_path)
 
@@ -69,8 +69,8 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Magic
 
     # Mock LLM returning bad code on first try, clean code on second
     mock_jules.send_message_to_session.side_effect = [
-        "```python\n<<<<<<< HEAD\nbad\n=======\n```",
-        "```python\nclean_code\n```",
+        '{"resolved_code": "<<<<<<< HEAD\\nbad\\n=======\\n"}',
+        '{"resolved_code": "clean_code"}',
     ]
 
     new_state = await usecase.run_integration_loop(state, repo_path)
@@ -101,7 +101,7 @@ async def test_integration_usecase_max_retries_exceeded(
     usecase = IntegrationUsecase(jules_client=mock_jules)
 
     # Mock LLM constantly returning bad code
-    mock_jules.send_message_to_session.return_value = "```python\n<<<<<<< HEAD\nbad\n=======\n```"
+    mock_jules.send_message_to_session.return_value = '{"resolved_code": "<<<<<<< HEAD\\nbad\\n=======\\n"}'
 
     with pytest.raises(MaxRetriesExceededError):
         await usecase.run_integration_loop(state, repo_path)
