@@ -32,7 +32,7 @@ dependencies = [
 environments = ["sys_platform == 'linux'"]
 
 [project.scripts]
-ac-cdd = "src.cli:app"
+nitpick = "src.cli:app"
 
 [dependency-groups]
 dev = [
@@ -135,6 +135,7 @@ suppress-dummy-args = true  # Arguments starting with _ do not require type hint
 [tool.pytest.ini_options]
 addopts = "--cov=dev_src --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
+markers = ["live: marks tests as live tests requiring real API keys"]
 
 [tool.mypy]
 strict = true

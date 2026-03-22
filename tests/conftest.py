@@ -45,6 +45,7 @@ def pytest_runtest_makereport(
                     # The Accessibility tree is heavily compressed and perfect for LLMs
                     a11y_snapshot = page.accessibility.snapshot()
                     import json
+
                     dom_snapshot_path.write_text(json.dumps(a11y_snapshot, indent=2))
                 except Exception as dom_err:
                     dom_snapshot_path.write_text(f"DOM Capture Failed: {dom_err}")
@@ -79,9 +80,12 @@ def pytest_runtest_makereport(
 
 
 @pytest.fixture(autouse=True)
-def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch) -> None:
+def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
     """Set dummy API keys and models before any tests run, to prevent pydantic-ai from complaining
     during module import and inspection without leaking to the global environment."""
+    if "live" in request.node.keywords:
+        return
+
     import uuid
 
     # Set random strings for mock validation so no credentials can be leaked.
@@ -92,7 +96,7 @@ def _inject_dummy_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("JULES_API_KEY", f"sk-test-{uuid.uuid4().hex}")
     monkeypatch.setenv("E2B_API_KEY", f"e2b-test-{uuid.uuid4().hex}")
 
-    monkeypatch.setenv("AC_CDD_AUDITOR_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_QA_ANALYST_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_REVIEWER__SMART_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")
+    monkeypatch.setenv("NITPICK_AUDITOR_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_QA_ANALYST_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_REVIEWER__SMART_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")

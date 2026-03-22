@@ -91,7 +91,7 @@ async def test_initialize_project_robustness(tmp_path: Path) -> None:
 
         # Check git commit via GitManager
         mock_git_instance.commit_changes.assert_called_with(
-            "Initialize project with AC-CDD structure and dev dependencies"
+            "Initialize project with Nitpick structure and dev dependencies"
         )
 
         # Check git push via GitManager (since remote url mock returned a value)
@@ -99,5 +99,5 @@ async def test_initialize_project_robustness(tmp_path: Path) -> None:
 
         # 4. Verify basic files were created
         assert (tmp_path / "dev_documents" / "ALL_SPEC.md").exists()
-        assert (tmp_path / ".ac_cdd" / ".env.example").exists()
+        assert (tmp_path / ".nitpick" / ".env.example").exists()
         assert (tmp_path / ".gitignore").exists()

@@ -35,7 +35,7 @@ class DependencyManager:
             await self.git._run_git(["add", "."])
 
             if await self.git.commit_changes(
-                "Initialize project with AC-CDD structure and dev dependencies"
+                "Initialize project with Nitpick structure and dev dependencies"
             ):
                 logger.info("✓ Changes committed.")
 

@@ -67,7 +67,9 @@ Ensure the following tools are available on your system:
     - `LANGCHAIN_API_KEY`
     - `LANGCHAIN_PROJECT`
 
-## Installation & Setup
+## Installation & Setup (Docker Recommended)
+
+The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management.
 
 1. Clone the repository and navigate to the project directory:
    ```bash
@@ -75,42 +77,56 @@ Ensure the following tools are available on your system:
    cd <your-repository>
    ```
 
-2. Sync the dependencies and initialize the virtual environment:
-   ```bash
-   uv sync
-   ```
+2. Configure your environment variables based on the Hybrid Configuration architecture:
 
-3. Configure your environment variables. The Gatekeeper explicitly requires LangSmith to be configured before any execution will start:
+   **Tier A: Secret Tier (.env)**
+   These are your sensitive API keys. They will never be committed to git.
    ```bash
    cp .env.example .env
-   # Edit .env and populate your API keys and LangSmith variables.
+   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and LangSmith variables.
+   ```
+
+   **Tier B: Tuning Tier (docker-compose.yml)**
+   These are operational settings like model selection and agent counts. They are version-controlled and can be modified directly in the `docker-compose.yml` file under the `environment` section:
+   ```yaml
+      # Tier B: Tuning Tier (Version-controlled configuration)
+      - NITPICK_AUDITOR_MODEL=openai:gpt-4o
+      - NITPICK_REVIEWER__SMART_MODEL=openai:gpt-4o
+      - NITPICK_NUM_AUDITORS=3
+      - NITPICK_REVIEWS_PER_AUDITOR=2
+      - NITPICK_MAX_ITERATIONS=3
+   ```
+
+3. Build the Docker container:
+   ```bash
+   docker-compose build
    ```
 
 ## Usage
 
-NITPICKERS operates primarily through its Command-Line Interface.
-
-### Interactive Tutorials (UAT Verification)
-To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial. It natively supports both **Mock Mode** (no API keys required) and **Real Mode**.
-```bash
-uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
-```
+Once your `.env` is configured and the image is built, you can run `nitpick` commands via Docker without any local setup errors.
 
 ### Generate Development Cycles (Phase 1)
 Parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
-uv run python -m src.cli gen-cycles
+docker-compose run --rm nitpick nitpick gen-cycles
 ```
 
 ### Run a Specific Cycle (Phase 2 & 3)
 Execute a specific development cycle (e.g., `01`) defined by the manifest. The system will automatically verify your environment configuration, build the schemas, write tests, and implement logic within the E2B sandbox.
 ```bash
-uv run python -m src.cli run-cycle --id 01
+docker-compose run --rm nitpick nitpick run-cycle --id 01
 ```
 
 ### Finalize & Refactor
 ```bash
-uv run python -m src.cli finalize-session
+docker-compose run --rm nitpick nitpick finalize-session
+```
+
+### Interactive Tutorials (UAT Verification)
+To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
+```bash
+uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
 ```
 
 ## Troubleshooting

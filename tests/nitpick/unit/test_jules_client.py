@@ -13,7 +13,10 @@ def mock_client() -> Generator[JulesClient, None, None]:
     with (
         patch("src.services.jules_client.settings.JULES_API_KEY", "dummy"),
         patch("src.config.Settings.validate_api_keys", return_value=None),
-        patch.dict("os.environ", {"OPENAI_API_KEY": "mock_key", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"}),
+        patch.dict(
+            "os.environ",
+            {"OPENAI_API_KEY": "mock_key", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"},
+        ),
         patch("src.services.jules_client.get_manager_agent") as mock_agent,
     ):
         AsyncMock()
@@ -33,9 +36,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
 
             # FIX: Add context_builder
             client.context_builder = MagicMock()
-            client.context_builder.build_question_context = AsyncMock(
-                return_value="mock context"
-            )
+            client.context_builder.build_question_context = AsyncMock(return_value="mock context")
 
             # FIX: Add inquiry handler back since __init__ is skipped
             from src.services.jules.inquiry_handler import JulesInquiryHandler
@@ -155,7 +156,9 @@ async def test_interactive_inquiry_handling(
     mock_client.manager_agent.run = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
 
     mock_client.inquiry_handler.context_builder = MagicMock()
-    mock_client.inquiry_handler.context_builder.build_question_context = AsyncMock(return_value="mock context")
+    mock_client.inquiry_handler.context_builder.build_question_context = AsyncMock(
+        return_value="mock context"
+    )
 
     async def get_side_effect(url: str, **_kwargs: Any) -> MagicMock:
         if "activities" in url:

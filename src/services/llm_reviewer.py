@@ -19,6 +19,12 @@ class LLMReviewer:
         # even if not strictly used by this class (files are passed as content)
         self.sandbox = sandbox_runner
 
+        import os
+
+        # Enable LangSmith supervision natively through litellm if configured
+        if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
+            litellm.success_callback = ["langsmith"]
+
         # We rely on litellm's environment variable handling for API keys.
         # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
         litellm.suppress_instrumentation = True
@@ -192,25 +198,24 @@ class LLMReviewer:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
+                    from src.domain_models.fix_plan_schema import FilePatch
                     # Fallback schema to not break the pipeline entirely, though we ideally raise
                     return FixPlanSchema(
                         defect_description=f"SYSTEM_ERROR: LLM API generated invalid JSON or failed. {e}",
                         patches=[
-                            {
-                                "target_file": "Unknown",
-                                "git_diff_patch": "Please review the UAT logs manually and provide a fix."
-                            }
+                            FilePatch(
+                                target_file="Unknown",
+                                git_diff_patch="Please review the UAT logs manually and provide a fix.",
+                            )
                         ],
                     )
 
         # Unreachable but mypy needs it
+        from src.domain_models.fix_plan_schema import FilePatch
         return FixPlanSchema(
             defect_description="SYSTEM_ERROR: Review loop failed unexpectedly.",
             patches=[
-                {
-                    "target_file": "Unknown",
-                    "git_diff_patch": "Please review the UAT logs manually."
-                }
+                FilePatch(target_file="Unknown", git_diff_patch="Please review the UAT logs manually.")
             ],
         )
 

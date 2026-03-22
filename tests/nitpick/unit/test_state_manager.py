@@ -16,7 +16,7 @@ class TestStateManager:
     @pytest.fixture
     def temp_state_file(self, tmp_path: Path) -> Path:
         """Create a temporary state file path."""
-        state_dir = tmp_path / ".ac_cdd"
+        state_dir = tmp_path / ".nitpick"
         state_dir.mkdir(parents=True, exist_ok=True)
         return state_dir / "project_state.json"
 

@@ -21,7 +21,7 @@ You must follow the architectural hierarchy in your reasoning process:
 
 # Critical Constraints
 - **ZERO TOLERANCE FOR MOCKS**: Ensure no `TODO`, `FIXME`, `pass`, or `...` escaped the Audit. If you find any, fix them for real now.
-- **SYSTEM INTEGRITY**: Do NOT delete or modify the `.ac_cdd/` directory. Ensure it is in `.gitignore`.
+- **SYSTEM INTEGRITY**: Do NOT delete or modify the `.nitpick/` directory. Ensure it is in `.gitignore`.
 - **PRESERVE BEHAVIOR**: Since the Audit passed, DO NOT change the functional behavior or external API of the logic. Only improve the *internal* quality.
 
 # Process

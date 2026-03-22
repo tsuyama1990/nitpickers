@@ -37,7 +37,7 @@ You must follow the architectural hierarchy in your reasoning process:
 ## Constraints & Environment
 - **EXISTING PROJECT**: You are working within an EXISTING project.
 - **CRITICAL - PRESERVE EXISTING ASSETS**: Do NOT delete, significantly alter, or overwrite existing implementation code or test files unless the Spec EXPLICITLY instructs you to do so.
-    - **SYSTEM METADATA PROTECTION**: DO NOT delete, modify, or move any files inside the `.ac_cdd/` directory. These files (e.g., `project_state_local.json`) are critical for the system's state management. Any tampering with this directory will cause the entire development session to fail.
+    - **SYSTEM METADATA PROTECTION**: DO NOT delete, modify, or move any files inside the `.nitpick/` directory. These files (e.g., `project_state_local.json`) are critical for the system's state management. Any tampering with this directory will cause the entire development session to fail.
     - **ADDITIVE CHANGES ONLY**: Treat the Spec as "delta" (additional features/modifications) against the existing codebase. If a piece of code is not mentioned in the spec, LEAVE IT ALONE.
     - **PRESERVE TESTS**: Ensure all existing tests pass after your changes. Do not delete failing tests—fix the code or update the test.
 - **CONFIGURATION**:
@@ -53,11 +53,11 @@ You must follow the architectural hierarchy in your reasoning process:
         - `.ruff_cache/` (ruff cache)
         - `*.egg-info/` (package metadata)
         - `.env`, `.env.local` (environment variables)
-        - `.ac_cdd/` (CRITICAL: System state - MUST BE IN .gitignore)
+        - `.nitpick/` (CRITICAL: System state - MUST BE IN .gitignore)
         - `.venv/`, `venv/`, `env/` (virtual environments)
         - `.DS_Store` (macOS)
     - **DO NOT** exclude `__init__.py` files (they are required for Python packages).
-- **SYSTEM METADATA PROTECTION**: DO NOT delete, modify, or move any files inside the `.ac_cdd/` directory. Inclusion of this directory in a PR deletion is a FATAL ERROR. Ensure it is in `.gitignore`.
+- **SYSTEM METADATA PROTECTION**: DO NOT delete, modify, or move any files inside the `.nitpick/` directory. Inclusion of this directory in a PR deletion is a FATAL ERROR. Ensure it is in `.gitignore`.
 - **SOURCE CODE**: Place your code in `src/` (or `dev_src/` if instructed).
 - **LIBRARIES & TYPING**:
     - **ASE & icet**: These libraries often lack complete type stubs.

@@ -18,12 +18,12 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setenv("E2B_API_KEY", "dummy_key_for_test")
 
     # Set required settings for AgentsConfig to pass validation
-    monkeypatch.setenv("AC_CDD_AUDITOR_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_QA_ANALYST_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_AUDITOR_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_QA_ANALYST_MODEL", "openai:gpt-4o")
 
     # Set required settings for ReviewerConfig to pass validation
-    monkeypatch.setenv("AC_CDD_REVIEWER__SMART_MODEL", "openai:gpt-4o")
-    monkeypatch.setenv("AC_CDD_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")
+    monkeypatch.setenv("NITPICK_REVIEWER__SMART_MODEL", "openai:gpt-4o")
+    monkeypatch.setenv("NITPICK_REVIEWER__FAST_MODEL", "openai:gpt-3.5-turbo")
 
     # Create a default Settings object (using defaults defined in class)
     try:
