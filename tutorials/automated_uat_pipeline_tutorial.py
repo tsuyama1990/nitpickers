@@ -48,6 +48,12 @@ def _step_2() -> tuple[object, object, object, object, object]:
     assert os.getenv("E2B_API_KEY"), "E2B_API_KEY is missing"
     assert os.getenv("GITHUB_PERSONAL_ACCESS_TOKEN"), "GITHUB_PERSONAL_ACCESS_TOKEN is missing"
 
+    # Ensure LangSmith Tracing is natively configured for tutorials
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = "nitpickers-live-tutorial"
+    if "LANGSMITH_API_KEY" in os.environ:
+        os.environ["LANGCHAIN_API_KEY"] = os.environ["LANGSMITH_API_KEY"]
+
     # Important: Turn OFF mock LLM behavior globally
     os.environ["MOCK_LLM"] = "false"
 
