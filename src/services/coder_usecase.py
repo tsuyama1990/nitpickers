@@ -168,11 +168,14 @@ class CoderUseCase:
             fix_plan_text = (
                 f"## Automated UAT Diagnostic Fix Plan\n"
                 f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
-                f"**Target File:** `{state.current_fix_plan.target_file}`\n"
                 f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
-                f"Please implement these exact changes immediately."
             )
+            for patch in state.current_fix_plan.patches:
+                fix_plan_text += (
+                    f"**Target File:** `{patch.target_file}`\n"
+                    f"**Required Changes:**\n```\n{patch.git_diff_patch}\n```\n\n"
+                )
+            fix_plan_text += "Please implement these exact changes immediately."
             instruction += "\n\n" + self._build_feedback_injection(
                 fix_plan_text, cycle_manifest.pr_url if cycle_manifest else None
             )
@@ -228,11 +231,14 @@ class CoderUseCase:
                 feedback_payload = (
                     f"## Automated UAT Diagnostic Fix Plan\n"
                     f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
-                    f"**Target File:** `{state.current_fix_plan.target_file}`\n"
                     f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                    f"**Required Changes:**\n```\n{state.current_fix_plan.git_diff_patch}\n```\n\n"
-                    f"Please implement these exact changes immediately."
                 )
+                for patch in state.current_fix_plan.patches:
+                    feedback_payload += (
+                        f"**Target File:** `{patch.target_file}`\n"
+                        f"**Required Changes:**\n```\n{patch.git_diff_patch}\n```\n\n"
+                    )
+                feedback_payload += "Please implement these exact changes immediately."
 
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id, feedback_payload

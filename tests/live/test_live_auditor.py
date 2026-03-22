@@ -9,7 +9,7 @@ from src.state import CycleState
 @pytest.mark.live
 @pytest.mark.asyncio
 @pytest.mark.timeout(30)
-async def test_live_uat_auditor_diagnosis():
+async def test_live_uat_auditor_diagnosis() -> None:
     # Arrange
     llm_reviewer = LLMReviewer()
     uat_auditor = UATAuditorUseCase(llm_reviewer)
@@ -19,14 +19,13 @@ async def test_live_uat_auditor_diagnosis():
         exit_code=1,
         stdout="Running tests...\n",
         stderr="ModuleNotFoundError: No module named 'src.missing_module'",
-        artifacts=[]
+        artifacts=[],
     )
 
-    state = CycleState(
-        cycle_id="01",
-        project_session_id="proj-session-123",
-        uat_execution_state=uat_state
-    )
+    from src.state import UATState
+    state = CycleState(cycle_id="01")
+    state.project_session_id = "proj-session-123"
+    state.uat = UATState(uat_execution_state=uat_state)
 
     # Act
     result = await uat_auditor.execute(state)
