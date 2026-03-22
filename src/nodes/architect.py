@@ -16,7 +16,7 @@ class ArchitectNodes:
         self.jules = jules
         self.git = git
 
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0915
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0915, C901
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
 

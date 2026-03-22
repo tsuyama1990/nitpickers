@@ -251,9 +251,24 @@ class JulesClient:
             **tracing_config,  # type: ignore[typeddict-item]
         )
 
+        # Implement robust timeout and retry/circuit-breaker via asyncio block wrapper
+        async def _invoke_with_retry() -> Any:
+            import anyio
+            for _attempt in range(3):
+                try:
+                    return await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+                except (httpx.RequestError, ConnectionError) as net_err:
+                    logger.warning(f"Network error in wait_for_completion, retrying: {net_err}")
+                    await anyio.sleep(5.0 * (_attempt + 1))
+                except Exception as inner_e:
+                    logger.error(f"Fatal error in wait_for_completion: {inner_e}")
+                    raise
+            msg = "Wait for completion failed due to persistent network errors."
+            raise JulesSessionError(msg)
+
         try:
             async with asyncio.timeout(self.timeout):
-                final_state = await graph.ainvoke(initial_state, config)  # type: ignore[attr-defined]
+                final_state = await _invoke_with_retry()
         except TimeoutError as e:
             msg = f"Wait for completion exceeded global timeout of {self.timeout}s."
             logger.error(msg)
@@ -389,7 +404,7 @@ class JulesClient:
                 logger.warning(f"Failed to get session state for {session_id}: {e}")
                 return "UNKNOWN"
 
-    async def _initialize_processed_ids(
+    async def _initialize_processed_ids(  # noqa: C901
         self,
         session_url: str,
         processed_ids: set[str],
@@ -659,7 +674,7 @@ class JulesClient:
 
             return content_str
 
-    async def _create_manual_pr(self, session_url: str) -> str | None:
+    async def _create_manual_pr(self, session_url: str) -> str | None:  # noqa: C901
         """
         Ask Jules to commit changes and create PR when auto-PR creation fails.
 

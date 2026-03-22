@@ -92,23 +92,25 @@ class LLMReviewer:
         # Retry logic (up to 2 retries, total 3 attempts)
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are an automated code reviewer. You must strictly follow the "
-                                "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                                "MAXIMUM of 10 issues to prevent excessively large JSON generation."
-                            ),
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.0,  # Deterministic output for reviews
-                    max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
-                )
+                # Add asyncio timeout wrapper for safety against LLM hangs
+                with anyio.fail_after(120):
+                    response = await litellm.acompletion(
+                        model=model,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are an automated code reviewer. You must strictly follow the "
+                                    "provided instructions and only review the target code. You MUST return valid JSON. "
+                                    "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
+                                    "MAXIMUM of 10 issues to prevent excessively large JSON generation."
+                                ),
+                            },
+                            {"role": "user", "content": prompt},
+                        ],
+                        temperature=0.0,  # Deterministic output for reviews
+                        max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
+                    )
 
                 content_str = response.choices[0].message.content
 
@@ -116,15 +118,22 @@ class LLMReviewer:
                 report = AuditorReport.model_validate_json(content_str)
                 return self._format_as_markdown(report)
 
+            except TimeoutError:
+                logger.warning(f"LLMReviewer attempt {attempt + 1} timed out after 120s.")
+                if attempt == 2:
+                    logger.error("LLMReviewer failed completely due to persistent timeouts.")
+                    return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM Review API timed out.\n  - Location: `Unknown`\n  - Concrete Fix: Try again later or simplify the changes."
             except (ValidationError, Exception) as e:
                 logger.warning(f"LLMReviewer attempt {attempt + 1} failed to parse JSON: {e}")
+                # Exponential backoff circuit-breaker logic
+                await anyio.sleep(2.0 * (attempt + 1))
                 if attempt == 2:
                     logger.error("LLMReviewer failed completely after 3 attempts.")
                     return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
 
-    async def diagnose_uat_failure(
+    async def diagnose_uat_failure(  # noqa: C901
         self,
         uat_state: UatExecutionState,
         instruction: str,
@@ -193,27 +202,33 @@ class LLMReviewer:
 
         for attempt in range(3):
             try:
-                response = await litellm.acompletion(
-                    model=model,
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
-                        },
-                        {"role": "user", "content": content_parts},
-                    ],
-                    response_format=FixPlanSchema,
-                    temperature=0.0,
-                    max_tokens=8192,
-                )
+                # Add asyncio timeout wrapper for safety against LLM hangs
+                with anyio.fail_after(120):
+                    response = await litellm.acompletion(
+                        model=model,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": "You are the Outer Loop Diagnostician. You must strictly output valid JSON matching the FixPlanSchema.",
+                            },
+                            {"role": "user", "content": content_parts},
+                        ],
+                        response_format=FixPlanSchema,
+                        temperature=0.0,
+                        max_tokens=8192,
+                    )
 
                 content_str = response.choices[0].message.content
                 if not content_str:
                     pass  # We'll just try again, it's inside the loop
                 else:
                     return FixPlanSchema.model_validate_json(content_str)
+            except TimeoutError:
+                logger.warning(f"diagnose_uat_failure attempt {attempt + 1} timed out.")
+                await anyio.sleep(2.0 * (attempt + 1))
             except (ValidationError, Exception) as e:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
+                await anyio.sleep(2.0 * (attempt + 1))
                 if attempt == 2:
                     logger.error("diagnose_uat_failure failed completely after 3 attempts.")
                     from src.domain_models.fix_plan_schema import FilePatch

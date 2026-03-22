@@ -89,6 +89,13 @@ class ConflictManager:
             logger.warning(f"Could not read {file_path} during conflict validation: {e}")
             return True
 
+        # Add explicit check for common markers since regex can sometimes be fragile
+        markers = ["<<<<<<<", "=======", ">>>>>>>"]
+        for marker in markers:
+            if marker in content:
+                err_msg = f"File {file_path} still contains git conflict markers ({marker})."
+                raise ConflictMarkerRemainsError(err_msg)
+
         if self.conflict_marker_pattern.search(content):
             err_msg = f"File {file_path} still contains git conflict markers."
             raise ConflictMarkerRemainsError(err_msg)

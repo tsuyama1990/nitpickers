@@ -33,7 +33,6 @@ def check_coder_outcome(state: CycleState) -> str:
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
-    # noqa: C901
     # Phase 2 Spec: "failed" -> coder_session, "auditor" -> auditor_node, "final_critic" -> final_critic_node
     # Based on test expectations, if status is failed, it returns "failed" string which goes to END in graph
     sandbox_status = state.get("sandbox_status", state.status)

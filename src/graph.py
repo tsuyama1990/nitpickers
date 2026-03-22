@@ -73,6 +73,10 @@ class GraphBuilder:
             "self_critic_node",
             "refactor_node",
             "final_critic_node",
+            "committee_manager_node",
+            "uat_evaluate_node",
+            "qa_session_node",
+            "qa_auditor_node",
         ]
         for n in required_nodes:
             if not getattr(self.nodes, n, None):
@@ -160,16 +164,39 @@ class GraphBuilder:
 
         workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
 
+        # Add requested missing nodes even if they don't seem immediately connected in the QA graph purely based on the feedback
+        workflow.add_node("committee_manager", self.nodes.committee_manager_node)
+        workflow.add_node("refactor_node", self.nodes.refactor_node)
+        workflow.add_node("final_critic_node", self.nodes.final_critic_node)
+
         workflow.add_edge(START, "uat_evaluate")
+
+        # Basic routing incorporating phase 2 states appropriately if requested
+        def _qa_router(state: CycleState) -> str:
+            st = state.get("status")
+            if st == FlowStatus.UAT_FAILED:
+                return "qa_auditor"
+            if st == FlowStatus.START_REFACTOR:
+                return "refactor_node"
+            if st == FlowStatus.READY_FOR_AUDIT:
+                return "committee_manager"
+            return END
 
         workflow.add_conditional_edges(
             "uat_evaluate",
-            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else END,
-            {"qa_auditor": "qa_auditor", END: END},
+            _qa_router,
+            {
+                "qa_auditor": "qa_auditor",
+                "refactor_node": "refactor_node",
+                "committee_manager": "committee_manager",
+                END: END
+            },
         )
 
         workflow.add_edge("qa_auditor", "qa_session")
         workflow.add_edge("qa_session", "uat_evaluate")
+        workflow.add_edge("refactor_node", "uat_evaluate")
+        workflow.add_edge("committee_manager", "uat_evaluate")
 
         return workflow
 

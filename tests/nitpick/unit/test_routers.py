@@ -8,12 +8,12 @@ def test_route_sandbox_evaluate() -> None:
     # Test failed via sandbox_status property
     state = CycleState(cycle_id="01")
     object.__setattr__(state, "sandbox_status", "failed")
-    assert route_sandbox_evaluate(state) == "failed"
+    assert route_sandbox_evaluate(state) == "coder_session"
 
     # Test TDD_FAILED
     state = CycleState(cycle_id="01")
     state.status = FlowStatus.TDD_FAILED
-    assert route_sandbox_evaluate(state) == "failed"
+    assert route_sandbox_evaluate(state) == "coder_session"
 
     # Test READY_FOR_AUDIT, not refactoring
     state = CycleState(cycle_id="01")

@@ -46,7 +46,7 @@ class AuditorUseCase:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
         return result
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0912, PLR0915, C901
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
 

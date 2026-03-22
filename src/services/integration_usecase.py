@@ -38,6 +38,18 @@ class IntegrationUsecase:
         Sends unresolved conflicts sequentially to the stateful Jules session.
         Validates the output. If markers remain, retries up to max limits.
         """
+        # Add conflict scanning before loop, handle conflict detection, and implement proper retry logic with state updates
+        new_conflicts = self.conflict_manager.scan_conflicts(repo_path)
+        if not new_conflicts and not state.unresolved_conflicts:
+            logger.info("No conflicts found during integration run.")
+            return state
+
+        # Merge existing state unresolved ones if they differ (though normally state drives this)
+        existing_paths = {c.file_path for c in state.unresolved_conflicts}
+        for c in new_conflicts:
+            if c.file_path not in existing_paths:
+                state.unresolved_conflicts.append(c)
+
         # Ensure session exists
         if not state.master_integrator_session_id:
             state.master_integrator_session_id = self.jules.create_master_integrator_session()

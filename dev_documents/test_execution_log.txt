@@ -37,8 +37,8 @@ src/domain_models/uat_execution_state.py               8      0   100%
 src/domain_models/verification_schema.py              31     13    58%   20, 40, 47-62
 src/enums.py                                          32      0   100%
 src/error_messages.py                                  7      7     0%   4-18
-src/graph.py                                          90     90     0%   1-214
-src/graph_nodes.py                                   109    109     0%   1-185
+src/graph.py                                         104    104     0%   1-241
+src/graph_nodes.py                                   128    128     0%   1-225
 src/hash_utils.py                                     25     25     0%   1-30
 src/interfaces.py                                      5      5     0%   1-63
 src/jules_session_graph.py                            45     45     0%   3-111
@@ -55,7 +55,7 @@ src/nodes/committee.py                                 7      3    57%   8-11
 src/nodes/global_refactor.py                          18     18     0%   1-35
 src/nodes/master_integrator.py                        20     20     0%   1-39
 src/nodes/qa.py                                       15      9    40%   8-10, 13-16, 19-22
-src/nodes/routers.py                                  63     30    52%   7-10, 14-32, 82-87, 91-98
+src/nodes/routers.py                                  63     30    52%   7-10, 14-32, 83-88, 92-99
 src/nodes/sandbox_evaluator.py                        43     43     0%   1-100
 src/nodes/uat.py                                       9      4    56%   8, 11-14
 src/process_runner.py                                 30     24    20%   25-62
@@ -69,7 +69,7 @@ src/services/audit_orchestrator.py                    76     76     0%   1-147
 src/services/auditor_usecase.py                      154    154     0%   1-307
 src/services/coder_usecase.py                        206    206     0%   1-453
 src/services/committee_usecase.py                     50     50     0%   1-104
-src/services/conflict_manager.py                      84     84     0%   1-148
+src/services/conflict_manager.py                      89     89     0%   1-155
 src/services/contracts.py                             26     21    19%   16-43
 src/services/e2b_executor.py                          28     28     0%   1-54
 src/services/file_ops.py                             110     89    19%   28-59, 62-80, 88-103, 112-123, 126-137, 140-145, 149-171
@@ -79,13 +79,13 @@ src/services/git/checkout.py                         114     98    14%   14-35, 
 src/services/git/merging.py                          127    115     9%   16-31, 35-56, 64-90, 94-122, 129-186, 190-246
 src/services/git/state.py                             56     45    20%   21-68, 74-80, 84-111
 src/services/git_ops.py                                9      1    89%   20
-src/services/integration_usecase.py                   72     72     0%   1-129
+src/services/integration_usecase.py                   80     80     0%   1-141
 src/services/jules/api.py                            127    105    17%   20-33, 36-50, 53-58, 62, 74-102, 105-106, 109-113, 124-135, 139-141, 144-167, 172-203
 src/services/jules/context_builder.py                 81     69    15%   11, 20-32, 36-46, 50-80, 84-92, 101-138
 src/services/jules/git_context.py                     42     32    24%   14, 17-56, 59-60
 src/services/jules/inquiry_handler.py                143    126    12%   20-22, 42-77, 102-107, 113-138, 142-175, 186-221, 239-286
-src/services/jules_client.py                         393    334    15%   10-11, 63-97, 103, 107, 111-117, 128-159, 163-182, 186-191, 205-285, 291-351, 354-356, 378-390, 398-453, 458-485, 488-506, 511-523, 526-537, 541, 546-564, 568-576, 586-603, 607-610, 618, 631-660, 668-732
-src/services/llm_reviewer.py                         120    106    12%   21-31, 36-66, 80-125, 137-235, 246-260, 270-282
+src/services/jules_client.py                         406    347    15%   10-11, 63-97, 103, 107, 111-117, 128-159, 163-182, 186-191, 205-300, 306-366, 369-371, 393-405, 413-468, 473-500, 503-521, 526-538, 541-552, 556, 561-579, 583-591, 601-618, 622-625, 633, 646-675, 683-747
+src/services/llm_reviewer.py                         132    118    11%   21-31, 36-66, 80-134, 146-250, 261-275, 285-297
 src/services/plan_auditor.py                          27     27     0%   1-119
 src/services/project.py                               47     36    23%   22-45, 49-62, 68-89
 src/services/project_setup/dependency_manager.py      50     42    16%   12-13, 16-57, 61-78
@@ -106,7 +106,7 @@ src/utils.py                                          72     54    25%   31-56, 
 src/utils_sanitization.py                             11     11     0%   1-31
 src/validators.py                                     41     41     0%   3-86
 --------------------------------------------------------------------------------
-TOTAL                                               6114   4858    21%
-============================== 3 passed in 2.06s ===============================
+TOTAL                                               6185   4929    20%
+============================== 3 passed in 2.18s ===============================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
