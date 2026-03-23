@@ -119,8 +119,6 @@ class CycleState(BaseModel):
     concurrent_dependencies: list[str] = Field(default_factory=list)
     final_fix: bool = Field(default=False)
     qa_retry_count: int = 0
-    is_refactoring: bool = Field(default=False)
-    audit_attempt_count: int = Field(default=0, ge=0)
 
     # Legacy/Optional Fields - kept at root level for legacy backward compatibility easily
     sandbox_id: str | None = None

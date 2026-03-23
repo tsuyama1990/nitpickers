@@ -57,7 +57,7 @@ def validate_state_consistency(state: Any) -> Any:
         msg = "State status is COMPLETED but error field is not None"
         raise ValueError(msg)
 
-    if current_auditor_index > settings.NUM_AUDITORS:
+    if isinstance(current_auditor_index, int) and current_auditor_index > settings.NUM_AUDITORS:
         msg = f"Auditor index {current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
         raise ValueError(msg)
 
