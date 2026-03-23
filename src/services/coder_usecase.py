@@ -78,12 +78,10 @@ class CoderUseCase:
 
         # --- B. Handle session REUSE (Retry Fix or Post-Audit Refactor) ---
         if not result and state.status in {FlowStatus.RETRY_FIX, FlowStatus.POST_AUDIT_REFACTOR}:
-            result = await self._try_reuse_session(cycle_manifest, state)
-            if result:
-                # _try_reuse_session returns FlowStatus dict, not raw Jules result
-                # but we need the session name for potential Critic (though Critic is skipped on retry)
+            reuse_result = await self._try_reuse_session(cycle_manifest, state)
+            if reuse_result:
+                result = reuse_result
                 jules_session_name = cycle_manifest.jules_session_id if cycle_manifest else None
-                # If reuse failed, result is None, falling through to New Session
 
         # --- C. Launch NEW session ---
         if not result:
@@ -96,9 +94,14 @@ class CoderUseCase:
             context_files = settings.get_context_files()
 
             try:
+                import uuid
+
                 timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
                 prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
-                session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}"
+                # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
+                session_req_id = (
+                    f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
+                )
 
                 jules_session_name, result = await self._run_jules_session(
                     session_req_id, instruction, target_files, context_files, cycle_id, mgr
@@ -226,7 +229,11 @@ class CoderUseCase:
         if cycle_manifest.jules_session_id is not None:
             feedback_payload = ""
             if is_retry_audit and last_audit and last_audit.feedback:
-                feedback_payload = last_audit.feedback
+                feedback_payload = (
+                    "\n".join(last_audit.feedback)
+                    if isinstance(last_audit.feedback, list)
+                    else str(last_audit.feedback)
+                )
             elif is_retry_uat and state.current_fix_plan:
                 feedback_payload = (
                     f"## Automated UAT Diagnostic Fix Plan\n"
@@ -259,7 +266,7 @@ class CoderUseCase:
         Returns (jules_session_name, result_dict). The session_name is saved
         separately so it survives the wait_for_completion() result overwrite.
         """
-        if not re.match(r"^[A-Za-z0-9_-]+$", session_req_id):
+        if not re.match(settings.SESSION_ID_PATTERN, session_req_id):
             msg = f"Invalid session_req_id format: {session_req_id}"
             raise ValueError(msg)
 
@@ -330,6 +337,18 @@ class CoderUseCase:
 
         Returns result dict if successful, None if should create new session.
         """
+        # Validate feedback size
+        if len(feedback) > 100000:  # Avoid excessive LLM input parsing
+            msg = "Feedback exceeds maximum size of 100000 characters"
+            raise ValueError(msg)
+
+        # Sanitize for potential injection using whitelist
+        import string
+
+        if not all(char in string.printable for char in feedback):
+            msg = "Feedback contains non-printable, potentially dangerous characters"
+            raise ValueError(msg)
+
         console.print(
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
@@ -345,56 +364,21 @@ class CoderUseCase:
             safe_feedback = sanitize_for_llm(feedback)
             feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
 
-            await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
-
-            console.print(
-                "[dim]Waiting for Jules to process feedback (expecting IN_PROGRESS)...[/dim]"
-            )
-
-            state_transitioned = False
-            max_retries = settings.jules.feedback_wait_retries
-            wait_interval = settings.jules.feedback_wait_interval_seconds
-
-            for attempt in range(max_retries):
-                await asyncio.sleep(wait_interval)
-                current_state = await self.jules.get_session_state(session_id)
-                console.print(
-                    f"[dim]State check ({attempt + 1}/{max_retries}): {current_state}[/dim]"
-                )
-
-                if current_state in _ACTIVE_STATES:
-                    state_transitioned = True
-                    console.print(
-                        f"[green]Jules session is now active ({current_state}). Proceeding to monitor...[/green]"
-                    )
-                    break
-                if current_state == "FAILED":
-                    console.print("[red]Jules session failed during feedback wait.[/red]")
-                    return None
-                if current_state == "COMPLETED":
-                    console.print("[green]Jules session completed quickly.[/green]")
-                    state_transitioned = True
-                    break
-
-            if not state_transitioned:
-                console.print(
-                    "[yellow]Warning: Jules session state did not change to IN_PROGRESS after 60s. "
-                    "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
-                )
-
-            result = await self.jules.wait_for_completion(session_id)
-            if result.get("status") == "success" or result.get("pr_url"):
+            # Continue session sends the message and waits for completion
+            result = await self.jules.continue_session(session_id, feedback_msg)
+            if result and (result.get("status") == "success" or result.get("pr_url")):
                 return dict(result)
 
             console.print(
                 "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
             )
-            return None  # noqa: TRY300
 
         except Exception as e:
             console.print(
                 f"[yellow]Failed to send feedback to existing session: {e}. Creating new session...[/yellow]"
             )
+        else:
+            return None
         return None
 
     # ------------------------------------------------------------------ #

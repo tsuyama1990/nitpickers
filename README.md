@@ -9,47 +9,76 @@ An AI-native development environment based on a highly robust methodology design
 ## Key Features
 
 - **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
-- **Docs-as-Tests Integration:** Natively parse and execute `uat-scenario` blocks directly from markdown specifications (`ALL_SPEC.md`), ensuring the implementation accurately reflects the documented requirements.
-- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions. This allows you to effortlessly debug UI tests visually without relying solely on console logs!
-- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent for autonomous remediation.
-- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads, transforming the "Black Box" of agent execution into quantifiable, debuggable datasets.
+- **5-Phase Parallel & Sequential Architecture:** Seamlessly orchestrates requirement decomposition, parallel feature implementation, 3-Way Diff integration, and full-system E2E UI testing.
+- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions.
+- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent.
+- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads.
 
 ## Architecture Overview
 
-The NITPICKERS pipeline is designed around a strictly decoupled Worker-Auditor-Observer paradigm.
-
--   **Stateful Worker (Inner Loop):** Generates code and tests, maintaining project context across iterations.
--   **Sandbox (Gatekeeper):** A secure execution environment using `ProcessRunner` that mechanically halts the pipeline on any failure, generating multi-modal artifacts when UI tests break.
--   **Stateless Auditor (Outer Loop):** Diagnoses isolated failures using Vision LLMs and returns precise JSON fix plans to the Worker.
--   **Observability Layer:** LangSmith silently traces all graph transitions and state mutations to prevent infinite loops and hallucinated logic.
+The system operates across 5 distinct phases to guarantee code quality from planning to final integration.
 
 ```mermaid
-graph TD
-    subgraph Observability Layer [LangSmith Observability]
+flowchart TD
+    %% Phase0: Init Phase (CLI Setup)
+    subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
         direction TB
-        TR[Tracer & State Logger]
+        InitCmd([CLI: nitpick init])
     end
-    subgraph Worker [Stateful Worker - Inner Loop]
-        C[Coder Agent] -->|Generates Code & Tests| S1[Source Code]
-        C -->|Session Re-use| C
+
+    %% Phase1: Architect Graph
+    subgraph Phase1 ["Phase 1: Architect Graph"]
+        direction TB
+        InitCmd2([CLI: nitpick gen-cycles])
+        ArchSession["JULES: architect_session\n(Requirement Decomposition)"]
+        InitCmd2 --> ArchSession
     end
-    subgraph Sandbox [Execution Sandbox]
-        PR[ProcessRunner]
-        PR -->|Runs Static Checks| SA[Ruff / Mypy]
-        PR -->|Runs Tests| PT[Pytest / Playwright]
-        PT -->|On Failure| Artifacts[Logs & Screenshots]
+
+    %% Phase2: Coder Graph
+    subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
+        direction TB
+        CoderSession["JULES: coder_session\n(Implementation)"]
+        SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
+        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
+        RefactorNode["JULES: refactor_node\n(Refactoring)"]
+
+        CoderSession --> SandboxEval
+        SandboxEval -- "Pass" --> AuditorNode
+        AuditorNode -- "Reject" --> CoderSession
+        AuditorNode -- "Pass All" --> RefactorNode
+        RefactorNode --> SandboxEval
     end
-    subgraph Auditor [Stateless Auditor - Outer Loop]
-        A[Auditor Agent]
+
+    %% Phase3: Integration Phase
+    subgraph Phase3 ["Phase 3: Integration Phase"]
+        direction TB
+        MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
+        MasterIntegrator["JULES: master_integrator\n(3-Way Diff Resolution)"]
+        GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
     end
-    S1 --> PR
-    SA -- Non-zero exit --> C
-    PT -- Failure --> Artifacts
-    Artifacts --> A
-    A -- JSON Fix Plan --> C
-    TR -.-> Worker
-    TR -.-> Sandbox
-    TR -.-> Auditor
+
+    %% Phase4: UAT & QA Graph
+    subgraph Phase4 ["Phase 4: UAT & QA Graph"]
+        direction TB
+        UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
+        QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
+        QaSession["JULES: qa_session\n(Integration Fixes)"]
+    end
+
+    %% Inter-Phase Connections
+    Phase0 --> Phase1
+    Phase1 --> Phase2
+    Phase2 -- "All Coder Cycles Complete" --> MergeTry
+
+    MergeTry -- "Conflict" --> MasterIntegrator
+    MasterIntegrator --> MergeTry
+    MergeTry -- "Success" --> GlobalSandbox
+
+    GlobalSandbox -- "Pass" --> UatEval
+
+    UatEval -- "Fail" --> QaAuditor
+    QaAuditor --> QaSession
+    QaSession --> UatEval
 ```
 
 ## Prerequisites
@@ -77,24 +106,10 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    cd <your-repository>
    ```
 
-2. Configure your environment variables based on the Hybrid Configuration architecture:
-
-   **Tier A: Secret Tier (.env)**
-   These are your sensitive API keys. They will never be committed to git.
+2. Configure your environment variables:
    ```bash
    cp .env.example .env
    # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and LangSmith variables.
-   ```
-
-   **Tier B: Tuning Tier (docker-compose.yml)**
-   These are operational settings like model selection and agent counts. They are version-controlled and can be modified directly in the `docker-compose.yml` file under the `environment` section:
-   ```yaml
-      # Tier B: Tuning Tier (Version-controlled configuration)
-      - NITPICK_AUDITOR_MODEL=openai:gpt-4o
-      - NITPICK_REVIEWER__SMART_MODEL=openai:gpt-4o
-      - NITPICK_NUM_AUDITORS=3
-      - NITPICK_REVIEWS_PER_AUDITOR=2
-      - NITPICK_MAX_ITERATIONS=3
    ```
 
 3. Build the Docker container:
@@ -112,26 +127,23 @@ Parse your raw architectural documents into structured specifications and UAT pl
 docker-compose run --rm nitpick nitpick gen-cycles
 ```
 
-### Run a Specific Cycle (Phase 2 & 3)
-Execute a specific development cycle (e.g., `01`) defined by the manifest. The system will automatically verify your environment configuration, build the schemas, write tests, and implement logic within the E2B sandbox.
+### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
+Execute the complete orchestrated 5-phase pipeline, automatically managing parallel implementation and final integration.
 ```bash
-docker-compose run --rm nitpick nitpick run-cycle --id 01
+docker-compose run --rm nitpick nitpick run-pipeline
 ```
 
-### Finalize & Refactor
+### Run a Specific Cycle Manually
+For debugging, execute a specific development cycle (e.g., `01`).
 ```bash
-docker-compose run --rm nitpick nitpick finalize-session
+docker-compose run --rm nitpick nitpick run-cycle --id 01
 ```
 
 ### Interactive Tutorials (UAT Verification)
 To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
 ```bash
-uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
+uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
 ```
-
-## Troubleshooting
-
-- **Hard Stop during execution:** If the execution halts with an "Environment & Observability Verification" error, ensure your `.env` is correctly populated with `LANGCHAIN_TRACING_V2=true` and valid LangSmith keys.
 
 ## Development Workflow
 
@@ -144,24 +156,21 @@ uv run marimo edit tutorials/automated_uat_pipeline_tutorial.py
     ```bash
     uv run pytest
     ```
--   **Run UATs manually:**
-    ```bash
-    uv run pytest tests/uat/ --browser=chromium
-    ```
 
 ## Project Structure
 
 ```text
 /
 ├── dev_documents/          # Auto-generated specs, UATs, logs
+│   ├── system_prompts/     # Cycle specific plans and documents
+│   └── USER_TEST_SCENARIO.md
 ├── src/                    # The main implementation for NITPICKERS
 │   ├── cli.py              # CLI entrypoint
-│   ├── domain_models/      # Pydantic schemas enforcing interface locks
-│   ├── nodes/              # LangGraph workflow nodes
-│   ├── services/           # Business logic and external API integrations
-│   └── templates/          # System prompts for the agents
+│   ├── state.py            # Pydantic state models (CycleState, etc.)
+│   ├── graph.py            # Main LangGraph declarations
+│   ├── nodes/              # LangGraph node routing functions
+│   └── services/           # Orchestration (workflow.py) & Diff Logic (conflict_manager.py)
 ├── tests/                  # Unit, Integration, and UAT tests
-│   └── uat/                # Dynamic UAT scripts (Marimo/Pytest)
 ├── tutorials/              # Marimo-based interactive tutorials
 ├── pyproject.toml          # Project configuration (Dependencies & Linting)
 └── README.md               # User documentation

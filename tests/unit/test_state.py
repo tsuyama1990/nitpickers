@@ -22,9 +22,14 @@ def test_cycle_state_new_fields_assignment() -> None:
         concurrent_dependencies=["01", "03"],
     )
 
+    state.committee.is_refactoring = True
+    state.committee.audit_attempt_count = 2
+
     assert state.uat.sandbox_artifacts == {"coverage": "85%"}
     assert state.conflict_status == FlowStatus.CONFLICT_DETECTED
     assert state.concurrent_dependencies == ["01", "03"]
+    assert state.committee.is_refactoring is True
+    assert state.committee.audit_attempt_count == 2
 
 
 def test_integration_state_initialization() -> None:

@@ -2,6 +2,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.config import settings
+
 from .domain_models import (
     AuditResult,
     ConflictRegistryItem,
@@ -19,6 +21,8 @@ class CommitteeState(BaseModel):
     current_auditor_index: int = Field(default=1, ge=1)
     current_auditor_review_count: int = Field(default=1, ge=1)
     iteration_count: int = Field(default=0, ge=0)
+    is_refactoring: bool = Field(default=False)
+    audit_attempt_count: int = Field(default=0, ge=0)
 
     @field_validator("current_auditor_index")
     @classmethod
@@ -33,6 +37,13 @@ class CommitteeState(BaseModel):
         from src.state_validators import validate_review_count
 
         return validate_review_count(v)
+
+    @field_validator("audit_attempt_count")
+    @classmethod
+    def do_validate_audit_attempt_count(cls, v: int) -> int:
+        from src.state_validators import validate_audit_attempt_count
+
+        return validate_audit_attempt_count(v)
 
 
 class SessionPersistenceState(BaseModel):
@@ -72,7 +83,9 @@ class UATState(BaseModel):
 
 
 class ConfigurationState(BaseModel):
-    planned_cycle_count: int | None = 5
+    planned_cycle_count: int | None = Field(
+        default_factory=lambda: getattr(settings, "default_cycles_count", 5)
+    )
     requested_cycle_count: int | None = None
     planned_cycles: list[str] = Field(default_factory=list)
 
@@ -309,6 +322,8 @@ class CycleState(BaseModel):
                 "current_auditor_index",
                 "current_auditor_review_count",
                 "iteration_count",
+                "is_refactoring",
+                "audit_attempt_count",
             ],
             "session": [
                 "jules_session_name",
@@ -365,6 +380,7 @@ class CycleState(BaseModel):
 class IntegrationState(BaseModel):
     """LangGraph state for Master Integrator concurrent execution."""
 
+    branches_to_merge: list[str] = Field(default_factory=list)
     master_integrator_session_id: str | None = None
     unresolved_conflicts: list[ConflictRegistryItem] = Field(default_factory=list)
 

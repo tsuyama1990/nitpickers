@@ -30,6 +30,7 @@ async def test_live_uat_auditor_diagnosis(monkeypatch: pytest.MonkeyPatch) -> No
     )
 
     from src.state import UATState
+
     state = CycleState(cycle_id="01")
     state.project_session_id = "proj-session-123"
     state.uat = UATState(uat_execution_state=uat_state)

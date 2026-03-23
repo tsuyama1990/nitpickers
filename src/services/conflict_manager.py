@@ -96,18 +96,35 @@ class ConflictManager:
     def build_conflict_package(self, item: ConflictRegistryItem, repo_path: Path) -> str:
         """
         Builds the conflict resolution prompt package for the Jules Master Integrator session.
-        Reads the conflicted file's current state and potentially incorporates context.
+        Extracts Base, Local (Branch A), and Remote (Branch B) versions using Git 3-Way Diff.
         """
-        file_path = repo_path / item.file_path
+        import subprocess
 
         try:
-            content = file_path.read_text(encoding="utf-8")
-        except Exception as e:
-            logger.error(f"Failed to read file for conflict package: {e}")
-            content = "Error reading file content."
+            from src.config import settings
+
+            git_cmd = settings.tools.git_cmd
+        except Exception:
+            git_cmd = "git"
+
+        def _get_git_version(stage: int) -> str:
+            try:
+                result = subprocess.run(  # noqa: S603
+                    [git_cmd, "show", f":{stage}:{item.file_path}"],
+                    cwd=str(repo_path),
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                return result.stdout.strip()
+            except subprocess.CalledProcessError:
+                return "<FILE_NOT_IN_BASE>" if stage == 1 else ""
+
+        base_code = _get_git_version(1)
+        local_code = _get_git_version(2)
+        remote_code = _get_git_version(3)
 
         # Read specific instructions from MASTER_INTEGRATOR_PROMPT.md if available
-        # or fall back to an inline prompt.
         try:
             from src.config import settings
 
@@ -120,7 +137,7 @@ class ConflictManager:
                 "You are the Master Integrator. Resolve the Git conflicts in this file.\n"
                 "Do not just pick A or B; understand the intent of both branches.\n"
                 "Apply DRY principles. Return the completely unified file without any `<<<<<<<` markers.\n"
-                "Respond ONLY with the complete fixed file content wrapped in a markdown code block."
+                "Respond ONLY with the strictly validated JSON schema requested."
             )
 
         return f"""{prompt_template}
@@ -128,7 +145,18 @@ class ConflictManager:
 ###################
 File: {item.file_path}
 
+### Base (元のコード)
+```python
+{base_code}
 ```
-{content}
+
+### Branch A の変更 (Local)
+```python
+{local_code}
+```
+
+### Branch B の変更 (Remote)
+```python
+{remote_code}
 ```
 """

@@ -1,0 +1,48 @@
+{
+  "project_session_id": "sessions/10176039752929379383",
+  "feature_branch": "dev/int-20260322-1704",
+  "integration_branch": "dev/int-20260322-1704",
+  "qa_session_id": null,
+  "cycles": [
+    {
+      "id": "01",
+      "status": "completed",
+      "branch_name": null,
+      "jules_session_id": "sessions/4474887197767943107",
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": null,
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-22T17:39:27.210131Z",
+      "updated_at": "2026-03-22T19:55:19.372609Z"
+    },
+    {
+      "id": "02",
+      "status": "completed",
+      "branch_name": null,
+      "jules_session_id": "sessions/6386406227481261315",
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": "Jules Session Failed: Unknown error",
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-22T17:39:27.210138Z",
+      "updated_at": "2026-03-22T22:53:35.472921Z"
+    },
+    {
+      "id": "03",
+      "status": "planned",
+      "branch_name": null,
+      "jules_session_id": null,
+      "current_iteration": 1,
+      "pr_url": null,
+      "last_error": null,
+      "session_restart_count": 0,
+      "max_session_restarts": 2,
+      "created_at": "2026-03-22T17:39:27.210140Z",
+      "updated_at": "2026-03-22T17:39:27.210140Z"
+    }
+  ],
+  "last_updated": "2026-03-22T22:53:35.472935Z"
+}
