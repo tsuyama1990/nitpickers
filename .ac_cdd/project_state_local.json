@@ -32,17 +32,17 @@
     },
     {
       "id": "03",
-      "status": "planned",
+      "status": "in_progress",
       "branch_name": null,
-      "jules_session_id": null,
+      "jules_session_id": "sessions/1105478496591836626",
       "current_iteration": 1,
       "pr_url": null,
       "last_error": null,
       "session_restart_count": 0,
       "max_session_restarts": 2,
       "created_at": "2026-03-22T17:39:27.210140Z",
-      "updated_at": "2026-03-22T17:39:27.210140Z"
+      "updated_at": "2026-03-23T00:33:20.180557Z"
     }
   ],
-  "last_updated": "2026-03-22T22:53:35.472935Z"
+  "last_updated": "2026-03-23T00:33:20.180588Z"
 }
