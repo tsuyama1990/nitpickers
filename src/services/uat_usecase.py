@@ -64,6 +64,16 @@ class UatUseCase:
         if artifacts_dir.exists() and artifacts_dir.is_dir():
             # We expect PNG screenshots and ZIP traces named like {test_id}.png / {test_id}_trace.zip
             for img_path in artifacts_dir.glob("*.png"):
+                # Validate full path to prevent directory traversal
+                try:
+                    resolved_img = img_path.resolve(strict=True)
+                    if not resolved_img.is_relative_to(artifacts_dir):
+                        logger.warning(f"Artifact path traversal detected: {img_path}")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Failed to resolve artifact path {img_path}: {e}")
+                    continue
+
                 base_name = img_path.stem
                 # Validate test_id to prevent path traversal
                 if not self.TEST_ID_PATTERN.match(base_name):
@@ -122,7 +132,17 @@ class UatUseCase:
         if getattr(settings.uat, "db_reset_cmd", None):
             logger.debug("Resetting sandbox database state...")
             cmd_str = settings.uat.db_reset_cmd
-            await runner.run_command(shlex.split(cmd_str if cmd_str else ""), check=True)
+            if cmd_str:
+                reset_cmd = shlex.split(cmd_str)
+                # Apply identical validation to db_reset_cmd
+                if not reset_cmd or reset_cmd[0] not in self.ALLOWED_BINARIES:
+                    msg = f"Unauthorized DB reset command binary: {reset_cmd[0] if reset_cmd else 'empty'}"
+                    raise ValueError(msg)
+                for arg in reset_cmd:
+                    if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
+                        msg = f"Dangerous character detected in DB reset command argument: {arg}"
+                        raise ValueError(msg)
+                await runner.run_command(reset_cmd, check=True)
 
         logger.debug(f"Executing: {' '.join(cmd)}")
         stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)

@@ -224,7 +224,11 @@ class CoderUseCase:
         if cycle_manifest.jules_session_id is not None:
             feedback_payload = ""
             if is_retry_audit and last_audit and last_audit.feedback:
-                feedback_payload = "\n".join(last_audit.feedback) if isinstance(last_audit.feedback, list) else str(last_audit.feedback)
+                feedback_payload = (
+                    "\n".join(last_audit.feedback)
+                    if isinstance(last_audit.feedback, list)
+                    else str(last_audit.feedback)
+                )
             elif is_retry_uat and state.current_fix_plan:
                 feedback_payload = (
                     f"## Automated UAT Diagnostic Fix Plan\n"

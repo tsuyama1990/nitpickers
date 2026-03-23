@@ -30,7 +30,9 @@ async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
         branch_name = "dev/int-test"
 
         # Mock run_command to simulate branch existence
-        async def mock_run_command(cmd: list[str], check: bool = True) -> tuple[str, str, int, bool]:
+        async def mock_run_command(
+            cmd: list[str], check: bool = True
+        ) -> tuple[str, str, int, bool]:
             cmd_str = " ".join(cmd)
             # When checking existence
             if "rev-parse --verify dev/int-test" in cmd_str:

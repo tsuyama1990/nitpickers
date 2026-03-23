@@ -36,6 +36,13 @@ class CommitteeState(BaseModel):
 
         return validate_review_count(v)
 
+    @field_validator("audit_attempt_count")
+    @classmethod
+    def do_validate_audit_attempt_count(cls, v: int) -> int:
+        from src.state_validators import validate_audit_attempt_count
+
+        return validate_audit_attempt_count(v)
+
 
 class SessionPersistenceState(BaseModel):
     jules_session_name: str | None = None
