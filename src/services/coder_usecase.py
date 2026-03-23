@@ -339,10 +339,10 @@ class CoderUseCase:
             msg = "Feedback exceeds maximum size of 100000 characters"
             raise ValueError(msg)
 
-        # Sanitize for potential injection
-        from src.services.uat_usecase import UatUseCase
-        if any(char in feedback for char in UatUseCase.DANGEROUS_SHELL_CHARS):
-            msg = "Feedback contains potentially dangerous characters"
+        # Sanitize for potential injection using whitelist
+        import string
+        if not all(char in string.printable for char in feedback):
+            msg = "Feedback contains non-printable, potentially dangerous characters"
             raise ValueError(msg)
 
         console.print(

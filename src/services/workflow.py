@@ -214,7 +214,7 @@ class WorkflowService:
 
         console.print("[green]Environment & Observability verified successfully.[/green]")
 
-    async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915
+    async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915, PLR0912
         """
         Orchestrates the entire 5-Phase pipeline.
         Phase 2: Parallel execution of all planned cycles.
@@ -229,9 +229,11 @@ class WorkflowService:
 
         if manifest:
             if not hasattr(manifest, 'feature_branch') or not manifest.feature_branch:
-                raise ValueError("Manifest missing required feature_branch field")
+                msg = "Manifest missing required feature_branch field"
+                raise ValueError(msg)
             if not hasattr(manifest, 'integration_branch') or not manifest.integration_branch:
-                raise ValueError("Manifest missing required integration_branch field")
+                msg = "Manifest missing required integration_branch field"
+                raise ValueError(msg)
             cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
         else:
             from src.domain_models.manifest import CycleManifest
