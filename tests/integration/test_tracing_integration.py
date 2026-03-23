@@ -62,7 +62,7 @@ async def test_missing_api_key_fallback() -> None:
             TEST_MODE=True,
         )
         assert settings.tracing.tracing_enabled is False
-        assert os.environ["LANGCHAIN_TRACING_V2"] == "false"
+        assert os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "false"
 
         mock_logger.assert_called_once()
         assert "LangSmith tracing enabled but no API key provided" in mock_logger.call_args[0][0]

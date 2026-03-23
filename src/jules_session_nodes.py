@@ -230,7 +230,7 @@ class JulesSessionNodes:
                 state.max_plan_rejections,
             )
 
-        # Regular inquiry: pass jules_state so the handler applies the state-guard
+        # Regular inquiry: forward jules_state so the handler applies the state-guard
         inquiry = await self.client.inquiry_handler.check_for_inquiry(
             client, state.session_url, state.processed_activity_ids, jules_state=state.jules_state
         )
