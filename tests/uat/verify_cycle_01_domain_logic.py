@@ -46,7 +46,7 @@ def test_ux_flow_cycle_01() -> None:
             assert next_route == "pass_all"
 
     # Mock Refactor
-    state.is_refactoring = True
+    state.committee.is_refactoring = True
     state.status = FlowStatus.READY_FOR_AUDIT
 
     # Mock Sandbox evaluate post-refactor
@@ -71,10 +71,10 @@ def test_ux_flow_cycle_02_rejection() -> None:
     state.audit = AuditState(audit_result=audit_res_rejected)
 
     # First attempt fails
-    assert state.audit_attempt_count == 0
+    assert state.committee.audit_attempt_count == 0
     route = route_auditor(state)
     assert route == "reject"
-    assert state.audit_attempt_count == 1
+    assert state.committee.audit_attempt_count == 1
 
     # Coder retries, sandbox fails
     state.status = FlowStatus.TDD_FAILED
