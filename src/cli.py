@@ -4,6 +4,7 @@ import asyncio
 
 import typer
 
+from src.config import settings
 from src.services.workflow import WorkflowService
 
 app = typer.Typer()
@@ -11,7 +12,9 @@ app = typer.Typer()
 
 @app.command()
 def gen_cycles(
-    cycles: int = typer.Option(5, "--cycles", "-c", help="Number of cycles to generate"),
+    cycles: int = typer.Option(
+        settings.default_cycles_count, "--cycles", "-c", help="Number of cycles to generate"
+    ),
     session: str | None = typer.Option(None, "--session", help="Session ID"),
 ) -> None:
     """Generate architecture and development cycles."""
@@ -46,6 +49,17 @@ def run_cycle(
             parallel=parallel,
         )
     )
+
+
+@app.command()
+def run_pipeline(
+    session: str | None = typer.Option(
+        None, "--session", help="Session ID (if not using current state)"
+    ),
+) -> None:
+    """Run the complete orchestrated 5-Phase pipeline."""
+    service = WorkflowService()
+    asyncio.run(service.run_full_pipeline(project_session_id=session))
 
 
 @app.command()

@@ -101,7 +101,9 @@ async def test_integration_usecase_max_retries_exceeded(
     usecase = IntegrationUsecase(jules_client=mock_jules)
 
     # Mock LLM constantly returning bad code
-    mock_jules.send_message_to_session.return_value = '{"resolved_code": "<<<<<<< HEAD\\nbad\\n=======\\n"}'
+    mock_jules.send_message_to_session.return_value = (
+        '{"resolved_code": "<<<<<<< HEAD\\nbad\\n=======\\n"}'
+    )
 
     with pytest.raises(MaxRetriesExceededError):
         await usecase.run_integration_loop(state, repo_path)
