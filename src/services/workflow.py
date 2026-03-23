@@ -176,11 +176,13 @@ class WorkflowService:
         import os
         import sys
 
-        required_keys = ['OPENROUTER_API_KEY', 'JULES_API_KEY', 'E2B_API_KEY']
+        required_keys = ["OPENROUTER_API_KEY", "JULES_API_KEY", "E2B_API_KEY"]
         for key in required_keys:
             if not os.getenv(key):
                 console.print(f"[bold red]Missing required API key: {key}[/bold red]")
-                console.print("[yellow]Please configure all required API keys in your .env file.[/yellow]")
+                console.print(
+                    "[yellow]Please configure all required API keys in your .env file.[/yellow]"
+                )
                 sys.exit(1)
 
         # Implicit dependency scan via SPEC documents
@@ -228,10 +230,10 @@ class WorkflowService:
         manifest = mgr.load_manifest()
 
         if manifest:
-            if not hasattr(manifest, 'feature_branch') or not manifest.feature_branch:
+            if not hasattr(manifest, "feature_branch") or not manifest.feature_branch:
                 msg = "Manifest missing required feature_branch field"
                 raise ValueError(msg)
-            if not hasattr(manifest, 'integration_branch') or not manifest.integration_branch:
+            if not hasattr(manifest, "integration_branch") or not manifest.integration_branch:
                 msg = "Manifest missing required integration_branch field"
                 raise ValueError(msg)
             cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
@@ -657,12 +659,7 @@ class WorkflowService:
             cmds.append(settings.sandbox.test_cmd.split())
 
         if not cmds:
-            cmds = [
-                ["uv", "run", "ruff", "check", "."],
-                ["uv", "run", "ruff", "format", "."],
-                ["uv", "run", "mypy", "."],
-                ["uv", "run", "pytest"],
-            ]
+            cmds = settings.sandbox.quality_gate_commands
         return cmds
 
     async def _handle_global_refactor_result(

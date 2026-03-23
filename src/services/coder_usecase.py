@@ -95,10 +95,13 @@ class CoderUseCase:
 
             try:
                 import uuid
+
                 timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
                 prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
                 # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
-                session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
+                session_req_id = (
+                    f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
+                )
 
                 jules_session_name, result = await self._run_jules_session(
                     session_req_id, instruction, target_files, context_files, cycle_id, mgr
@@ -263,7 +266,7 @@ class CoderUseCase:
         Returns (jules_session_name, result_dict). The session_name is saved
         separately so it survives the wait_for_completion() result overwrite.
         """
-        if not re.match(r"^[A-Za-z0-9_-]+$", session_req_id):
+        if not re.match(settings.SESSION_ID_PATTERN, session_req_id):
             msg = f"Invalid session_req_id format: {session_req_id}"
             raise ValueError(msg)
 
@@ -341,6 +344,7 @@ class CoderUseCase:
 
         # Sanitize for potential injection using whitelist
         import string
+
         if not all(char in string.printable for char in feedback):
             msg = "Feedback contains non-printable, potentially dangerous characters"
             raise ValueError(msg)

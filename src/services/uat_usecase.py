@@ -17,8 +17,6 @@ class UatUseCase:
     Encapsulates the logic for UAT Evaluation, Auto-Merge, and Refactoring Transition.
     """
 
-    ALLOWED_BINARIES: tuple[str, ...] = ("uv", "pytest", "python")
-    DANGEROUS_SHELL_CHARS: tuple[str, ...] = (";", "&", "|", "$", "`", "\n", "<", ">")
     TEST_ID_PATTERN: re.Pattern[str] = re.compile(r"^[\w\.-]+$")
     PR_URL_PATTERN: re.Pattern[str] = re.compile(
         r"^https://github\.com/[\w.-]+/[\w.-]+/pull/\d+/?$"
@@ -118,28 +116,28 @@ class UatUseCase:
         cmd = [*base_cmd, *settings.uat.playwright_args]
 
         # Security: whitelist allowed binaries to prevent command injection
-        if not cmd or cmd[0] not in self.ALLOWED_BINARIES:
+        if not cmd or cmd[0] not in settings.sandbox.allowed_binaries:
             msg = f"Unauthorized command binary: {cmd[0] if cmd else 'empty'}"
             raise ValueError(msg)
 
         # Security: prevent argument injection via shell metacharacters
         for arg in settings.uat.playwright_args:
-            if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
+            if any(char in arg for char in settings.sandbox.dangerous_shell_chars):
                 msg = f"Dangerous character detected in Playwright argument: {arg}"
                 raise ValueError(msg)
 
         # Ensure a clean state before executing dynamic UAT
-        if getattr(settings.uat, "db_reset_cmd", None):
+        if settings.uat.db_reset_cmd:
             logger.debug("Resetting sandbox database state...")
             cmd_str = settings.uat.db_reset_cmd
             if cmd_str:
                 reset_cmd = shlex.split(cmd_str)
                 # Apply identical validation to db_reset_cmd
-                if not reset_cmd or reset_cmd[0] not in self.ALLOWED_BINARIES:
+                if not reset_cmd or reset_cmd[0] not in settings.sandbox.allowed_binaries:
                     msg = f"Unauthorized DB reset command binary: {reset_cmd[0] if reset_cmd else 'empty'}"
                     raise ValueError(msg)
                 for arg in reset_cmd:
-                    if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
+                    if any(char in arg for char in settings.sandbox.dangerous_shell_chars):
                         msg = f"Dangerous character detected in DB reset command argument: {arg}"
                         raise ValueError(msg)
                 await runner.run_command(reset_cmd, check=True)

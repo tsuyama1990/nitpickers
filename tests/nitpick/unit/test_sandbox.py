@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.config import settings
 from src.sandbox import SandboxRunner
 
 
@@ -106,7 +107,7 @@ async def test_get_sandbox_secure_install_cmd() -> None:
             else:
                 commands_run_str.append(" ".join(cmd_arg))
 
-        assert "pip install --no-cache-dir ruff" in commands_run_str
+        assert settings.sandbox.install_package in commands_run_str
 
     # Reset the sandbox instance for the next test
     runner.sandbox = None

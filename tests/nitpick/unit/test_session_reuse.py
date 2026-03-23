@@ -50,6 +50,7 @@ class TestSessionReuse:
                 mock_settings.get_prompt_content.return_value = "Instruction {{feedback}}"
                 mock_settings.get_target_files.return_value = []
                 mock_settings.get_context_files.return_value = []
+                mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 result = await usecase.execute(state)
 
         mock_jules.get_session_state.assert_called_with("sessions/123")
@@ -99,6 +100,7 @@ class TestSessionReuse:
                 mock_settings.get_prompt_content.return_value = "# PREVIOUS AUDIT FEEDBACK (MUST FIX)\n\n{{feedback}}\n\n{{#pr_url}}\nPrevious PR: {{pr_url}}\n{{/pr_url}}"
                 mock_settings.get_target_files.return_value = []
                 mock_settings.get_context_files.return_value = []
+                mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 await usecase.execute(state)
 
         mock_jules.get_session_state.assert_called_with("sessions/123")
@@ -138,6 +140,7 @@ class TestSessionReuse:
                 mock_settings.get_prompt_content.return_value = "Instruction {{feedback}}"
                 mock_settings.get_target_files.return_value = []
                 mock_settings.get_context_files.return_value = []
+                mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 result = await usecase.execute(state)
 
         mock_jules.continue_session.assert_called_once()

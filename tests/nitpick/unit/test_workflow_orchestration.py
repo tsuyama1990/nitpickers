@@ -23,10 +23,16 @@ def workflow_service() -> WorkflowService:
     service.verify_environment_and_observability = MagicMock()  # type: ignore[method-assign]
     return service
 
+
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_success(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
+async def test_run_full_pipeline_success(
+    mock_dispatcher_class: MagicMock,
+    mock_state_manager_class: MagicMock,
+    workflow_service: WorkflowService,
+    mock_manifest: MagicMock,
+) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
@@ -35,6 +41,7 @@ async def test_run_full_pipeline_success(mock_dispatcher_class: MagicMock, mock_
 
     from collections.abc import Coroutine
     from typing import Any
+
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
@@ -48,7 +55,9 @@ async def test_run_full_pipeline_success(mock_dispatcher_class: MagicMock, mock_
     mock_qa_graph = MagicMock()
     mock_qa_graph.ainvoke = AsyncMock(return_value={"status": "completed"})
 
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_integration_graph = MagicMock(  # type: ignore[method-assign]
+        return_value=mock_integration_graph
+    )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     await workflow_service.run_full_pipeline(project_session_id="test_session")
@@ -57,10 +66,16 @@ async def test_run_full_pipeline_success(mock_dispatcher_class: MagicMock, mock_
     mock_integration_graph.ainvoke.assert_called_once()
     mock_qa_graph.ainvoke.assert_called_once()
 
+
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
+async def test_run_full_pipeline_fail_fast_on_coder(
+    mock_dispatcher_class: MagicMock,
+    mock_state_manager_class: MagicMock,
+    workflow_service: WorkflowService,
+    mock_manifest: MagicMock,
+) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
@@ -69,12 +84,14 @@ async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class: Magic
 
     from collections.abc import Coroutine
     from typing import Any
+
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
     from typing import Any
+
     async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> None:
         if cycle_id == "02":
             msg = "Intentional coder failure"
@@ -84,7 +101,9 @@ async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class: Magic
 
     mock_integration_graph = MagicMock()
     mock_qa_graph = MagicMock()
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_integration_graph = MagicMock(  # type: ignore[method-assign]
+        return_value=mock_integration_graph
+    )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     with pytest.raises(SystemExit) as exit_info:
@@ -95,10 +114,16 @@ async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class: Magic
     mock_integration_graph.ainvoke.assert_not_called()
     mock_qa_graph.ainvoke.assert_not_called()
 
+
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_fail_on_integration(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
+async def test_run_full_pipeline_fail_on_integration(
+    mock_dispatcher_class: MagicMock,
+    mock_state_manager_class: MagicMock,
+    workflow_service: WorkflowService,
+    mock_manifest: MagicMock,
+) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
@@ -107,6 +132,7 @@ async def test_run_full_pipeline_fail_on_integration(mock_dispatcher_class: Magi
 
     from collections.abc import Coroutine
     from typing import Any
+
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
@@ -119,7 +145,9 @@ async def test_run_full_pipeline_fail_on_integration(mock_dispatcher_class: Magi
 
     mock_qa_graph = MagicMock()
 
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_integration_graph = MagicMock(  # type: ignore[method-assign]
+        return_value=mock_integration_graph
+    )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     with pytest.raises(SystemExit) as exit_info:

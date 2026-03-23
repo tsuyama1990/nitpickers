@@ -71,6 +71,7 @@ class TestSessionRestart:
                 mock_settings.get_template.return_value.read_text.return_value = "Instruction"
                 mock_settings.get_target_files.return_value = []
                 mock_settings.get_context_files.return_value = []
+                mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 result = await usecase.execute(state)
 
         assert result["status"] == FlowStatus.CODER_RETRY
@@ -83,6 +84,7 @@ class TestSessionRestart:
                 mock_settings2.get_template.return_value.read_text.return_value = "Instruction"
                 mock_settings2.get_target_files.return_value = []
                 mock_settings2.get_context_files.return_value = []
+                mock_settings2.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 result2 = await usecase.execute(state)
 
         assert result2["status"] == FlowStatus.READY_FOR_AUDIT
@@ -126,6 +128,7 @@ class TestSessionRestart:
                     mock_settings.get_template.return_value.read_text.return_value = "Instruction"
                     mock_settings.get_target_files.return_value = []
                     mock_settings.get_context_files.return_value = []
+                    mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                     return dict(await usecase.execute(state))
 
         result1 = await run_once()

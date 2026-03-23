@@ -2,6 +2,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.config import settings
+
 from .domain_models import (
     AuditResult,
     ConflictRegistryItem,
@@ -81,7 +83,9 @@ class UATState(BaseModel):
 
 
 class ConfigurationState(BaseModel):
-    planned_cycle_count: int | None = 5
+    planned_cycle_count: int | None = Field(
+        default_factory=lambda: getattr(settings, "default_cycles_count", 5)
+    )
     requested_cycle_count: int | None = None
     planned_cycles: list[str] = Field(default_factory=list)
 
