@@ -11,7 +11,7 @@ runner = CliRunner()
 
 
 @pytest.fixture
-def mock_manifest():
+def mock_manifest() -> MagicMock:
     manifest = MagicMock()
     manifest.cycles = [
         CycleManifest(id="01", status="planned"),
@@ -25,8 +25,8 @@ def mock_manifest():
 @patch("src.services.workflow.AsyncDispatcher")
 @patch("src.services.workflow.WorkflowService.verify_environment_and_observability", MagicMock())
 def test_uat_full_5_phase_execution(
-    mock_dispatcher_class, mock_state_manager_class, mock_manifest
-):
+    mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, mock_manifest: MagicMock
+) -> None:
     """
     Scenario ID: Pipeline_Orchestration_01 - Full 5-Phase Execution
     Verify that the CLI successfully orchestrates a complete run of all five phases
@@ -38,7 +38,9 @@ def test_uat_full_5_phase_execution(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
@@ -73,8 +75,8 @@ def test_uat_full_5_phase_execution(
 @patch("src.services.workflow.AsyncDispatcher")
 @patch("src.services.workflow.WorkflowService.verify_environment_and_observability", MagicMock())
 def test_uat_fail_fast_on_coder_phase_error(
-    mock_dispatcher_class, mock_state_manager_class, mock_manifest
-):
+    mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, mock_manifest: MagicMock
+) -> None:
     """
     Scenario ID: Pipeline_Orchestration_02 - Fail-Fast on Coder Phase Error
     Verify that the orchestrator correctly halts the entire pipeline if a single parallel
@@ -86,14 +88,18 @@ def test_uat_fail_fast_on_coder_phase_error(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
-    async def single_cycle_mock(cycle_id, **kwargs):
+    from typing import Any
+    async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> None:
         if cycle_id == "02":
-            raise ValueError("Intentional unrecoverable logic error")
+            msg = "Intentional unrecoverable logic error"
+            raise ValueError(msg)
 
     with patch(
         "src.services.workflow.WorkflowService._run_single_cycle",

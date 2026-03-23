@@ -9,7 +9,7 @@ from src.domain_models.manifest import CycleManifest
 runner = CliRunner()
 
 @pytest.fixture
-def mock_manifest():
+def mock_manifest() -> MagicMock:
     manifest = MagicMock()
     manifest.cycles = [
         CycleManifest(id="01", status="planned"),
@@ -22,14 +22,16 @@ def mock_manifest():
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
 @patch("src.services.workflow.WorkflowService.verify_environment_and_observability", MagicMock())
-def test_cli_run_pipeline_success(mock_dispatcher_class, mock_state_manager_class, mock_manifest):
+def test_cli_run_pipeline_success(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, mock_manifest: MagicMock) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
@@ -58,21 +60,25 @@ def test_cli_run_pipeline_success(mock_dispatcher_class, mock_state_manager_clas
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
 @patch("src.services.workflow.WorkflowService.verify_environment_and_observability", MagicMock())
-def test_cli_run_pipeline_fail_fast(mock_dispatcher_class, mock_state_manager_class, mock_manifest):
+def test_cli_run_pipeline_fail_fast(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, mock_manifest: MagicMock) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
-    async def single_cycle_mock(cycle_id, **kwargs):
+    from typing import Any
+    async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> None:
         if cycle_id == "02":
-            raise ValueError("Intentional coder failure")
+            msg = "Intentional coder failure"
+            raise ValueError(msg)
 
     with patch("src.services.workflow.WorkflowService._run_single_cycle", new=AsyncMock(side_effect=single_cycle_mock)):
         with patch("src.graph.GraphBuilder.build_integration_graph") as mock_build_integration:

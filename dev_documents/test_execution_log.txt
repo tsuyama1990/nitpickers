@@ -39,7 +39,7 @@ tests/nitpick/unit/test_project_manifest.py ...                          [ 57%]
 tests/nitpick/unit/test_resume_logic.py ..                               [ 59%]
 tests/nitpick/unit/test_robustness_fixes.py ...                          [ 61%]
 tests/nitpick/unit/test_routers.py ...                                   [ 63%]
-tests/nitpick/unit/test_sandbox.py ....F.....                            [ 70%]
+tests/nitpick/unit/test_sandbox.py ..........                            [ 70%]
 tests/nitpick/unit/test_session_manager.py .........                     [ 76%]
 tests/nitpick/unit/test_session_restart.py ..                            [ 78%]
 tests/nitpick/unit/test_session_reuse.py ...                             [ 80%]
@@ -48,62 +48,6 @@ tests/nitpick/unit/test_utils.py ..                                      [ 91%]
 tests/nitpick/unit/test_validators.py .........                          [ 97%]
 tests/nitpick/unit/test_workflow_orchestration.py ...                    [100%]
 
-=================================== FAILURES ===================================
-_____________________ test_get_sandbox_secure_install_cmd ______________________
-
-    @pytest.mark.asyncio
-    async def test_get_sandbox_secure_install_cmd() -> None:
-        """Test that the install_cmd is safely parsed and executed."""
-
-        runner = SandboxRunner()
-
-        # Test valid command
-        with (
-            patch("src.sandbox.settings.sandbox.install_cmd", "pip install --no-cache-dir ruff"),
-            patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create,
-        ):
-            mock_sandbox = mock_create.return_value
-            await runner.get_sandbox()
-
-            # The install command should be run somewhere before the sync and second mkdir
-            # We need to ignore list structure as it uses shlex to pass it in SandboxRunner
-            actual_calls = mock_sandbox.commands.run.mock_calls
-
-            commands_run_str = []
-            for call in actual_calls:
-                cmd_arg = call.args[0]
-                if isinstance(cmd_arg, str):
-                    commands_run_str.append(cmd_arg)
-                else:
-                    commands_run_str.append(" ".join(cmd_arg))
-
-            assert "pip install --no-cache-dir ruff" in commands_run_str
-
-        # Reset the sandbox instance for the next test
-        runner.sandbox = None
-
-        # Test command with malicious shell injection
-        with (
-            patch("src.sandbox.settings.sandbox.install_cmd", "pip install ruff; echo 'hacked'"),
-            patch("src.sandbox.Sandbox.create", return_value=MagicMock()) as mock_create,
-        ):
-            mock_sandbox = mock_create.return_value
-            await runner.get_sandbox()
-
-            # Find the actual install command call among all mock calls (including mkdir and tar)
-            # The install command is the last run call
-            actual_calls = mock_sandbox.commands.run.mock_calls
-            install_call = actual_calls[-1]
-
-            # Verify the command was executed safely with the semicolon escaped
-            cmd_arg = install_call.args[0]
-            actual_cmd = cmd_arg if isinstance(cmd_arg, str) else " ".join(cmd_arg)
-
-            # shlex.split transforms 'pip install ruff; echo 'hacked'' into ['pip', 'install', 'ruff;', 'echo', 'hacked']
->           assert "pip install ruff; echo hacked" in actual_cmd or "pip" in actual_cmd
-E           AssertionError: assert ('pip install ruff; echo hacked' in 'mkdir -p /home/user/project' or 'pip' in 'mkdir -p /home/user/project')
-
-tests/nitpick/unit/test_sandbox.py:132: AssertionError
 =============================== warnings summary ===============================
 tests/nitpick/unit/test_jules_client_logic.py: 8 warnings
 tests/nitpick/unit/test_jules_session_fixes.py: 5 warnings
@@ -162,7 +106,7 @@ src/nodes/routers.py                                  67     19    72%   14-32, 
 src/nodes/sandbox_evaluator.py                        43     28    35%   34-100
 src/nodes/uat.py                                       9      3    67%   11-14
 src/process_runner.py                                 30     24    20%   25-62
-src/sandbox.py                                       160     44    72%   20-21, 25-26, 33-34, 38-39, 53-61, 80-87, 97-99, 108-109, 133-134, 141-144, 181, 206-207, 213-218, 221-222, 242, 254-255
+src/sandbox.py                                       160     41    74%   20-21, 25-26, 33-34, 38-39, 53-61, 80-87, 108-109, 133-134, 141-144, 181, 206-207, 213-218, 221-222, 242, 254-255
 src/service_container.py                              18      0   100%
 src/services/__init__.py                               5      0   100%
 src/services/artifacts.py                             14      8    43%   17-28
@@ -170,7 +114,7 @@ src/services/ast_analyzer.py                         109     92    16%   17-18, 
 src/services/async_dispatcher.py                      56     32    43%   28-38, 47-48, 57-100, 104-105
 src/services/audit_orchestrator.py                    76     11    86%   30-31, 72-73, 78-79, 124-125, 145-147
 src/services/auditor_usecase.py                      154     89    42%   45-46, 63, 68, 99-102, 126-257, 271, 274-307
-src/services/coder_usecase.py                        185     46    75%   38-39, 71-77, 123, 128-133, 144, 148, 155, 166-177, 199, 214-219, 228-239, 244, 261-262, 305-309, 316-319, 341, 351-360, 402, 414
+src/services/coder_usecase.py                        185     46    75%   38-39, 71-77, 123, 128-133, 144, 148, 155, 166-177, 199, 214-219, 228-239, 244, 261-262, 305-309, 316-319, 341, 351-361, 403, 415
 src/services/committee_usecase.py                     50     50     0%   1-104
 src/services/conflict_manager.py                      77     77     0%   1-143
 src/services/contracts.py                             26     21    19%   16-43
@@ -210,9 +154,7 @@ src/utils.py                                          72     45    38%   31-56, 
 src/utils_sanitization.py                             11      1    91%   10
 src/validators.py                                     41      1    98%   56
 --------------------------------------------------------------------------------
-TOTAL                                               6134   2997    51%
-=========================== short test summary info ============================
-FAILED tests/nitpick/unit/test_sandbox.py::test_get_sandbox_secure_install_cmd
-============ 1 failed, 141 passed, 13 warnings in 91.89s (0:01:31) =============
+TOTAL                                               6134   2994    51%
+================= 142 passed, 13 warnings in 92.32s (0:01:32) ==================
 /app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
   self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")

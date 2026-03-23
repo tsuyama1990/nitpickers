@@ -351,12 +351,13 @@ class CoderUseCase:
             console.print(
                 "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
             )
-            return None
 
         except Exception as e:
             console.print(
                 f"[yellow]Failed to send feedback to existing session: {e}. Creating new session...[/yellow]"
             )
+        else:
+            return None
         return None
 
     # ------------------------------------------------------------------ #

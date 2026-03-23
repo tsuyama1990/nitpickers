@@ -7,7 +7,7 @@ from src.services.workflow import WorkflowService
 
 
 @pytest.fixture
-def mock_manifest():
+def mock_manifest() -> MagicMock:
     manifest = MagicMock()
     manifest.cycles = [
         CycleManifest(id="01", status="planned"),
@@ -18,27 +18,29 @@ def mock_manifest():
 
 
 @pytest.fixture
-def workflow_service():
+def workflow_service() -> WorkflowService:
     service = WorkflowService()
-    service.verify_environment_and_observability = MagicMock()
+    service.verify_environment_and_observability = MagicMock()  # type: ignore[method-assign]
     return service
 
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_success(mock_dispatcher_class, mock_state_manager_class, workflow_service, mock_manifest):
+async def test_run_full_pipeline_success(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
-    workflow_service._run_single_cycle = AsyncMock()
+    workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
     mock_integration_graph.ainvoke = AsyncMock(return_value={"conflict_status": "success"})
@@ -46,8 +48,8 @@ async def test_run_full_pipeline_success(mock_dispatcher_class, mock_state_manag
     mock_qa_graph = MagicMock()
     mock_qa_graph.ainvoke = AsyncMock(return_value={"status": "completed"})
 
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)
-    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)
+    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     await workflow_service.run_full_pipeline(project_session_id="test_session")
 
@@ -58,28 +60,32 @@ async def test_run_full_pipeline_success(mock_dispatcher_class, mock_state_manag
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class, mock_state_manager_class, workflow_service, mock_manifest):
+async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
-    async def single_cycle_mock(cycle_id, **kwargs):
+    from typing import Any
+    async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> None:
         if cycle_id == "02":
-            raise ValueError("Intentional coder failure")
+            msg = "Intentional coder failure"
+            raise ValueError(msg)
 
-    workflow_service._run_single_cycle = AsyncMock(side_effect=single_cycle_mock)
+    workflow_service._run_single_cycle = AsyncMock(side_effect=single_cycle_mock)  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
     mock_qa_graph = MagicMock()
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)
-    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)
+    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     with pytest.raises(SystemExit) as exit_info:
         await workflow_service.run_full_pipeline(project_session_id="test_session")
@@ -92,27 +98,29 @@ async def test_run_full_pipeline_fail_fast_on_coder(mock_dispatcher_class, mock_
 @pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
-async def test_run_full_pipeline_fail_on_integration(mock_dispatcher_class, mock_state_manager_class, workflow_service, mock_manifest):
+async def test_run_full_pipeline_fail_on_integration(mock_dispatcher_class: MagicMock, mock_state_manager_class: MagicMock, workflow_service: WorkflowService, mock_manifest: MagicMock) -> None:
     mock_mgr = mock_state_manager_class.return_value
     mock_mgr.load_manifest.return_value = mock_manifest
 
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def run_semaphore_mock(coro):
+    from collections.abc import Coroutine
+    from typing import Any
+    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
         return await coro
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
-    workflow_service._run_single_cycle = AsyncMock()
+    workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
     mock_integration_graph.ainvoke = AsyncMock(return_value={"conflict_status": "failed"})
 
     mock_qa_graph = MagicMock()
 
-    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)
-    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)
+    workflow_service.builder.build_integration_graph = MagicMock(return_value=mock_integration_graph)  # type: ignore[method-assign]
+    workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
     with pytest.raises(SystemExit) as exit_info:
         await workflow_service.run_full_pipeline(project_session_id="test_session")
