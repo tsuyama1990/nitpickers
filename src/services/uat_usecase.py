@@ -123,9 +123,9 @@ class UatUseCase:
             raise ValueError(msg)
 
         # Security: prevent argument injection via shell metacharacters
-        for arg in cmd:
+        for arg in settings.uat.playwright_args:
             if any(char in arg for char in self.DANGEROUS_SHELL_CHARS):
-                msg = f"Dangerous character detected in command argument: {arg}"
+                msg = f"Dangerous character detected in Playwright argument: {arg}"
                 raise ValueError(msg)
 
         # Ensure a clean state before executing dynamic UAT

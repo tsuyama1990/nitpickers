@@ -94,9 +94,11 @@ class CoderUseCase:
             context_files = settings.get_context_files()
 
             try:
+                import uuid
                 timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
                 prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
-                session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}"
+                # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
+                session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
 
                 jules_session_name, result = await self._run_jules_session(
                     session_req_id, instruction, target_files, context_files, cycle_id, mgr
@@ -332,6 +334,17 @@ class CoderUseCase:
 
         Returns result dict if successful, None if should create new session.
         """
+        # Validate feedback size
+        if len(feedback) > 100000:  # Avoid excessive LLM input parsing
+            msg = "Feedback exceeds maximum size of 100000 characters"
+            raise ValueError(msg)
+
+        # Sanitize for potential injection
+        from src.services.uat_usecase import UatUseCase
+        if any(char in feedback for char in UatUseCase.DANGEROUS_SHELL_CHARS):
+            msg = "Feedback contains potentially dangerous characters"
+            raise ValueError(msg)
+
         console.print(
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
