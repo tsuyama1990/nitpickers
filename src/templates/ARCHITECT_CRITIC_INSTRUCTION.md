@@ -28,6 +28,7 @@ Second, verify that the high-level architecture defined in `SYSTEM_ARCHITECTURE.
 - Are the design details and specifications for each cycle precise enough that a developer could implement them without ambiguity?
 - Check for circular dependencies between the defined implementation cycles. Is it actually possible to implement and test each cycle completely independently, relying only on previously completed cycles?
 - Are the interface boundaries between components and cycles clearly defined?
+- **CRITICAL INFRASTRUCTURE CHECK:** Does the `SPEC.md` for each cycle explicitly contain the **"Infrastructure & Dependencies"** section? You MUST explicitly reject the plan if this section is missing, or if it fails to cleanly separate confidential secrets (for `.env.example`) from system configurations (for `docker-compose.yml`), or if it fails to explicitly mandate mocking for all external API calls.
 
 ## INSTRUCTIONS FOR NEXT STEPS:
 1. Write down your Critic Agent's deep validation and findings in a new file named `ARCHITECT_CRITIC_REVIEW.md`. Document alternative approaches you considered and why your final approach is superior.

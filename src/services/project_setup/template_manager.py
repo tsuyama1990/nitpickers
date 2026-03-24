@@ -91,12 +91,10 @@ What defines a successful user experience?
         env_example_path.parent.mkdir(exist_ok=True)
 
         if not env_example_path.exists():
-            env_example_content = """# AC-CDD Configuration File
+            env_example_content = """# ==========================================
+# NITPICKERS Agent Execution Secrets
+# ==========================================
 # Copy this file to .nitpick/.env and fill in your actual API keys
-
-# ============================================================================
-# Required API Keys
-# ============================================================================
 
 # Jules API Key (Required for AI-powered development agent)
 # Get your key from: https://jules.googleapis.com/
@@ -129,6 +127,14 @@ SMART_MODEL=openrouter/meta-llama/llama-3.3-70b-instruct:free
 #   - Anthropic: claude-3-5-sonnet
 #   - Gemini: gemini-2.0-flash-exp
 FAST_MODEL=openrouter/nousresearch/hermes-3-llama-3.1-405b:free
+
+# ============================================================================
+# Observability (LangSmith)
+# ============================================================================
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+LANGCHAIN_API_KEY=
+LANGCHAIN_PROJECT=nitpick-dev
 
 # ============================================================================
 # Optional: Advanced Configuration
