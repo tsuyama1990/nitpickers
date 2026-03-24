@@ -10,6 +10,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +30,12 @@ jobs:
       - name: Run Linting
         run: uv run ruff check src tests
 
+      - name: Run Type Checking
+        run: uv run mypy src tests
+
+      - name: Run Unit Tests
+        run: uv run pytest tests/unit/ tests/nitpick/unit/
+
       - name: Run Property Tests
         run: |
           if [ -d "tests/property" ] && [ "$(ls -A tests/property)" ]; then
@@ -37,12 +44,20 @@ jobs:
             echo "No property tests found, skipping."
           fi
 
+      - name: Install Playwright Browsers
+        run: uv run playwright install --with-deps chromium
+        env:
+          DEBIAN_FRONTEND: noninteractive
+
       - name: Run E2E Tests
-        # Run only if E2E tests exist
+        # Run only if E2E tests exist and API keys are present
         run: |
           if [ -d "tests/e2e" ] && [ "$(ls -A tests/e2e)" ]; then
-            uv run playwright install --with-deps chromium
-            uv run pytest tests/e2e/
+            if [ -z "$JULES_API_KEY" ] || [ -z "$OPENROUTER_API_KEY" ]; then
+              echo "Skipping E2E (No API Keys present in the environment)."
+            else
+              uv run pytest tests/e2e/
+            fi
           else
             echo "No E2E tests found, skipping."
           fi
