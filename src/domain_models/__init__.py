@@ -40,9 +40,9 @@ __all__ = [
     "StructuredSpec",
     "SystemArchitecture",
     "TechnicalConstraint",
-    "UatAnalysis",
     "UXAuditReport",
     "UXViolation",
+    "UatAnalysis",
     "UatExecutionState",
     "VerificationResult",
 ]

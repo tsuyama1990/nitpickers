@@ -29,7 +29,9 @@ class UxAuditorUseCase:
 
         # 1. Gracefully handle the absence of UAT Execution State or Artifacts
         if not state.uat.uat_execution_state or not state.uat.uat_execution_state.artifacts:
-            console.print("[dim]No UAT execution state or artifacts found. Skipping UX Audit.[/dim]")
+            console.print(
+                "[dim]No UAT execution state or artifacts found. Skipping UX Audit.[/dim]"
+            )
             return {"uat": {"ux_audit_report": self._empty_report()}}
 
         screenshots = [

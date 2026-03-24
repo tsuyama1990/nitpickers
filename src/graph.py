@@ -166,7 +166,9 @@ class GraphBuilder:
 
         workflow.add_conditional_edges(
             "uat_evaluate",
-            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else "ux_auditor",
+            lambda state: (
+                "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else "ux_auditor"
+            ),
             {"qa_auditor": "qa_auditor", "ux_auditor": "ux_auditor"},
         )
 
