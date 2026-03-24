@@ -205,7 +205,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         call_counts = {"state": 0, "activities": 0}
 
         async def dynamic_get(url: str, **kwargs: Any) -> MagicMock:
-            if url.endswith("/activities"):
+            if "/activities" in url:
                 call_counts["activities"] += 1
                 if call_counts["activities"] == 1:
                     return r_acts_old
