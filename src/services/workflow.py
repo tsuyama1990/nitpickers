@@ -507,6 +507,17 @@ class WorkflowService:
             console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
             sys.exit(1)
 
+        if final_state.get("status") == FlowStatus.REQUIRES_PIVOT:
+            console.print(
+                f"[bold yellow]Cycle {cycle_id} requires a pivot. Falling back to Architect Phase.[/bold yellow]"
+            )
+            await self.run_gen_cycles(cycles=planned_count, project_session_id=pid, auto_run=False)
+            # Re-run the current cycle after a pivot using the new architected plan
+            await self._execute_cycle_graph(
+                cycle_id, start_iter, resume, pid, fb, ib, planned_count
+            )
+            return
+
         console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
 
     def _update_cycle_status(self, cycle_id: str) -> None:

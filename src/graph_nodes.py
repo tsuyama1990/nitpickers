@@ -85,8 +85,11 @@ class CycleNodes(IGraphNodes):
     ) -> dict[str, Any] | None:
         return await self._architect.send_audit_feedback_to_session(session_id, feedback)
 
-    async def coder_session_node(self, state: CycleState) -> dict[str, Any]:
-        return await self._coder.coder_session_node(state)
+    async def test_coder_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder.test_coder_node(state)
+
+    async def impl_coder_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._coder.impl_coder_node(state)
 
     async def auditor_node(self, state: CycleState) -> dict[str, Any]:
         return await self._auditor.auditor_node(state)
@@ -133,12 +136,25 @@ class CycleNodes(IGraphNodes):
         integrator = MasterIntegratorNodes(jules_client=JulesClient())
         return await integrator.master_integrator_node(state)
 
+    async def integration_fixer_node(self, state: "Any") -> dict[str, Any]:
+        from src.nodes.integration_fixer import IntegrationFixerNodes
+        from src.services.jules_client import JulesClient
+
+        fixer = IntegrationFixerNodes(jules_client=JulesClient())
+        return await fixer.integration_fixer_node(state)
+
     async def global_sandbox_node(self, state: "Any") -> dict[str, Any]:
         from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 
         sandbox = SandboxEvaluatorNodes()
         # Mocking CycleState to fit sandbox_evaluate_node expectation
         return await sandbox.sandbox_evaluate_node(CycleState(cycle_id="00"))
+
+    async def qa_regression_sandbox_node(self, state: CycleState) -> dict[str, Any]:
+        from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
+
+        sandbox = SandboxEvaluatorNodes()
+        return await sandbox.sandbox_evaluate_node(state)
 
     def route_merge(self, state: "Any") -> str:
         status = state.get("conflict_status")

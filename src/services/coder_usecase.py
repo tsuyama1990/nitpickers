@@ -159,6 +159,17 @@ class CoderUseCase:
         if not instruction:
             instruction = "Implement the requested changes."
 
+        # TDD phase injection
+        if state.test.tdd_phase == "red":
+            instruction += "\n\nCRITICAL TDD ENFORCEMENT:\nYou are in the 'RED' phase of Test-Driven Development. You MUST write FAILING TESTS ONLY. Do NOT write or modify any implementation code yet. Your goal is to produce a test that fails against the current implementation to prove the bug exists or the feature is missing."
+        elif state.test.tdd_phase == "green":
+            instruction += "\n\nCRITICAL TDD ENFORCEMENT:\nYou are in the 'GREEN' phase of Test-Driven Development. You must now implement the feature or bugfix to make the newly written failing tests pass. Do not modify the tests themselves unless they are syntactically invalid."
+
+        # Anti-patterns memory injection
+        if state.committee.anti_patterns_memory:
+            anti_patterns = "\n- ".join(state.committee.anti_patterns_memory)
+            instruction += f"\n\nIMPORTANT PREVIOUS ATTEMPTS TO AVOID:\nThe following approaches have failed in this cycle and must NOT be repeated:\n- {anti_patterns}"
+
         instruction = instruction.replace("{{cycle_id}}", str(cycle_id))
 
         last_audit = state.audit_result
