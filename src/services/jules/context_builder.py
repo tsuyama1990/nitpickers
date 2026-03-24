@@ -125,13 +125,10 @@ class JulesContextBuilder:
             return question
 
         full_context = "\n".join(context_parts)
-        instruction = settings.get_prompt_content(
-            "MANAGER_INQUIRY_PROMPT.md",
-            default=(
-                "**Instructions for Answering Jules' Question**:\n"
-                "Focus on ROOT CAUSE ANALYSIS. Diagnose the underlying cause, "
-                "guide investigation, and provide targeted solutions."
-            ),
+        instruction = (
+            "**Instructions for Answering Jules' Question**:\n"
+            "Focus on ROOT CAUSE ANALYSIS. Diagnose the underlying cause, "
+            "guide investigation, and provide targeted solutions."
         )
         full_context += f"\n\n---\n{instruction}"
 

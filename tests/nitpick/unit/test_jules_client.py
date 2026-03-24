@@ -17,8 +17,8 @@ def mock_client() -> Generator[JulesClient, None, None]:
             "os.environ",
             {"OPENAI_API_KEY": "mock_key", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"},
         ),
-        patch("src.services.jules_client.get_manager_agent") as mock_agent,
     ):
+        mock_agent = MagicMock()
         AsyncMock()
         # Initialize client
         with patch.object(JulesClient, "__init__", lambda x: None):  # Skip init

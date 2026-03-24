@@ -90,7 +90,6 @@ def get_model(model_name: str) -> Model | str:
 
 # Lazy initialization to avoid requiring API keys at import time
 _qa_analyst_agent: Agent[Any, UatAnalysis] | None = None
-_manager_agent: Agent[Any, str] | None = None
 
 
 def get_qa_analyst_agent() -> Agent[Any, UatAnalysis]:
@@ -109,30 +108,3 @@ def get_qa_analyst_agent() -> Agent[Any, UatAnalysis]:
             return _get_system_context()
 
     return _qa_analyst_agent
-
-
-def get_manager_agent() -> Agent[Any, str]:
-    """Get or create the Manager agent instance."""
-    global _manager_agent  # noqa: PLW0603
-    if _manager_agent is None:
-        _manager_agent = Agent(
-            model=get_model(settings.agents.auditor_model),
-            system_prompt=settings.get_prompt_content(
-                "MANAGER_INSTRUCTION.md",
-                default=(
-                    "You are a Senior Technical Project Manager and Debugging Mentor. "
-                    "When answering questions from the developer (Jules):\n"
-                    "1. Focus on ROOT CAUSE ANALYSIS - help identify WHY problems occur, not just HOW to fix them\n"
-                    "2. Guide systematic investigation - suggest specific files, functions, or debugging steps\n"
-                    "3. Discourage trial-and-error - promote understanding before fixing\n"
-                    "4. Be analytical and educational - help Jules become a better problem solver\n"
-                    "Answer questions accurately, concisely, and with clear reasoning based on project specifications."
-                ),
-            ),
-        )
-
-        @_manager_agent.system_prompt
-        def manager_system_prompt(_ctx: RunContext[Any]) -> str:
-            return _get_system_context()
-
-    return _manager_agent

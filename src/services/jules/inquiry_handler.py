@@ -264,10 +264,7 @@ class JulesInquiryHandler:
 
                 mgr_response = await self.manager_agent.run(enhanced_context)
                 reply_text = mgr_response.output
-                followup = settings.get_prompt_content(
-                    "MANAGER_INQUIRY_FOLLOWUP.md",
-                    default="(System Note: If task complete/blocker resolved, proceed to create PR. Do not wait.)",
-                )
+                followup = "(System Note: If task complete/blocker resolved, proceed to create PR. Do not wait.)"
                 reply_text += f"\n\n{followup}"
 
                 console.print(f"[bold cyan]Manager Agent Reply:[/bold cyan] {reply_text}")
@@ -277,10 +274,7 @@ class JulesInquiryHandler:
             except Exception as e:
                 logger.error(f"Manager Agent failed: {e}")
                 # Fallback: send a basic response
-                fallback_template = settings.get_prompt_content(
-                    "MANAGER_INQUIRY_FALLBACK.md",
-                    default="I encountered an error processing your question. Original question: {{question}}",
-                )
+                fallback_template = "I encountered an error processing your question. Original question: {{question}}"
                 fallback_msg = fallback_template.replace("{{question}}", question)
                 await self.client_ref._send_message(session_url, fallback_msg)
                 processed_ids.add(act_id)

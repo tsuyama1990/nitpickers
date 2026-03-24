@@ -34,51 +34,59 @@ flowchart TD
         InitCmd2 --> ArchSession
     end
 
-    %% Phase2: Coder Graph
+    %% Phase2: Coder Graph (TDD Enforced)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Implementation)"]
+        TestCoder["JULES: test_coder\n(Red: Write Failing Tests)"]
+        ImplCoder["JULES: impl_coder\n(Green: Implement Features)"]
         SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
         AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Refactoring)"]
 
-        CoderSession --> SandboxEval
-        SandboxEval -- "Pass" --> AuditorNode
-        AuditorNode -- "Reject" --> CoderSession
-        AuditorNode -- "Pass All" --> RefactorNode
-        RefactorNode --> SandboxEval
+        TestCoder --> SandboxEval
+        SandboxEval -- "Fail (Red)" --> ImplCoder
+        ImplCoder --> SandboxEval
+        SandboxEval -- "Pass (Green)" --> AuditorNode
+        AuditorNode -- "Reject" --> TestCoder
     end
 
     %% Phase3: Integration Phase
     subgraph Phase3 ["Phase 3: Integration Phase"]
         direction TB
-        MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
-        MasterIntegrator["JULES: master_integrator\n(3-Way Diff Resolution)"]
-        GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
+        MergeTry{"Local: Git PR Merge"}
+        MasterIntegrator["JULES: master_integrator\n(Git Conflicts)"]
+        GlobalSandbox{"LOCAL: global_sandbox\n(Global Tests)"}
+        IntegrationFixer["JULES: integration_fixer\n(Logical Regressions)"]
+
+        MergeTry -- "Conflict" --> MasterIntegrator
+        MasterIntegrator --> MergeTry
+        MergeTry -- "Success" --> GlobalSandbox
+        GlobalSandbox -- "Fail" --> IntegrationFixer
+        IntegrationFixer --> GlobalSandbox
     end
 
-    %% Phase4: UAT & QA Graph
-    subgraph Phase4 ["Phase 4: UAT & QA Graph"]
+    %% Phase4: QA/UAT Graph
+    subgraph Phase4 ["Phase 4: QA/UAT Graph"]
         direction TB
         UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
+        UxAuditor["OpenRouter: ux_auditor\n(Multimodal UX Review)"]
         QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
         QaSession["JULES: qa_session\n(Integration Fixes)"]
+        QaRegression{"LOCAL: qa_regression_sandbox\n(Prevent Regressions)"}
+
+        UatEval -- "Pass" --> UxAuditor
+        UatEval -- "Fail" --> QaAuditor
+        QaAuditor --> QaSession
+        QaSession --> QaRegression
+        QaRegression -- "Fail" --> QaSession
+        QaRegression -- "Pass" --> UatEval
     end
 
     %% Inter-Phase Connections
     Phase0 --> Phase1
     Phase1 --> Phase2
     Phase2 -- "All Coder Cycles Complete" --> MergeTry
-
-    MergeTry -- "Conflict" --> MasterIntegrator
-    MasterIntegrator --> MergeTry
-    MergeTry -- "Success" --> GlobalSandbox
-
+    Phase2 -- "REQUIRES_PIVOT" --> Phase1
     GlobalSandbox -- "Pass" --> UatEval
-
-    UatEval -- "Fail" --> QaAuditor
-    QaAuditor --> QaSession
-    QaSession --> UatEval
 ```
 
 ## Prerequisites

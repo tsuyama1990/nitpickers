@@ -18,7 +18,6 @@ import litellm
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from rich.console import Console
 
-from src.agents import get_manager_agent
 from src.config import settings
 from src.domain_models.config import DispatcherConfig
 from src.services.async_dispatcher import retry_on_429
@@ -78,7 +77,7 @@ class JulesClient:
             )
             self.credentials = None  # type: ignore[assignment]
 
-        self.manager_agent = manager_agent if manager_agent else get_manager_agent()
+        self.manager_agent = manager_agent
 
         if plan_auditor:
             self.plan_auditor = plan_auditor

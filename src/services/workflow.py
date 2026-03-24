@@ -438,9 +438,6 @@ class WorkflowService:
                 await asyncio.gather(*tasks)
                 console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
 
-        # After all cycles, run QA/Tutorial Generation
-        await self.generate_tutorials(project_session_id)
-
         # Auto-finalize if requested
         if auto:
             await self.finalize_session(project_session_id)
@@ -624,76 +621,6 @@ class WorkflowService:
                 console.print("[bold red]Session Failed.[/bold red]")
                 logger.exception("Session Failed")
                 sys.exit(1)
-
-    async def generate_tutorials(self, project_session_id: str | None) -> None:
-        """
-        QA Phase: Generate and verify tutorials based on FINAL_UAT.md.
-        """
-        self.verify_environment_and_observability()
-        console.rule("[bold cyan]QA Phase: Tutorial Generation[/bold cyan]")
-
-        docs_dir = settings.paths.documents_dir
-        qa_instruction_path = docs_dir / "system_prompts" / "QA_TUTORIAL_INSTRUCTION.md"
-
-        if not qa_instruction_path.exists():
-            console.print(
-                "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
-            )
-            return
-
-        if not qa_instruction_path.exists():
-            console.print(
-                "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
-            )
-            return
-
-        # Build QA Graph
-        graph = self.builder.build_qa_graph()
-
-        # Initial State
-        project_session_id = project_session_id or settings.current_session_id
-        initial_state = CycleState(
-            cycle_id="qa-tutorials",
-            current_phase=WorkPhase.QA,
-            status=FlowStatus.START,
-        )
-        initial_state.project_session_id = project_session_id
-
-        thread_id = f"qa-{project_session_id}"
-        metadata = TracingMetadata(session_id=thread_id, execution_type="qa_phase")
-        tracing_config = settings.tracing_service.get_run_config(metadata)
-
-        config = RunnableConfig(
-            configurable={"thread_id": thread_id},
-            recursion_limit=settings.GRAPH_RECURSION_LIMIT,
-            **tracing_config,  # type: ignore[typeddict-item]
-        )
-
-        try:
-            console.print("[cyan]Running QA Tutorial Generation Graph...[/cyan]")
-            final_state = await graph.ainvoke(initial_state, config)
-
-            audit_res = final_state.get("audit_result")
-            if audit_res and getattr(audit_res, "is_approved", False):
-                console.print(
-                    Panel(
-                        f"QA Tutorials Generated & Verified.\nPR: {final_state.get('pr_url')}",
-                        style="bold green",
-                    )
-                )
-            elif final_state.get("status") == "max_retries":
-                console.print(
-                    f"[bold yellow]QA Phase Warning: {final_state.get('error')}[/bold yellow]"
-                )
-                console.print("[yellow]Proceeding with best-effort results.[/yellow]")
-            elif final_state.get("error"):
-                console.print(f"[red]QA Phase Failed: {final_state['error']}[/red]")
-            else:
-                console.print("[yellow]QA Phase completed with uncertain status.[/yellow]")
-
-        except Exception as e:
-            console.print(f"[bold red]Tutorial Generation Failed:[/bold red] {e}")
-            logger.exception("Tutorial Generation Failed")
 
     def _get_quality_gate_cmds(self) -> list[list[str]]:
         from src.config import settings
