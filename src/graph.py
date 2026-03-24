@@ -53,7 +53,7 @@ class GraphBuilder:
             "architect_critic",
             self.nodes.route_architect_critic,
             {
-                "architect_critic": "architect_critic",
+                "architect_session": "architect_session",
                 "end": END,
             },
         )
@@ -100,7 +100,8 @@ class GraphBuilder:
                 "self_critic": "self_critic_node",
                 settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
                 FlowStatus.FAILED.value: END,
-                FlowStatus.CODER_RETRY.value: "coder_session",
+                FlowStatus.COMPLETED.value: END,
+                "coder_session": "coder_session",
             },
         )
 
@@ -115,7 +116,6 @@ class GraphBuilder:
                 "auditor": "auditor",
                 "coder_session": "coder_session",
                 "final_critic": "final_critic_node",
-                "failed": END,
             },
         )
 
@@ -127,6 +127,7 @@ class GraphBuilder:
                 "reject": "coder_session",
                 "next_auditor": "auditor",
                 "pass_all": "refactor_node",
+                "failed": END,
             },
         )
 

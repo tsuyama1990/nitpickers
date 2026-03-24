@@ -21,7 +21,7 @@ def test_route_sandbox_evaluate() -> None:
 
     # Test fallback
     state = CycleState(cycle_id="01", status=FlowStatus.COMPLETED)
-    assert route_sandbox_evaluate(state) == "failed"
+    assert route_sandbox_evaluate(state) == "coder_session"
 
 
 def test_route_auditor() -> None:
