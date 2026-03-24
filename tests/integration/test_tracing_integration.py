@@ -50,7 +50,16 @@ async def test_missing_api_key_fallback() -> None:
     from src.config import Settings
 
     with (
-        patch.dict(os.environ, {"LANGCHAIN_TRACING_V2": "true", "LANGCHAIN_API_KEY": ""}),
+        patch.dict(
+            os.environ,
+            {
+                "LANGCHAIN_TRACING_V2": "true",
+                "LANGCHAIN_API_KEY": "",
+                "JULES_API_KEY": "dummy",
+                "E2B_API_KEY": "dummy",
+                "OPENROUTER_API_KEY": "dummy",
+            },
+        ),
         patch("logging.warning"),
     ):
         from pydantic import SecretStr

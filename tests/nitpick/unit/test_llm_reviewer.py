@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -36,7 +36,9 @@ async def test_review_code_success(reviewer: LLMReviewer) -> None:
     mock_response.choices = [MagicMock()]
     mock_response.choices[0].message.content = valid_json
 
-    with patch("src.services.llm_reviewer.litellm.acompletion", return_value=mock_response) as mock_completion:
+    with patch(
+        "src.services.llm_reviewer.litellm.acompletion", return_value=mock_response
+    ) as mock_completion:
         # UPDATED SIGNATURE: target_files, context_docs, instruction, model
         result = await reviewer.review_code(target_files, context_files, instruction, model)
 

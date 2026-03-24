@@ -43,7 +43,10 @@ async def test_run_full_pipeline_success(
     from typing import Any
 
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        return await coro
+        result = await coro
+        if hasattr(result, "__await__"):
+            return await result
+        return result
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
@@ -87,7 +90,10 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     from typing import Any
 
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        return await coro
+        result = await coro
+        if hasattr(result, "__await__"):
+            return await result
+        return result
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
@@ -135,7 +141,10 @@ async def test_run_full_pipeline_fail_on_integration(
     from typing import Any
 
     async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        return await coro
+        result = await coro
+        if hasattr(result, "__await__"):
+            return await result
+        return result
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
