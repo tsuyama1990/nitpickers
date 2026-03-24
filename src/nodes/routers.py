@@ -3,15 +3,9 @@ from src.enums import FlowStatus
 from src.state import CycleState
 
 
-def route_coder_critic(state: CycleState) -> str:
-    status = getattr(state, "status", None)
-    if status == FlowStatus.CODER_RETRY:
-        return "coder_session"
-    return settings.node_uat_evaluate
-
-
 def check_coder_outcome(state: CycleState) -> str:
     status = getattr(state, "status", None)
+
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
         return str(FlowStatus.FAILED.value)
 
@@ -30,12 +24,14 @@ def check_coder_outcome(state: CycleState) -> str:
         ):
             return "self_critic"
         return settings.node_sandbox_evaluate
-    return settings.node_uat_evaluate
+
+    return settings.node_sandbox_evaluate
 
 
 def route_sandbox_evaluate(state: CycleState) -> str:
     status = getattr(state, "status", None)
-    if status == FlowStatus.TDD_FAILED:
+
+    if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
         return "coder_session"
 
     if status == FlowStatus.READY_FOR_AUDIT:
@@ -43,7 +39,7 @@ def route_sandbox_evaluate(state: CycleState) -> str:
             return "final_critic"
         return "auditor"
 
-    return "failed"
+    return "coder_session"
 
 
 def route_auditor(state: CycleState) -> str:
@@ -61,8 +57,10 @@ def route_auditor(state: CycleState) -> str:
     # Reset attempt count on pass
     state.committee.audit_attempt_count = 0
     state.committee.current_auditor_index += 1
+
     if state.committee.current_auditor_index > settings.NUM_AUDITORS:
         return "pass_all"
+
     return "next_auditor"
 
 

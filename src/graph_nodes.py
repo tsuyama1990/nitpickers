@@ -173,7 +173,3 @@ class CycleNodes(IGraphNodes):
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
         return await self._coder_critic.coder_critic_node(state)
 
-    def route_coder_critic(self, state: CycleState) -> str:
-        from src.nodes.routers import route_coder_critic
-
-        return route_coder_critic(state)
