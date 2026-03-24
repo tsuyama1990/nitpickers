@@ -68,8 +68,6 @@ def route_auditor(state: CycleState) -> str:
 
 def route_final_critic(state: CycleState) -> str:
     status = getattr(state, "status", None)
-    if status == FlowStatus.CODER_RETRY:
-        return "reject"
     if status == FlowStatus.COMPLETED:
         return "approve"
     return "reject"

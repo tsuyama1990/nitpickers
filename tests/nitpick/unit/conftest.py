@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.config import Settings
-from src.service_container import ServiceContainer
 
 
 @pytest.fixture(autouse=True)
@@ -52,13 +51,6 @@ def mock_artifact_manager() -> MagicMock:
 
 
 @pytest.fixture
-def mock_presenter() -> MagicMock:
-    presenter = MagicMock()
-    presenter.review_and_confirm.return_value = True
-    return presenter
-
-
-@pytest.fixture
 def mock_jules() -> MagicMock:
     return MagicMock()
 
@@ -71,33 +63,3 @@ def mock_reviewer() -> MagicMock:
 @pytest.fixture
 def mock_git() -> MagicMock:
     return MagicMock()
-
-
-@pytest.fixture
-def mock_services(
-    mock_file_patcher: MagicMock,
-    mock_contract_manager: MagicMock,
-    mock_artifact_manager: MagicMock,
-    mock_presenter: MagicMock,
-    mock_jules: MagicMock,
-    mock_reviewer: MagicMock,
-    mock_git: MagicMock,
-) -> ServiceContainer:
-    return ServiceContainer(
-        file_patcher=mock_file_patcher,
-        contract_manager=mock_contract_manager,
-        artifact_manager=mock_artifact_manager,
-        jules=mock_jules,
-        reviewer=mock_reviewer,
-        git=mock_git,
-    )
-
-
-@pytest.fixture
-def mock_agent_result() -> Any:
-    def _create_result(output_data: Any) -> MagicMock:
-        result = MagicMock()
-        result.output = output_data
-        return result
-
-    return _create_result
