@@ -38,6 +38,8 @@ class FlowStatus(StrEnum):
     # UAT & Refactor
     UAT_FAILED = "uat_failed"
     TDD_FAILED = "tdd_failed"
+    TDD_RED_PASSED = "tdd_red_passed"
+    REQUIRES_PIVOT = "requires_pivot"
     START_REFACTOR = "start_refactor"
     CONFLICT_DETECTED = "conflict_detected"
     CONFLICT_RESOLVED = "conflict_resolved"

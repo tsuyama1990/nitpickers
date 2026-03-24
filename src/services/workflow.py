@@ -229,8 +229,12 @@ class WorkflowService:
                     if isinstance(required_envs, list):
                         missing_keys = [key for key in required_envs if not os.getenv(key)]
                         if missing_keys:
-                            console.print("\n[bold red][ERROR] Missing dynamically required API keys![/bold red]")
-                            console.print("[red]The system architecture explicitly requires the following keys to proceed:[/red]")
+                            console.print(
+                                "\n[bold red][ERROR] Missing dynamically required API keys![/bold red]"
+                            )
+                            console.print(
+                                "[red]The system architecture explicitly requires the following keys to proceed:[/red]"
+                            )
                             for key in missing_keys:
                                 console.print(f"  - [bold yellow]{key}[/bold yellow]")
                             console.print(
@@ -238,6 +242,7 @@ class WorkflowService:
                                 "and re-run the command.[/yellow]"
                             )
                             import sys
+
                             sys.exit(1)
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse required_envs.json: {e}")
@@ -501,6 +506,17 @@ class WorkflowService:
         if final_state.get("error"):
             console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
             sys.exit(1)
+
+        if final_state.get("status") == FlowStatus.REQUIRES_PIVOT:
+            console.print(
+                f"[bold yellow]Cycle {cycle_id} requires a pivot. Falling back to Architect Phase.[/bold yellow]"
+            )
+            await self.run_gen_cycles(cycles=planned_count, project_session_id=pid, auto_run=False)
+            # Re-run the current cycle after a pivot using the new architected plan
+            await self._execute_cycle_graph(
+                cycle_id, start_iter, resume, pid, fb, ib, planned_count
+            )
+            return
 
         console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
 

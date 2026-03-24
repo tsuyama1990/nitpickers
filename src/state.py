@@ -23,6 +23,8 @@ class CommitteeState(BaseModel):
     iteration_count: int = Field(default=0, ge=0)
     is_refactoring: bool = Field(default=False)
     audit_attempt_count: int = Field(default=0, ge=0)
+    fallback_count: int = Field(default=0, ge=0)
+    anti_patterns_memory: list[str] = Field(default_factory=list)
 
     @field_validator("current_auditor_index")
     @classmethod
@@ -324,6 +326,8 @@ class CycleState(BaseModel):
                 "iteration_count",
                 "is_refactoring",
                 "audit_attempt_count",
+                "fallback_count",
+                "anti_patterns_memory",
             ],
             "session": [
                 "jules_session_name",

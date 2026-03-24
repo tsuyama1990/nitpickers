@@ -6,22 +6,35 @@ from src.state import AuditState, CycleState
 
 
 def test_route_sandbox_evaluate() -> None:
-    # Test TDD_FAILED
+    # Test RED phase failures go to impl_coder_node
     state = CycleState(cycle_id="01", status=FlowStatus.TDD_FAILED)
-    assert route_sandbox_evaluate(state) == "coder_session"
+    state.test.tdd_phase = "red"
+    assert route_sandbox_evaluate(state) == "impl_coder_node"
 
-    # Test READY_FOR_AUDIT, not refactoring
+    # Test RED phase success (incorrectly passes) goes back to test_coder_node
     state = CycleState(cycle_id="01", status=FlowStatus.READY_FOR_AUDIT)
+    state.test.tdd_phase = "red"
+    assert route_sandbox_evaluate(state) == "test_coder_node"
+
+    # Test GREEN phase TDD_FAILED goes to impl_coder_node
+    state = CycleState(cycle_id="01", status=FlowStatus.TDD_FAILED)
+    state.test.tdd_phase = "green"
+    assert route_sandbox_evaluate(state) == "impl_coder_node"
+
+    # Test GREEN phase READY_FOR_AUDIT, not refactoring
+    state = CycleState(cycle_id="01", status=FlowStatus.READY_FOR_AUDIT)
+    state.test.tdd_phase = "green"
     state.committee.is_refactoring = False
     assert route_sandbox_evaluate(state) == "auditor"
 
-    # Test READY_FOR_AUDIT, is refactoring
+    # Test GREEN phase READY_FOR_AUDIT, is refactoring
     state.committee.is_refactoring = True
     assert route_sandbox_evaluate(state) == "final_critic"
 
-    # Test fallback
+    # Test GREEN phase fallback
     state = CycleState(cycle_id="01", status=FlowStatus.COMPLETED)
-    assert route_sandbox_evaluate(state) == "coder_session"
+    state.test.tdd_phase = "green"
+    assert route_sandbox_evaluate(state) == "impl_coder_node"
 
 
 def test_route_auditor() -> None:
@@ -42,7 +55,7 @@ def test_route_auditor() -> None:
     audit_res = AuditResult(is_approved=False)
     state.audit = AuditState(audit_result=audit_res)
     state.committee.audit_attempt_count = settings.max_audit_retries
-    assert route_auditor(state) == "failed"
+    assert route_auditor(state) == "requires_pivot"
     assert state.committee.audit_attempt_count == settings.max_audit_retries + 1
 
     # Test approved, next_auditor

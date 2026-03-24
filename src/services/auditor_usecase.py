@@ -254,6 +254,13 @@ class AuditorUseCase:
 
         status_enum = FlowStatus.APPROVED if status == "approved" else FlowStatus.REJECTED
 
+        if (
+            status_enum == FlowStatus.REJECTED
+            and state.committee.audit_attempt_count >= settings.max_audit_retries
+        ):
+            # Check for max audit retries and trigger pivot if exceeded
+            status_enum = FlowStatus.REQUIRES_PIVOT
+
         return {
             "audit_result": result,
             "status": status_enum,
