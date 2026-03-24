@@ -146,7 +146,7 @@ class WorkflowService:
         finally:
             await self.builder.cleanup()
 
-    def verify_environment_and_observability(self) -> None:
+    def verify_environment_and_observability(self) -> None:  # noqa: C901, PLR0915, PLR0912
         """
         Validates observability parameters and checks explicitly/implicitly required
         dependencies based on environment variables and the local configuration.
@@ -213,6 +213,38 @@ class WorkflowService:
             raise
         except Exception as e:
             logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
+
+        # Directive A: Pre-Flight Check based on required_envs.json
+        try:
+            import json
+
+            docs_dir = settings.paths.documents_dir
+            if not docs_dir.exists():
+                docs_dir = Path.cwd() / "dev_documents"
+
+            required_envs_path = docs_dir / "required_envs.json"
+            if required_envs_path.exists():
+                try:
+                    required_envs = json.loads(required_envs_path.read_text(encoding="utf-8"))
+                    if isinstance(required_envs, list):
+                        missing_keys = [key for key in required_envs if not os.getenv(key)]
+                        if missing_keys:
+                            console.print("\n[bold red][ERROR] Missing dynamically required API keys![/bold red]")
+                            console.print("[red]The system architecture explicitly requires the following keys to proceed:[/red]")
+                            for key in missing_keys:
+                                console.print(f"  - [bold yellow]{key}[/bold yellow]")
+                            console.print(
+                                "\n[yellow]Please add these keys to your local .env file or environment variables "
+                                "and re-run the command.[/yellow]"
+                            )
+                            import sys
+                            sys.exit(1)
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse required_envs.json: {e}")
+        except SystemExit:
+            raise
+        except Exception as e:
+            logger.warning(f"Error checking required_envs.json: {e}")
 
         console.print("[green]Environment & Observability verified successfully.[/green]")
 

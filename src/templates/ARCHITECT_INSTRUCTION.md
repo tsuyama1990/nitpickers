@@ -52,6 +52,7 @@ A comprehensive architectural document. If you find any errors in the `ALL_SPEC.
   - Detail exactly what features belong to each cycle.
 - **Test Strategy** (Min 500 words per cycle): How each cycle will be tested (Unit, Integration, E2E).
   - **MUST Include**: A strategy for executing these tests without side-effects (e.g. mocking external requests, using temporary directories for file I/O).
+  - **DB Rollback Rule**: Any testing requiring database or persistent state setup MUST utilize Pytest fixtures that start a transaction before the test and roll it back after, ensuring lightning-fast state resets without relying on heavy external CLI cleanup commands.
 
 ### 2. dev_documents/system_prompts/CYCLE{xx}/SPEC.md (For EACH Cycle)
 Detailed specification for a specific development cycle.
@@ -170,7 +171,16 @@ ignore_missing_imports = true
 - **Security**: Bandit rules prevent common security vulnerabilities.
 - **Maintainability**: Enforces modern Python patterns and clean code practices.
 
-### 6. README.md Generation
+### 6. dev_documents/required_envs.json
+A strict JSON array of required environment variables.
+
+**Requirements:**
+- If the system design based on `ALL_SPEC.md` requires any external services, APIs, databases, or specific models (e.g., Stripe, SendGrid, Supabase, OpenAI, Anthropic), you **MUST** output a JSON list of the exact environment variable names required to operate them.
+- **Format**: JSON.
+- **Example**: `["STRIPE_API_KEY", "DB_PASSWORD", "ANTHROPIC_API_KEY"]`
+- If no external services or API keys are required, output an empty JSON array `[]`.
+
+### 7. README.md Generation
 You must generate a comprehensive `README.md` file in the project root. This file acts as the landing page for the project. It must be written based on the `ALL_SPEC.md` and the `SYSTEM_ARCHITECTURE.md` you just designed.
 
 **Required README.md Structure:**

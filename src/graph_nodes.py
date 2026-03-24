@@ -2,6 +2,7 @@ from typing import Any
 
 from rich.console import Console
 
+from src.enums import FlowStatus
 from src.interfaces import IGraphNodes
 from src.nodes import (
     ArchitectCriticNodes,
@@ -160,6 +161,11 @@ class CycleNodes(IGraphNodes):
 
     def route_sandbox_evaluate(self, state: CycleState) -> str:
         return route_sandbox_evaluate(state)
+
+    def route_coder_critic(self, state: CycleState) -> str:
+        if state.status == FlowStatus.REJECTED:
+            return "coder_session"
+        return "sandbox_evaluate"
 
     async def qa_session_node(self, state: CycleState) -> dict[str, Any]:
         return await self._qa.qa_session_node(state)

@@ -68,3 +68,12 @@ services:
     # Interactive mode support
     stdin_open: true
     tty: true
+
+    # Enable GPU support for domain-specific computations
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

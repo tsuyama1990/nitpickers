@@ -6,7 +6,7 @@ from src.config import settings
 from src.domain_models.multimodal_artifact_schema import MultiModalArtifact
 from src.domain_models.uat_execution_state import UatExecutionState
 from src.enums import FlowStatus
-from src.process_runner import ProcessRunner
+from src.sandbox import SandboxRunner
 from src.services.git_ops import GitManager
 from src.state import CycleState
 from src.utils import logger
@@ -100,7 +100,7 @@ class UatUseCase:
                         logger.warning(f"Failed to parse artifact {base_name}: {e}")
         return artifacts
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
         """
         Executes the UAT Evaluation node.
 
@@ -109,8 +109,11 @@ class UatUseCase:
         """
         logger.info("Running UAT Evaluation...")
 
-        # Dynamic Execution using ProcessRunner
-        runner = ProcessRunner()
+        # Dynamic Execution using SandboxRunner for E2B Sandbox
+        runner = SandboxRunner()
+        if settings.sandbox.template:
+            pass
+
         # Ensure we run the exact UAT tests folder with configurable browser args
         base_cmd = shlex.split(settings.uat.test_cmd)
         cmd = [*base_cmd, *settings.uat.playwright_args]
@@ -143,7 +146,7 @@ class UatUseCase:
                 await runner.run_command(reset_cmd, check=True)
 
         logger.debug(f"Executing: {' '.join(cmd)}")
-        stdout, stderr, exit_code, _timeout_occurred = await runner.run_command(cmd, check=False)
+        stdout, stderr, exit_code = await runner.run_command(cmd, check=False)
 
         if exit_code != 0:
             logger.error(f"UAT Execution Failed with exit code {exit_code}.")

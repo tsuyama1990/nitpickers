@@ -21,6 +21,10 @@ Compare the observed behavior against the requirements.
 - **PASS**: The system met all critical success criteria asserted in the logs.
 - **FAIL**: The system crashed, produced incorrect output, or failed explicit assertions.
 
+### 3. Testing Standards Enforcement
+Ensure that tests use appropriate state management.
+- All database or stateful tests MUST use Pytest fixtures that start a transaction and roll it back after the test completes, rather than relying on heavy CLI reset commands or tearing down entire databases.
+
 ## Output Format
 You must output a structured JSON object strictly matching the following schema (no markdown formatting around the JSON):
 
