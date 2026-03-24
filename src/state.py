@@ -13,6 +13,7 @@ from .domain_models import (
     StructuralGateReport,
     UatAnalysis,
     UatExecutionState,
+    UXAuditReport,
 )
 from .enums import FlowStatus, WorkPhase
 
@@ -80,6 +81,7 @@ class UATState(BaseModel):
     current_fix_plan: FixPlanSchema | None = None
     sandbox_artifacts: dict[str, Any] = Field(default_factory=dict)
     uat_retry_count: int = 0
+    ux_audit_report: UXAuditReport | None = None
 
 
 class ConfigurationState(BaseModel):

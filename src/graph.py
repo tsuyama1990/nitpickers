@@ -160,15 +160,17 @@ class GraphBuilder:
         workflow.add_node("qa_auditor", self.nodes.qa_auditor_node)
 
         workflow.add_node("uat_evaluate", self.nodes.uat_evaluate_node)
+        workflow.add_node("ux_auditor", self.nodes.ux_auditor_node)
 
         workflow.add_edge(START, "uat_evaluate")
 
         workflow.add_conditional_edges(
             "uat_evaluate",
-            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else END,
-            {"qa_auditor": "qa_auditor", END: END},
+            lambda state: "qa_auditor" if state.get("status") == FlowStatus.UAT_FAILED else "ux_auditor",
+            {"qa_auditor": "qa_auditor", "ux_auditor": "ux_auditor"},
         )
 
+        workflow.add_edge("ux_auditor", END)
         workflow.add_edge("qa_auditor", "qa_session")
         workflow.add_edge("qa_session", "uat_evaluate")
 
