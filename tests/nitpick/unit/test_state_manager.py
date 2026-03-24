@@ -68,25 +68,15 @@ class TestStateManager:
         assert loaded.cycles[0].id == "01"
         assert loaded.cycles[1].id == "02"
 
-    def test_load_manifest_invalid_json(self, manager: StateManager, temp_state_file: Path) -> None:
-        """Test loading manifest with invalid JSON."""
-        # Write invalid JSON
-        temp_state_file.write_text("{invalid json}")
-
-        manifest = manager.load_manifest()
-
-        assert manifest is None
-
-    def test_load_manifest_missing_required_fields(
-        self, manager: StateManager, temp_state_file: Path
+    @pytest.mark.parametrize(
+        "invalid_content", ["{invalid json}", '{"project_session_id": "test"}']
+    )
+    def test_load_manifest_invalid_content(
+        self, manager: StateManager, temp_state_file: Path, invalid_content: str
     ) -> None:
-        """Test loading manifest with missing required fields."""
-        # Write JSON missing required fields
-        temp_state_file.write_text('{"project_session_id": "test"}')
-
+        """Test loading manifest with invalid JSON or missing required fields."""
+        temp_state_file.write_text(invalid_content)
         manifest = manager.load_manifest()
-
-        # Should fail validation and return None
         assert manifest is None
 
     def test_create_manifest(self, manager: StateManager, temp_state_file: Path) -> None:

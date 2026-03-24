@@ -96,25 +96,16 @@ def _is_safe_path(p: Path) -> bool:
     return False
 
 
-def _check_env_pkg_dir() -> str | None:
-    env_pkg_dir = os.getenv("PACKAGE_DIR")
-    if env_pkg_dir:
-        resolved_pkg = Path(env_pkg_dir)
-        if _is_safe_path(resolved_pkg) and resolved_pkg.resolve(strict=True).is_relative_to(
-            Path.cwd()
-        ):
-            return str(resolved_pkg.resolve(strict=True))
-    return None
-
-
-def _check_docker_src_path() -> str | None:
-    docker_src_path = os.getenv("DOCKER_SRC_PATH")
-    if docker_src_path:
-        docker_path = Path(docker_src_path)
-        if _is_safe_path(docker_path) and docker_path.resolve(strict=True).is_relative_to(
-            Path.cwd()
-        ):
-            return str(docker_path.resolve(strict=True))
+def _check_env_path(var_name: str) -> str | None:
+    path_val = os.getenv(var_name)
+    if path_val:
+        p = Path(path_val)
+        try:
+            strict_p = p.resolve(strict=True)
+            if _is_safe_path(p) and strict_p.is_relative_to(Path.cwd()):
+                return str(strict_p)
+        except (OSError, RuntimeError):
+            pass
     return None
 
 
@@ -131,11 +122,11 @@ def _check_dev_src_path() -> str | None:
 
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
-    res = _check_env_pkg_dir()
+    res = _check_env_path("PACKAGE_DIR")
     if res:
         return res
 
-    res = _check_docker_src_path()
+    res = _check_env_path("DOCKER_SRC_PATH")
     if res:
         return res
 
