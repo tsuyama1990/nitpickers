@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -32,12 +32,11 @@ async def test_review_code_success(reviewer: LLMReviewer) -> None:
     ).model_dump_json()
 
     # Mock litellm.acompletion
-    mock_response = AsyncMock()
-    mock_response.choices = [
-        type("obj", (object,), {"message": type("obj", (object,), {"content": valid_json})})
-    ]
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = valid_json
 
-    with patch("litellm.acompletion", return_value=mock_response) as mock_completion:
+    with patch("src.services.llm_reviewer.litellm.acompletion", return_value=mock_response) as mock_completion:
         # UPDATED SIGNATURE: target_files, context_docs, instruction, model
         result = await reviewer.review_code(target_files, context_files, instruction, model)
 
@@ -63,7 +62,7 @@ async def test_review_code_api_failure(reviewer: LLMReviewer) -> None:
     target_files = {"main.py": "content"}
     context_files: dict[str, str] = {}
 
-    with patch("litellm.acompletion", side_effect=Exception("API Error")):
+    with patch("src.services.llm_reviewer.litellm.acompletion", side_effect=Exception("API Error")):
         result = await reviewer.review_code(target_files, context_files, "inst", "model")
 
         assert "REVIEW_FAILED" in result

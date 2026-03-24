@@ -47,6 +47,7 @@ async def test_run_full_pipeline_success(
 
     mock_dispatcher.run_with_semaphore = run_semaphore_mock
 
+    # Await the AsyncMock so it matches the expected coroutine structure
     workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
