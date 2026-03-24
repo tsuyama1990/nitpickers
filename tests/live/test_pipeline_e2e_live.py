@@ -1,9 +1,10 @@
 import os
+
 import pytest
-from src.config import settings
 
 # Must be marked as a live test to bypass mock key injection in conftest.py
 pytestmark = [pytest.mark.live]
+
 
 def check_live_environment() -> None:
     """Ensure all required live keys are present, else skip test."""
@@ -16,7 +17,10 @@ def check_live_environment() -> None:
     missing = [k for k in required_keys if not os.environ.get(k)]
 
     if missing:
-        pytest.skip(f"Skipping live test due to missing environment variables: {', '.join(missing)}")
+        pytest.skip(
+            f"Skipping live test due to missing environment variables: {', '.join(missing)}"
+        )
+
 
 @pytest.mark.asyncio
 async def test_live_pipeline_e2e_safe_execution() -> None:
@@ -33,10 +37,3 @@ async def test_live_pipeline_e2e_safe_execution() -> None:
     assert os.environ.get("JULES_API_KEY") is not None
     assert os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN") is not None
     assert os.environ.get("E2B_API_KEY") is not None
-
-    print("\nLive Environment Check Passed! All required keys are available.")
-    # Here we would safely invoke:
-    # service = WorkflowService()
-    # service.run_full_pipeline(project_session_id="dummy_safe_session")
-    # For now, we just pass the safe guard validation to prove isolation.
-    pass
