@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.domain_models.execution import ConflictRegistryItem
+from src.domain_models.execution import ConflictRegistryItem, ConflictResolutionSchema
 from src.services.conflict_manager import ConflictManager, ConflictMarkerRemainsError
 from src.services.file_ops import FilePatcher
 from src.services.jules_client import JulesClient
@@ -77,12 +77,18 @@ class IntegrationUsecase:
             )
 
             # Send to Jules
-            response_code = await self.jules.send_message_to_session(
-                session_id, prompt, message_history
+            response_json = await self.jules.send_message_to_session(
+                session_id, prompt, message_history, response_format=ConflictResolutionSchema
             )
 
-            # Extract code block if any
-            clean_code = self._extract_code_block(response_code)
+            try:
+                # Parse JSON output strictly via Pydantic model
+                resolution = ConflictResolutionSchema.model_validate_json(response_json)
+                clean_code = resolution.resolved_code
+            except Exception as e:
+                logger.warning(f"Failed to parse JSON response for {item.file_path}: {e}")
+                prompt = "Your previous output was invalid JSON. You must conform exactly to the ConflictResolutionSchema."
+                continue
 
             # Apply to file
             target_file = repo_path / item.file_path
@@ -104,13 +110,3 @@ class IntegrationUsecase:
         # If loop exits without returning, max retries reached.
         msg = f"Maximum conflict retries exceeded for {item.file_path}."
         raise MaxRetriesExceededError(msg)
-
-    def _extract_code_block(self, response: str) -> str:
-        """Extracts python/markdown code block if present."""
-        import re
-
-        match = re.search(r"```(?:\w+\n)?(.*?)```", response, re.DOTALL)
-        if match:
-            return match.group(1).strip()
-        # Fallback to returning the whole response if no markdown block
-        return response.strip()

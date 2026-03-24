@@ -67,6 +67,7 @@ class TestResumeLogic:
             mock_settings.get_template.return_value.read_text.return_value = "Instruction"
             mock_settings.get_target_files.return_value = []
             mock_settings.get_context_files.return_value = []
+            mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
             result = await usecase.execute(state)
 
         mock_jules.run_session.assert_awaited_once()

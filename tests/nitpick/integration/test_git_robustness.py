@@ -30,15 +30,17 @@ async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
         branch_name = "dev/int-test"
 
         # Mock run_command to simulate branch existence
-        async def mock_run_command(cmd: list[str], check: bool = True) -> tuple[str, str, int]:
+        async def mock_run_command(
+            cmd: list[str], check: bool = True
+        ) -> tuple[str, str, int, bool]:
             cmd_str = " ".join(cmd)
             # When checking existence
             if "rev-parse --verify dev/int-test" in cmd_str:
-                return "", "", 0  # Return 0 = Exists
+                return "", "", 0, False  # Return 0 = Exists
             # If it tries to create anyway (fail case)
             if "checkout -b dev/int-test" in cmd_str:
-                return "", "fatal: A branch named 'dev/int-test' already exists.", 128
-            return "", "", 0
+                return "", "fatal: A branch named 'dev/int-test' already exists.", 128, False
+            return "", "", 0, False
 
         git.runner.run_command = AsyncMock(side_effect=mock_run_command)  # type: ignore[method-assign]
         git._ensure_no_lock = AsyncMock()  # type: ignore[method-assign]
@@ -60,7 +62,7 @@ async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
     """
     with patch("pathlib.Path.cwd", return_value=mock_git_env):
         git = GitManager()
-        git.runner.run_command = AsyncMock(return_value=("", "", 0))  # type: ignore[method-assign]
+        git.runner.run_command = AsyncMock(return_value=("", "", 0, False))  # type: ignore[method-assign]
 
         # Mock _auto_commit_if_dirty
         git._auto_commit_if_dirty = AsyncMock()  # type: ignore[method-assign]

@@ -16,9 +16,6 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         self.config_patcher = patch("src.config.Settings.validate_api_keys", return_value=None)
         self.config_patcher.start()
 
-        self.mock_agent_patcher = patch("src.services.jules_client.get_manager_agent")
-        self.mock_agent_patcher.start()
-
         # Initialize client
         with patch.object(JulesClient, "__init__", lambda x: None):  # Skip init
             self.client = JulesClient()
@@ -26,8 +23,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             self.client.timeout = 5
             self.client.poll_interval = 0.1  # type: ignore[assignment]
             self.client.console = MagicMock()
-            self.client.manager_agent = AsyncMock()
-            self.client.manager_agent.run.return_value = MagicMock(output="Manager Reply")
+            self.client.manager_agent = MagicMock()
             self.client.credentials = MagicMock()
             self.client._get_headers = MagicMock(return_value={})  # type: ignore[method-assign]
             self.client.credentials.token = "mock_token"  # noqa: S105
@@ -57,7 +53,6 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         self.auth_patcher.stop()
         self.env_patcher.stop()
         self.config_patcher.stop()
-        self.mock_agent_patcher.stop()
 
     @patch("asyncio.sleep", return_value=None)
     @patch("httpx.AsyncClient")
@@ -136,7 +131,12 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
 
         mock_client.get.side_effect = dynamic_get
 
-        result = await self.client.wait_for_completion(session_id)
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "Manager Reply"
+
+        with patch("litellm.acompletion", return_value=mock_response):
+            result = await self.client.wait_for_completion(session_id)
 
         # Manager agent MUST have been called exactly once (for the genuine inquiryAsked only)
         self.client._send_message.assert_called_once()
@@ -205,7 +205,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         call_counts = {"state": 0, "activities": 0}
 
         async def dynamic_get(url: str, **kwargs: Any) -> MagicMock:
-            if url.endswith("/activities"):
+            if "/activities" in url:
                 call_counts["activities"] += 1
                 if call_counts["activities"] == 1:
                     return r_acts_old

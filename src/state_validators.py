@@ -35,6 +35,18 @@ def validate_review_count(v: int) -> int:
     return v
 
 
+def validate_audit_attempt_count(v: int) -> int:
+    """Validates the audit attempt count does not exceed configuration limits excessively."""
+    if v < 0:
+        msg = f"Audit attempt count {v} cannot be negative"
+        raise ValueError(msg)
+    # The count can safely hit max_audit_retries + 1 before the router fails it
+    if v > settings.max_audit_retries + 1:
+        msg = f"Audit attempt count {v} exceeds absolute maximum threshold of {settings.max_audit_retries + 1}"
+        raise ValueError(msg)
+    return v
+
+
 def validate_state_consistency(state: Any) -> Any:
     """Performs cross-field logical consistency checks on the state object."""
     status = getattr(state, "status", None)
@@ -45,7 +57,7 @@ def validate_state_consistency(state: Any) -> Any:
         msg = "State status is COMPLETED but error field is not None"
         raise ValueError(msg)
 
-    if current_auditor_index > settings.NUM_AUDITORS:
+    if isinstance(current_auditor_index, int) and current_auditor_index > settings.NUM_AUDITORS:
         msg = f"Auditor index {current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
         raise ValueError(msg)
 

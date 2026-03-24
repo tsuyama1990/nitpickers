@@ -17,9 +17,17 @@ class TestSessionStateValidation:
                 {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"},
             ),
             patch("src.config.Settings.validate_api_keys", return_value=None),
+            patch(
+                "src.services.jules_client.google.auth.default",
+                return_value=(MagicMock(), "mock-project"),
+            ),
+            patch.object(JulesClient, "__init__", lambda x: None),
         ):
             client = JulesClient()
-            client.api_client._request = MagicMock()  # type: ignore
+            client.base_url = "https://mock.api"
+            client.api_client = MagicMock()
+            client.credentials = MagicMock()
+            client._get_headers = MagicMock(return_value={})  # type: ignore
             return client
 
     @pytest.mark.asyncio

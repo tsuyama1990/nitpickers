@@ -14,6 +14,16 @@ class UatAnalysis(BaseModel):
     behavior_analysis: str
 
 
+class ConflictResolutionSchema(BaseModel):
+    """Schema for the structured output of the Master Integrator."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    resolved_code: str = Field(
+        ..., description="The fully resolved file content, free of conflict markers."
+    )
+
+
 class ConflictRegistryItem(BaseModel):
     """Tracks unresolved merge conflicts for an AI cycle."""
 

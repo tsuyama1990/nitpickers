@@ -40,7 +40,15 @@ def _load_env() -> None:
         msg = f"Environment file path escapes current working directory: {_nitpick_env}"
         raise ValueError(msg)
 
-    allowed_prefixes = ("NITPICK_", "AC_CDD_", "JULES_", "E2B_", "OPENROUTER_", "OPENAI_", "ANTHROPIC_")
+    allowed_prefixes = (
+        "NITPICK_",
+        "AC_CDD_",
+        "JULES_",
+        "E2B_",
+        "OPENROUTER_",
+        "OPENAI_",
+        "ANTHROPIC_",
+    )
     safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
     env_vars = dotenv_values(_nitpick_env)
 
@@ -403,6 +411,17 @@ class SandboxConfig(BaseModel):
     test_cmd: str = "uv run pytest -v --tb=short"
     max_retries: int = 3
     command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
+    allowed_binaries: tuple[str, ...] = ("uv", "pytest", "python")
+    dangerous_shell_chars: tuple[str, ...] = (";", "&", "|", "$", "`", "\n", "<", ">")
+    quality_gate_commands: list[list[str]] = Field(
+        default_factory=lambda: [
+            ["uv", "run", "ruff", "check", "--fix", "."],
+            ["uv", "run", "ruff", "format", "."],
+            ["uv", "run", "mypy", "."],
+            ["uv", "run", "pytest"],
+        ]
+    )
+    install_package: str = "pip install --no-cache-dir ruff"
     dirs_to_sync: list[str] = ["src", "tests", "contracts", "dev_documents", "dev_src"]
     sandbox_env_cleanup: list[str] = ["UV_PROJECT_ENVIRONMENT"]
     files_to_sync: list[str] = [
@@ -494,6 +513,8 @@ class Settings(BaseSettings):
     DEFAULT_BASE_BRANCH: str = Field(
         default_factory=lambda: os.getenv("DEFAULT_BASE_BRANCH", "main")
     )
+    default_cycles_count: int = Field(default=5)
+    SESSION_ID_PATTERN: str = r"^[A-Za-z0-9_\-]+$"
     GCP_PROJECT_ID: str | None = None
     GCP_REGION: str = "us-central1"
 
