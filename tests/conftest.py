@@ -20,8 +20,8 @@ if "E2B_API_KEY" not in os.environ:
 if "OPENROUTER_API_KEY" not in os.environ:
     os.environ["OPENROUTER_API_KEY"] = "sk-test-dummy"
 
-from src.config import settings
-from src.domain_models import MultiModalArtifact
+from src.config import settings  # noqa: E402
+from src.domain_models import MultiModalArtifact  # noqa: E402
 
 
 @pytest.hookimpl(hookwrapper=True)

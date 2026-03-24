@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from src.cli import app
+import pydantic
+import sys
+sys.modules["pydantic.v1"] = pydantic
+sys.modules["pydantic.v1.fields"] = pydantic.fields
+
+from src.cli import app  # noqa: E402
 
 runner = CliRunner()
 
