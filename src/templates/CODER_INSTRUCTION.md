@@ -116,6 +116,13 @@ You must follow the architectural hierarchy in your reasoning process:
 - **Paths & Credentials**: Do NOT hardcode file paths (e.g., `/tmp/data.csv`) or API keys.
 - **Action**: All such values MUST be extracted to `config.py` (via Pydantic BaseSettings) or loaded from environment variables. The Auditor will reject hardcoded configs.
 
+**🚨 SANDBOX RESILIENCE & INFRASTRUCTURE (CRITICAL TEST STRATEGY) 🚨**
+- **STRICT MOCKING MANDATE**: You MUST NEVER attempt real network calls to unconfigured SaaS providers or external APIs during testing. All external API calls that rely on secrets defined in `.env.example` MUST be strictly mocked in your unit and integration tests (using `unittest.mock`, `pytest-mock`, or similar).
+- **WHY**: The autonomous Sandbox environment executing your tests will not possess the real API keys. If your tests attempt real HTTP requests to these services, the pipeline will fail, causing an infinite retry loop.
+- **INFRASTRUCTURE SEGREGATION**: When instructed to add configurations by the Spec:
+  - Add highly confidential secrets (API Keys, Passwords) ONLY to `.env.example`.
+  - Add non-confidential system configurations (e.g., internal ports, executable paths) ONLY to the `environment:` section of the relevant service in `docker-compose.yml`. Preserve valid YAML formatting and DO NOT overwrite existing agent configs.
+
 ### 4. Phase 4: Iterative Code Review (Jules Code Review)
 **Before finalizing your code, you MUST perform a self-review loop. This internal self-refinement process is critical to avoiding rejections.**
 

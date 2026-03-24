@@ -104,7 +104,8 @@ Review the code critically.
 ## 5. Test Quality
 - [ ] **Traceability:** Tests exist for requirements?
 - [ ] **Edge Cases & Error Handling:** Are "unhappy paths" (e.g., invalid input, timeouts, missing files) explicitly tested?
-- [ ] **Mock Integrity:** SUT is NOT mocked? Mocks simulate failures?
+- [ ] **Mock Integrity (SUT):** The System Under Test (SUT) itself is NOT mocked.
+- [ ] **External API Mocks (CRITICAL FOR SANDBOX):** Are **ALL** external API calls (e.g., SaaS providers, third-party services requiring `.env` secrets) explicitly mocked in tests? The pipeline will fail if tests attempt real network calls. You MUST reject the code if external network calls are NOT mocked.
 - [ ] **Log Verification:** Tests passed?
 
 ## 🚨 ZERO TOLERANCE FOR HARDCODING (CRITICAL) 🚨

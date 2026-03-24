@@ -63,6 +63,17 @@ Detailed specification for a specific development cycle.
 
 **Sections:**
 - **Summary** (Min 500 words)
+- **Infrastructure & Dependencies** (CRITICAL SEPARATION MUST BE ENFORCED)
+  - **A. Project Secrets (`.env.example`):**
+    - List external services discovered in the specs for this cycle (e.g., Stripe API, SendGrid).
+    - Explicitly instruct the Coder to append these to `.env.example` with clear `# Target Project Secrets` comments.
+  - **B. System Configurations (`docker-compose.yml`):**
+    - List non-confidential environmental setups required (e.g., `EXECUTABLE_QE=/usr/bin/pw.x`, internal ports).
+    - Instruct the Coder to place these directly into the `environment:` section of the relevant service in `docker-compose.yml`.
+    - Explicitly instruct the Coder to preserve valid YAML formatting and idempotency (do not overwrite existing agent configs).
+  - **C. Sandbox Resilience (CRITICAL TEST STRATEGY):**
+    - **Mandate Mocking:** You MUST explicitly instruct the Coder that *all external API calls relying on the newly defined secrets in `.env.example` MUST be mocked in unit and integration tests (using `unittest.mock` or `pytest-mock`)*.
+    - *Why:* The Sandbox will not possess the real API keys during the autonomous evaluation phase. If tests attempt real network calls to SaaS providers without valid `.env` values, the pipeline will fail and cause an infinite retry loop.
 - **System Architecture** (Min 1000 words)
   - This section is the most important. Provide the **EXACT code blueprints**.
   - File structure, made of ASCII tree of files to create/modify, consistent with the one depicted in `SYSTEM_ARCHITECTURE.md`. (Make the files **bold** for the ones to create/modify in the cycle)
