@@ -229,8 +229,12 @@ class WorkflowService:
                     if isinstance(required_envs, list):
                         missing_keys = [key for key in required_envs if not os.getenv(key)]
                         if missing_keys:
-                            console.print("\n[bold red][ERROR] Missing dynamically required API keys![/bold red]")
-                            console.print("[red]The system architecture explicitly requires the following keys to proceed:[/red]")
+                            console.print(
+                                "\n[bold red][ERROR] Missing dynamically required API keys![/bold red]"
+                            )
+                            console.print(
+                                "[red]The system architecture explicitly requires the following keys to proceed:[/red]"
+                            )
                             for key in missing_keys:
                                 console.print(f"  - [bold yellow]{key}[/bold yellow]")
                             console.print(
@@ -238,6 +242,7 @@ class WorkflowService:
                                 "and re-run the command.[/yellow]"
                             )
                             import sys
+
                             sys.exit(1)
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse required_envs.json: {e}")

@@ -61,6 +61,7 @@ flowchart TD
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
         UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
+        UxAuditor["OpenRouter: ux_auditor\n(Multimodal UX Review)"]
         QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
         QaSession["JULES: qa_session\n(Integration Fixes)"]
     end
@@ -77,6 +78,7 @@ flowchart TD
     GlobalSandbox -- "Pass" --> UatEval
 
     UatEval -- "Fail" --> QaAuditor
+    UatEval -- "Pass" --> UxAuditor
     QaAuditor --> QaSession
     QaSession --> UatEval
 ```

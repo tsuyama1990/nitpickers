@@ -11,6 +11,7 @@ from .refactor import GlobalRefactorResult
 from .review import AuditorReport, AuditResult, PlanAuditResult, ReviewIssue
 from .spec import CyclePlan, Feature, StructuredSpec, TechnicalConstraint
 from .uat_execution_state import UatExecutionState
+from .ux_audit_report import UXAuditReport, UXViolation
 from .verification_schema import StructuralGateReport, VerificationResult
 
 __all__ = [
@@ -39,6 +40,8 @@ __all__ = [
     "StructuredSpec",
     "SystemArchitecture",
     "TechnicalConstraint",
+    "UXAuditReport",
+    "UXViolation",
     "UatAnalysis",
     "UatExecutionState",
     "VerificationResult",

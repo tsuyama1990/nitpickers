@@ -401,7 +401,14 @@ class SandboxConfig(BaseModel):
     cwd: str = "/home/user/project"
     test_cmd: str = "uv run pytest -v --tb=short"
     max_retries: int = 3
-    command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short", "lmp", "pw.x", "mpirun"]
+    command_whitelist: list[str] = [
+        "pytest",
+        "uv run pytest",
+        "uv run pytest -v --tb=short",
+        "lmp",
+        "pw.x",
+        "mpirun",
+    ]
     allowed_binaries: tuple[str, ...] = ("uv", "pytest", "python", "lmp", "pw.x", "mpirun")
     dangerous_shell_chars: tuple[str, ...] = (";", "&", "|", "$", "`", "\n", "<", ">")
     quality_gate_commands: list[list[str]] = Field(

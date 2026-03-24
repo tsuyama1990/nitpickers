@@ -14,6 +14,7 @@ from .routers import (
     route_sandbox_evaluate,
 )
 from .uat import UatNodes
+from .ux_audit import UxAuditorNodes
 
 __all__ = [
     "ArchitectCriticNodes",
@@ -24,6 +25,7 @@ __all__ = [
     "CommitteeNodes",
     "QaNodes",
     "UatNodes",
+    "UxAuditorNodes",
     "check_coder_outcome",
     "route_architect_critic",
     "route_auditor",

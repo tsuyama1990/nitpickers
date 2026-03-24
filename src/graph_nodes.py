@@ -13,6 +13,7 @@ from src.nodes import (
     CommitteeNodes,
     QaNodes,
     UatNodes,
+    UxAuditorNodes,
     check_coder_outcome,
     route_architect_critic,
     route_auditor,
@@ -58,6 +59,7 @@ class CycleNodes(IGraphNodes):
         self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer)
         self._committee = CommitteeNodes()
         self._uat = UatNodes(self.git)
+        self._ux_auditor = UxAuditorNodes()
         self._sandbox_evaluator = SandboxEvaluatorNodes()
         self._qa = QaNodes(self.jules, self.git, self.llm_reviewer)
         self._coder_critic = CoderCriticNodes(self.jules)
@@ -94,6 +96,9 @@ class CycleNodes(IGraphNodes):
 
     async def uat_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         return await self._uat.uat_evaluate_node(state)
+
+    async def ux_auditor_node(self, state: CycleState) -> dict[str, Any]:
+        return await self._ux_auditor.ux_auditor_node(state)
 
     async def sandbox_evaluate_node(self, state: CycleState) -> dict[str, Any]:
         return await self._sandbox_evaluator.sandbox_evaluate_node(state)
@@ -178,4 +183,3 @@ class CycleNodes(IGraphNodes):
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
         return await self._coder_critic.coder_critic_node(state)
-
