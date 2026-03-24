@@ -382,7 +382,7 @@ class UATConfig(BaseModel):
     playwright_args: list[str] = Field(
         default_factory=lambda: [
             "--browser=chromium",
-            "--tracing=on",
+            "--tracing=retain-on-failure",
             f"-c={Path.cwd() / 'pyproject.toml'}",
             f"--confcutdir={Path.cwd()}",
             f"--rootdir={Path.cwd()}",
@@ -401,8 +401,8 @@ class SandboxConfig(BaseModel):
     cwd: str = "/home/user/project"
     test_cmd: str = "uv run pytest -v --tb=short"
     max_retries: int = 3
-    command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short"]
-    allowed_binaries: tuple[str, ...] = ("uv", "pytest", "python")
+    command_whitelist: list[str] = ["pytest", "uv run pytest", "uv run pytest -v --tb=short", "lmp", "pw.x", "mpirun"]
+    allowed_binaries: tuple[str, ...] = ("uv", "pytest", "python", "lmp", "pw.x", "mpirun")
     dangerous_shell_chars: tuple[str, ...] = (";", "&", "|", "$", "`", "\n", "<", ">")
     quality_gate_commands: list[list[str]] = Field(
         default_factory=lambda: [
