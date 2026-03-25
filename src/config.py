@@ -212,10 +212,8 @@ class PathsConfig(BaseModel):
         # Special handling for templates
         try:
             templates_res = self.templates.resolve(strict=False)
-            if not templates_res.is_relative_to(root):
-                # Allow if it's the internal /opt/nitpick/templates
-                if not str(templates_res).startswith("/opt/nitpick/templates"):
-                    escaped_paths.append(str(self.templates))
+            if not templates_res.is_relative_to(root) and not str(templates_res).startswith("/opt/nitpick/templates"):
+                escaped_paths.append(str(self.templates))
         except Exception as e:
             logging.debug(f"Failed to check templates path {self.templates}: {e}")
 
