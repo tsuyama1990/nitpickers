@@ -120,20 +120,7 @@ def _check_dev_src_path() -> str | None:
     return None
 
 
-def _detect_package_dir() -> str:
-    """Detects the main package directory."""
-    res = _check_env_path("PACKAGE_DIR")
-    if res:
-        return res
-
-    res = _check_env_path("DOCKER_SRC_PATH")
-    if res:
-        return res
-
-    res = _check_dev_src_path()
-    if res:
-        return res
-
+def _check_default_src_dir() -> str | None:
     default_src_dir = os.getenv("DEFAULT_SRC_DIR")
     if default_src_dir:
         resolved = Path(default_src_dir)
@@ -149,13 +136,34 @@ def _detect_package_dir() -> str:
                     msg = f"Directory {strict_resolved} escapes boundaries"
                     raise ValueError(msg)
                 return str(strict_resolved)
+    return None
+
+
+def _detect_package_dir() -> str:
+    """Detects the main package directory."""
+    package_dir = os.getenv("PACKAGE_DIR")
+    if package_dir:
+        p = Path(package_dir)
+        if p.exists() and p.is_dir():
+            return str(p.resolve(strict=True))
+
+    res = _check_env_path("DOCKER_SRC_PATH")
+    if res:
+        return res
+
+    res = _check_dev_src_path()
+    if res:
+        return res
+
+    res = _check_default_src_dir()
+    if res:
+        return res
 
     src_fallback = Path.cwd() / "src"
     if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
         return str(src_fallback.resolve(strict=True))
 
-    msg = "Could not resolve package directory safely."
-    raise ValueError(msg)
+    return str(Path(__file__).parent.resolve())
 
 
 class PathsConfig(BaseModel):
