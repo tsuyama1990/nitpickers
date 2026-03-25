@@ -6,34 +6,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.services.project_setup.permission_manager import PermissionManager
+
 # Configure a simple logger for tests to avoid T201 (print)
 logging.basicConfig(level=logging.INFO)
 test_logger = logging.getLogger("test_permission_manager")
-
-
-class MockModule(MagicMock):
-    def __getattr__(self, name: str) -> Any:
-        return MagicMock()
-
-
-# Mock only necessary parts if possible, but the app seems tightly coupled
-sys.modules["dotenv"] = MockModule()
-sys.modules["pydantic"] = MockModule()
-sys.modules["pydantic_settings"] = MockModule()
-sys.modules["rich"] = MockModule()
-sys.modules["rich.console"] = MockModule()
-sys.modules["rich.logging"] = MockModule()
-sys.modules["litellm"] = MockModule()
-sys.modules["langgraph"] = MockModule()
-sys.modules["langgraph.graph"] = MockModule()
-sys.modules["e2b_code_interpreter"] = MockModule()
-sys.modules["google"] = MockModule()
-sys.modules["google.auth"] = MockModule()
-
-# Now we can import the manager
-import pytest  # noqa: E402
-
-from src.services.project_setup.permission_manager import PermissionManager  # noqa: E402
 
 
 @pytest.mark.asyncio

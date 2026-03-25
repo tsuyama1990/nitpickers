@@ -1,11 +1,27 @@
+import os
 import re
+import sys
 from collections.abc import Generator
 from typing import Any
 
+import pydantic
+import pydantic.fields
 import pytest
 
-from src.config import settings
-from src.domain_models import MultiModalArtifact
+# HOTFIX: Bypass LangChain's broken pydantic.v1 imports with Pydantic 2.10+
+sys.modules["pydantic.v1"] = pydantic
+sys.modules["pydantic.v1.fields"] = pydantic.fields
+
+# Inject API keys into the environment BEFORE src.config or any application logic is imported
+if "JULES_API_KEY" not in os.environ:
+    os.environ["JULES_API_KEY"] = "sk-test-dummy"
+if "E2B_API_KEY" not in os.environ:
+    os.environ["E2B_API_KEY"] = "e2b-test-dummy"
+if "OPENROUTER_API_KEY" not in os.environ:
+    os.environ["OPENROUTER_API_KEY"] = "sk-test-dummy"
+
+from src.config import settings  # noqa: E402
+from src.domain_models import MultiModalArtifact  # noqa: E402
 
 
 @pytest.hookimpl(hookwrapper=True)
