@@ -204,6 +204,7 @@ jobs:
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -213,22 +214,43 @@ jobs:
           version: "latest"
 
       - name: Set up Python
-        run: uv python install 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Install Dependencies
         run: uv sync --all-extras --dev
 
-      - name: Lint (Ruff)
-        run: uv run ruff check .
-
-      - name: Check Formatting (Ruff)
-        run: uv run ruff format --check .
+      - name: Lint & Format (Ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Type Check (Mypy)
         run: uv run mypy .
 
-      - name: Run Tests (Pytest)
-        run: uv run pytest
+      - name: Run Unit Tests
+        run: uv run pytest tests/unit/ tests/nitpick/unit/
+
+      - name: Install Playwright Browsers
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run E2E Tests
+        env:
+          JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          if [ -d "tests/e2e" ] && [ "$(ls -A tests/e2e)" ]; then
+            if [ -z "$JULES_API_KEY" ] && [ -z "$OPENROUTER_API_KEY" ]; then
+              echo "Skipping E2E tests: API keys not configured in GitHub Secrets."
+            else
+              uv run pytest tests/e2e/
+            fi
+          else
+            echo "No E2E tests found, skipping."
+          fi
 """
             ci_yml_path.write_text(ci_content, encoding="utf-8")
             logger.info(f"✓ Created CI workflow at {ci_yml_path}")
