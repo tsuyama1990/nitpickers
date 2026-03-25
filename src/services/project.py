@@ -47,19 +47,36 @@ class ProjectManager:
     async def initialize_project(self, templates_path: str) -> None:
         """Initializes the project structure."""
         template_mgr = TemplateManager()
-        docs_dir, env_example_path, gitignore_path, github_dir = template_mgr.setup_templates(
-            templates_path
-        )
-
-        # Fix permissions if running with elevated privileges
-        perm_mgr = PermissionManager()
-        await perm_mgr.fix_permissions(
-            docs_dir, env_example_path.parent, gitignore_path, github_dir
-        )
+        (
+            docs_dir,
+            env_example_path,
+            gitignore_path,
+            github_dir,
+            src_dir,
+            tests_dir,
+            root_env_path,
+            req_envs_path,
+        ) = template_mgr.setup_templates(templates_path)
 
         # Dependency Installation & Git Initialization
         dep_mgr = DependencyManager()
         await dep_mgr.initialize_dependencies_and_git()
+
+        # Fix permissions if running with elevated privileges
+        perm_mgr = PermissionManager()
+        await perm_mgr.fix_permissions(
+            docs_dir,
+            env_example_path.parent,
+            gitignore_path,
+            github_dir,
+            src_dir,
+            tests_dir,
+            root_env_path,
+            req_envs_path,
+            Path.cwd() / ".git",
+            Path.cwd() / "pyproject.toml",
+            Path.cwd() / "uv.lock",
+        )
 
     async def prepare_environment(self) -> None:
         """
