@@ -122,9 +122,11 @@ def _check_dev_src_path() -> str | None:
 
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
-    res = _check_env_path("PACKAGE_DIR")
-    if res:
-        return res
+    package_dir = os.getenv("PACKAGE_DIR")
+    if package_dir:
+        p = Path(package_dir)
+        if p.exists() and p.is_dir():
+            return str(p.resolve(strict=True))
 
     res = _check_env_path("DOCKER_SRC_PATH")
     if res:
@@ -154,8 +156,7 @@ def _detect_package_dir() -> str:
     if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
         return str(src_fallback.resolve(strict=True))
 
-    msg = "Could not resolve package directory safely."
-    raise ValueError(msg)
+    return str(Path(__file__).parent.resolve())
 
 
 class PathsConfig(BaseModel):
