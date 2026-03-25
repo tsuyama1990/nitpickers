@@ -5,6 +5,9 @@ An AI-native development environment based on a highly robust methodology design
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Ruff](https://img.shields.io/badge/Ruff-Passed-success)
+![Mypy](https://img.shields.io/badge/Mypy-Passed-success)
+![Pytest](https://img.shields.io/badge/Pytest-Passed-success)
 
 ## Key Features
 
@@ -93,14 +96,14 @@ Ensure the following tools are available on your system:
     - `JULES_API_KEY` (Gemini Pro/Worker)
     - `E2B_API_KEY` (Sandbox Execution)
     - `OPENROUTER_API_KEY` (Auditor/Vision Models)
-- LangSmith Observability Configuration:
+- LangSmith Observability Configuration (Optional):
     - `LANGCHAIN_TRACING_V2=true`
     - `LANGCHAIN_API_KEY`
     - `LANGCHAIN_PROJECT`
 
 ## Installation & Setup (Docker Recommended)
 
-The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management.
+The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
 
 1. Clone the repository and navigate to the project directory:
    ```bash
@@ -108,37 +111,51 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    cd <your-repository>
    ```
 
-2. Configure your environment variables:
+2. Configure your core environment variables (Tool-Level):
    ```bash
    cp .env.example .env
-   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and LangSmith variables.
+   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and (optionally) LangSmith variables.
+   # These tool-level infrastructure keys should stay within the nitpickers directory.
    ```
 
-3. Build the Docker container:
+3. Quick Start (Build & Alias):
    ```bash
-   docker-compose build
+   bash setup.sh
    ```
+   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
 
 ## Usage
 
-Once your `.env` is configured and the image is built, you can run `nitpick` commands via Docker without any local setup errors.
+Once your core `.env` is configured and you have run the setup script, you can navigate to *any* project directory and use the `nitpick` command seamlessly. Project-specific API keys should be placed in a separate `.env` file within the target project directory.
+
+The "Sidecar" workflow dynamically mounts your current working directory into the container using the `TARGET_PROJECT_PATH` alias configuration.
+
+### Initialize Project Requirements
+
+For new or external projects, place your initial requirement documents (e.g., `ALL_SPEC.md`) inside the target project's `dev_documents/` folder *before* running generation commands.
+
+```bash
+mkdir -p /path/to/target/project/dev_documents/
+# Place ALL_SPEC.md in the directory above
+```
 
 ### Generate Development Cycles (Phase 1)
-Parse your raw architectural documents into structured specifications and UAT plans.
+Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
-docker-compose run --rm nitpick nitpick gen-cycles
+cd /path/to/target/project
+nitpick gen-cycles
 ```
 
 ### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
-Execute the complete orchestrated 5-phase pipeline, automatically managing parallel implementation and final integration.
+Execute the complete orchestrated 5-phase pipeline against your currently active project directory, automatically managing parallel implementation and final integration.
 ```bash
-docker-compose run --rm nitpick nitpick run-pipeline
+nitpick run-pipeline
 ```
 
 ### Run a Specific Cycle Manually
 For debugging, execute a specific development cycle (e.g., `01`).
 ```bash
-docker-compose run --rm nitpick nitpick run-cycle --id 01
+nitpick run-cycle --id 01
 ```
 
 ### Interactive Tutorials (UAT Verification)
