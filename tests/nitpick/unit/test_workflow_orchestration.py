@@ -2,13 +2,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import pydantic
-import sys
-sys.modules["pydantic.v1"] = pydantic
-sys.modules["pydantic.v1.fields"] = pydantic.fields
 
-from src.domain_models.manifest import CycleManifest  # noqa: E402
-from src.services.workflow import WorkflowService  # noqa: E402
+from src.domain_models.manifest import CycleManifest
+from src.services.workflow import WorkflowService
 
 
 @pytest.fixture

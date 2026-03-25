@@ -18,7 +18,6 @@ class MockModule(MagicMock):
 
 # Mock only necessary parts if possible, but the app seems tightly coupled
 sys.modules["dotenv"] = MockModule()
-sys.modules["pydantic"] = MockModule()
 sys.modules["pydantic_settings"] = MockModule()
 sys.modules["rich"] = MockModule()
 sys.modules["rich.console"] = MockModule()
