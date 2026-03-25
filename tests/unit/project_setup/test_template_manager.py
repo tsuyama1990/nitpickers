@@ -226,7 +226,10 @@ def test_create_github_workflow(template_manager: TemplateManager, mock_cwd: Pat
     assert ci_path.exists()
     content = ci_path.read_text()
     assert "name: CI" in content
-    assert "uv run pytest" in content
+    assert "uv run pytest tests/unit/ tests/nitpick/unit/" in content
+    assert "timeout-minutes: 15" in content
+    assert "playwright install --with-deps chromium" in content
+    assert "Skipping E2E tests: API keys not configured in GitHub Secrets." in content
 
     # Should not overwrite if exists
     ci_path.write_text("Custom CI")
