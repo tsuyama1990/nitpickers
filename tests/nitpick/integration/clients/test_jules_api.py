@@ -7,13 +7,13 @@ from src.services.jules.api import JulesApiClient
 
 
 @pytest.fixture
-def jules_api_client(monkeypatch):
+def jules_api_client(monkeypatch: pytest.MonkeyPatch) -> JulesApiClient:
     monkeypatch.setenv("JULES_API_KEY", "dummy_key")
     return JulesApiClient(api_key="dummy_key")
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_list_activities_async_success(jules_api_client):
+async def test_list_activities_async_success(jules_api_client: JulesApiClient) -> None:
     session_id_path = "projects/123/locations/global/sessions/test-session-id"
     url = f"{settings.jules.base_url}/{session_id_path}/{settings.jules.activities_path}"
 
@@ -32,7 +32,7 @@ async def test_list_activities_async_success(jules_api_client):
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_retry_on_429_transient_failure():
+async def test_retry_on_429_transient_failure() -> None:
     # We will test the async dispatcher's retry logic, usually used by _send_message in JulesClient
     # But since that uses retry_on_429 directly, we can test it at the method level.
     from src.services.jules_client import JulesClient
@@ -56,7 +56,7 @@ async def test_retry_on_429_transient_failure():
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_retry_on_429_max_retries_exceeded():
+async def test_retry_on_429_max_retries_exceeded() -> None:
     from src.services.async_dispatcher import MaxRetriesExceededError
     from src.services.jules_client import JulesClient
 
