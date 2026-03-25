@@ -24,14 +24,14 @@ WORKDIR /opt/nitpick/nitpick_core
 # Copy project files for the tool
 COPY pyproject.toml .
 COPY README.md .
-COPY dev_src/ ./dev_src/
+COPY src/ ./src/
 
 # Install the tool and its dependencies into the system python environment
 RUN uv pip install --system .
 
 # Copy system prompts to internal template directory
 RUN mkdir -p /opt/nitpick/templates
-COPY dev_src/ac_cdd_core/templates/*.md /opt/nitpick/templates/
+COPY src/templates/*.md /opt/nitpick/templates/
 
 # Create /app for user mount
 WORKDIR /app
