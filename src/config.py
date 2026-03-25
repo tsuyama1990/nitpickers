@@ -183,23 +183,24 @@ class PathsConfig(BaseModel):
         if not self.contracts_dir:
             self.contracts_dir = f"{self.package_dir}/contracts"
 
-        # Security validation to ensure all paths are within project boundaries
+        # Security validation to ensure target project paths are within boundaries
         root = self.workspace_root.resolve(strict=False)
 
-        paths_to_check = [
+        # Target Project Paths (Strict)
+        strict_paths = [
             self.documents_dir,
-            Path(self.package_dir),
-            Path(self.contracts_dir),
             self.artifacts_dir,
             Path(self.sessions_dir),
             self.src,
             self.tests,
-            self.templates,
-            Path(self.prompts_dir),
         ]
 
+        # Tool Internal Paths (Exempt)
+        # package_dir, contracts_dir, prompts_dir are inherently exempt.
+        # templates is exempt if pointing to the internal /opt/nitpick/templates directory.
+
         escaped_paths = []
-        for p in paths_to_check:
+        for p in strict_paths:
             # Resolve but do not be strict about existence
             try:
                 p_res = p.resolve(strict=False)
@@ -207,6 +208,14 @@ class PathsConfig(BaseModel):
                     escaped_paths.append(str(p))
             except Exception as e:
                 logging.debug(f"Failed to check path {p}: {e}")
+
+        # Special handling for templates
+        try:
+            templates_res = self.templates.resolve(strict=False)
+            if not templates_res.is_relative_to(root) and not str(templates_res).startswith("/opt/nitpick/templates"):
+                escaped_paths.append(str(self.templates))
+        except Exception as e:
+            logging.debug(f"Failed to check templates path {self.templates}: {e}")
 
         if escaped_paths:
             msg = f"Configured paths escape workspace root boundaries: {escaped_paths}"
