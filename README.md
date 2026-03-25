@@ -121,6 +121,7 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
 3. Quick Start (Build & Alias):
    ```bash
    bash setup.sh
+   source ~/.bashrc
    ```
    The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
 

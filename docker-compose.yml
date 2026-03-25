@@ -52,8 +52,8 @@ services:
       # -----------------------------------------------------------------------
 
       # Tier B: Tuning Tier (Version-controlled configuration)
-      - NITPICK_AUDITOR_MODEL=openai:gpt-4o
-      - NITPICK_REVIEWER__SMART_MODEL=openai:gpt-4o
+      - NITPICK_AUDITOR_MODEL=stepfun/step-3.5-flash:free
+      - NITPICK_REVIEWER__SMART_MODEL=stepfun/step-3.5-flash:free
       - NITPICK_NUM_AUDITORS=3
       - NITPICK_REVIEWS_PER_AUDITOR=2
       - NITPICK_MAX_ITERATIONS=3

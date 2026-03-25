@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Starting NITPICKERS Setup..."
+echo "=== NITPICKERS Setup Tool ==="
 
 # 1. Verify Docker is installed
 if ! command -v docker &> /dev/null; then
@@ -15,35 +15,54 @@ if ! docker compose version &> /dev/null; then
     exit 1
 fi
 
-echo "Docker and Docker Compose found."
+echo "Requirement Check: Docker and Docker Compose found."
 
 # 3. Build the Docker image
-echo "Building the Docker container..."
+echo "Step 1: Building the NITPICKERS Docker container..."
 docker compose build
 
-# 4. Prompt for alias
+# 4. Handle Alias Registration
 echo ""
-read -p "Do you want to add the 'nitpick' alias to your .bashrc? [y/N]: " add_alias
+read -p "Do you want to add/update the 'nitpick' alias in your .bashrc? [y/N]: " add_alias
 
 if [[ "$add_alias" =~ ^[Yy]$ ]]; then
-    # Get the absolute path of this directory
+    BASHRC="$HOME/.bashrc"
+    # Get the absolute path of the current tool directory
     TOOL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     COMPOSE_FILE="$TOOL_DIR/docker-compose.yml"
 
-    # Create the alias string
+    # Define the dynamic alias string
+    # It captures the directory where you run 'nitpick' as the TARGET_PROJECT_PATH
     ALIAS_STR="alias nitpick='TARGET_PROJECT_PATH=\$(pwd) docker compose -f $COMPOSE_FILE run --rm nitpick nitpick'"
 
-    # Check if the alias already exists in ~/.bashrc
-    if grep -q "alias nitpick=" ~/.bashrc; then
-        echo "The 'nitpick' alias already exists in ~/.bashrc. Skipping."
-    else
-        echo "" >> ~/.bashrc
-        echo "# NITPICKERS alias" >> ~/.bashrc
-        echo "$ALIAS_STR" >> ~/.bashrc
-        echo "Alias added successfully! Please run 'source ~/.bashrc' to apply the changes in your current terminal."
-    fi
+    echo "Step 2: Registering alias in $BASHRC..."
+
+    # Create a temporary file to rebuild .bashrc without the old NITPICKERS block
+    # This prevents duplicate lines and handles cleanup
+    sed -i '/# NITPICKERS START/,/# NITPICKERS END/d' "$BASHRC"
+
+    # Remove trailing empty lines at the end of the file to prevent accumulation
+    sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$BASHRC"
+
+    # Append the clean block
+    cat << EOF >> "$BASHRC"
+
+# NITPICKERS START
+# NITPICKERS alias
+$ALIAS_STR
+# NITPICKERS END
+EOF
+
+    echo "Success: Alias has been set/updated."
+    echo "Please run the following command to apply changes immediately:"
+    echo "source ~/.bashrc"
 else
-    echo "Skipping alias creation."
+    echo "Skipping alias registration."
 fi
 
-echo "Setup complete!"
+echo ""
+# The final message in Green
+echo -e "${GREEN} Setup complete! You can now run 'nitpick' from any project directory.${NC}"
+
+
+docker system prune -f
