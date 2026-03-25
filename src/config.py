@@ -120,6 +120,25 @@ def _check_dev_src_path() -> str | None:
     return None
 
 
+def _check_default_src_dir() -> str | None:
+    default_src_dir = os.getenv("DEFAULT_SRC_DIR")
+    if default_src_dir:
+        resolved = Path(default_src_dir)
+        if _is_safe_path(resolved) and not resolved.is_symlink():
+            strict_resolved = None
+            try:
+                strict_resolved = resolved.resolve(strict=True)
+            except Exception as e:
+                logging.debug(f"Failed to resolve default src dir {resolved}: {e}")
+
+            if strict_resolved:
+                if not strict_resolved.is_relative_to(Path.cwd()):
+                    msg = f"Directory {strict_resolved} escapes boundaries"
+                    raise ValueError(msg)
+                return str(strict_resolved)
+    return None
+
+
 def _detect_package_dir() -> str:
     """Detects the main package directory."""
     package_dir = os.getenv("PACKAGE_DIR")
@@ -136,21 +155,9 @@ def _detect_package_dir() -> str:
     if res:
         return res
 
-    default_src_dir = os.getenv("DEFAULT_SRC_DIR")
-    if default_src_dir:
-        resolved = Path(default_src_dir)
-        if _is_safe_path(resolved) and not resolved.is_symlink():
-            strict_resolved = None
-            try:
-                strict_resolved = resolved.resolve(strict=True)
-            except Exception as e:
-                logging.debug(f"Failed to resolve default src dir {resolved}: {e}")
-
-            if strict_resolved:
-                if not strict_resolved.is_relative_to(Path.cwd()):
-                    msg = f"Directory {strict_resolved} escapes boundaries"
-                    raise ValueError(msg)
-                return str(strict_resolved)
+    res = _check_default_src_dir()
+    if res:
+        return res
 
     src_fallback = Path.cwd() / "src"
     if src_fallback.exists() and src_fallback.is_dir() and not src_fallback.is_symlink():
