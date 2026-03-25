@@ -101,7 +101,8 @@ async def test_retry_on_429_max_retries_exceeded() -> None:
         msg = "Too Many Requests"
         raise httpx.HTTPStatusError(msg, request=request, response=response)
 
-    with pytest.raises(httpx.HTTPStatusError):
+    from src.services.async_dispatcher import MaxRetriesExceededError
+    with pytest.raises(MaxRetriesExceededError):
         await mock_api_call()
 
     assert calls == 3  # Initial call + 2 retries

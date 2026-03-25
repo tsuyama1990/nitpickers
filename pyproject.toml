@@ -57,6 +57,7 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.9.0",
     "pytest-playwright>=0.7.2",
+    "respx>=0.22.0",
 ]
 
 [tool.ruff]
