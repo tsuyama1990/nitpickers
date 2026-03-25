@@ -10,9 +10,9 @@ services:
     env_file:
       - .env
 
-    # Mount current directory to /app
+    # Mount target project directory to /app
     volumes:
-      - .:/app
+      - ${TARGET_PROJECT_PATH:-.}:/app
 
       # Git authentication - SSH keys only (not .gitconfig to avoid conflicts)
       - ${HOME}/.ssh:/root/.ssh:ro
