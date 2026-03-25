@@ -62,6 +62,18 @@ class ProjectManager:
         dep_mgr = DependencyManager()
         await dep_mgr.initialize_dependencies_and_git()
 
+        # Configure Git to trust the mounted /app directory
+        import subprocess
+        try:
+            subprocess.run(
+                ["git", "config", "--global", "--add", "safe.directory", "/app"],
+                check=True,
+                capture_output=True,
+            )
+            logger.info("✓ Configured git safe.directory for /app")
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to configure git safe.directory: {e}")
+
         # Fix permissions if running with elevated privileges
         perm_mgr = PermissionManager()
         await perm_mgr.fix_permissions(

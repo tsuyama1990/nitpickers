@@ -35,6 +35,7 @@ class TemplateManager:
         tests_dir = Path.cwd() / "tests"
         tests_dir.mkdir(parents=True, exist_ok=True)
 
+
         return docs_dir, env_example_path, gitignore_path, github_dir, src_dir, tests_dir, root_env_path, req_envs_path
 
     def _create_all_spec(self, docs_dir: Path) -> None:
