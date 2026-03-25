@@ -133,7 +133,7 @@ The "Sidecar" workflow dynamically mounts your current working directory into th
 
 ### Initialize Project Requirements
 
-For new or external projects, run `nitpick init` to automatically scaffold the required directory structure (`src/`, `tests/`, `dev_documents/`), initialize Git, and configure your environment.
+For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure (`src/`, `tests/`, `dev_documents/`), initializes Git, and configures your environment.
 
 ```bash
 cd /path/to/target/project

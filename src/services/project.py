@@ -62,6 +62,33 @@ class ProjectManager:
         dep_mgr = DependencyManager()
         await dep_mgr.initialize_dependencies_and_git()
 
+        # Configure Git to trust the mounted /app directory
+        import asyncio
+        import shutil
+
+        git_path = shutil.which("git")
+        if git_path:
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    git_path,
+                    "config",
+                    "--global",
+                    "--add",
+                    "safe.directory",
+                    "/app",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                await process.communicate()
+                if process.returncode == 0:
+                    logger.info("✓ Configured git safe.directory for /app")
+                else:
+                    logger.warning("Failed to configure git safe.directory")
+            except Exception as e:
+                logger.warning(f"Failed to configure git safe.directory: {e}")
+        else:
+            logger.warning("git executable not found, skipping safe.directory configuration")
+
         # Fix permissions if running with elevated privileges
         perm_mgr = PermissionManager()
         await perm_mgr.fix_permissions(
