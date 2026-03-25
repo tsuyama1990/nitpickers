@@ -11,10 +11,37 @@ import typer
 sys.modules["pydantic.v1"] = pydantic
 sys.modules["pydantic.v1.fields"] = pydantic.fields
 
+from rich.console import Console  # noqa: E402
+
 from src.config import settings  # noqa: E402
+from src.services.project import ProjectManager  # noqa: E402
 from src.services.workflow import WorkflowService  # noqa: E402
 
 app = typer.Typer()
+console = Console()
+
+
+@app.command()
+def init() -> None:
+    """Initialize a new target project for Nitpick."""
+    console.print("[bold blue]Initializing new Nitpick project...[/bold blue]")
+    manager = ProjectManager()
+
+    # The Docker container mounts the templates at /opt/nitpick/templates/
+    templates_path = "/opt/nitpick/templates/"
+
+    try:
+        asyncio.run(manager.initialize_project(templates_path))
+
+        console.print("[bold green]Initialization complete![/bold green]")
+        console.print("\n[bold]Next Steps:[/bold]")
+        console.print("1. Update [cyan]dev_documents/ALL_SPEC.md[/cyan] with your project specifications.")
+        console.print("2. Update [cyan]dev_documents/USER_TEST_SCENARIO.md[/cyan] with your tutorial/UAT plan.")
+        console.print("3. Ensure your required environment variables are listed in [cyan]dev_documents/required_envs.json[/cyan].")
+        console.print("4. Add required environment variables to the root [cyan].env[/cyan] file.")
+        console.print("5. Run [bold magenta]nitpick gen-cycles[/bold magenta] to architect your development plan.")
+    except Exception as e:
+        console.print(f"[bold red]Initialization failed:[/bold red] {e}")
 
 
 @app.command()

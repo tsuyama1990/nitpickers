@@ -8,7 +8,7 @@ from src.utils import logger
 class TemplateManager:
     """Manages project templates and specifications."""
 
-    def setup_templates(self, templates_path: str) -> tuple[Path, Path, Path, Path]:
+    def setup_templates(self, templates_path: str) -> tuple[Path, Path, Path, Path, Path, Path, Path, Path]:
         docs_dir = Path(settings.paths.documents_dir)
         docs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -17,6 +17,7 @@ class TemplateManager:
 
         self._create_all_spec(docs_dir)
         self._create_user_test_scenario(docs_dir)
+        req_envs_path = self._create_required_envs(docs_dir)
 
         (docs_dir / "contracts").mkdir(exist_ok=True)
         system_prompts_dir = docs_dir / "system_prompts"
@@ -24,10 +25,17 @@ class TemplateManager:
 
         self.copy_default_templates(system_prompts_dir)
         env_example_path = self._create_env_example()
+        root_env_path = self._create_root_env()
         gitignore_path = self._update_gitignore()
         github_dir = self._create_github_workflow()
 
-        return docs_dir, env_example_path, gitignore_path, github_dir
+        src_dir = Path.cwd() / "src"
+        src_dir.mkdir(parents=True, exist_ok=True)
+
+        tests_dir = Path.cwd() / "tests"
+        tests_dir.mkdir(parents=True, exist_ok=True)
+
+        return docs_dir, env_example_path, gitignore_path, github_dir, src_dir, tests_dir, root_env_path, req_envs_path
 
     def _create_all_spec(self, docs_dir: Path) -> None:
         all_spec_dest = docs_dir / "ALL_SPEC.md"
@@ -85,6 +93,20 @@ What defines a successful user experience?
                     logger.warning(f"Failed to copy {template_file}: {e}")
             elif dest_file.exists():
                 logger.debug(f"Skipping {template_file} (already exists)")
+
+    def _create_root_env(self) -> Path:
+        env_path = Path.cwd() / ".env"
+        if not env_path.exists():
+            env_path.write_text("", encoding="utf-8")
+            logger.info(f"✓ Created blank .env file at {env_path}")
+        return env_path
+
+    def _create_required_envs(self, docs_dir: Path) -> Path:
+        req_envs_path = docs_dir / "required_envs.json"
+        if not req_envs_path.exists():
+            req_envs_path.write_text("[]", encoding="utf-8")
+            logger.info(f"✓ Created {req_envs_path}")
+        return req_envs_path
 
     def _create_env_example(self) -> Path:
         env_example_path = Path.cwd() / ".nitpick" / ".env.example"

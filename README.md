@@ -133,12 +133,13 @@ The "Sidecar" workflow dynamically mounts your current working directory into th
 
 ### Initialize Project Requirements
 
-For new or external projects, place your initial requirement documents (e.g., `ALL_SPEC.md`) inside the target project's `dev_documents/` folder *before* running generation commands.
+For new or external projects, run `nitpick init` to automatically scaffold the required directory structure (`src/`, `tests/`, `dev_documents/`), initialize Git, and configure your environment.
 
 ```bash
-mkdir -p /path/to/target/project/dev_documents/
-# Place ALL_SPEC.md in the directory above
+cd /path/to/target/project
+nitpick init
 ```
+After initialization, follow the CLI prompts to fill in `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
 
 ### Generate Development Cycles (Phase 1)
 Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.

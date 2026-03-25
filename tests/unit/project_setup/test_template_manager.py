@@ -34,10 +34,14 @@ def test_setup_templates(
     with (
         patch.object(template_manager, "_create_all_spec") as mock_create_all_spec,
         patch.object(template_manager, "_create_user_test_scenario") as mock_create_uts,
+        patch.object(template_manager, "_create_required_envs", return_value=Path("req_envs_path")),
         patch.object(template_manager, "copy_default_templates") as mock_copy_templates,
         patch.object(
             template_manager, "_create_env_example", return_value=Path("env_path")
         ) as mock_create_env,
+        patch.object(
+            template_manager, "_create_root_env", return_value=Path("root_env_path")
+        ),
         patch.object(
             template_manager, "_update_gitignore", return_value=Path("git_path")
         ) as mock_update_git,
@@ -45,9 +49,16 @@ def test_setup_templates(
             template_manager, "_create_github_workflow", return_value=Path("gh_path")
         ) as mock_create_gh,
     ):
-        docs_dir, env_example_path, gitignore_path, github_dir = template_manager.setup_templates(
-            templates_path
-        )
+        (
+            docs_dir,
+            env_example_path,
+            gitignore_path,
+            github_dir,
+            src_dir,
+            tests_dir,
+            root_env_path,
+            req_envs_path,
+        ) = template_manager.setup_templates(templates_path)
 
         expected_docs_dir = Path(mock_settings.paths.documents_dir)
 

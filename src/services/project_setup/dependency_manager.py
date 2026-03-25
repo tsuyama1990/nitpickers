@@ -31,6 +31,14 @@ class DependencyManager:
             logger.info("Initializing Git repository...")
             await self.runner.run_command(["git", "init"], check=True)
 
+        # Ensure docker container can safely access the repository
+        try:
+            await self.runner.run_command(
+                ["git", "config", "--global", "--add", "safe.directory", "/app"], check=False
+            )
+        except Exception as e:
+            logger.warning(f"Failed to configure git safe.directory: {e}")
+
         try:
             await self.git._run_git(["add", "."])
 
