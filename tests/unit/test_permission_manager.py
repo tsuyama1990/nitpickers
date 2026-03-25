@@ -6,15 +6,13 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-# Configure a simple logger for tests to avoid T201 (print)
-logging.basicConfig(level=logging.INFO)
-test_logger = logging.getLogger("test_permission_manager")
-
-
-# Now we can import the manager
 import pytest
 
 from src.services.project_setup.permission_manager import PermissionManager
+
+# Configure a simple logger for tests to avoid T201 (print)
+logging.basicConfig(level=logging.INFO)
+test_logger = logging.getLogger("test_permission_manager")
 
 
 @pytest.mark.asyncio
