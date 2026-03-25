@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
 from src.domain_models.manifest import CycleManifest
 from src.services.workflow import WorkflowService
 
