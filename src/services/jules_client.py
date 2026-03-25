@@ -550,18 +550,17 @@ class JulesClient:
         payload = {"prompt": content}
 
         async with httpx.AsyncClient() as client:
-            try:
-                resp = await client.post(url, json=payload, headers=self._get_headers())
-                if resp.status_code == httpx.codes.OK:
-                    self.console.print("[dim]Message sent.[/dim]")
-                    logger.info(f"DEBUG: Message sent successfully to {url}")
-                else:
-                    self.console.print(
-                        f"[bold red]Failed to send message: {resp.status_code}[/bold red]"
-                    )
-                    logger.error(f"SendMessage failed: {resp.text}")
-            except Exception as e:
-                logger.error(f"SendMessage error: {e}")
+            resp = await client.post(url, json=payload, headers=self._get_headers())
+            resp.raise_for_status()
+
+            if resp.status_code == httpx.codes.OK:
+                self.console.print("[dim]Message sent.[/dim]")
+                logger.info(f"DEBUG: Message sent successfully to {url}")
+            else:
+                self.console.print(
+                    f"[bold red]Failed to send message: {resp.status_code}[/bold red]"
+                )
+                logger.error(f"SendMessage failed: {resp.text}")
 
     async def get_latest_plan(self, session_id: str) -> dict[str, Any] | None:
         """Fetches the latest 'planGenerated' activity."""
