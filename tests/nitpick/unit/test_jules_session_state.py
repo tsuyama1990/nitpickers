@@ -25,9 +25,34 @@ class TestSessionStateValidation:
         ):
             client = JulesClient()
             client.base_url = "https://mock.api"
-            client.api_client = MagicMock()
+            client.timeout = 5.0  # type: ignore
+            client.poll_interval = 0.1  # type: ignore
+            client.console = MagicMock()
+            client.manager_agent = MagicMock()
+            client.manager_agent.run = AsyncMock(return_value=MagicMock(output="Manager Reply"))
             client.credentials = MagicMock()
             client._get_headers = MagicMock(return_value={})  # type: ignore
+            client.credentials.token = "mock_token"  # noqa: S105
+            client._sleep = AsyncMock()  # type: ignore
+
+            # FIX: Add context_builder
+            client.context_builder = MagicMock()
+            client.context_builder.build_question_context = AsyncMock(return_value="mock context")
+
+            # FIX: Add inquiry handler back since __init__ is skipped
+            from src.services.jules.inquiry_handler import JulesInquiryHandler
+
+            client.inquiry_handler = JulesInquiryHandler(
+                manager_agent=client.manager_agent,
+                context_builder=MagicMock(),
+                client_ref=client,
+            )
+
+            # FIX: Add api_client mock which is now used by wait_for_completion
+            client.api_client = MagicMock()
+            client.api_client.api_key = "mock_key"
+            client.test_mode = False
+            client.git = AsyncMock()
             return client
 
     @pytest.mark.asyncio

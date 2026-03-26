@@ -48,6 +48,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             self.client.api_client = MagicMock()
             self.client.api_client.api_key = "mock_key"
             self.client.test_mode = False
+            self.client.git = AsyncMock()
 
     def tearDown(self) -> None:
         self.auth_patcher.stop()
