@@ -54,9 +54,11 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            # Create CycleNodes instance
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
-            nodes._architect.git = mock_git_instance
+            # By patching GitManager in src.graph_nodes, when CycleNodes initializes
+            # it will grab our mock automatically if we mock it right, or we can just mock container.
+            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
+                # Create CycleNodes instance
+                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
 
             # Create state with requested_cycle_count
             state = CycleState(cycle_id="00")
@@ -104,9 +106,9 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            # Create CycleNodes instance
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
-            nodes._architect.git = mock_git_instance
+            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
+                # Create CycleNodes instance
+                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
 
             # Create state WITHOUT requested_cycle_count
             # BUT: CycleState defaults planned_cycle_count to 5 (from definition in state.py)
@@ -162,8 +164,8 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
-            nodes._architect.git = mock_git_instance
+            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
+                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
 
             state = CycleState(cycle_id="00")
             state.requested_cycle_count = count_value
