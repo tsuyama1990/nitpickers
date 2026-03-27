@@ -5,16 +5,19 @@ from typing import Any
 from rich.console import Console
 
 from src.config import settings
+from src.nodes.base import BaseNode
 from src.services.project import ProjectManager
 from src.state import CycleState
 
 console = Console()
 
 
-class ArchitectNodes:
-    def __init__(self, jules: Any, git: Any) -> None:
-        self.jules = jules
-        self.git = git
+class ArchitectNodes(BaseNode):
+    jules: Any
+    git: Any
+
+    async def __call__(self, state: CycleState) -> dict[str, Any]:
+        return await self.architect_session_node(state)
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Node for Architect Agent (Jules)."""
