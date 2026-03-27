@@ -33,9 +33,12 @@ def mock_client() -> Generator[JulesClient, None, None]:
             client._get_headers = MagicMock(return_value={})  # type: ignore[method-assign]
             client.credentials.token = "mock_token"  # noqa: S105
             client._sleep = AsyncMock()  # type: ignore[method-assign]
+            client.git = AsyncMock()
 
             # FIX: Add context_builder
-            client.context_builder = MagicMock()
+            from src.services.jules.context_builder import JulesContextBuilder
+
+            client.context_builder = JulesContextBuilder(client.git)
             client.context_builder.build_question_context = AsyncMock(return_value="mock context")
 
             # FIX: Add inquiry handler back since __init__ is skipped
@@ -43,7 +46,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
 
             client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=client.manager_agent,
-                context_builder=MagicMock(),
+                context_builder=client.context_builder,
                 client_ref=client,
             )
 
@@ -51,7 +54,6 @@ def mock_client() -> Generator[JulesClient, None, None]:
             client.api_client = MagicMock()
             client.api_client.api_key = "mock_key"
             client.test_mode = False
-            client.git = AsyncMock()
             yield client
 
 
