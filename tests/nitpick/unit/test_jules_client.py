@@ -43,7 +43,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
 
             client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=client.manager_agent,
-                context_builder=MagicMock(),
+                context_builder=client.context_builder,
                 client_ref=client,
             )
 
@@ -198,6 +198,7 @@ async def test_interactive_inquiry_handling(
 
     mock_httpx.get.side_effect = get_side_effect
     mock_httpx.post.return_value.status_code = 200
+    mock_httpx.post.return_value.raise_for_status = MagicMock()
 
     result = await mock_client.wait_for_completion_legacy("sessions/123")
 
