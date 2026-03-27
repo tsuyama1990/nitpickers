@@ -40,7 +40,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
 
             self.client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=self.client.manager_agent,
-                context_builder=MagicMock(),
+                context_builder=self.client.context_builder,
                 client_ref=self.client,
             )
 
