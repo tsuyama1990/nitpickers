@@ -146,13 +146,20 @@ class WorkflowService:
         finally:
             await self.builder.cleanup()
 
-    def verify_environment_and_observability(self) -> None:  # noqa: C901, PLR0915, PLR0912
+    def verify_environment_and_observability(self) -> None:
         """
         Validates observability parameters and checks explicitly/implicitly required
         dependencies based on environment variables and the local configuration.
         Implements the Phase 0 Gatekeeper pattern.
         """
         console.rule("[bold red]Phase 0: Environment & Observability Verification[/bold red]")
+        self._verify_observability()
+        self._verify_required_keys()
+        self._scan_implicit_dependencies()
+        self._verify_dynamic_requirements()
+        console.print("[green]Environment & Observability verified successfully.[/green]")
+
+    def _verify_observability(self) -> None:
         try:
             # Pydantic schema enforcing invariants
             import os
@@ -173,6 +180,7 @@ class WorkflowService:
 
             sys.exit(1)
 
+    def _verify_required_keys(self) -> None:
         import os
         import sys
 
@@ -185,7 +193,9 @@ class WorkflowService:
                 )
                 sys.exit(1)
 
+    def _scan_implicit_dependencies(self) -> None:
         # Implicit dependency scan via SPEC documents
+        import os
         try:
             import re
 
@@ -214,7 +224,9 @@ class WorkflowService:
         except Exception as e:
             logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
 
+    def _verify_dynamic_requirements(self) -> None:
         # Directive A: Pre-Flight Check based on required_envs.json
+        import os
         try:
             import json
 
@@ -250,8 +262,6 @@ class WorkflowService:
             raise
         except Exception as e:
             logger.warning(f"Error checking required_envs.json: {e}")
-
-        console.print("[green]Environment & Observability verified successfully.[/green]")
 
     async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915, PLR0912
         """
