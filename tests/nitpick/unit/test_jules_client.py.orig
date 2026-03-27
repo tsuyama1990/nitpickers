@@ -38,6 +38,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
             client.context_builder = MagicMock()
             client.context_builder.build_question_context = AsyncMock(return_value="mock context")
 
+            # FIX: Add inquiry handler back since __init__ is skipped
             from src.services.jules.inquiry_handler import JulesInquiryHandler
 
             client.inquiry_handler = JulesInquiryHandler(
@@ -197,8 +198,6 @@ async def test_interactive_inquiry_handling(
 
     mock_httpx.get.side_effect = get_side_effect
     mock_httpx.post.return_value.status_code = 200
-    # Add missing raise_for_status mock
-    mock_httpx.post.return_value.raise_for_status = MagicMock()
 
     result = await mock_client.wait_for_completion_legacy("sessions/123")
 
