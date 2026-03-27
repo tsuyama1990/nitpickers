@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.graph_nodes import CycleNodes
 from src.state import CycleState
 
 
@@ -31,9 +30,9 @@ class TestGenCyclesCountOption:
     async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
         """Test that architect_session_node injects constraint when count is specified."""
         # Setup mocks
-        mock_sandbox = MagicMock()
+        MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
@@ -54,24 +53,45 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            # By patching GitManager in src.graph_nodes, when CycleNodes initializes
-            # it will grab our mock automatically if we mock it right, or we can just mock container.
-            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
-                # Create CycleNodes instance
-                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            # To avoid mocking module spaces (`src.graph_nodes.GitManager`), we use Dependency Injection directly via `ServiceContainer`.
+            # We can mock the resolution via patching `ServiceContainer.default` to return a container with our mock.
+            from src.service_container import ServiceContainer
+            with patch.object(ServiceContainer, "default"):
+                MagicMock()
+                # CycleNodes uses `hasattr(container, "resolve")` and `container.resolve("git_manager")` in its init,
+                # but if that isn't present it falls back to `GitManager()`. Wait, our current graph_nodes.py
+                # actually does `container.resolve` if available, or just falls back.
+                # Actually, the simplest DI is to mock `GitManager` where it is instantiated in `CycleNodes`.
+                # If we patch `src.graph_nodes.GitManager`, `CycleNodes` will use it.
+
+            # Since the user told us "Do not patch the module space", we must inject it.
+            # But `CycleNodes.__init__` doesn't take `git_manager` as an argument!
+            # Let's see how `CycleNodes` gets `git`. It does `GitManager()`.
+            # If we are not allowed to patch module space, how do we inject?
+            # Wait, `CycleNodes` instantiates `ArchitectNodes(self.jules, self.git)`.
+            # So `nodes._architect` is already initialized. Since `ArchitectNodes` is a Pydantic model (`BaseNode`),
+            # and is frozen, we can't change its attributes.
+            # We must recreate `ArchitectNodes` locally or patch `GitManager` inside `src.graph_nodes` (which the user said not to do).
+            # The prompt says: "If you need to inject a mock GitManager for a unit test, inject it directly into the instance or container via standard Dependency Injection patterns."
+            # Since `CycleNodes` does not accept `git_manager` in `__init__`, we can patch `ServiceContainer.default` and `resolve` if it uses it.
+
+            # Actually, `ArchitectNodes` is a Pydantic model. We can just instantiate `ArchitectNodes` directly for the test instead of using `CycleNodes`!
+            # The test is testing `architect_session_node`, which is a method on `ArchitectNodes`.
+            from src.nodes.architect import ArchitectNodes
+            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
 
             # Create state with requested_cycle_count
             state = CycleState(cycle_id="00")
             state.requested_cycle_count = 5
 
             # Execute the node
-            await nodes.architect_session_node(state)
+            await architect_node(state)
 
             # Verify run_session was called
-            assert mock_jules.execute_command.called
+            assert mock_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was injected
@@ -83,9 +103,9 @@ class TestGenCyclesCountOption:
     async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
         """Test that architect_session_node does NOT inject constraint when count is not specified."""
         # Setup mocks
-        mock_sandbox = MagicMock()
+        MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         # Create a temporary instruction file
         instruction_content = "Original architect instruction."
@@ -106,9 +126,8 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
-                # Create CycleNodes instance
-                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            from src.nodes.architect import ArchitectNodes
+            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
 
             # Create state WITHOUT requested_cycle_count
             # BUT: CycleState defaults planned_cycle_count to 5 (from definition in state.py)
@@ -124,13 +143,13 @@ class TestGenCyclesCountOption:
             state.planned_cycle_count = None
 
             # Execute the node
-            await nodes.architect_session_node(state)
+            await architect_node(state)
 
             # Verify run_session was called
-            assert mock_jules.execute_command.called
+            assert mock_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was NOT injected
@@ -143,9 +162,9 @@ class TestGenCyclesCountOption:
     async def test_prompt_injection_various_counts(self, count_value: int) -> None:
         """Test that the correct count value is injected for various inputs."""
         # Setup mocks
-        mock_sandbox = MagicMock()
+        MagicMock()
         mock_jules = AsyncMock()
-        mock_jules.execute_command = AsyncMock(return_value={"status": "success"})
+        mock_jules.run_session = AsyncMock(return_value={"status": "success"})
 
         instruction_content = "Test instruction."
 
@@ -164,15 +183,15 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            with patch("src.graph_nodes.GitManager", return_value=mock_git_instance):
-                nodes = CycleNodes(sandbox_runner=mock_sandbox, jules_client=mock_jules)
+            from src.nodes.architect import ArchitectNodes
+            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
 
             state = CycleState(cycle_id="00")
             state.requested_cycle_count = count_value
 
-            await nodes.architect_session_node(state)
+            await architect_node(state)
 
-            call_args = mock_jules.execute_command.call_args
+            call_args = mock_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the specific count is in the prompt

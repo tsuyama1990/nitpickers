@@ -68,10 +68,14 @@ def audit_mocks(target_dir: str) -> bool:
         all_violations.extend(visitor.violations)
 
     if all_violations:
+        sys.stderr.write("\n=== INTEGRITY VIOLATION DETECTED ===\n")
+        sys.stderr.write("The following mock usage violates the Zero-Mock Integration testing policy:\n\n")
         for _v in all_violations:
-            pass
+            sys.stderr.write(f"  - {_v}\n")
+        sys.stderr.write("\nPlease refactor these tests to use real instances or approved boundary stubs.\n")
         return False
 
+    sys.stdout.write("\n✓ Audit passed. No internal mock usage detected.\n")
     return True
 
 

@@ -1,20 +1,28 @@
 import asyncio
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
+from pydantic import SkipValidation
 from rich.console import Console
 
 from src.config import settings
 from src.nodes.base import BaseNode
+from src.services.git_ops import GitManager
+from src.services.jules_client import JulesClient
 from src.services.project import ProjectManager
 from src.state import CycleState
 
 console = Console()
 
 
+
+
+
 class ArchitectNodes(BaseNode):
-    jules: Any
-    git: Any
+    jules: Annotated[JulesClient, SkipValidation]
+    git: Annotated[GitManager, SkipValidation]
+
+    model_config = BaseNode.model_config | {"arbitrary_types_allowed": True}
 
     async def __call__(self, state: CycleState) -> dict[str, Any]:
         return await self.architect_session_node(state)
@@ -83,7 +91,7 @@ class ArchitectNodes(BaseNode):
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        result = await self.jules.execute_command(
+        result = await self.jules.run_session(
             command="Design the system architecture based on ALL_SPEC.md.",
             session_id=f"architect-{timestamp}",
             prompt=instruction,
