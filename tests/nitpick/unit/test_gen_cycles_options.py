@@ -53,32 +53,18 @@ class TestGenCyclesCountOption:
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
-            # To avoid mocking module spaces (`src.graph_nodes.GitManager`), we use Dependency Injection directly via `ServiceContainer`.
-            # We can mock the resolution via patching `ServiceContainer.default` to return a container with our mock.
-            from src.service_container import ServiceContainer
-            with patch.object(ServiceContainer, "default"):
-                MagicMock()
-                # CycleNodes uses `hasattr(container, "resolve")` and `container.resolve("git_manager")` in its init,
-                # but if that isn't present it falls back to `GitManager()`. Wait, our current graph_nodes.py
-                # actually does `container.resolve` if available, or just falls back.
-                # Actually, the simplest DI is to mock `GitManager` where it is instantiated in `CycleNodes`.
-                # If we patch `src.graph_nodes.GitManager`, `CycleNodes` will use it.
-
-            # Since the user told us "Do not patch the module space", we must inject it.
-            # But `CycleNodes.__init__` doesn't take `git_manager` as an argument!
-            # Let's see how `CycleNodes` gets `git`. It does `GitManager()`.
-            # If we are not allowed to patch module space, how do we inject?
-            # Wait, `CycleNodes` instantiates `ArchitectNodes(self.jules, self.git)`.
-            # So `nodes._architect` is already initialized. Since `ArchitectNodes` is a Pydantic model (`BaseNode`),
-            # and is frozen, we can't change its attributes.
-            # We must recreate `ArchitectNodes` locally or patch `GitManager` inside `src.graph_nodes` (which the user said not to do).
-            # The prompt says: "If you need to inject a mock GitManager for a unit test, inject it directly into the instance or container via standard Dependency Injection patterns."
-            # Since `CycleNodes` does not accept `git_manager` in `__init__`, we can patch `ServiceContainer.default` and `resolve` if it uses it.
-
-            # Actually, `ArchitectNodes` is a Pydantic model. We can just instantiate `ArchitectNodes` directly for the test instead of using `CycleNodes`!
-            # The test is testing `architect_session_node`, which is a method on `ArchitectNodes`.
             from src.nodes.architect import ArchitectNodes
-            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
+            from src.services.git_ops import GitManager
+            from src.services.jules_client import JulesClient
+
+            real_jules = JulesClient()
+            real_jules.run_session = AsyncMock(return_value={"status": "success"})  # type: ignore[method-assign]
+
+            real_git = GitManager()
+            real_git.create_feature_branch = AsyncMock()  # type: ignore[method-assign]
+            real_git.merge_pr = AsyncMock()  # type: ignore[method-assign]
+
+            architect_node = ArchitectNodes.model_construct(jules=real_jules, git=real_git)
 
             # Create state with requested_cycle_count
             state = CycleState(cycle_id="00")
@@ -88,10 +74,10 @@ class TestGenCyclesCountOption:
             await architect_node(state)
 
             # Verify run_session was called
-            assert mock_jules.run_session.called
+            assert real_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.run_session.call_args
+            call_args = real_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was injected
@@ -127,7 +113,19 @@ class TestGenCyclesCountOption:
             mock_settings.get_context_files.return_value = []
 
             from src.nodes.architect import ArchitectNodes
-            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
+            from src.services.git_ops import GitManager
+            from src.services.jules_client import JulesClient
+
+            real_jules = JulesClient()
+            real_jules.run_session = AsyncMock(return_value={"status": "success"})  # type: ignore[method-assign]
+
+            real_git = GitManager()
+            real_git.create_feature_branch = AsyncMock()  # type: ignore[method-assign]
+            real_git.merge_pr = AsyncMock()  # type: ignore[method-assign]
+
+            # In order to let Pydantic model validation pass, we must ensure it bypasses validation just for the test mock.
+            # We can use model_construct to bypass validation if Pydantic is too strict.
+            architect_node = ArchitectNodes.model_construct(jules=real_jules, git=real_git)
 
             # Create state WITHOUT requested_cycle_count
             # BUT: CycleState defaults planned_cycle_count to 5 (from definition in state.py)
@@ -146,10 +144,10 @@ class TestGenCyclesCountOption:
             await architect_node(state)
 
             # Verify run_session was called
-            assert mock_jules.run_session.called
+            assert real_jules.run_session.called
 
             # Get the actual prompt argument passed to run_session
-            call_args = mock_jules.run_session.call_args
+            call_args = real_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the constraint was NOT injected
@@ -184,14 +182,24 @@ class TestGenCyclesCountOption:
             mock_settings.get_context_files.return_value = []
 
             from src.nodes.architect import ArchitectNodes
-            architect_node = ArchitectNodes(jules=mock_jules, git=mock_git_instance)
+            from src.services.git_ops import GitManager
+            from src.services.jules_client import JulesClient
+
+            real_jules = JulesClient()
+            real_jules.run_session = AsyncMock(return_value={"status": "success"})  # type: ignore[method-assign]
+
+            real_git = GitManager()
+            real_git.create_feature_branch = AsyncMock()  # type: ignore[method-assign]
+            real_git.merge_pr = AsyncMock()  # type: ignore[method-assign]
+
+            architect_node = ArchitectNodes.model_construct(jules=real_jules, git=real_git)
 
             state = CycleState(cycle_id="00")
             state.requested_cycle_count = count_value
 
             await architect_node(state)
 
-            call_args = mock_jules.run_session.call_args
+            call_args = real_jules.run_session.call_args
             actual_prompt = call_args.kwargs["prompt"]
 
             # Verify the specific count is in the prompt

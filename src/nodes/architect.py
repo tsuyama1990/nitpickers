@@ -1,8 +1,7 @@
 import asyncio
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Any
 
-from pydantic import SkipValidation
 from rich.console import Console
 
 from src.config import settings
@@ -19,8 +18,8 @@ console = Console()
 
 
 class ArchitectNodes(BaseNode):
-    jules: Annotated[JulesClient, SkipValidation]
-    git: Annotated[GitManager, SkipValidation]
+    jules: JulesClient
+    git: GitManager
 
     model_config = BaseNode.model_config | {"arbitrary_types_allowed": True}
 

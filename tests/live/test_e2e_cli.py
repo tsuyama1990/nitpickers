@@ -65,7 +65,7 @@ async def test_nitpick_cli_init_and_gen_cycles(real_e2e_env: Path, monkeypatch: 
     env = os.environ.copy()
     env["OPENROUTER_API_KEY"] = "sk-or-v1-invalid-e2e-test-key"
     env["JULES_API_KEY"] = "invalid-jules-key"
-    env["GITHUB_PERSONAL_ACCESS_TOKEN"] = "invalid-github-token"
+    env["GITHUB_PERSONAL_ACCESS_TOKEN"] = "invalid-github-token"  # noqa: S105
     env["E2B_API_KEY"] = "invalid-e2b-key"
 
     # Run `nitpick init` natively.
