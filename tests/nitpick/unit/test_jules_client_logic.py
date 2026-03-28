@@ -40,7 +40,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
 
             self.client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=self.client.manager_agent,
-                context_builder=MagicMock(),
+                context_builder=self.client.context_builder,
                 client_ref=self.client,
             )
 
@@ -133,8 +133,10 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         mock_client.get.side_effect = dynamic_get
 
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = "Manager Reply"
+        mock_response.output = "Manager Reply"
+
+        # The manager_agent is already a MagicMock, but it is awaited. Let's make its run method return our mock_response as an AsyncMock
+        self.client.manager_agent.run = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
 
         with patch("litellm.acompletion", return_value=mock_response):
             result = await self.client.wait_for_completion(session_id)
