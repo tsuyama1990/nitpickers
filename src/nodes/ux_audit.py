@@ -5,9 +5,6 @@ from src.state import CycleState
 
 
 class UxAuditorNodes:
-    def __init__(self) -> None:
-        pass
-
     async def ux_auditor_node(self, state: CycleState) -> dict[str, Any]:
         usecase = UxAuditorUseCase()
         return dict(await usecase.execute(state))
