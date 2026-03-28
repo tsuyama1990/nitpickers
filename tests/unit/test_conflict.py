@@ -25,6 +25,7 @@ async def test_scan_conflicts(conflict_manager: ConflictManager, tmp_path: Path)
     clean_file.write_text("def my_func():\n    return 3\n")
 
     from src.config import settings
+
     with (
         patch.object(conflict_manager.runner, "run_command", new_callable=AsyncMock) as mock_run,
         patch.object(settings.paths, "workspace_root", tmp_path),
@@ -47,6 +48,7 @@ async def test_scan_conflicts(conflict_manager: ConflictManager, tmp_path: Path)
 def test_validate_resolution_success(conflict_manager: ConflictManager, tmp_path: Path) -> None:
     """Test validate_resolution on a file without markers."""
     from src.config import settings
+
     with patch.object(settings.paths, "workspace_root", tmp_path):
         clean_file = tmp_path / "clean_file.py"
         clean_file.write_text("def my_func():\n    return 3\n")
@@ -58,6 +60,7 @@ def test_validate_resolution_success(conflict_manager: ConflictManager, tmp_path
 def test_validate_resolution_failure(conflict_manager: ConflictManager, tmp_path: Path) -> None:
     """Test validate_resolution on a file with markers."""
     from src.config import settings
+
     with patch.object(settings.paths, "workspace_root", tmp_path):
         conflicted_file = tmp_path / "conflicted_file.py"
         conflicted_content = "def my_func():\n<<<<<<< HEAD\n    return 1\n=======\n    return 2\n>>>>>>> feature_branch\n"
@@ -68,12 +71,15 @@ def test_validate_resolution_failure(conflict_manager: ConflictManager, tmp_path
 
 
 @pytest.mark.asyncio
-async def test_scan_conflicts_path_traversal(conflict_manager: ConflictManager, tmp_path: Path) -> None:
+async def test_scan_conflicts_path_traversal(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
     """Test that scan_conflicts blocks path traversal."""
     from src.config import settings
+
     with patch.object(settings.paths, "workspace_root", tmp_path):
         # Path outside tmp_path
-        unsafe_path = Path("/tmp/unsafe_path")
+        unsafe_path = tmp_path.parent / "unsafe_path"
         items = await conflict_manager.scan_conflicts(unsafe_path)
         assert items == []
 
@@ -84,16 +90,18 @@ async def test_scan_conflicts_path_traversal(conflict_manager: ConflictManager, 
 
 
 @pytest.mark.asyncio
-async def test_build_conflict_package_path_traversal(conflict_manager: ConflictManager, tmp_path: Path) -> None:
+async def test_build_conflict_package_path_traversal(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
     """Test that build_conflict_package blocks path traversal."""
-    from src.domain_models.execution import ConflictRegistryItem
     from src.config import settings
+    from src.domain_models.execution import ConflictRegistryItem
 
     item = ConflictRegistryItem(file_path="test.py", conflict_markers=[])
 
     with patch.object(settings.paths, "workspace_root", tmp_path):
         # Path outside tmp_path
-        unsafe_path = Path("/tmp/unsafe_path")
+        unsafe_path = tmp_path.parent / "unsafe_path"
 
         with pytest.raises(ValueError, match="escapes workspace root"):
             await conflict_manager.build_conflict_package(item, unsafe_path)

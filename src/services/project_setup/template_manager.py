@@ -8,7 +8,9 @@ from src.utils import logger
 class TemplateManager:
     """Manages project templates and specifications."""
 
-    def setup_templates(self, templates_path: str) -> tuple[Path, Path, Path, Path, Path, Path, Path, Path]:
+    def setup_templates(
+        self, templates_path: str
+    ) -> tuple[Path, Path, Path, Path, Path, Path, Path, Path]:
         docs_dir = Path(settings.paths.documents_dir)
         docs_dir.mkdir(parents=True, exist_ok=True)
 
@@ -35,8 +37,16 @@ class TemplateManager:
         tests_dir = Path.cwd() / "tests"
         tests_dir.mkdir(parents=True, exist_ok=True)
 
-
-        return docs_dir, env_example_path, gitignore_path, github_dir, src_dir, tests_dir, root_env_path, req_envs_path
+        return (
+            docs_dir,
+            env_example_path,
+            gitignore_path,
+            github_dir,
+            src_dir,
+            tests_dir,
+            root_env_path,
+            req_envs_path,
+        )
 
     def _create_all_spec(self, docs_dir: Path) -> None:
         all_spec_dest = docs_dir / "ALL_SPEC.md"
