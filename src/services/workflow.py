@@ -211,10 +211,10 @@ class WorkflowService:
                     if re.search(
                         r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE
                     ) and not os.getenv(secret):
-                        console.print(f"[bold red]Implicit Dependency Missing: {secret}[/bold red]")
+                        console.print("[bold red]Implicit Dependency Missing: A required secret is missing.[/bold red]")
                         console.print(
-                            f"[yellow]The specification file references '{secret}', "
-                            f"but it was not found in the environment. Please configure it.[/yellow]"
+                            "[yellow]The specification file references a known secret, "
+                            "but it was not found in the environment. Please configure required secrets.[/yellow]"
                         )
                         import sys
 
