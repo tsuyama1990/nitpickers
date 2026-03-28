@@ -143,12 +143,12 @@ class ConflictManager:
         Builds the conflict resolution prompt package for the Jules Master Integrator session.
         Extracts Base, Local (Branch A), and Remote (Branch B) versions using Git 3-Way Diff.
         """
+        repo_path = self._validate_path(repo_path)
         try:
-            repo_path = self._validate_path(repo_path)
             from src.config import settings
 
             git_cmd = settings.tools.git_cmd
-        except Exception:
+        except (ImportError, AttributeError):
             git_cmd = "git"
 
         async def _get_git_version(stage: int) -> str:
