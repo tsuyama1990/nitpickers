@@ -39,9 +39,7 @@ def test_setup_templates(
         patch.object(
             template_manager, "_create_env_example", return_value=Path("env_path")
         ) as mock_create_env,
-        patch.object(
-            template_manager, "_create_root_env", return_value=Path("root_env_path")
-        ),
+        patch.object(template_manager, "_create_root_env", return_value=Path("root_env_path")),
         patch.object(
             template_manager, "_update_gitignore", return_value=Path("git_path")
         ) as mock_update_git,

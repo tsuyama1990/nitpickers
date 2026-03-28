@@ -35,11 +35,19 @@ def init() -> None:
 
         console.print("[bold green]Initialization complete![/bold green]")
         console.print("\n[bold]Next Steps:[/bold]")
-        console.print("1. Update [cyan]dev_documents/ALL_SPEC.md[/cyan] with your project specifications.")
-        console.print("2. Update [cyan]dev_documents/USER_TEST_SCENARIO.md[/cyan] with your tutorial/UAT plan.")
-        console.print("3. Ensure your required environment variables are listed in [cyan]dev_documents/required_envs.json[/cyan].")
+        console.print(
+            "1. Update [cyan]dev_documents/ALL_SPEC.md[/cyan] with your project specifications."
+        )
+        console.print(
+            "2. Update [cyan]dev_documents/USER_TEST_SCENARIO.md[/cyan] with your tutorial/UAT plan."
+        )
+        console.print(
+            "3. Ensure your required environment variables are listed in [cyan]dev_documents/required_envs.json[/cyan]."
+        )
         console.print("4. Add required environment variables to the root [cyan].env[/cyan] file.")
-        console.print("5. Run [bold magenta]nitpick gen-cycles[/bold magenta] to architect your development plan.")
+        console.print(
+            "5. Run [bold magenta]nitpick gen-cycles[/bold magenta] to architect your development plan."
+        )
 
     except Exception as e:
         console.print(f"[bold red]Initialization failed:[/bold red] {e}")

@@ -5,6 +5,7 @@ from src.nodes.routers import (
     route_architect_critic,
     route_auditor,
     route_final_critic,
+    route_qa,
     route_sandbox_evaluate,
 )
 from src.state import AuditState, CycleState
@@ -88,6 +89,20 @@ def test_route_final_critic() -> None:
     # Test fallback
     state = CycleState(cycle_id="01", status=FlowStatus.FAILED)
     assert route_final_critic(state) == "reject"
+
+
+def test_route_qa() -> None:
+    # Test approved
+    state = CycleState(cycle_id="01", status=FlowStatus.APPROVED)
+    assert route_qa(state) == "end"
+
+    # Test rejected
+    state = CycleState(cycle_id="01", status=FlowStatus.REJECTED)
+    assert route_qa(state) == "retry_fix"
+
+    # Test fallback
+    state = CycleState(cycle_id="01", status=FlowStatus.FAILED)
+    assert route_qa(state) == "failed"
 
 
 def test_route_architect_critic() -> None:

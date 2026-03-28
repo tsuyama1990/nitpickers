@@ -180,7 +180,8 @@ class JulesSessionNodes:
 
                     # CRITICAL FIX: If an inquiry was detected, return immediately to handle it.
                     # Do NOT let "COMPLETED" status overwrite a pending question.
-                    if state.status == SessionStatus.INQUIRY_DETECTED:
+                    if state.status == SessionStatus.INQUIRY_DETECTED or state.current_inquiry is not None:
+                        state.status = SessionStatus.INQUIRY_DETECTED
                         return self._compute_diff(_state_in, state)
 
                     # Reset validation flag if we are back in working states
