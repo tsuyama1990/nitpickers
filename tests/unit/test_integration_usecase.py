@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -42,7 +42,16 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMoc
     # Mock LLM returning clean JSON on first try
     mock_jules.send_message_to_session.return_value = '{"resolved_code": "clean_code"}'
 
-    new_state = await usecase.run_integration_loop(state, repo_path)
+    from src.config import settings
+
+    with (
+        patch.object(
+            usecase.conflict_manager.runner, "run_command", new_callable=AsyncMock
+        ) as mock_run,
+        patch.object(settings.paths, "workspace_root", repo_path),
+    ):
+        mock_run.return_value = ("base", "", 0, False)
+        new_state = await usecase.run_integration_loop(state, repo_path)
 
     assert new_state.master_integrator_session_id == "test-session-id"
     assert new_state.unresolved_conflicts[0].resolved is True
@@ -73,7 +82,16 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Magic
         '{"resolved_code": "clean_code"}',
     ]
 
-    new_state = await usecase.run_integration_loop(state, repo_path)
+    from src.config import settings
+
+    with (
+        patch.object(
+            usecase.conflict_manager.runner, "run_command", new_callable=AsyncMock
+        ) as mock_run,
+        patch.object(settings.paths, "workspace_root", repo_path),
+    ):
+        mock_run.return_value = ("base", "", 0, False)
+        new_state = await usecase.run_integration_loop(state, repo_path)
 
     assert new_state.unresolved_conflicts[0].resolved is True
     assert new_state.unresolved_conflicts[0].resolution_attempts == 2
@@ -105,8 +123,17 @@ async def test_integration_usecase_max_retries_exceeded(
         '{"resolved_code": "<<<<<<< HEAD\\nbad\\n=======\\n"}'
     )
 
-    with pytest.raises(MaxRetriesExceededError):
-        await usecase.run_integration_loop(state, repo_path)
+    from src.config import settings
+
+    with (
+        patch.object(
+            usecase.conflict_manager.runner, "run_command", new_callable=AsyncMock
+        ) as mock_run,
+        patch.object(settings.paths, "workspace_root", repo_path),
+    ):
+        mock_run.return_value = ("base", "", 0, False)
+        with pytest.raises(MaxRetriesExceededError):
+            await usecase.run_integration_loop(state, repo_path)
 
     assert state.unresolved_conflicts[0].resolved is False
     assert state.unresolved_conflicts[0].resolution_attempts == 3
