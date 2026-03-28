@@ -88,6 +88,7 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     # 1. We mock the network boundaries
 
     import re
+
     import httpx
 
     # Just catch any external HTTP request to avoid timeouts from unexpected external calls
