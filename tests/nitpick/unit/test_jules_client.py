@@ -43,7 +43,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
 
             client.inquiry_handler = JulesInquiryHandler(
                 manager_agent=client.manager_agent,
-                context_builder=MagicMock(),
+                context_builder=client.context_builder,
                 client_ref=client,
             )
 
