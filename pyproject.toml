@@ -60,6 +60,7 @@ dev = [
     "pytest-playwright>=0.7.2",
     "respx>=0.22.0",
     "pyfakefs>=6.1.6",
+    "pytest-httpserver>=1.1.5",
 ]
 
 [tool.ruff]
