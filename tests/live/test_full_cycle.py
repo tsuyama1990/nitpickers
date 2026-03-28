@@ -26,22 +26,23 @@ def temp_project_dir() -> Generator[str, None, None]:
         f.write("def dummy():\n    pass\n")
 
     with Path(".env").open("w") as f:
-        pass # Empty .env
+        pass  # Empty .env
 
     # Initialize git repo locally so git commands don't fail
     git_exec = shutil.which("git") or "git"
 
-    subprocess.run([git_exec, "init"], check=True) # noqa: S603
-    subprocess.run([git_exec, "add", "."], check=True) # noqa: S603
-    subprocess.run([git_exec, "config", "user.email", "test@example.com"], check=True) # noqa: S603
-    subprocess.run([git_exec, "config", "user.name", "Test User"], check=True) # noqa: S603
-    subprocess.run([git_exec, "commit", "-m", "Initial commit"], check=True) # noqa: S603
+    subprocess.run([git_exec, "init"], check=True)  # noqa: S603
+    subprocess.run([git_exec, "add", "."], check=True)  # noqa: S603
+    subprocess.run([git_exec, "config", "user.email", "test@example.com"], check=True)  # noqa: S603
+    subprocess.run([git_exec, "config", "user.name", "Test User"], check=True)  # noqa: S603
+    subprocess.run([git_exec, "commit", "-m", "Initial commit"], check=True)  # noqa: S603
 
     yield temp_dir
 
     # Teardown
     os.chdir(original_cwd)
     shutil.rmtree(temp_dir)
+
 
 @pytest.mark.live
 def test_live_full_cycle(temp_project_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -63,8 +64,13 @@ def test_live_full_cycle(temp_project_dir: str, monkeypatch: pytest.MonkeyPatch)
         f.write("# Dummy Spec\n\nCreate a function that adds two numbers.\n")
 
     # Run nitpick gen-cycles, limited to 1 cycle for speed/cost
-    result_gen = runner.invoke(app, ["gen-cycles", "--n", "1", "--session", "test-live-session", "--auto"])
+    result_gen = runner.invoke(
+        app, ["gen-cycles", "--n", "1", "--session", "test-live-session", "--auto"]
+    )
 
     # Ensure it ran without Python errors
     assert result_gen.exit_code == 0
-    assert "Full Pipeline Execution Completed Successfully" in result_gen.stdout or "Auto-Running All Cycles" in result_gen.stdout
+    assert (
+        "Full Pipeline Execution Completed Successfully" in result_gen.stdout
+        or "Auto-Running All Cycles" in result_gen.stdout
+    )
