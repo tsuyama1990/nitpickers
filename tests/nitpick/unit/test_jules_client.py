@@ -39,7 +39,7 @@ def mock_client() -> Generator[JulesClient, None, None]:
             from src.services.jules.context_builder import JulesContextBuilder
 
             client.context_builder = JulesContextBuilder(client.git)
-            client.context_builder.build_question_context = AsyncMock(return_value="mock context")
+            client.context_builder.build_question_context = AsyncMock(return_value="mock context")  # type: ignore[method-assign]
 
             # FIX: Add inquiry handler back since __init__ is skipped
             from src.services.jules.inquiry_handler import JulesInquiryHandler
