@@ -191,7 +191,7 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
         pass
 
     # Check that it executed and advanced
-    from src.services.workflow import StateManager
+    from src.state_manager import StateManager
     mgr = StateManager()
     manifest = mgr.load_manifest()
 
