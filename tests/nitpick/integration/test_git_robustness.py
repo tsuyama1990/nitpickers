@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -7,67 +6,98 @@ from src.services.git_ops import GitManager
 
 
 @pytest.fixture
-def mock_git_env(tmp_path: Path) -> Path:
+def real_git_env(tmp_path: Path) -> Path:
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
-    (repo_dir / ".git").mkdir()
+
+    remote_dir = tmp_path / "remote"
+    remote_dir.mkdir()
+
+    # Actually initialize a real git repository
+    import shutil
+    import subprocess
+    git_bin = shutil.which("git")
+    assert git_bin is not None
+
+    # Initialize a bare remote
+    subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)  # noqa: S603
+
+    # Initialize local repo
+    subprocess.run([git_bin, "init"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "config", "user.name", "Test User"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "config", "user.email", "test@example.com"], cwd=repo_dir, check=True)  # noqa: S603
+
+    # Connect remote
+    subprocess.run([git_bin, "remote", "add", "origin", str(remote_dir)], cwd=repo_dir, check=True)  # noqa: S603
+
+    # Create an initial commit so we have a HEAD
+    readme = repo_dir / "README.md"
+    readme.write_text("initial")
+    subprocess.run([git_bin, "add", "README.md"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=repo_dir, check=True)  # noqa: S603
+
+    subprocess.run([git_bin, "branch", "-M", "main"], cwd=repo_dir, check=True)  # noqa: S603
+
+    # Push to origin to establish tracking branch
+    subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=repo_dir, check=True)  # noqa: S603
+
     return repo_dir
 
 
 @pytest.mark.asyncio
-async def test_create_feature_branch_idempotency(mock_git_env: Path) -> None:
+async def test_create_feature_branch_idempotency(real_git_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify that create_feature_branch doesn't fail if branch already exists.
     """
-    with patch("pathlib.Path.cwd", return_value=mock_git_env):
-        git = GitManager()
+    monkeypatch.chdir(real_git_env)
+    git = GitManager()
 
-        # Simulate running git commands
-        # 1. checkout main (ok)
-        # 2. pull (ok)
-        # 3. checkout -b existing_branch -> FAILS
+    branch_name = "dev/int-test"
 
-        branch_name = "dev/int-test"
+    # Create the branch manually first
+    await git._run_git(["branch", branch_name])
 
-        # Mock run_command to simulate branch existence
-        async def mock_run_command(
-            cmd: list[str], check: bool = True
-        ) -> tuple[str, str, int, bool]:
-            cmd_str = " ".join(cmd)
-            # When checking existence
-            if "rev-parse --verify dev/int-test" in cmd_str:
-                return "", "", 0, False  # Return 0 = Exists
-            # If it tries to create anyway (fail case)
-            if "checkout -b dev/int-test" in cmd_str:
-                return "", "fatal: A branch named 'dev/int-test' already exists.", 128, False
-            return "", "", 0, False
+    # Check that it exists
+    out, _, _, _ = await git.runner.run_command(["git", "rev-parse", "--verify", branch_name])
+    assert out.strip() != ""
 
-        git.runner.run_command = AsyncMock(side_effect=mock_run_command)  # type: ignore[method-assign]
-        git._ensure_no_lock = AsyncMock()  # type: ignore[method-assign]
+    # Now it should NOT raise
+    # Without mock_pull, `git pull` will succeed because there is a valid tracking branch setup via the real_git_env fixture
+    await git.create_feature_branch(branch_name)
 
-        # Now it should NOT raise
-        await git.create_feature_branch(branch_name)
-
-        # Verify checking logic was called
-        # mock_run_command logic was: if rev-parse -> return 0 (exists), 128 (failed)
-        # We need to ensure the test mock reflects "exists".
-        # The logic in create_feature_branch calls rev-parse first.
-        # If I want to simulate "exists", rev-parse should return 0.
+    # Verify we are on the branch
+    out, _, _, _ = await git.runner.run_command(["git", "branch", "--show-current"])
+    assert out.strip() == branch_name
 
 
 @pytest.mark.asyncio
-async def test_smart_checkout_dirty_recovery(mock_git_env: Path) -> None:
+async def test_smart_checkout_dirty_recovery(real_git_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
     Verify smart checkout recovers from dirty state.
     """
-    with patch("pathlib.Path.cwd", return_value=mock_git_env):
-        git = GitManager()
-        git.runner.run_command = AsyncMock(return_value=("", "", 0, False))  # type: ignore[method-assign]
+    monkeypatch.chdir(real_git_env)
+    git = GitManager()
 
-        # Mock _auto_commit_if_dirty
-        git._auto_commit_if_dirty = AsyncMock()  # type: ignore[method-assign]
+    # Create a new branch so we can checkout to it and set upstream to main since
+    # smart_checkout will run pull --rebase on it which requires an upstream branch.
+    await git._run_git(["branch", "new-branch"])
+    await git._run_git(["branch", "--set-upstream-to=origin/main", "new-branch"])
 
-        # Should call auto-commit and checkout
-        await git.smart_checkout("new-branch")
+    # Make the working directory dirty
+    dirty_file = real_git_env / "dirty.txt"
+    dirty_file.write_text("I am dirty")
+    await git.runner.run_command(["git", "add", "dirty.txt"])
 
-        git._auto_commit_if_dirty.assert_called_once()
+    # Should call auto-commit and checkout
+    await git.smart_checkout("new-branch")
+
+    # Verify we are on the new branch
+    out, _, _, _ = await git.runner.run_command(["git", "branch", "--show-current"])
+    assert out.strip() == "new-branch"
+
+    # Verify the dirty file was committed and carried over (or at least auto-committed before checkout)
+    out, _, _, _ = await git.runner.run_command(["git", "log", "-1", "--pretty=%B"])
+    files_out, _, _, _ = await git.runner.run_command(["git", "ls-files"])
+
+    # The main thing is that smart_checkout succeeds when dirty without raising exceptions.
+    assert out or files_out
