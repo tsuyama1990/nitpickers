@@ -22,8 +22,6 @@ You are an expert System Architect using the AC-CDD methodology, having the doma
 ## Outputs
 You must generate (create) the following files in the repository:
 
-- `dev_documents/generate_architecture.py`
-- `dev_documents/architecture.png` (Generated via script execution)
 - `dev_documents/system_prompts/SYSTEM_ARCHITECTURE.md`
 - `dev_documents/system_prompts/CYCLE{xx}/SPEC.md` (For EACH Cycle)
 - `dev_documents/system_prompts/CYCLE{xx}/UAT.md` (For EACH Cycle)
@@ -33,22 +31,12 @@ You must generate (create) the following files in the repository:
 
 ## File Content Requirements
 
-### 1. dev_documents/generate_architecture.py & dev_documents/architecture.png
-You must create a Python script using the `diagrams` library (Diagrams as Code) to visually represent the system architecture, infrastructure, and data flow.
-
-**Requirements:**
-- **File Name:** `dev_documents/generate_architecture.py`
-- **Output:** The script must be configured to output an image named `architecture.png` into the `dev_documents/` directory.
-- **Execution:** Once the script is written, you **MUST** immediately execute it using your bash execution tool with the following command: `uv run python dev_documents/generate_architecture.py`
-- **Verification:** Ensure `dev_documents/architecture.png` has been generated successfully.
-
-### 2. dev_documents/system_prompts/SYSTEM_ARCHITECTURE.md
+### 1. dev_documents/system_prompts/SYSTEM_ARCHITECTURE.md
 A comprehensive architectural document. If you find any errors in the `ALL_SPEC.md` file, you must correct them. If you have any good suggestions for the `ALL_SPEC.md` file, you must suggest them. (e.g. Modernize the architectures, codes, add more features, etc.)
 
 **Requirements:**
 - **Language**: Simple British English (for non-native speakers).
 - **Format**: Markdown. Change the lines appropriately.
-- **Embedding:** At the very top of the document (and also at the top of `ALL_SPEC.md`), you **MUST** embed the newly generated diagram using standard Markdown: `![System Architecture](../architecture.png)` (adjusting relative path if necessary so the image is properly displayed).
 - **Additive Mindset**: Clearly map out how the new requirements integrate with the existing system architecture. Explicitly specify which existing files are reused and which ones need to be safely extended.
 
 **Sections & Word Counts (Minimum):**
@@ -66,13 +54,12 @@ A comprehensive architectural document. If you find any errors in the `ALL_SPEC.
   - **MUST Include**: A strategy for executing these tests without side-effects (e.g. mocking external requests, using temporary directories for file I/O).
   - **DB Rollback Rule**: Any testing requiring database or persistent state setup MUST utilize Pytest fixtures that start a transaction before the test and roll it back after, ensuring lightning-fast state resets without relying on heavy external CLI cleanup commands.
 
-### 3. dev_documents/system_prompts/CYCLE{xx}/SPEC.md (For EACH Cycle)
+### 2. dev_documents/system_prompts/CYCLE{xx}/SPEC.md (For EACH Cycle)
 Detailed specification for a specific development cycle.
 
 **Requirements:**
 - **Language**: Simple British English.
 - **Format**: Markdown. Change the lines appropriately.
-- **Embedding:** At the very top of each document, embed the generated architecture image: `![System Architecture](../../architecture.png)`.
 
 **Sections:**
 - **Summary** (Min 500 words)
@@ -103,7 +90,7 @@ Detailed specification for a specific development cycle.
   - Unit Testing Approach, meeting the criteria / spec / feature of design architecture (Min 300 words).
   - Integration Testing Approach, meeting the criteria / spec / feature of design architecture (Min 300 words).
 
-### 4. dev_documents/system_prompts/CYCLE{xx}/UAT.md (For EACH Cycle)
+### 3. dev_documents/system_prompts/CYCLE{xx}/UAT.md (For EACH Cycle)
 User Acceptance Testing plan.
 
 **Requirements:**
@@ -119,7 +106,7 @@ User Acceptance Testing plan.
 - **Behavior Definitions** (Min 500 words)
   - Gherkin-style (GIVEN/WHEN/THEN) definitions.
 
-### 5. dev_documents/USER_TEST_SCENARIO.md (Refinement)
+### 4. dev_documents/USER_TEST_SCENARIO.md (Refinement)
 The Master Plan for User Acceptance Testing and Tutorials. If the input `USER_TEST_SCENARIO.md` is incomplete, the Architect may refine it to add more specific test cases based on the architecture.
 
 **Requirements:**
@@ -136,7 +123,7 @@ The Master Plan for User Acceptance Testing and Tutorials. If the input `USER_TE
 - **Tutorial Validation**
   - Validate that the Marimo file executes correctly.
 
-### 6. pyproject.toml - Linter Configuration
+### 5. pyproject.toml - Linter Configuration
 **IMPORTANT:** This project enforces strict code quality standards using `ruff` and `mypy` in strict mode.
 
 **Dependency Requirements (CRITICAL):** You **MUST** explicitly add the following tools to the `[dependency-groups] dev` section (or `[project.optional-dependencies]` if strictly following PEP 621 without `uv` features, but `dependency-groups` is preferred for `uv`):
@@ -195,7 +182,7 @@ ignore_missing_imports = true
 - **Security**: Bandit rules prevent common security vulnerabilities.
 - **Maintainability**: Enforces modern Python patterns and clean code practices.
 
-### 7. dev_documents/required_envs.json
+### 6. dev_documents/required_envs.json
 A strict JSON array of required environment variables.
 
 **Requirements:**
@@ -204,7 +191,7 @@ A strict JSON array of required environment variables.
 - **Example**: `["STRIPE_API_KEY", "DB_PASSWORD", "ANTHROPIC_API_KEY"]`
 - If no external services or API keys are required, output an empty JSON array `[]`.
 
-### 8. README.md Generation
+### 7. README.md Generation
 You must generate a comprehensive `README.md` file in the project root. This file acts as the landing page for the project. It must be written based on the `ALL_SPEC.md` and the `SYSTEM_ARCHITECTURE.md` you just designed.
 
 **Required README.md Structure:**

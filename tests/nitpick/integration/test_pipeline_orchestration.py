@@ -1,9 +1,10 @@
-import json
-from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import respx
 from typer.testing import CliRunner
+
+from src.cli import app
+from src.domain_models.manifest import CycleManifest
 
 runner = CliRunner()
 

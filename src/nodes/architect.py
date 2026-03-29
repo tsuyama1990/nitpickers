@@ -5,26 +5,16 @@ from typing import Any
 from rich.console import Console
 
 from src.config import settings
-from src.nodes.base import BaseNode
-from src.services.git_ops import GitManager
-from src.services.jules_client import JulesClient
 from src.services.project import ProjectManager
 from src.state import CycleState
 
 console = Console()
 
 
-
-
-
-class ArchitectNodes(BaseNode):
-    jules: JulesClient
-    git: GitManager
-
-    model_config = BaseNode.model_config | {"arbitrary_types_allowed": True}
-
-    async def __call__(self, state: CycleState) -> dict[str, Any]:
-        return await self.architect_session_node(state)
+class ArchitectNodes:
+    def __init__(self, jules: Any, git: Any) -> None:
+        self.jules = jules
+        self.git = git
 
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Node for Architect Agent (Jules)."""
@@ -90,7 +80,7 @@ class ArchitectNodes(BaseNode):
         if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
-        result = await self.jules.run_session(
+        result = await self.jules.execute_command(
             command="Design the system architecture based on ALL_SPEC.md.",
             session_id=f"architect-{timestamp}",
             prompt=instruction,
