@@ -196,6 +196,7 @@ class WorkflowService:
     def _scan_implicit_dependencies(self) -> None:
         # Implicit dependency scan via SPEC documents
         import os
+
         try:
             import re
 
@@ -211,7 +212,9 @@ class WorkflowService:
                     if re.search(
                         r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE
                     ) and not os.getenv(secret):
-                        console.print("[bold red]Implicit Dependency Missing: A required secret is missing.[/bold red]")
+                        console.print(
+                            "[bold red]Implicit Dependency Missing: A required secret is missing.[/bold red]"
+                        )
                         console.print(
                             "[yellow]The specification file references a known secret, "
                             "but it was not found in the environment. Please configure required secrets.[/yellow]"
@@ -227,6 +230,7 @@ class WorkflowService:
     def _verify_dynamic_requirements(self) -> None:
         # Directive A: Pre-Flight Check based on required_envs.json
         import os
+
         try:
             import json
 

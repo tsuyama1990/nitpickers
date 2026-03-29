@@ -13,6 +13,7 @@ def real_e2e_env(tmp_path: Path) -> Path:
 
     # Initialize git repo so git operations succeed
     import shutil
+
     git_bin = shutil.which("git")
     assert git_bin is not None
     subprocess.run([git_bin, "init"], cwd=workspace, check=True)  # noqa: S603
@@ -40,7 +41,9 @@ def real_e2e_env(tmp_path: Path) -> Path:
 
 @pytest.mark.live
 @pytest.mark.asyncio
-async def test_nitpick_cli_init_and_gen_cycles(real_e2e_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_nitpick_cli_init_and_gen_cycles(
+    real_e2e_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     E2E test executing CLI commands in a real isolated environment without internal mocks.
     It verifies `nitpick init` and `nitpick gen-cycles`.
@@ -79,7 +82,14 @@ async def test_nitpick_cli_init_and_gen_cycles(real_e2e_env: Path, monkeypatch: 
     uv_bin = shutil.which("uv")
     assert uv_bin is not None
 
-    result_init = subprocess.run([uv_bin, "run", "nitpick", "init"], capture_output=True, text=True, check=False, cwd=real_e2e_env, env=env)  # noqa: S603, ASYNC221
+    result_init = subprocess.run(
+        [uv_bin, "run", "nitpick", "init"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=real_e2e_env,
+        env=env,
+    )  # noqa: S603, ASYNC221
 
     # Since `/opt/nitpick/templates` doesn't exist natively on our CI system running outside docker, it will fail gracefully.
     # We must assert a definitive exit code (removing 0, 1 allowances).
@@ -95,10 +105,17 @@ async def test_nitpick_cli_init_and_gen_cycles(real_e2e_env: Path, monkeypatch: 
     (dev_docs / "USER_TEST_SCENARIO.md").write_text("Calculate 1+1=2")
 
     # Run `nitpick gen-cycles` natively
-    result_gen = subprocess.run([uv_bin, "run", "nitpick", "gen-cycles", "--cycles", "2", "--session", "test_session"], capture_output=True, text=True, check=False, cwd=real_e2e_env, env=env)  # noqa: S603, ASYNC221
+    result_gen = subprocess.run(
+        [uv_bin, "run", "nitpick", "gen-cycles", "--cycles", "2", "--session", "test_session"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=real_e2e_env,
+        env=env,
+    )  # noqa: S603, ASYNC221
 
     # The CLI should fail due to unauthorized invalid API keys, but the failure should be handled by the script's entrypoint, not a Python crash traceback.
-    assert result_gen.returncode == 1 # Failing securely is expected with invalid keys
+    assert result_gen.returncode == 1  # Failing securely is expected with invalid keys
 
     # Verify the output indicates it attempted to start or hit an authentication/network failure
     stdout_lower = result_gen.stdout.lower()
@@ -106,4 +123,10 @@ async def test_nitpick_cli_init_and_gen_cycles(real_e2e_env: Path, monkeypatch: 
     combined_output = stdout_lower + stderr_lower
 
     # Asserting graceful network failure state
-    assert "error" in combined_output or "failed" in combined_output or "unauthorized" in combined_output or "authentication" in combined_output or "traceback" in combined_output
+    assert (
+        "error" in combined_output
+        or "failed" in combined_output
+        or "unauthorized" in combined_output
+        or "authentication" in combined_output
+        or "traceback" in combined_output
+    )

@@ -38,12 +38,17 @@ class MockHunterVisitor(ast.NodeVisitor):
                                 f"{self.filename}:{node.lineno} - Prohibited usage: {node.func.id}('{first_arg.value}')"
                             )
                         elif any(allowed in first_arg.value for allowed in self.allowed_mocks):
-                            pass # allowed
+                            pass  # allowed
                 else:
                     self.violations.append(
                         f"{self.filename}:{node.lineno} - Prohibited usage: {node.func.id}()"
                     )
-        elif isinstance(node.func, ast.Attribute) and node.func.attr in ("patch", "AsyncMock", "MagicMock", "Mock"):
+        elif isinstance(node.func, ast.Attribute) and node.func.attr in (
+            "patch",
+            "AsyncMock",
+            "MagicMock",
+            "Mock",
+        ):
             self.violations.append(
                 f"{self.filename}:{node.lineno} - Prohibited usage: .{node.func.attr}()"
             )
@@ -69,10 +74,14 @@ def audit_mocks(target_dir: str) -> bool:
 
     if all_violations:
         sys.stderr.write("\n=== INTEGRITY VIOLATION DETECTED ===\n")
-        sys.stderr.write("The following mock usage violates the Zero-Mock Integration testing policy:\n\n")
+        sys.stderr.write(
+            "The following mock usage violates the Zero-Mock Integration testing policy:\n\n"
+        )
         for _v in all_violations:
             sys.stderr.write(f"  - {_v}\n")
-        sys.stderr.write("\nPlease refactor these tests to use real instances or approved boundary stubs.\n")
+        sys.stderr.write(
+            "\nPlease refactor these tests to use real instances or approved boundary stubs.\n"
+        )
         return False
 
     sys.stdout.write("\n✓ Audit passed. No internal mock usage detected.\n")
@@ -81,12 +90,10 @@ def audit_mocks(target_dir: str) -> bool:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Audit tests for prohibited mock usage.")
     parser.add_argument(
-        "target_dir",
-        nargs="?",
-        default="tests/nitpick/integration/",
-        help="Directory to audit"
+        "target_dir", nargs="?", default="tests/nitpick/integration/", help="Directory to audit"
     )
     args = parser.parse_args()
 

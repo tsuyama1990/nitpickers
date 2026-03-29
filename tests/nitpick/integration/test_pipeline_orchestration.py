@@ -18,6 +18,7 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # Initialize a dummy git repository to satisfy GitManager requirements
     import shutil
     import subprocess
+
     git_bin = shutil.which("git")
     assert git_bin is not None
     subprocess.run([git_bin, "init"], cwd=workspace, check=True)  # noqa: S603
@@ -55,10 +56,7 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "project_session_id": "test_session",
         "feature_branch": "integration",
         "integration_branch": "main",
-        "cycles": [
-            {"id": "01", "status": "planned"},
-            {"id": "02", "status": "planned"}
-        ]
+        "cycles": [{"id": "01", "status": "planned"}, {"id": "02", "status": "planned"}],
     }
     (nitpick_dir / "project_manifest.json").write_text(json.dumps(manifest_data))
 
@@ -67,6 +65,7 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     # Since Pydantic BaseSettings caches paths at import time, we MUST monkeypatch `settings` dynamically to point to the correct workspace directory
     from src.config import settings
+
     monkeypatch.setattr(settings.paths, "workspace_root", workspace)
     monkeypatch.setattr(settings.paths, "artifacts_dir", nitpick_dir)
     monkeypatch.setattr(settings.paths, "documents_dir", workspace / "dev_documents")
@@ -84,7 +83,9 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_cli_run_pipeline_success(
+    test_workspace: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # 1. We mock the network boundaries
 
     import re
@@ -95,7 +96,15 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     def wildcard_post(request: httpx.Request) -> httpx.Response:
         url_str = str(request.url)
         if "jules" in url_str or "googleapis" in url_str:
-            return httpx.Response(200, json={"session_id": "session_123", "name": "session_123", "status": "created", "result": {"status": "success", "pr_url": "https://github.com/pulls/1"}})
+            return httpx.Response(
+                200,
+                json={
+                    "session_id": "session_123",
+                    "name": "session_123",
+                    "status": "created",
+                    "result": {"status": "success", "pr_url": "https://github.com/pulls/1"},
+                },
+            )
         if "smith.langchain" in url_str:
             return httpx.Response(200, json={"id": "run_123"})
         # default to OpenRouter format
@@ -106,16 +115,18 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
                 "object": "chat.completion",
                 "created": 1677652288,
                 "model": "gpt-4",
-                "choices": [{
-                    "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": '```json\n{"status": "success", "file_operations": [{"action": "create", "file_path": "dummy.py", "code": "print(1)"}], "test_plan": "Testing 123", "analysis": "Good", "evaluation_summary": "looks good", "is_complete": true, "reason": "done", "fixes": [], "strategy_type": "implementation", "architect_plan": "do this"}\n```'
-                    },
-                    "finish_reason": "stop"
-                }],
-                "usage": {"prompt_tokens": 9, "completion_tokens": 12, "total_tokens": 21}
-            }
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": '```json\n{"status": "success", "file_operations": [{"action": "create", "file_path": "dummy.py", "code": "print(1)"}], "test_plan": "Testing 123", "analysis": "Good", "evaluation_summary": "looks good", "is_complete": true, "reason": "done", "fixes": [], "strategy_type": "implementation", "architect_plan": "do this"}\n```',
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 9, "completion_tokens": 12, "total_tokens": 21},
+            },
         )
 
     respx.post(url__regex=re.compile(r".*")).mock(side_effect=wildcard_post)
@@ -123,7 +134,17 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     def wildcard_get(request: httpx.Request) -> httpx.Response:
         url_str = str(request.url)
         if "jules" in url_str or "googleapis" in url_str:
-            return httpx.Response(200, json={"status": "COMPLETED", "result": {"status": "success", "pr_url": "https://github.com/pulls/1", "session_name": "architect-123"}})
+            return httpx.Response(
+                200,
+                json={
+                    "status": "COMPLETED",
+                    "result": {
+                        "status": "success",
+                        "pr_url": "https://github.com/pulls/1",
+                        "session_name": "architect-123",
+                    },
+                },
+            )
         return httpx.Response(200, json={})
 
     respx.get(url__regex=re.compile(r".*")).mock(side_effect=wildcard_get)
@@ -150,10 +171,13 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     remote_dir.mkdir()
     import shutil
     import subprocess
+
     git_bin = shutil.which("git")
     assert git_bin is not None
     subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)  # noqa: S603, ASYNC221
-    subprocess.run([git_bin, "remote", "add", "origin", str(remote_dir)], cwd=test_workspace, check=True)  # noqa: S603, ASYNC221
+    subprocess.run(
+        [git_bin, "remote", "add", "origin", str(remote_dir)], cwd=test_workspace, check=True
+    )  # noqa: S603, ASYNC221
     subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=test_workspace, check=True)  # noqa: S603, ASYNC221
 
     # To avoid 'asyncio.run() cannot be called from a running event loop' in pytest-asyncio,
@@ -163,6 +187,7 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     monkeypatch.setenv("NITPICK_CODER_MAX_RETRIES", "0")
 
     import subprocess
+
     # We create a dummy `uv` wrapper in our PATH so it doesn't try to sync or hit the network
     bin_dir = test_workspace / "bin"
     bin_dir.mkdir()
@@ -175,16 +200,21 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     git_mock.chmod(0o755)
 
     import os
+
     monkeypatch.setenv("PATH", f"{bin_dir}:{os.environ.get('PATH')}")
 
     from src.services.workflow import WorkflowService
+
     service = WorkflowService()
 
     # Run the orchestrator
     import asyncio
+
     try:
         # Run it with asyncio.wait_for to prevent absolute lockups
-        await asyncio.wait_for(service.run_full_pipeline(project_session_id="test_session"), timeout=15.0)
+        await asyncio.wait_for(
+            service.run_full_pipeline(project_session_id="test_session"), timeout=15.0
+        )
     except SystemExit as e:
         assert e.code == 0  # noqa: PT017
     except TimeoutError:
@@ -192,6 +222,7 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
 
     # Check that it executed and advanced
     from src.state_manager import StateManager
+
     mgr = StateManager()
     manifest = mgr.load_manifest()
 

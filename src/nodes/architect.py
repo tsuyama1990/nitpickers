@@ -14,9 +14,6 @@ from src.state import CycleState
 console = Console()
 
 
-
-
-
 class ArchitectNodes(BaseNode):
     jules: JulesClient
     git: GitManager

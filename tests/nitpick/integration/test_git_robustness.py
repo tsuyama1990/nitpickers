@@ -16,6 +16,7 @@ def real_git_env(tmp_path: Path) -> Path:
     # Actually initialize a real git repository
     import shutil
     import subprocess
+
     git_bin = shutil.which("git")
     assert git_bin is not None
 
@@ -45,7 +46,9 @@ def real_git_env(tmp_path: Path) -> Path:
 
 
 @pytest.mark.asyncio
-async def test_create_feature_branch_idempotency(real_git_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_create_feature_branch_idempotency(
+    real_git_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Verify that create_feature_branch doesn't fail if branch already exists.
     """
@@ -71,7 +74,9 @@ async def test_create_feature_branch_idempotency(real_git_env: Path, monkeypatch
 
 
 @pytest.mark.asyncio
-async def test_smart_checkout_dirty_recovery(real_git_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_smart_checkout_dirty_recovery(
+    real_git_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Verify smart checkout recovers from dirty state.
     """

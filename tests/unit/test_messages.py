@@ -42,6 +42,7 @@ def test_recovery_messages() -> None:
     assert "tgt-branch" in result
     assert "orig-branch" in result
 
+
 def test_success_messages() -> None:
     # Test architect_complete
     result = SuccessMessages.architect_complete("session-123", "int-branch")
@@ -71,6 +72,7 @@ def test_success_messages() -> None:
     assert "http://pr" in result
     assert "Finalization Complete" in result
 
+
 def test_show_panel() -> None:
     with patch.object(Console, "print") as mock_print:
         SuccessMessages.show_panel("test message", "test title")
@@ -80,12 +82,14 @@ def test_show_panel() -> None:
         assert len(call_args) > 0
         assert isinstance(call_args[0], Panel)
 
+
 def test_ensure_api_key_success() -> None:
     with patch("src.messages.check_api_key") as mock_check:
         mock_check.return_value = None
         # Should not raise any exception or exit
         ensure_api_key()
         mock_check.assert_called_once()
+
 
 def test_ensure_api_key_failure() -> None:
     with (
