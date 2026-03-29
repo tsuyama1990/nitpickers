@@ -82,14 +82,14 @@ async def test_nitpick_cli_init_and_gen_cycles(
     uv_bin = shutil.which("uv")
     assert uv_bin is not None
 
-    result_init = subprocess.run(
+    result_init = subprocess.run(  # noqa: S603, ASYNC221
         [uv_bin, "run", "nitpick", "init"],
         capture_output=True,
         text=True,
         check=False,
         cwd=real_e2e_env,
         env=env,
-    )  # noqa: S603, ASYNC221
+    )
 
     # Since `/opt/nitpick/templates` doesn't exist natively on our CI system running outside docker, it will fail gracefully.
     # We must assert a definitive exit code (removing 0, 1 allowances).
@@ -105,14 +105,14 @@ async def test_nitpick_cli_init_and_gen_cycles(
     (dev_docs / "USER_TEST_SCENARIO.md").write_text("Calculate 1+1=2")
 
     # Run `nitpick gen-cycles` natively
-    result_gen = subprocess.run(
+    result_gen = subprocess.run(  # noqa: S603, ASYNC221
         [uv_bin, "run", "nitpick", "gen-cycles", "--cycles", "2", "--session", "test_session"],
         capture_output=True,
         text=True,
         check=False,
         cwd=real_e2e_env,
         env=env,
-    )  # noqa: S603, ASYNC221
+    )
 
     # The CLI should fail due to unauthorized invalid API keys, but the failure should be handled by the script's entrypoint, not a Python crash traceback.
     assert result_gen.returncode == 1  # Failing securely is expected with invalid keys

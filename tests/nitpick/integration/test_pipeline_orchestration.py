@@ -175,9 +175,9 @@ async def test_cli_run_pipeline_success(
     git_bin = shutil.which("git")
     assert git_bin is not None
     subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)  # noqa: S603, ASYNC221
-    subprocess.run(
+    subprocess.run(  # noqa: S603, ASYNC221
         [git_bin, "remote", "add", "origin", str(remote_dir)], cwd=test_workspace, check=True
-    )  # noqa: S603, ASYNC221
+    )
     subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=test_workspace, check=True)  # noqa: S603, ASYNC221
 
     # To avoid 'asyncio.run() cannot be called from a running event loop' in pytest-asyncio,
