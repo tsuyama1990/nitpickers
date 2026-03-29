@@ -198,4 +198,3 @@ async def test_cli_run_pipeline_success(test_workspace: Path, monkeypatch: pytes
     # StateManager loads from disk. Since the orchestrator ran, it should have updated the state or completed.
     assert manifest is not None
     assert manifest.project_session_id == "test_session"
-
