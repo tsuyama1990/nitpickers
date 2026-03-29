@@ -68,7 +68,7 @@ class IntegrationUsecase:
         # we'll maintain history just for this file's resolution to keep context window manageable.
         message_history: list[dict[str, str]] = []
 
-        prompt = self.conflict_manager.build_conflict_package(item, repo_path)
+        prompt = await self.conflict_manager.build_conflict_package(item, repo_path)
 
         while item.resolution_attempts < max_retries:
             item.resolution_attempts += 1

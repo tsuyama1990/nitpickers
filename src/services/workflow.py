@@ -813,7 +813,7 @@ class WorkflowService:
                     from src.services.conflict_manager import ConflictManager
 
                     manager = ConflictManager()
-                    registry_items = manager.scan_conflicts(Path.cwd())
+                    registry_items = await manager.scan_conflicts(Path.cwd())
 
                     if manifest:
                         mgr.update_project_state(
