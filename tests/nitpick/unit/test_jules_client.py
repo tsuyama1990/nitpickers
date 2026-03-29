@@ -197,7 +197,6 @@ async def test_interactive_inquiry_handling(
 
     mock_httpx.get.side_effect = get_side_effect
     mock_httpx.post.return_value.status_code = 200
-    # Add missing raise_for_status mock
     mock_httpx.post.return_value.raise_for_status = MagicMock()
 
     result = await mock_client.wait_for_completion_legacy("sessions/123")

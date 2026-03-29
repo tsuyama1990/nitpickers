@@ -14,6 +14,7 @@ from src.utils import logger
 class MaxRetriesExceededError(Exception):
     pass
 
+
 T = TypeVar("T")
 
 
@@ -38,7 +39,10 @@ def retry_on_429(config: DispatcherConfig) -> Callable[..., Any]:
                             f"HTTP 429 encountered in {func.__name__}. Retrying in {sleep_time:.2f} seconds (Attempt {retries}/{config.max_retries})."
                         )
                         await asyncio.sleep(sleep_time)
-                    elif getattr(e.response, "status_code", None) == 503 and retries < config.max_retries:
+                    elif (
+                        getattr(e.response, "status_code", None) == 503
+                        and retries < config.max_retries
+                    ):
                         retries += 1
                         sleep_time = (config.retry_backoff_factor**retries) + random.uniform(1, 3)  # noqa: S311
                         logger.warning(

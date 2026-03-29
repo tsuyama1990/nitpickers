@@ -1,7 +1,13 @@
 from src.config import settings
 from src.domain_models.review import AuditResult
 from src.enums import FlowStatus
-from src.nodes.routers import route_auditor, route_final_critic, route_qa, route_sandbox_evaluate
+from src.nodes.routers import (
+    route_architect_critic,
+    route_auditor,
+    route_final_critic,
+    route_qa,
+    route_sandbox_evaluate,
+)
 from src.state import AuditState, CycleState
 
 
@@ -97,3 +103,24 @@ def test_route_qa() -> None:
     # Test fallback
     state = CycleState(cycle_id="01", status=FlowStatus.FAILED)
     assert route_qa(state) == "failed"
+
+
+def test_route_architect_critic() -> None:
+    # Test architect_completed
+    state = CycleState(cycle_id="01", status=FlowStatus.ARCHITECT_COMPLETED)
+    assert route_architect_critic(state) == "end"
+
+    # Test architect_failed
+    state = CycleState(cycle_id="01", status=FlowStatus.ARCHITECT_FAILED)
+    assert route_architect_critic(state) == "end"
+
+    # Test architect_critic_rejected
+    state = CycleState(cycle_id="01", status=FlowStatus.ARCHITECT_CRITIC_REJECTED)
+    assert route_architect_critic(state) == "architect_session"
+
+    # Test fallback (any other status)
+    state = CycleState(cycle_id="01")
+    assert route_architect_critic(state) == "end"
+
+    state = CycleState(cycle_id="01", status=FlowStatus.COMPLETED)
+    assert route_architect_critic(state) == "end"
