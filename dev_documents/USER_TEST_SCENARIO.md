@@ -22,11 +22,11 @@ The tutorials must support two primary execution strategies to accommodate diffe
 
 A **SINGLE** comprehensive Marimo notebook will be created to walk the user through the entire lifecycle of the 5-Phase pipeline.
 
--   **Filename**: `tutorials/nitpickers_5_phase_architecture.py`
+-   **Filename**: `tutorials/UAT_AND_TUTORIAL.py`
 
 ### Notebook Structure
 
-The `tutorials/nitpickers_5_phase_architecture.py` file will contain the following interactive sections:
+The `tutorials/UAT_AND_TUTORIAL.py` file will contain the following interactive sections:
 
 1.  **Introduction & Setup (Phase 0)**:
     -   Explanation of the 5-Phase Architecture (CLI Init -> Architect -> Coder -> Integration -> UAT/QA).
@@ -48,7 +48,7 @@ The `tutorials/nitpickers_5_phase_architecture.py` file will contain the followi
 
 ## Tutorial Validation
 
-The `tutorials/nitpickers_5_phase_architecture.py` file is considered a critical system test.
--   It must be executed successfully via `uv run marimo test tutorials/nitpickers_5_phase_architecture.py` during the standard CI testing suite.
+The `tutorials/UAT_AND_TUTORIAL.py` file is considered a critical system test.
+-   It must be executed successfully via `uv run marimo test tutorials/UAT_AND_TUTORIAL.py` during the standard CI testing suite.
 -   The notebook must not rely on any global state that prevents it from running repeatedly.
 -   Code blocks must use `try-except ImportError` patterns and dynamically manipulate `sys.path` if necessary to ensure it runs smoothly even if executed from different working directories.

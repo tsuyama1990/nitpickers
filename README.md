@@ -1,6 +1,6 @@
 # NITPICKERS
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards.
+An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards. This 5-phase pipeline orchestrates autonomous coding, strictly separating implementation from review to eliminate AI context fatigue and hallucination.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -19,12 +19,12 @@ An AI-native development environment based on a highly robust methodology design
 
 ## Architecture Overview
 
-The system operates across 5 distinct phases to guarantee code quality from planning to final integration.
+The system operates across 5 distinct phases to guarantee code quality from planning to final integration. It begins with architectural decomposition, moves into parallel implementation loops safeguarded by a serial auditing gauntlet, intelligently merges concurrent branches using 3-Way Diff, and finally validates the entire system using multi-modal E2E testing.
 
 ```mermaid
 flowchart TD
     %% Phase0: Init Phase (CLI Setup)
-    subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
+    subgraph Phase0 ["Phase 0: Init Phase"]
         direction TB
         InitCmd([CLI: nitpick init])
     end
@@ -33,22 +33,22 @@ flowchart TD
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
-        ArchSession["JULES: architect_session\n(Requirement Decomposition)"]
-        ArchCritic{"JULES: architect_critic\n(Red Team Self-Critic)"}
+        ArchSession["architect_session"]
+        ArchCritic{"architect_critic"}
         InitCmd2 --> ArchSession
         ArchSession --> ArchCritic
         ArchCritic -- "Reject" --> ArchSession
     end
 
     %% Phase2: Coder Graph (Parallel: Cycle 1...N)
-    subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
+    subgraph Phase2 ["Phase 2: Coder Graph (Parallel)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Test/Implementation)"]
-        SelfCritic["JULES: self_critic\n(Pre-Sandbox Polish)"]
-        SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
-        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Post-Audit Refactor)"]
-        FinalCritic["JULES: final_critic\n(Final Logic Verification)"]
+        CoderSession["coder_session"]
+        SelfCritic["self_critic"]
+        SandboxEval{"sandbox_evaluate"}
+        AuditorNode{"auditor_node (Serial 1-3)"}
+        RefactorNode["refactor_node"]
+        FinalCritic{"final_critic_node"}
 
         CoderSession --> SelfCritic
         SelfCritic --> SandboxEval
@@ -63,24 +63,24 @@ flowchart TD
     %% Phase3: Integration Phase
     subgraph Phase3 ["Phase 3: Integration Phase"]
         direction TB
-        MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
-        MasterIntegrator["JULES: master_integrator\n(3-Way Diff Resolution)"]
-        GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
+        MergeTry{"Git PR Merge"}
+        MasterIntegrator["master_integrator_node"]
+        GlobalSandbox{"global_sandbox_node"}
     end
 
     %% Phase4: UAT & QA Graph
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
-        UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
-        UxAuditor["OpenRouter: ux_auditor\n(Multimodal UX Review)"]
-        QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
-        QaSession["JULES: qa_session\n(Integration Fixes)"]
+        UatEval{"uat_evaluate"}
+        UxAuditor["ux_auditor"]
+        QaAuditor["qa_auditor (Vision)"]
+        QaSession["qa_session"]
     end
 
     %% Inter-Phase Connections
     Phase0 --> Phase1
     Phase1 --> Phase2
-    Phase2 -- "All Coder Cycles Complete" --> MergeTry
+    Phase2 -- "All Cycles Complete" --> MergeTry
 
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
@@ -109,14 +109,14 @@ Ensure the following tools are available on your system:
     - `LANGCHAIN_API_KEY`
     - `LANGCHAIN_PROJECT`
 
-## Installation & Setup (Docker Recommended)
+## Installation & Setup
 
 The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
 
 1. Clone the repository and navigate to the project directory:
    ```bash
-   git clone <your-repository>
-   cd <your-repository>
+   git clone https://github.com/nitpickers/nitpickers.git
+   cd nitpickers
    ```
 
 2. Configure your core environment variables (Tool-Level):
@@ -131,7 +131,7 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    bash setup.sh
    source ~/.bashrc
    ```
-   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
+   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere. Alternatively, use `uv sync` to install dependencies locally.
 
 ## Usage
 
@@ -171,7 +171,7 @@ nitpick run-cycle --id 01
 ### Interactive Tutorials (UAT Verification)
 To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
 ```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow

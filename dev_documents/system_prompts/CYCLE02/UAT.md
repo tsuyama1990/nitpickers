@@ -1,60 +1,31 @@
-# CYCLE02 UAT: Integration Graph & 3-Way Diff
+# UAT PLAN: CYCLE 02 - Integration and UAT Orchestration
 
 ## Test Scenarios
 
-### Scenario ID: Integration_Phase_01 - Clean Merge
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly processes a merge between two branches that do not have any conflicting changes. This is the baseline "happy path" for Phase 3. The system must attempt a Git merge, detect no conflicts, and immediately route to the Global Sandbox node. The Global Sandbox must then execute the full suite of static analysis (Ruff, Mypy) and unit tests (Pytest) on the integrated codebase. Upon successful execution of all tests, the Integration Graph must reach the `END` state.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The final state must reflect a successfully integrated repository.
+### Scenario ID: UAT-C02-01
+**Priority:** High
+**Description:** Verify the automated resolution of Git conflicts using the 3-Way Diff Master Integrator.
+**Context:** When concurrent cycles modify the same lines of code (e.g., adding imports to the top of a file), standard Git merges inevitably fail. The system must recognize this conflict state and invoke the Master Integrator with a comprehensive 3-way diff package to safely resolve the conflict. This scenario proves the pipeline can handle real-world development friction seamlessly, allowing parallel development to scale without bottlenecking at the integration phase.
 
-### Scenario ID: Integration_Phase_02 - Conflict Resolution via 3-Way Diff
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly detects a Git merge conflict and invokes the Master Integrator agent using the 3-Way Diff strategy to resolve it automatically. The system must attempt a merge and fail due to conflicting changes in the same file. It must route to the `master_integrator_node`, which extracts the Base, Local, and Remote versions of the file and constructs a prompt. The LLM (mocked in testing) provides a resolved code block. The system must apply this resolution, successfully complete the merge, and proceed to the Global Sandbox.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (conflict) -> master_integrator_node -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The prompt sent to the LLM must contain the `### Base`, `### Branch A`, and `### Branch B` sections.
-
-### Scenario ID: Integration_Phase_03 - Post-Merge Semantic Failure Recovery
-- **Priority**: Medium
-- **Description**: Verify that the Integration Graph correctly handles a scenario where a merge is successful (no Git conflicts) or a Git conflict is resolved, but the resulting codebase fails semantic checks in the Global Sandbox (e.g., a function signature changed in one branch, breaking a call in another). The system must complete the merge and execute the Global Sandbox. The Sandbox must fail (simulated). The graph must then route the failure back to the `master_integrator_node` (or a dedicated integration-fix node) to resolve the semantic error.
-- **Verification**: The LangGraph trace must show the sequence: `... -> global_sandbox_node -> (failed) -> master_integrator_node -> ... -> global_sandbox_node -> (pass) -> END`. The final state must successfully recover from the semantic failure.
+### Scenario ID: UAT-C02-02
+**Priority:** High
+**Description:** Verify multi-modal artifact capture upon UAT failure.
+**Context:** When a Playwright E2E test fails in Phase 4 due to an unexpected visual change or missing DOM element, the system must collect the resulting `.png` screenshots and DOM traces. It must package them correctly into a `MultiModalArtifact` schema for the Vision LLM (QA Auditor) to analyze. This scenario proves that the system captures incontrovertible evidence of UI failures, enabling precise diagnostics and automated remediation of frontend bugs without requiring human intervention.
 
 ## Behavior Definitions
 
-### Feature: Automated 3-Way Diff Conflict Resolution
-As a developer using an AI-native environment,
-I want the system to automatically and intelligently resolve Git merge conflicts,
-So that parallel development cycles can be integrated seamlessly without manual intervention.
+### UAT-C02-01: 3-Way Diff Resolution
+**GIVEN** an initialized `IntegrationState` containing feature branches with explicit, overlapping conflicting changes on the same file
+**AND** the `conflict_manager` accurately detects standard `<<<<<<<` conflict markers within the target workspace
+**WHEN** the `master_integrator_node` is invoked during Phase 3
+**THEN** the system should generate a robust prompt package containing distinctly labeled sections for the common "Base", "Branch A" (Local), and "Branch B" (Remote) code versions
+**AND** the system should successfully invoke the LLM to generate a unified, logically sound file that resolves the semantic conflict
+**AND** the resulting file should be completely free of all conflict markers, allowing the `git_merge_node` to succeed on its subsequent retry.
 
-**Background:**
-Given the system has successfully completed at least two parallel Phase 2 (Coder Graph) cycles,
-And the resulting feature branches are ready to be merged into the integration branch.
-
-**Scenario: Successful clean merge of feature branches**
-- Given the system starts Phase 3 (Integration Graph)
-- And the integration branch is clean
-- When the system attempts to merge Feature Branch A
-- And there are no Git conflicts
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the merge is finalized and the phase completes.
-
-**Scenario: Automated resolution of a Git conflict using 3-Way Diff**
-- Given the system is executing Phase 3 (Integration Graph)
-- And the system attempts to merge Feature Branch B
-- When Git detects a merge conflict in `utils.py`
-- Then the system routes to the Master Integrator node
-- And the Master Integrator extracts the Base, Local, and Remote versions of `utils.py`
-- And the Master Integrator generates a unified, conflict-free version of `utils.py`
-- And the system applies the resolution and commits the merge
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the phase completes successfully.
-
-**Scenario: Handling a semantic failure introduced during integration**
-- Given the system has successfully merged Feature Branch C
-- And the system is executing the Global Sandbox
-- When the Global Sandbox detects a failing unit test due to an incompatible API change
-- Then the system routes the failure logs back to the Master Integrator node
-- And the Master Integrator analyzes the failure and applies a semantic fix
-- And the system re-runs the Global Sandbox
-- When the Global Sandbox tests pass
-- Then the phase completes successfully.
+### UAT-C02-02: Multi-Modal Capture
+**GIVEN** the Phase 4 `uat_evaluate` node executes a pre-configured Playwright test suite against the integrated codebase
+**AND** the test suite returns a non-zero exit code (failure) due to a simulated UI issue
+**AND** the test runner deposits a `.png` screenshot and a `.txt` DOM dump in the configured local artifacts directory
+**WHEN** the `uat_usecase` processes the failure state
+**THEN** it should successfully and securely read the `.png` and `.txt` file paths, rejecting any path traversal attempts
+**AND** it should populate the `artifacts` list within the returning `UatExecutionState` with a valid `MultiModalArtifact` Pydantic object containing the exact, sanitized absolute paths to the screenshot and trace.
