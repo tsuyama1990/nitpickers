@@ -1,60 +1,81 @@
-# CYCLE02 UAT: Integration Graph & 3-Way Diff
+# CYCLE02 UAT Plan: Integration and QA Automation
 
 ## Test Scenarios
 
-### Scenario ID: Integration_Phase_01 - Clean Merge
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly processes a merge between two branches that do not have any conflicting changes. This is the baseline "happy path" for Phase 3. The system must attempt a Git merge, detect no conflicts, and immediately route to the Global Sandbox node. The Global Sandbox must then execute the full suite of static analysis (Ruff, Mypy) and unit tests (Pytest) on the integrated codebase. Upon successful execution of all tests, the Integration Graph must reach the `END` state.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The final state must reflect a successfully integrated repository.
+### Scenario ID: UAT-C2-001 (Priority: High)
+**Objective:** Verify the capability of the `master_integrator_node` to correctly parse a 3-Way Diff and synthesize a unified, conflict-free code block utilizing the newly developed `ConflictManager` service.
 
-### Scenario ID: Integration_Phase_02 - Conflict Resolution via 3-Way Diff
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly detects a Git merge conflict and invokes the Master Integrator agent using the 3-Way Diff strategy to resolve it automatically. The system must attempt a merge and fail due to conflicting changes in the same file. It must route to the `master_integrator_node`, which extracts the Base, Local, and Remote versions of the file and constructs a prompt. The LLM (mocked in testing) provides a resolved code block. The system must apply this resolution, successfully complete the merge, and proceed to the Global Sandbox.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (conflict) -> master_integrator_node -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The prompt sent to the LLM must contain the `### Base`, `### Branch A`, and `### Branch B` sections.
+**Description:** This scenario will utilize the interactive `tutorials/nitpickers_5_phase_architecture.py` Marimo notebook. The notebook will simulate a Git merge conflict scenario programmatically. It will define three distinct strings representing a "Base" file, a "Local" branch modification, and a "Remote" branch modification. The notebook will then invoke the `ConflictManager.build_conflict_package` method to construct the LLM prompt. Finally, the notebook will simulate passing this prompt to the `master_integrator_node` in "Mock Mode," returning a pre-defined successful merge resolution.
 
-### Scenario ID: Integration_Phase_03 - Post-Merge Semantic Failure Recovery
-- **Priority**: Medium
-- **Description**: Verify that the Integration Graph correctly handles a scenario where a merge is successful (no Git conflicts) or a Git conflict is resolved, but the resulting codebase fails semantic checks in the Global Sandbox (e.g., a function signature changed in one branch, breaking a call in another). The system must complete the merge and execute the Global Sandbox. The Sandbox must fail (simulated). The graph must then route the failure back to the `master_integrator_node` (or a dedicated integration-fix node) to resolve the semantic error.
-- **Verification**: The LangGraph trace must show the sequence: `... -> global_sandbox_node -> (failed) -> master_integrator_node -> ... -> global_sandbox_node -> (pass) -> END`. The final state must successfully recover from the semantic failure.
+**Steps to Execute:**
+1.  Open the `tutorials/nitpickers_5_phase_architecture.py` notebook using `uv run marimo edit`.
+2.  Navigate to the section titled "Phase 3: The Integration Graph & 3-Way Diff".
+3.  Ensure the "Execution Mode" toggle is set to "Mock Mode".
+4.  Execute the cell that defines the simulated conflict strings (Base, Local, Remote).
+5.  Execute the cell that invokes the `build_conflict_package` method.
+6.  The notebook must clearly display the resulting string prompt. The user must visually verify that the prompt accurately contains the Base, Local, and Remote code blocks separated by the correct Markdown headers, completely devoid of standard Git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+7.  Execute the cell that simulates the `master_integrator_node` processing this prompt.
+8.  Observe the output. The notebook should display the mock LLM response, representing the seamlessly integrated code. The graph execution trace should confirm a successful transition from the conflict state to the `global_sandbox_node`.
+
+### Scenario ID: UAT-C2-002 (Priority: Critical)
+**Objective:** Validate the automated diagnostic and remediation loop of the Phase 4 QA Graph, specifically ensuring that simulated Playwright failures are correctly routed to the Vision LLM (`qa_auditor`) and subsequently fixed by the `qa_session`.
+
+**Description:** This scenario demonstrates the system's "Self-Healing" capabilities in the final QA phase. The Marimo notebook will simulate a frontend testing failure. It will provide a mock DOM dump and a path to a mock screenshot image. The execution will trace the `_create_qa_graph` in "Mock Mode," showing how the system diagnoses the error and attempts a fix.
+
+**Steps to Execute:**
+1.  In the Marimo notebook, navigate to the section "Phase 4 & 5: UAT & QA Graph (Automated Remediation)".
+2.  Ensure the "Execution Mode" toggle is set to "Mock Mode".
+3.  Execute the cell that instantiates a simulated `uat_evaluate` failure state, including a dummy error log and a path to a placeholder image.
+4.  Execute the cell containing the `_create_qa_graph` traversal loop.
+5.  Observe the execution trace. The notebook must clearly show the transition from the failed `uat_evaluate` node to the `qa_auditor` node.
+6.  The notebook must display the mock structured JSON fix plan generated by the `qa_auditor` (e.g., `{"diagnosis": "Button missing", "action": "Add <button> element"}`).
+7.  Verify that the trace shows execution proceeding to the `qa_session` node, where the mock fix is applied.
+8.  Finally, verify that the execution loops back to `uat_evaluate` (which will now return a simulated "Pass" state) and successfully terminates at the `END` node.
 
 ## Behavior Definitions
 
-### Feature: Automated 3-Way Diff Conflict Resolution
-As a developer using an AI-native environment,
-I want the system to automatically and intelligently resolve Git merge conflicts,
-So that parallel development cycles can be integrated seamlessly without manual intervention.
+**Feature: 3-Way Diff Integration Logic**
 
-**Background:**
-Given the system has successfully completed at least two parallel Phase 2 (Coder Graph) cycles,
-And the resulting feature branches are ready to be merged into the integration branch.
+  **Scenario: Generating a Conflict Package**
+    GIVEN a file named `src/utils.py` is in a conflicted state following a git merge attempt
+    AND the base ancestor version contains `def calc(a, b): return a + b`
+    AND the local branch version contains `def calc(a, b): return a + b + 1`
+    AND the remote branch version contains `def calc(a, b): return a + b + 2`
+    WHEN the `ConflictManager.build_conflict_package` method is invoked for `src/utils.py`
+    THEN the method returns a formatted string
+    AND the string explicitly contains the header `### Base (元のコード)` followed by the base code
+    AND the string explicitly contains the header `### Branch A の変更 (Local)` followed by the local code
+    AND the string explicitly contains the header `### Branch B の変更 (Remote)` followed by the remote code
+    AND the string does NOT contain Git conflict markers such as `<<<<<<<`
 
-**Scenario: Successful clean merge of feature branches**
-- Given the system starts Phase 3 (Integration Graph)
-- And the integration branch is clean
-- When the system attempts to merge Feature Branch A
-- And there are no Git conflicts
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the merge is finalized and the phase completes.
+  **Scenario: Routing a Git Merge Conflict**
+    GIVEN the execution is currently at the `git_merge_node` in the Integration Graph
+    AND the `route_merge` conditional function determines that the merge command resulted in a conflict
+    WHEN the LangGraph orchestrator processes this state
+    THEN the execution is immediately routed to the `master_integrator_node` for 3-Way Diff resolution
 
-**Scenario: Automated resolution of a Git conflict using 3-Way Diff**
-- Given the system is executing Phase 3 (Integration Graph)
-- And the system attempts to merge Feature Branch B
-- When Git detects a merge conflict in `utils.py`
-- Then the system routes to the Master Integrator node
-- And the Master Integrator extracts the Base, Local, and Remote versions of `utils.py`
-- And the Master Integrator generates a unified, conflict-free version of `utils.py`
-- And the system applies the resolution and commits the merge
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the phase completes successfully.
+**Feature: Multi-Modal QA Diagnostics**
 
-**Scenario: Handling a semantic failure introduced during integration**
-- Given the system has successfully merged Feature Branch C
-- And the system is executing the Global Sandbox
-- When the Global Sandbox detects a failing unit test due to an incompatible API change
-- Then the system routes the failure logs back to the Master Integrator node
-- And the Master Integrator analyzes the failure and applies a semantic fix
-- And the system re-runs the Global Sandbox
-- When the Global Sandbox tests pass
-- Then the phase completes successfully.
+  **Scenario: Triggering the Vision LLM Auditor**
+    GIVEN the execution is currently at the `uat_evaluate` node in the QA Graph
+    AND the automated Playwright tests have failed
+    AND a screenshot of the failure (`error_screenshot.png`) and the associated DOM trace have been captured
+    WHEN the LangGraph orchestrator processes the failed state
+    THEN the execution is routed to the `qa_auditor` node
+    AND the `qa_auditor` receives the path to `error_screenshot.png` and the DOM trace as part of its multi-modal context
+
+  **Scenario: Applying the QA Remediation Plan**
+    GIVEN the execution is currently at the `qa_auditor` node
+    AND the Vision LLM has analyzed the artifacts and returned a valid, structured JSON fix plan
+    WHEN the LangGraph orchestrator processes this state
+    THEN the execution is routed to the `qa_session` node
+    AND the `qa_session` node is provided with the structured JSON fix plan to automatically implement the required codebase changes
+
+**Feature: Sequential Pipeline Orchestration**
+
+  **Scenario: Coordinating the 5-Phase Execution**
+    GIVEN the `WorkflowService` has been invoked to `run_pipeline`
+    WHEN the multiple instances of the Phase 2 Coder Graph (e.g., Cycle 1, Cycle 2) finish executing concurrently
+    THEN the `WorkflowService` waits for all Phase 2 instances to complete successfully
+    AND the `WorkflowService` subsequently invokes the Phase 3 Integration Graph exactly once
+    AND the Phase 4 QA Graph is only invoked if the Phase 3 Integration Graph completes without failures
