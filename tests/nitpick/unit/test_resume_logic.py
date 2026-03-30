@@ -40,7 +40,7 @@ class TestResumeLogic:
         mock_jules.wait_for_completion.assert_awaited_once_with("jules-existing-123")
         mock_jules.run_session.assert_not_awaited()
         assert result["status"] == FlowStatus.READY_FOR_AUDIT
-        assert result["pr_url"] == "http://pr"
+        assert result["session"].pr_url == "http://pr"
 
     @patch("src.services.coder_usecase.StateManager")
     async def test_fallback_to_new_session_and_persist(

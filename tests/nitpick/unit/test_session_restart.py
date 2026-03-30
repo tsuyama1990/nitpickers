@@ -88,7 +88,7 @@ class TestSessionRestart:
                 result2 = await usecase.execute(state)
 
         assert result2["status"] == FlowStatus.READY_FOR_AUDIT
-        assert result2["pr_url"] == "https://github.com/pr/1"
+        assert result2["session"].pr_url == "https://github.com/pr/1"
         assert mock_jules.run_session.call_count == 2
         assert any(
             "session_restart_count" in call and call["session_restart_count"] == 1

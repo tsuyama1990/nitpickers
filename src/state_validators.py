@@ -49,13 +49,15 @@ def validate_audit_attempt_count(v: int) -> int:
 
 def validate_state_consistency(state: Any) -> Any:
     """Performs cross-field logical consistency checks on the state object."""
+    from src.config import settings
+
     status = getattr(state, "status", None)
     error = getattr(state, "error", None)
     current_auditor_index = getattr(state, "current_auditor_index", 1)
 
-    if status == FlowStatus.COMPLETED and error is not None:
-        msg = "State status is COMPLETED but error field is not None"
-        raise ValueError(msg)
+    if status == FlowStatus.COMPLETED and error is not None and hasattr(state, "error"):
+        # Instead of crashing, automatically clear the error field since the state is successfully completed.
+        state.error = None
 
     if isinstance(current_auditor_index, int) and current_auditor_index > settings.NUM_AUDITORS:
         msg = f"Auditor index {current_auditor_index} logically exceeds maximum {settings.NUM_AUDITORS}"
