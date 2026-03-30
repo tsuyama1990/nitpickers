@@ -1,94 +1,135 @@
-# CYCLE01 Specification: Coder Phase & State Management Refactoring
+# SPEC: CYCLE01 - The Coder Graph & State Foundation
 
 ## Summary
-CYCLE01 focuses on establishing the core state management and routing logic required for the first two phases of the newly architected 5-Phase pipeline: Phase 1 (Architect Graph) and Phase 2 (Coder Graph). The primary objective is to modify the fundamental Pydantic state models—specifically the `CycleState`—to handle complex control flows, such as serial auditing loops and dedicated refactoring phases. This cycle will also rewire the LangGraph edges and conditional routing logic for the Coder Graph to enforce a zero-trust execution loop where code is generated, sandboxed, sequentially audited by multiple independent agents, and finally refactored before integration. This foundational work ensures that each cycle operates autonomously and deterministically before interacting with the broader system integration processes.
+
+This cycle is the first of two crucial phases in transitioning the Nitpickers development environment to the newly designed 5-Phase Architecture. Our primary objective in CYCLE01 is to establish a rigorous, parallelizable foundation for the coding phase (Phase 2). This requires the systemic modification of our existing state management object (`CycleState`) to support new serial auditing and refactoring feedback loops. We must introduce critical control variables, such as `is_refactoring`, `current_auditor_index`, and `audit_attempt_count`, to accurately trace the progress of the worker agent through multiple layers of automated review.
+
+Once the state object is enriched, we will systematically rewire the LangGraph definitions governing the `coder_graph`. The existing, simplistic flow will be replaced with a robust sequence: from the initial `coder_session`, to a preliminary `self_critic`, then into the `sandbox_evaluate` node. Crucially, the outcome of the sandbox evaluation will dynamically route the flow either to the serial `auditor_node` (for deep structural and logic review) or to the `final_critic_node` (if a post-audit refactoring phase has concluded successfully).
+
+This cycle heavily focuses on establishing deterministic routing logic within Pydantic-validated models, ensuring that the worker agent cannot escape the zero-trust validation blockade until all conditions are demonstrably met. The implementation must strictly adhere to our additive mindset: we are extending existing schemas and interfaces to support new capabilities, taking utmost care to preserve the integrity of legacy data access patterns to avoid breaking peripheral components.
+
+## Infrastructure & Dependencies
+
+### A. Project Secrets (`.env.example`)
+
+The Coder Graph heavily relies on various Language Model providers and execution environments. The following external service secrets must be explicitly appended to the target project's `.env.example` file, demarcated by a `# Target Project Secrets` comment.
+
+-   `JULES_API_KEY`: Required for the primary worker agent.
+-   `OPENROUTER_API_KEY`: Required for the serial auditor and vision critic nodes.
+-   `E2B_API_KEY`: Required to execute the local sandbox environments securely.
+
+The Coder must ensure these keys are represented as empty placeholders in the example file to guide user configuration without exposing real credentials.
+
+### B. System Configurations (`docker-compose.yml`)
+
+The operation of the parallel cycles and the subsequent serial audits requires specific non-confidential environmental setups. The Coder must inject the following configurations directly into the `environment:` section of the relevant service within the target project's `docker-compose.yml`.
+
+-   `NITPICK_MAX_AUDITORS=3`: Defines the number of distinct serial auditors in the loop.
+-   `NITPICK_MAX_AUDIT_ATTEMPTS=2`: Defines the maximum number of times an agent can loop back from a single auditor rejection before escalating or failing.
+-   `NITPICK_MAX_REFACTOR_ATTEMPTS=2`: Limits the refactoring loop.
+
+The Coder is explicitly instructed to strictly preserve valid YAML formatting and idempotency during this operation. Existing agent configurations must not be overwritten or corrupted.
+
+### C. Sandbox Resilience
+
+**MANDATE MOCKING:** To guarantee sandbox resilience and prevent catastrophic CI failures, the Coder MUST explicitly instruct that all external API calls relying on the newly defined secrets in `.env.example` (such as `OPENROUTER_API_KEY`) MUST be mocked in unit and integration tests (using `unittest.mock` or `pytest-mock`).
+
+*Why:* The CI/CD Sandbox will not possess the real API keys during the autonomous evaluation phase. If tests attempt real network calls to SaaS providers without valid `.env` values, the pipeline will fail, potentially causing infinite retry loops. Strict mocking is the only way to validate the logic of our routing nodes and state transitions without incurring actual network overhead.
 
 ## System Architecture
-This cycle targets the foundational data structures and routing mechanisms of the Coder Phase. By embedding new control variables directly into the Pydantic state, we enable LangGraph conditional edges to deterministically guide the execution flow.
+
+This section details the exact code blueprints required for the architectural changes to the Coder Graph and State Foundation.
 
 ### File Structure Modifications
-The following files will be modified or created to support the new state and routing logic:
+
+The following ASCII tree outlines the files to be created or modified in this cycle, ensuring consistency with the overall System Architecture diagram.
 
 ```text
 src/
-├── **state.py** (Modifying CycleState and CommitteeState)
-├── **graph.py** (Rewiring _create_coder_graph)
-└── nodes/
-    └── **routers.py** (Implementing new conditional routing functions)
+├── **state.py**                # Modification: Add CommitteeState and new root flags
+├── **graph.py**                # Modification: Rewire _create_coder_graph
+├── nodes/
+│   └── **routers.py**          # Modification: Implement route_sandbox_evaluate, route_auditor, route_final_critic
 ```
 
-### Components and Interactions
-1.  **State Management (`src/state.py`)**: The `CycleState` model serves as the central nervous system for a given development cycle. To support the serial auditing process and the explicit refactoring phase, we will augment the `CommitteeState` (a sub-model of `CycleState`) with new tracking variables: `is_refactoring`, `current_auditor_index`, and `audit_attempt_count`. These variables act as circuit breakers and state trackers for the LangGraph execution engine.
-2.  **Graph Routing (`src/nodes/routers.py`)**: The conditional edges in LangGraph rely on routing functions that inspect the current `CycleState`. We will introduce new routers:
-    -   `route_sandbox_evaluate`: Determines whether a passed sandbox evaluation should proceed to the auditor phase (if implementing) or the final critic phase (if refactoring).
-    -   `route_auditor`: Manages the serial auditor loop. If an auditor rejects the code, it increments the attempt count and routes back to the coder. If approved, it moves to the next auditor in the series (1→2→3). Once all pass, it routes to the refactoring node.
-    -   `route_final_critic`: Evaluates the output of the final self-critic review, routing to completion (`Approve`) or back to the coder (`Reject`).
-3.  **Graph Rewiring (`src/graph.py`)**: The `_create_coder_graph` method will be updated to replace the existing parallel `committee_manager` with the new serial `auditor_node`. We will also introduce the `refactor_node` and `final_critic_node` into the execution path, wiring them together using the newly defined routers.
-
 ## Design Architecture
-The NITPICKERS system is entirely driven by schema-first, Pydantic-based state management. This ensures that every transition in the LangGraph workflow is type-safe and validated.
 
-### Domain Concepts
--   **CycleState**: Represents the entirety of a single development cycle (e.g., Phase 2). It must encapsulate all necessary context for the Coder, Sandbox, and Auditor agents.
--   **CommitteeState**: A logical grouping within `CycleState` that specifically tracks the progress of multi-agent reviews.
--   **is_refactoring (bool)**: A critical invariant. When `False`, the system is in the initial implementation phase, aiming to pass unit tests and structural checks. When `True`, the system has passed the initial checks and auditor reviews, and is now focused solely on improving code quality (e.g., readability, adherence to specific design patterns) without altering business logic.
--   **current_auditor_index (int)**: An integer (1 to 3) representing the current auditor in the series. It must increment only upon an `Approve` action.
--   **audit_attempt_count (int)**: A counter that tracks how many times a single auditor has rejected the code. This prevents infinite loops by enforcing a maximum number of retries (e.g., 2) before forcing a broader system failure or intervention.
+The structural integrity of Nitpickers relies heavily on strict, Pydantic-based schemas. The modifications outlined below are designed as pre-implementation blueprints to guarantee robust validation and boundary enforcement.
 
-### Invariants and Constraints
--   `current_auditor_index` must always be $\geq 1$ and $\leq$ the total number of defined auditors (e.g., 3).
--   `audit_attempt_count` must be reset to 0 when moving to a new auditor or after a successful refactoring pass, depending on the specific loop design.
--   The `CycleState` model must strictly forbid extra fields (`extra="forbid"`) to prevent silent typos from breaking the LangGraph state machine.
+### 1. `src/state.py` (Domain Concepts & Constraints)
 
-### Extensibility and Backward Compatibility
-To maintain backward compatibility with any legacy code that interacts directly with `CycleState`, the new variables (`is_refactoring`, `current_auditor_index`, etc.) will be exposed as top-level properties on `CycleState`, even though they are logically stored within `CommitteeState` or a new dedicated sub-model. This pattern is already established in `src/state.py` using `@property` decorators.
+The `CycleState` acts as the definitive source of truth for the LangGraph. We will extend it seamlessly by introducing a `CommitteeState` sub-model.
+
+**Domain Concept:** The `CommitteeState` encapsulates the progress of the worker through the automated review board. It tracks which auditor is currently evaluating the code and how many times the worker has attempted to satisfy that auditor's constraints.
+
+**Key Invariants & Validation Rules:**
+-   `current_auditor_index` (int): Must be strongly typed and constrained via `ge=1`. Initialized to 1.
+-   `audit_attempt_count` (int): Must be strongly typed and constrained via `ge=0`. Initialized to 0. It must increment on rejection and reset on approval to the next auditor.
+-   `is_refactoring` (bool): A strict boolean flag indicating whether the system has passed the auditor chain and is now polishing the code before final validation. Initialized to `False`.
+
+**Extensibility & Backward Compatibility:**
+To ensure backward compatibility, the existing properties accessed directly on `CycleState` (e.g., `state.current_auditor_index`) will be re-mapped as `@property` getters and setters pointing to the newly encapsulated `self.committee.current_auditor_index`. This prevents breaking legacy code while modernizing the underlying schema.
+
+### 2. `src/nodes/routers.py` (Producers & Consumers)
+
+These routing functions consume the current `CycleState` and produce the string identifier of the next LangGraph node to execute.
+
+**Domain Concept:** The routers enforce the business logic of the 5-Phase Architecture. They represent the "conditional edges" of the graph.
+
+**Key Invariants & Validation Rules:**
+-   `route_sandbox_evaluate(state: CycleState) -> str`:
+    -   If `state.get("sandbox_status") == "failed"`, return `"failed"`.
+    -   If successful and `state.get("is_refactoring") == True`, return `"final_critic"`.
+    -   Otherwise, return `"auditor"`.
+-   `route_auditor(state: CycleState) -> str`:
+    -   If the auditor review is "Reject", increment `audit_attempt_count`. Return `"reject"` (fallback logic applies if the limit is exceeded).
+    -   If the auditor review is "Approve", increment `current_auditor_index`.
+    -   If `current_auditor_index > 3`, return `"pass_all"`.
+    -   Otherwise, return `"next_auditor"`.
+-   `route_final_critic(state: CycleState) -> str`:
+    -   Return `"reject"` if the self-evaluation fails, otherwise return `"approve"`.
 
 ## Implementation Approach
-The implementation will follow a strict, step-by-step process prioritizing schema validation over business logic execution.
 
-1.  **Update `src/state.py`**:
-    -   Locate the `CommitteeState` Pydantic model.
-    -   Add `is_refactoring: bool = Field(default=False)`.
-    -   Add `audit_attempt_count: int = Field(default=0, ge=0)`.
-    -   Ensure `current_auditor_index` is properly defined (it appears to exist but ensure its usage aligns with the new requirements).
-    -   Update the `CycleState` properties to provide getter/setter access to these new fields for ease of use across the codebase.
-    -   Run `uv run mypy src/state.py` to ensure type safety.
+The implementation will be executed systematically to ensure maximum stability.
 
-2.  **Implement Routers in `src/nodes/routers.py`**:
-    -   Create `route_sandbox_evaluate(state: CycleState) -> str`.
-        -   If `state.get("sandbox_status") == "failed"`, return `"failed"`.
-        -   If `state.get("is_refactoring") == True`, return `"final_critic"`.
-        -   Otherwise, return `"auditor"`.
-    -   Create `route_auditor(state: CycleState) -> str`.
-        -   Inspect the latest audit result (e.g., from `state.audit.audit_result.status`).
-        -   If `"Reject"`, increment `state.committee.audit_attempt_count`. If it exceeds a threshold (e.g., `settings.NITPICK_MAX_ITERATIONS` or similar configuration), return `"reject"` (to a fallback node, or handle the failure). Otherwise, return `"reject"` to loop back to the coder for another attempt.
-        -   If `"Approve"`, increment `state.committee.current_auditor_index`.
-        -   If `state.committee.current_auditor_index > settings.NITPICK_NUM_AUDITORS` (dynamically query the configuration, do not hardcode 3), return `"pass_all"`.
-        -   Otherwise, return `"next_auditor"`.
-    -   Create `route_final_critic(state: CycleState) -> str`.
-        -   Evaluate the self-critic result; return `"reject"` or `"approve"`.
-
-3.  **Rewire `src/graph.py`**:
-    -   Locate `_create_coder_graph`.
-    -   Remove references to the parallel `committee_manager`.
-    -   Add nodes: `auditor_node` (serial execution), `refactor_node`, and `final_critic_node`.
-    -   Define edges using the newly created routers. Ensure the cycle flow matches the sequence: `coder_session` $\rightarrow$ `self_critic` $\rightarrow$ `sandbox_evaluate` $\rightarrow$ `route_sandbox_evaluate` $\rightarrow$ (`auditor_node` | `final_critic_node`).
-    -   From `auditor_node` $\rightarrow$ `route_auditor` $\rightarrow$ (`coder_session` | `next_auditor` | `refactor_node`).
-    -   From `refactor_node` $\rightarrow$ sets `state["is_refactoring"] = True` $\rightarrow$ `sandbox_evaluate`.
-    -   *Crucial Enforcement*: Ensure the LLM interaction within `refactor_node` uses `pydantic-ai` or similar `litellm` capabilities to enforce structured JSON output mapping directly to the `FileOperation` schema, avoiding any raw markdown parsing vulnerabilities.
+1.  **Phase 1: State Extension (Pydantic Blueprinting)**
+    -   Begin by modifying `src/state.py`. Add the necessary fields to the `CommitteeState` nested model: `is_refactoring`, `current_auditor_index`, and `audit_attempt_count`.
+    -   Implement the appropriate `Field(default=..., ge=...)` constraints.
+    -   Ensure that the legacy properties (`@property` accessors) are updated to point to the nested `CommitteeState` fields to maintain API compatibility.
+2.  **Phase 2: Routing Logic Implementation**
+    -   Open `src/nodes/routers.py` and implement the three required routing functions: `route_sandbox_evaluate`, `route_auditor`, and `route_final_critic`.
+    -   Strictly adhere to the logical branching defined in the Design Architecture. Utilize the `state.get()` method to safely retrieve values and mutate the state where necessary (e.g., incrementing counters).
+3.  **Phase 3: Graph Rewiring (LangGraph Execution)**
+    -   Open `src/graph.py` and locate the `_create_coder_graph` method.
+    -   Remove the legacy nodes (`committee_manager`, `uat_evaluate`) from this specific graph.
+    -   Add the new nodes: `coder_session`, `self_critic` (if not already present), `sandbox_evaluate`, `auditor_node`, `refactor_node`, and `final_critic_node`.
+    -   Define the edges according to the System Architecture diagram:
+        -   Start to `coder_session`.
+        -   `coder_session` to `self_critic` (first pass) or directly to `sandbox_evaluate`.
+        -   Add conditional edges from `sandbox_evaluate` using `route_sandbox_evaluate`.
+        -   Add conditional edges from `auditor_node` using `route_auditor`.
+        -   Edge from `refactor_node` to `sandbox_evaluate`.
+        -   Add conditional edges from `final_critic_node` using `route_final_critic`.
 
 ## Test Strategy
 
+A robust test suite is critical to validate the deterministic behavior of the new Coder Graph.
+
 ### Unit Testing Approach (Min 300 words)
-The unit testing strategy for CYCLE01 will focus exclusively on validating the structural integrity of the newly introduced state models and the deterministic behavior of the routing functions, independent of any external LLM calls or complex graph execution.
 
-First, tests will be created in `tests/test_state.py` to target the `CommitteeState` and `CycleState` models. We will instantiate these models with various permutations of the new fields (`is_refactoring`, `current_auditor_index`, `audit_attempt_count`) to verify that the Pydantic field validators enforce constraints (e.g., `audit_attempt_count` cannot be negative). We will also verify that the backward compatibility properties on `CycleState` correctly map to the underlying `CommitteeState` fields, ensuring that getting or setting these properties updates the nested state appropriately.
+The primary focus of the unit tests will be to validate the strict routing logic and state management encapsulations. We must guarantee that the conditional edge functions in `src/nodes/routers.py` operate flawlessly under various state conditions.
 
-Second, tests will be developed for the new routing functions in `tests/nodes/test_routers.py`. We will construct dummy `CycleState` objects that mimic different points in the development cycle. For `route_sandbox_evaluate`, we will verify that a state with `sandbox_status="failed"` correctly returns `"failed"`, while a state with `is_refactoring=True` correctly returns `"final_critic"`. For `route_auditor`, we will carefully simulate the rejection loop, ensuring that returning `"Reject"` increments the attempt counter and returns `"reject"`, while returning `"Approve"` increments the auditor index and transitions to `"next_auditor"` or `"pass_all"` appropriately. These unit tests ensure that the foundational control flow logic is solid before integrating it into LangGraph.
+We will write dedicated test cases for `route_sandbox_evaluate`, injecting mock `CycleState` objects with different combinations of `sandbox_status` and `is_refactoring` flags. For instance, we will assert that a state with `sandbox_status="success"` and `is_refactoring=True` deterministically routes to `"final_critic"`.
+
+Similarly, `route_auditor` will be rigorously tested. We will simulate scenarios where an auditor rejects code, verifying that the router correctly returns `"reject"` and that the state mutation (incrementing `audit_attempt_count`) occurred as expected. We will test boundary conditions, ensuring that when `current_auditor_index` surpasses the defined maximum, the function routes to `"pass_all"`.
+
+All state modifications, particularly the nested `CommitteeState`, must be tested to ensure the legacy `@property` getters and setters in `CycleState` remain completely functional.
 
 ### Integration Testing Approach (Min 300 words)
-Integration testing for CYCLE01 will verify that the rewired `_create_coder_graph` operates correctly as a cohesive state machine. This involves executing the LangGraph traversal with mocked node behaviors to simulate real-world scenarios without incurring the cost or side-effects of actual LLM generation or dynamic sandbox execution.
 
-We will write integration tests in `tests/test_coder_graph.py`. A critical test scenario will simulate a "Happy Path": starting the graph, mocking the Coder to produce code, mocking the Sandbox to pass, mocking three sequential Auditors to approve the code (verifying the `current_auditor_index` increments from 1 to 3), transitioning to the Refactor node, mocking the refactor pass (verifying `is_refactoring` becomes `True`), passing the final Sandbox evaluation, and securing approval from the Final Critic. We will assert that the final state at the `END` node correctly reflects `status="completed"` and `is_refactoring=True`.
+The integration tests will evaluate the interaction between the newly wired LangGraph nodes within the `_create_coder_graph` structure. We will compile the graph (`build_coder_graph`) and execute it using a mock Checkpointer (`MemorySaver`).
 
-Another crucial integration test will simulate the "Rejection Loop". We will mock an Auditor to reject the code multiple times, verifying that the graph routes back to the Coder node each time, and specifically asserting that the `audit_attempt_count` accurately reflects the number of loop iterations. Finally, we will simulate a Sandbox failure during the refactoring phase, ensuring the system correctly routes back to the Coder for remediation before attempting another final critique. These tests guarantee that the multi-phase routing logic is robust and correctly handles both successes and failures within the Coder Phase.
+To ensure sandbox resilience and adhere strictly to the "Mandate Mocking" rule, all external LLM invocations within the node functions (e.g., `coder_session`, `auditor_node`, `refactor_node`) MUST be mocked using `pytest-mock` or `patch`. The tests will not perform real HTTP calls to OpenRouter or Jules APIs.
+
+We will trace the execution path of the graph. For example, we will inject a mock response simulating an auditor rejection and verify the graph correctly loops back to the `coder_session`. We will then simulate a successful sandbox evaluation during the refactoring phase and verify the graph terminates at the `final_critic_node` before reaching the END state. This ensures the structural integrity of the entire serial loop without incurring any external API dependency risks.

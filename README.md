@@ -1,21 +1,17 @@
-# NITPICKERS
+# NITPICKERS: 5-Phase Zero-Trust Architecture
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards.
+Nitpickers is an AI-native code development environment designed to enforce absolute zero-trust validation of AI-generated code. By employing a rigorous 5-Phase Architecture, Nitpickers integrates parallel coding agents, a robust 3-Way Diff integration system, and a standalone multi-modal User Acceptance Testing (UAT) phase, ensuring that generated code perfectly meets professional engineering standards.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Ruff](https://img.shields.io/badge/Ruff-Passed-success)
-![Mypy](https://img.shields.io/badge/Mypy-Passed-success)
-![Pytest](https://img.shields.io/badge/Pytest-Passed-success)
 
 ## Key Features
 
-- **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
 - **5-Phase Parallel & Sequential Architecture:** Seamlessly orchestrates requirement decomposition, parallel feature implementation, 3-Way Diff integration, and full-system E2E UI testing.
-- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions.
-- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent.
-- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads.
+- **Serial Auditing Loop:** AI agents are subjected to rigorous review by a chain of distinct serial auditors, enforcing red team validation before code enters the integration phase.
+- **Master Integrator with 3-Way Diff:** Resolves Git conflicts intelligently by feeding a unified `Base`, `Local`, and `Remote` context into an integration LLM.
+- **Stateless Vision UAT Diagnosticians:** Leverages advanced Vision LLMs (via OpenRouter) as outer-loop diagnosticians. They analyze error artifacts (e.g., Playwright screenshots) and return structured JSON fix plans to worker agents.
 
 ## Architecture Overview
 
@@ -100,18 +96,9 @@ Ensure the following tools are available on your system:
 - `uv` - The fastest Python package installer and resolver.
 - `git` - Version control for your codebase.
 - `Docker` - (Optional, depending on sandbox configuration).
-- Valid API keys:
-    - `JULES_API_KEY` (Gemini Pro/Worker)
-    - `E2B_API_KEY` (Sandbox Execution)
-    - `OPENROUTER_API_KEY` (Auditor/Vision Models)
-- LangSmith Observability Configuration (Optional):
-    - `LANGCHAIN_TRACING_V2=true`
-    - `LANGCHAIN_API_KEY`
-    - `LANGCHAIN_PROJECT`
+- Valid API keys (`OPENROUTER_API_KEY`, `JULES_API_KEY`, `E2B_API_KEY`).
 
-## Installation & Setup (Docker Recommended)
-
-The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
+## Installation & Setup
 
 1. Clone the repository and navigate to the project directory:
    ```bash
@@ -119,59 +106,36 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    cd <your-repository>
    ```
 
-2. Configure your core environment variables (Tool-Level):
+2. Synchronize dependencies using `uv`:
    ```bash
-   cp .env.example .env
-   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and (optionally) LangSmith variables.
-   # These tool-level infrastructure keys should stay within the nitpickers directory.
+   uv sync
    ```
 
-3. Quick Start (Build & Alias):
+3. Configure your core environment variables:
    ```bash
-   bash setup.sh
-   source ~/.bashrc
+   cp .env.example .env
+   # Edit .env and populate your OPENROUTER_API_KEY, JULES_API_KEY, and E2B_API_KEY.
    ```
-   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
 
 ## Usage
 
-Once your core `.env` is configured and you have run the setup script, you can navigate to *any* project directory and use the `nitpick` command seamlessly. Project-specific API keys should be placed in a separate `.env` file within the target project directory.
+### Quick Start
+To trigger the automated architecture generation and subsequent parallel development cycles:
 
-The "Sidecar" workflow dynamically mounts your current working directory into the container using the `TARGET_PROJECT_PATH` alias configuration.
+1. Initialize your project's `dev_documents/ALL_SPEC.md` with raw feature requirements.
+2. Run the Architect Phase to generate CYCLE directories:
+   ```bash
+   uv run nitpick gen-cycles
+   ```
+3. Run the complete pipeline (Phase 2 through 4):
+   ```bash
+   uv run nitpick run-pipeline
+   ```
 
-### Initialize Project Requirements
-
-For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure (`src/`, `tests/`, `dev_documents/`), initializes Git, and configures your environment.
-
+### Running the Marimo Tutorial
+To interactively experience the Multi-Modal UAT, the 3-Way Diff, and the Serial Auditing loops in Mock Mode or Real Mode:
 ```bash
-cd /path/to/target/project
-nitpick init
-```
-After initialization, follow the CLI prompts to fill in `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
-
-### Generate Development Cycles (Phase 1)
-Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.
-```bash
-cd /path/to/target/project
-nitpick gen-cycles
-```
-
-### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
-Execute the complete orchestrated 5-phase pipeline against your currently active project directory, automatically managing parallel implementation and final integration.
-```bash
-nitpick run-pipeline
-```
-
-### Run a Specific Cycle Manually
-For debugging, execute a specific development cycle (e.g., `01`).
-```bash
-nitpick run-cycle --id 01
-```
-
-### Interactive Tutorials (UAT Verification)
-To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
-```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow
@@ -186,19 +150,21 @@ uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
     uv run pytest
     ```
 
+Nitpickers employs strict `pyproject.toml` guidelines enforcing `max-complexity = 10` for Ruff, and strict typings with `mypy`. Ensure that modifications to `src/` follow the defined Pydantic standards.
+
 ## Project Structure
 
 ```text
 /
 ├── dev_documents/          # Auto-generated specs, UATs, logs
-│   ├── system_prompts/     # Cycle specific plans and documents
+│   ├── system_prompts/     # Cycle specific specs and UAT documents
 │   └── USER_TEST_SCENARIO.md
 ├── src/                    # The main implementation for NITPICKERS
 │   ├── cli.py              # CLI entrypoint
-│   ├── state.py            # Pydantic state models (CycleState, etc.)
-│   ├── graph.py            # Main LangGraph declarations
+│   ├── state.py            # Pydantic state models (CycleState, IntegrationState)
+│   ├── graph.py            # Main LangGraph declarations (Coder, Integration, QA)
 │   ├── nodes/              # LangGraph node routing functions
-│   └── services/           # Orchestration (workflow.py) & Diff Logic (conflict_manager.py)
+│   └── services/           # Orchestration & Conflict Resolution (3-Way Diff)
 ├── tests/                  # Unit, Integration, and UAT tests
 ├── tutorials/              # Marimo-based interactive tutorials
 ├── pyproject.toml          # Project configuration (Dependencies & Linting)

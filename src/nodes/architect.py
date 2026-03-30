@@ -9,7 +9,6 @@ from src.enums import FlowStatus
 from src.nodes.base import BaseNode
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
-from src.services.project import ProjectManager
 from src.state import CycleState
 
 console = Console()
@@ -24,7 +23,7 @@ class ArchitectNodes(BaseNode):
     async def __call__(self, state: CycleState) -> dict[str, Any]:
         return await self.architect_session_node(state)
 
-    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def architect_session_node(self, state: CycleState) -> dict[str, Any]:
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
 

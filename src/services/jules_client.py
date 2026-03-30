@@ -678,7 +678,7 @@ class JulesClient:
             elapsed = 0
             processed_fallback_ids: set[str] = set()
 
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient():
                 while elapsed < max_wait:
                     await asyncio.sleep(poll_interval)
                     elapsed += poll_interval

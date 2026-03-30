@@ -1,85 +1,131 @@
-# CYCLE02 Specification: Integration Phase & 3-Way Diff Resolution
+# SPEC: CYCLE02 - Integration & QA Orchestration
 
 ## Summary
-CYCLE02 focuses on implementing the "Integration Phase" (Phase 3) of the NITPICKERS 5-phase architecture. This phase acts as a critical bottleneck where parallel, successfully audited feature branches (from Phase 2) are merged into a single integration branch. The core technical challenge addressed in this cycle is intelligent conflict resolution. Instead of relying on manual intervention or failing the build when Git encounters a merge conflict, the system will employ a Master Integrator LLM utilizing a "3-Way Diff" strategy. This approach provides the LLM with the common ancestor (Base), the Local changes, and the Remote changes, allowing it to safely synthesize a unified file that preserves the intentions of both branches.
+
+This second cycle completes the transition to the Nitpickers 5-Phase Architecture. While CYCLE01 established the parallelizable foundation (Phase 2), CYCLE02 focuses on safely merging those divergent implementations and executing the final multi-modal User Acceptance Testing (UAT) validations. Our objective is to construct the new `Integration Graph` (Phase 3) and refine the standalone `QA Graph` (Phase 4).
+
+The core challenge in this cycle lies in the intelligent resolution of Git merge conflicts. Instead of relying on raw, contextless conflict markers (`<<<<<<<`), we will develop a sophisticated 3-Way Diff mechanism within `conflict_manager.py`. This mechanism will extract the common ancestor (Base), the Local branch, and the Remote branch modifications, packaging them into a highly structured prompt for a "Master Integrator" LLM. This ensures conflicts are resolved with a full understanding of the original architectural intent.
+
+Following successful integration, the entire merged codebase must be subjected to a global sandbox execution (`global_sandbox_node`). Only after this stringent blockade is passed will the system proceed to Phase 4 (QA Graph), where automated Playwright E2E tests will run. If these tests fail, a stateless "QA Auditor" equipped with Vision capabilities will diagnose the screenshots and logs, forming a self-healing loop. Finally, the orchestration logic in `src/cli.py` and `src/services/workflow.py` must be updated to seamlessly connect these disparate phases into a unified execution pipeline.
+
+## Infrastructure & Dependencies
+
+### A. Project Secrets (`.env.example`)
+
+The Integration and QA phases rely on advanced Vision Language Models to diagnose frontend UI failures. The following external service secrets must be explicitly appended to the target project's `.env.example` file, demarcated by a `# Target Project Secrets` comment.
+
+-   `OPENROUTER_API_KEY`: Required for the QA Auditor and UX Auditor (Vision models) to analyze Playwright screenshots.
+-   `JULES_API_KEY`: Required for the Master Integrator and QA Session worker agents.
+-   `E2B_API_KEY`: Required to execute the global sandbox and the final Playwright E2E tests securely.
+
+The Coder must ensure these keys are represented as empty placeholders to guide user configuration securely.
+
+### B. System Configurations (`docker-compose.yml`)
+
+The operation of the 3-Way Diff and the Playwright test suite requires specific non-confidential environmental setups. The Coder must inject the following configurations directly into the `environment:` section of the relevant service within the target project's `docker-compose.yml`.
+
+-   `NITPICK_ENABLE_VISION_AUDIT=true`: Toggles the invocation of the Vision LLM during the QA phase.
+-   `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`: Ensures the sandbox has access to the pre-installed headless browsers.
+
+The Coder is explicitly instructed to strictly preserve valid YAML formatting and idempotency during this operation.
+
+### C. Sandbox Resilience
+
+**MANDATE MOCKING:** To guarantee sandbox resilience, the Coder MUST explicitly instruct that all external API calls relying on the newly defined secrets in `.env.example` MUST be mocked in unit and integration tests (using `unittest.mock` or `pytest-mock`).
+
+*Why:* The Sandbox evaluating the system's integration logic will not possess the real API keys during autonomous test runs. If tests attempt real network calls to OpenRouter or Jules APIs without valid `.env` values, the pipeline will immediately fail. Strict mocking is essential for validating the 3-Way Diff logic and the Graph routing without network side-effects.
 
 ## System Architecture
-This cycle introduces a new LangGraph specifically for integration (`_create_integration_graph`) and heavily refactors the conflict management services to support the 3-Way Diff strategy.
+
+This section details the exact code blueprints required for orchestrating the Integration and QA phases.
 
 ### File Structure Modifications
-The following files will be created or modified:
+
+The following ASCII tree outlines the files to be created or modified in this cycle, completing the System Architecture blueprint.
 
 ```text
 src/
-├── **state.py** (Adding/Refining IntegrationState)
-├── **graph.py** (Creating _create_integration_graph)
+├── **cli.py**                  # Modification: Update run-pipeline to execute Phases 1-4 sequentially
+├── **graph.py**                # Modification: Implement _create_integration_graph and adjust _create_qa_graph
+├── nodes/
+│   └── **routers.py**          # Modification: Implement route_merge, route_global_sandbox
 └── services/
-    └── **conflict_manager.py** (Implementing 3-Way Diff logic)
+    ├── **conflict_manager.py** # Modification: Implement 3-Way Diff extraction via Git commands
+    ├── **uat_usecase.py**      # Modification: Decouple from Phase 2, adjust state inputs for Phase 4
+    └── **workflow.py**         # Modification: Orchestrate build_integration_graph and build_qa_graph
 ```
 
-### Components and Interactions
-1.  **Integration Graph (`src/graph.py`)**: A new LangGraph definition will orchestrate the integration process.
-    -   `git_merge_node`: Attempts a standard `git merge` of a feature branch into the integration branch.
-    -   `master_integrator_node`: Triggered if `git_merge_node` encounters a conflict. It invokes the LLM to resolve the conflict.
-    -   `global_sandbox_node`: Runs a comprehensive suite of static checks and unit tests across the entire integrated codebase to ensure no regressions were introduced during the merge.
-2.  **Conflict Manager (`src/services/conflict_manager.py`)**: This service is the heart of the intelligent resolution process. It must be refactored to extract the three distinct versions of a conflicted file from Git history.
-    -   `build_conflict_package`: A new or heavily modified method that uses Git commands (e.g., `git show :1:{file}`, `:2:{file}`, `:3:{file}`) to retrieve the Base, Local, and Remote file contents. It then formats these into a structured prompt for the Master Integrator LLM.
-3.  **State Management (`src/state.py`)**: The `IntegrationState` model will be formalized to track the list of feature branches pending merge, the current active branch, and any unresolved `ConflictRegistryItem` objects.
-
 ## Design Architecture
-The Integration Phase relies on strict state boundaries to ensure that parallel development streams do not corrupt each other during the merge process.
 
-### Domain Concepts
--   **IntegrationState**: A Pydantic model tracking the overall progress of Phase 3. It manages a queue of branches to merge and holds the results of the global sandbox evaluation.
--   **ConflictRegistryItem**: An existing (or to-be-refined) model that represents a single conflicted file. It must be updated to store or reference the Base, Local, and Remote code strings, in addition to the file path.
--   **3-Way Diff Package**: A structured payload sent to the LLM. It is not just a diff with `<<<<<<<` markers; it presents the three complete versions of the code to provide maximum context.
--   **ConflictResolutionSchema**: A strictly defined Pydantic model that the Master Integrator LLM must return. This ensures the output is always a JSON object containing the `resolved_code` string, eliminating fragile markdown regex extraction entirely.
+The structural integrity of the integration process relies on rigid Pydantic schemas. The modifications below blueprint the necessary components.
 
-### Invariants and Constraints
--   The Integration Phase *must not* begin until all active Coder Phase (Phase 2) graphs have reached the `END` state successfully.
--   The `master_integrator_node` must output syntactically valid code, enforced via the `ConflictResolutionSchema`. It cannot output code containing Git conflict markers.
--   The `build_conflict_package` must use `try/except` blocks to handle Git failures (e.g., when a file is newly created in Branch A, Git will fail to find it in the Base commit). It must inject explicit string markers like `<FILE_NOT_IN_BASE>` instead of crashing.
--   If the `global_sandbox_node` fails after a merge, the system must route back to a diagnostic or integration-fix node (or fail fast depending on configuration), as this indicates a semantic conflict that Git and the Integrator missed.
+### 1. `src/state.py` (Domain Concepts & Constraints)
 
-### Extensibility and Backward Compatibility
-The `conflict_manager.py` service will retain its existing interface where possible, but internal methods like `scan_conflicts` will be augmented to utilize the new 3-Way Diff data extraction. Existing tests that expect raw conflict marker strings will need to be updated to expect the new structured prompt payload.
+The `IntegrationState` manages the concurrent merging of parallel branches.
+
+**Domain Concept:** Represents the state of the Phase 3 integration attempt. It tracks the branches awaiting merge and maintains a registry of any conflicts encountered during the process.
+
+**Key Invariants & Validation Rules:**
+-   `branches_to_merge` (list[str]): Must be strongly typed. Lists the branches (Cycle 1...N) that need to be merged into the integration branch.
+-   `unresolved_conflicts` (list[ConflictRegistryItem]): Maintains a list of files that failed the standard Git merge and require the Master Integrator.
+-   Must utilize `ConfigDict(extra="forbid", validate_assignment=True)` to prevent arbitrary state pollution.
+
+### 2. `src/services/conflict_manager.py` (Producers & Consumers)
+
+This service consumes standard Git conflicts and produces a structured 3-Way Diff prompt package.
+
+**Domain Concept:** The `ConflictManager` safely resolves Git conflicts by providing the LLM with the complete architectural context rather than raw conflict markers.
+
+**Key Invariants & Validation Rules:**
+-   `build_conflict_package(file_path: str) -> str`:
+    -   Must execute `git show :1:{file_path}` to retrieve the Base (common ancestor) code.
+    -   Must execute `git show :2:{file_path}` to retrieve the Branch A (Local) modifications.
+    -   Must execute `git show :3:{file_path}` to retrieve the Branch B (Remote) modifications.
+    -   Must format these three strings into a unified Markdown prompt template explicitly instructing the "Master Integrator" to safely combine the intents without data loss.
+
+### 3. `src/nodes/routers.py` (Producers & Consumers)
+
+**Key Invariants & Validation Rules:**
+-   `route_merge(state: IntegrationState) -> str`:
+    -   If `unresolved_conflicts` is not empty, return `"conflict"` (routes to `master_integrator_node`).
+    -   If empty, return `"success"` (routes to `global_sandbox_node`).
+-   `route_global_sandbox(state: IntegrationState) -> str`:
+    -   If the global test suite fails, return `"failed"` (routes to a remediation node or fails the phase).
+    -   If successful, return `"pass"` (routes to END of Phase 3).
 
 ## Implementation Approach
-The implementation will focus on safe Git operations and robust prompt engineering for the Master Integrator.
 
-1.  **Refine `IntegrationState` (`src/state.py`)**:
-    -   Ensure `IntegrationState` includes fields for tracking merge attempts and sandbox results.
-    -   Verify `ConflictRegistryItem` can hold the necessary file path data.
-
-2.  **Implement 3-Way Diff Logic (`src/services/conflict_manager.py`)**:
-    -   Locate or create the `build_conflict_package` method.
-    -   Utilize `ProcessRunner` or a similar safe subprocess execution mechanism to run:
-        -   `git show :1:{filepath}` (Base)
-        -   `git show :2:{filepath}` (Local/Current Branch)
-        -   `git show :3:{filepath}` (Remote/Merging Branch)
-    -   Handle cases where a file might be newly added in one branch and thus missing a Base (returns empty string or specific marker).
-    -   Construct the prompt string strictly adhering to the format specified in `ALL_SPEC.md` (sections for `### Base`, `### Branch A`, `### Branch B`).
-
-3.  **Construct `_create_integration_graph` (`src/graph.py`)**:
-    -   Define the nodes: `git_merge_node`, `master_integrator_node`, `global_sandbox_node`.
-    -   Define the edges:
-        -   `START` $\rightarrow$ `git_merge_node`
-        -   `git_merge_node` $\rightarrow$ conditional route (`"conflict"` $\rightarrow$ `master_integrator_node`, `"success"` $\rightarrow$ `global_sandbox_node`)
-        -   `master_integrator_node` $\rightarrow$ `git_merge_node` (to retry the merge or commit the resolution)
-        -   `global_sandbox_node` $\rightarrow$ conditional route (`"failed"` $\rightarrow$ `master_integrator_node` (or dedicated fix node), `"pass"` $\rightarrow$ `END`)
+1.  **Phase 1: 3-Way Diff Logic Implementation**
+    -   Open `src/services/conflict_manager.py`. The `scan_conflicts` method can remain largely intact.
+    -   Implement the new `build_conflict_package` method. Utilize the internal `ProcessRunner` (or `subprocess`) to execute the `git show :X:` commands to extract the Base, Local, and Remote file states.
+    -   Construct the specific prompt template defined in the requirement specification and return the formatted string.
+2.  **Phase 2: Integration Graph Construction**
+    -   Open `src/graph.py`. Implement the `_create_integration_graph` method.
+    -   Define the nodes: `git_merge_node` (attempts standard merge), `master_integrator_node` (uses the conflict package LLM prompt), and `global_sandbox_node` (runs full test suite).
+    -   Add the conditional edges using the new router functions defined in the Design Architecture.
+3.  **Phase 3: QA Graph Decoupling & Orchestration**
+    -   Open `src/services/uat_usecase.py`. Remove any legacy triggers that invoked this process during the Phase 2 (Coder) loops. Adjust its input signatures to strictly accept the post-integration state.
+    -   Open `src/cli.py` and `src/services/workflow.py`. Update the `run_pipeline` orchestration flow.
+    -   Ensure `WorkflowService` concurrently executes all `build_coder_graph` instances.
+    -   Implement a synchronization point (e.g., `asyncio.gather`) waiting for all PRs to complete.
+    -   Invoke `build_integration_graph`. Upon successful completion, invoke `build_qa_graph`.
 
 ## Test Strategy
 
+A robust test suite is critical to validate the deterministic behavior of the Integration and QA Graphs.
+
 ### Unit Testing Approach (Min 300 words)
-The unit testing for CYCLE02 will heavily target the `ConflictManager` service to ensure it correctly interacts with Git and formats the LLM prompts accurately without relying on live Git repositories.
 
-In `tests/services/test_conflict_manager.py`, we will use the `unittest.mock` library to patch the `ProcessRunner.run_command` method. When `build_conflict_package` calls Git to retrieve file versions, the mock will intercept these calls and return predefined strings representing the Base, Local, and Remote code. We will assert that the resulting prompt string exactly matches the expected markdown structure containing the three code blocks.
+The primary focus of the unit tests will be to validate the strict routing logic and the precise execution of the 3-Way Diff Git commands. We must guarantee that the conditional edge functions in `src/nodes/routers.py` operate flawlessly under various state conditions.
 
-Furthermore, we must write tests to handle edge cases. What if a file was created in Branch A but modified in Branch B, meaning there is no "Base" version in the common ancestor? The mock will return an empty string or a non-zero exit code for `git show :1:...`, and we will assert that the `ConflictManager` handles this gracefully, perhaps indicating "New File" in the Base section of the prompt. By isolating the Git subprocess calls, these unit tests will run blazingly fast and provide deterministic proof that the core logic of the 3-Way Diff data gathering is flawless.
+We will write dedicated test cases for `route_merge`, injecting mock `IntegrationState` objects with populated and empty `unresolved_conflicts` lists, ensuring they return `"conflict"` and `"success"` respectively.
+
+The most critical unit tests will target `ConflictManager.build_conflict_package`. Since we cannot rely on a real external Git repository during unit tests, we will employ a strict Zero-Mock Policy for internal logic but utilize `unittest.mock.patch` on the underlying `ProcessRunner.run_command` method. We will mock the subprocess calls for `git show :1:`, `:2:`, and `:3:` to return predefined strings representing a Base file, Branch A modifications, and Branch B modifications. The test will then assert that the final returned string accurately templates these three distinct code blocks into the required "Master Integrator" prompt format, verifying the core 3-Way Diff logic without actual file system access.
 
 ### Integration Testing Approach (Min 300 words)
-Integration testing for Phase 3 requires simulating a realistic Git merge scenario and verifying the LangGraph routing logic. This will be implemented in `tests/test_integration_graph.py`.
 
-Unlike unit tests, these integration tests will utilize a temporary directory fixture containing an actual, isolated Git repository. We will programmatically create a base commit, branch off two parallel feature branches, and make conflicting modifications to the same file. We will then invoke the `_create_integration_graph`.
+The integration tests will evaluate the interaction between the newly wired LangGraph nodes within the `_create_integration_graph` structure. We will compile the graph (`build_integration_graph`) and execute it using a mock Checkpointer.
 
-We will mock the LLM call inside `master_integrator_node` to return a predefined, correctly merged code string. The test will verify the following sequence: The graph starts, `git_merge_node` attempts the merge and correctly detects a conflict (routing to `"conflict"`). The `master_integrator_node` is invoked, receives the correct 3-Way Diff prompt (verified via mock inspection), and applies the mocked resolution. The graph then routes back to `git_merge_node` (which now succeeds) or directly to `global_sandbox_node`. We will verify that the global sandbox executes and, upon success, the graph reaches the `END` state. This end-to-end integration test proves that the LangGraph orchestrator and the underlying Git operations work together seamlessly to automate conflict resolution.
+To ensure sandbox resilience and adhere strictly to the "Mandate Mocking" rule, all external LLM invocations within the node functions (e.g., `master_integrator_node`) MUST be mocked. The tests will not perform real HTTP calls to the LLM providers.
+
+We will trace the execution path of the integration graph. For example, we will inject a state simulating an unresolved conflict and verify the graph correctly routes to the `master_integrator_node`. We will mock the LLM response to simulate a successful resolution, update the mock state, and trace the path back to the `git_merge_node`. Finally, we will simulate a successful `global_sandbox_node` evaluation to ensure the Phase 3 graph terminates correctly at the END state. This ensures the structural integrity of the integration pipeline without incurring any external API dependency risks. Any tests requiring persistent Git state setup MUST utilize Pytest fixtures that initialize a temporary local bare repository and roll it back after the test.
