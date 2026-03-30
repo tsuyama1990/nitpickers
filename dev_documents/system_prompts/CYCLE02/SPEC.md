@@ -50,8 +50,10 @@ This system is strictly designed with Pydantic-based schema control. Phase 3 (In
 - `branches_to_merge`: A highly-typed list of strings representing the names of the Git branches successfully originating from the parallel Phase 2 cycles.
 - `unresolved_conflicts`: A structured list of `ConflictRegistryItem` objects. These objects pinpoint exactly which files contain unresolvable Git markers (e.g., `<<<<<<<`, `=======`, `>>>>>>>`) after a naive merge attempt.
 - `master_integrator_session_id`: A persistent string identifier ensuring the LLM context remains stable during complex, multi-turn conflict resolution sessions, preventing the AI from losing track of the file modifications.
+- `integration_attempt_count`: An integer tracking the number of times the Master Integrator has attempted to resolve a conflict. Defaults to `0`.
 
 **Invariants, Constraints, and Validation Rules:**
+- `integration_attempt_count` must cleanly reset to `0` whenever a new file is successfully merged, but must strictly increment if the `git_merge_node` detects that markers still remain after a resolution attempt.
 - `IntegrationState` is entirely decoupled from `CycleState`. Only one instance ever runs across all combined parallel branches. It serves as the single source of truth for the entire integration lifecycle.
 - `ConflictManager.build_conflict_package` must securely validate file paths within the workspace boundary. It must strictly read file contents using asynchronous Git sub-processes (e.g., `git show`) to avoid dangerous directory traversal vulnerabilities.
 - Consumers of Phase 3 output are inherently the Phase 4 QA processes. Phase 4 strictly requires the `global_sandbox_node` to pass with an exit code of `0` in Phase 3 before it ever triggers. If Phase 3 fails, the pipeline halts immediately.
@@ -69,7 +71,8 @@ Construct a comprehensive text prompt instructing the `Master Integrator` to int
 - Wire the nodes strictly in the following sequential order: `git_merge_node` -> `master_integrator_node` -> `global_sandbox_node`.
 - Add intelligent conditional routing logic:
   - If `git_merge_node` detects unresolvable conflicts, route the loop securely to `master_integrator_node`. The graph must loop between these two until `git_merge_node` reports no more conflict markers exist.
-  - If `global_sandbox_node` fails due to syntax errors introduced post-merge, route the flow securely back to an `integration_fixer_node` or `master_integrator_node` to rectify the broken syntax.
+  - **Infinite Loop Fallback:** Introduce logic to strictly evaluate `integration_attempt_count`. If this count exceeds a conservative maximum (e.g., `> 3`), the loop must permanently abort to a failure node, refusing to route back to `master_integrator_node`.
+  - If `global_sandbox_node` fails due to syntax errors introduced post-merge, route the flow securely back to an `integration_fixer_node` or `master_integrator_node` to rectify the broken syntax, applying a similar attempt limit logic.
 
 ### 3. Orchestrate with `WorkflowService` (`src/services/workflow.py`) & `src/cli.py`
 Refactor the `run_pipeline` orchestration mechanism to act as the master controller for the 5-Phase architecture:

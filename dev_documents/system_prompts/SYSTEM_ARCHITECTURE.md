@@ -145,12 +145,14 @@ To fully support Phase 2's serial auditing and the conditional refactoring logic
 - `is_refactoring: bool`: This boolean flag is critical. It defaults to `False`. It explicitly denotes whether the cycle has successfully passed the grueling 3-stage Auditor phase and is currently undergoing its final post-audit polish. If this flag is `True`, the `sandbox_evaluate_node` success path will bypass the auditors entirely and route directly to the `final_critic_node` for final approval.
 - `current_auditor_index: int`: This integer tracks the precise step within the serial auditing chain. It defaults to `1` and increments upon each successful approval. The routing logic relies on this index to determine if it should route to `"next_auditor"` or, if the index exceeds the defined maximum (e.g., > 3), route to the `"pass_all"` state.
 - `audit_attempt_count: int`: This integer is the ultimate safeguard against infinite loops. It defaults to `0` and increments every time an auditor issues a rejection. If this count exceeds a predefined threshold (e.g., 2 consecutive rejections from the same auditor stage), the system forces a hard fallback to the `"reject"` state, demanding human intervention or a complete pivot, rather than endlessly burning expensive API tokens.
+- **State Contamination Reset:** To prevent edge cases where a rejection by `final_critic_node` sends code back to `coder_session` with `is_refactoring=True` still active, the routing logic or the node must explicitly reset `is_refactoring=False` and `current_auditor_index=1` upon rejection.
 
 **Extending `IntegrationState`**
 For Phase 3 (Integration), the standard `CycleState` is insufficient because Phase 3 must aggregate the results of *multiple* parallel cycles. Therefore, we define an `IntegrationState`. This state acts as the centralized context bucket for the `master_integrator_node`. It must reliably track:
 - `branches_to_merge`: A comprehensive list of the isolated feature branches generated successfully by Phase 2.
 - `unresolved_conflicts`: A structured list of `ConflictRegistryItem` objects that pinpoint exactly which files contain unresolvable Git markers.
 - `master_integrator_session_id`: A persistent identifier ensuring the LLM context remains stable during complex, multi-turn conflict resolution sessions.
+- `integration_attempt_count: int`: A critical guardrail analogous to `audit_attempt_count`. It tracks how many times the `master_integrator_node` has failed to produce unified code without Git markers, forcing a hard abort to prevent infinite integration loops.
 
 ## Implementation Plan
 

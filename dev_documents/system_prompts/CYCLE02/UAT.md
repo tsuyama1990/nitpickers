@@ -23,7 +23,17 @@
   4. Supply a mock LLM response that correctly unifies the code and removes all markers.
   5. Assert that the flow loops back to `git_merge_node`, verifies the file is clean, empties the `unresolved_conflicts` list, and successfully proceeds to the `global_sandbox_node`.
 
-### SCENARIO-03: UAT Multimodal Auditing
+### SCENARIO-03: Integration Infinite Loop Fallback
+- **Priority**: High
+- **Description**: This scenario serves as the primary fail-safe validation. The system must never loop infinitely trying to resolve a conflict. The objective is to verify that the `integration_attempt_count` tracks failed resolutions accurately and terminates the workflow once a conservative attempt threshold is breached.
+- **Verification Method**: Within `tutorials/UAT_AND_TUTORIAL.py` (Mock Mode), create a situation where the `master_integrator_node` stubbornly returns a code block that *still contains* Git conflict markers.
+  1. Trigger the integration phase. The `git_merge_node` routes to the `master_integrator_node`.
+  2. The mock integrator returns the malformed string.
+  3. The `git_merge_node` detects the persistent markers. Assert that it increments `integration_attempt_count` to 1, and loops back.
+  4. Repeat until the attempt limit is reached (e.g., attempt > 3).
+  5. Assert that the routing logic intercepts the return flow and permanently aborts the graph execution rather than routing back to the integrator.
+
+### SCENARIO-04: UAT Multimodal Auditing
 - **Priority**: Medium
 - **Description**: This scenario validates the Phase 4 (QA Graph) fallback mechanics. It ensures that if a system-wide E2E test fails post-integration (e.g., a Playwright script fails to find a specific DOM element), the system correctly captures the multi-modal evidence (screenshots and DOM dumps) and routes this evidence precisely to the external `qa_auditor` or `ux_auditor` Vision LLMs for diagnostic analysis before triggering a remediation loop.
 - **Verification Method**: Execute `tutorials/UAT_AND_TUTORIAL.py` in Mock Mode.
@@ -64,6 +74,20 @@ The following behavior definitions utilize Gherkin syntax to explicitly mandate 
     Then the Master Integrator LLM should consume the context and generate a perfectly unified code block completely devoid of any Git conflict markers
     And the system should route the state back to the `git_merge_node` for secondary validation
     And upon verifying the markers are eliminated, the system must clear the `unresolved_conflicts` list and proceed to the `global_sandbox_node`
+```
+
+**Feature: Integration Loop Limit Control**
+```gherkin
+  Scenario: The Master Integrator fails repeatedly and the system enforces the abort limit
+    Given the `git_merge_node` encounters a legitimate, unresolvable merge conflict
+    And the flow routes to the `master_integrator_node` to resolve the conflict
+    When the Master Integrator generates a response that still contains invalid `<<<<<<<` markers
+    Then the `git_merge_node` must detect the failure and strictly increment `integration_attempt_count`
+    And route the flow back to the `master_integrator_node`
+
+    When this failure loop occurs consecutively and the count strictly exceeds the predefined threshold
+    Then the routing logic must forcefully intervene
+    And permanently abort the Integration Graph execution with a fatal failure state to protect system resources
 ```
 
 **Feature: UAT Multimodal Failure Handling**

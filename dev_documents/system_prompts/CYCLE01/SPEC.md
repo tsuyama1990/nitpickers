@@ -73,7 +73,7 @@ You must create or refine the following core conditional routing functions. Thes
   - If `state.audit_result` indicates an approval: increment the `current_auditor_index`. If `current_auditor_index` is strictly greater than `3` (the maximum number of auditors), return the specific signal `"pass_all"`. Otherwise, return `"next_auditor"` to trigger the next review in the chain.
 - `route_final_critic(state: CycleState) -> str`:
   - Evaluate the final critic's decision. If the final critic approves the final codebase: return `"approve"`.
-  - If the final critic unexpectedly rejects the code despite all prior checks: return `"reject"`.
+  - **Critical Fallback:** If the final critic unexpectedly rejects the code despite all prior checks, it must return `"reject"` to route back to `coder_session`. However, the logic must mathematically guarantee that `state.is_refactoring` is mutated back to `False` and `state.current_auditor_index` is reset to `1`. Failure to reset these variables will cause the next iteration to incorrectly bypass the auditor chain.
 
 ### 3. Rewire Coder Graph (`src/graph.py`)
 You must modify `_create_coder_graph` safely and accurately to map the new routers to the correct LangGraph nodes:

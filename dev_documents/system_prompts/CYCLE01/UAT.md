@@ -26,6 +26,11 @@
   5. Assert that after the second rejection, the count increments to 2.
   6. Assert that when the count reaches the configured maximum threshold (e.g., `attempt_count > 2`), the `route_auditor` logic fundamentally changes its behavior. Instead of returning `"reject"` to simply loop back for a minor fix, it must trigger a major fallback signal (such as routing to a pivot node or failing the cycle entirely) to break the infinite loop paradigm securely.
 
+### SCENARIO-03: State Reset on Final Critic Rejection
+- **Priority**: High
+- **Description**: This edge case ensures the system is resilient against a total failure loop. If the Final Critic rejects the completely audited and refactored code, the system must route back to the coder but mathematically must NOT preserve the `is_refactoring=True` flag. Doing so would cause the next sandbox execution to completely bypass the auditor chain.
+- **Verification Method**: Execute `tutorials/UAT_AND_TUTORIAL.py` in Mock Mode. Inject `is_refactoring=True` to reach the `final_critic_node`. Force the `final_critic_node` to reject. Assert that the flow successfully routes back to the `coder_session`, but critically assert that `state.committee.is_refactoring` has been successfully mutated back to `False` and `current_auditor_index` has been fully reset to `1`.
+
 ## Behavior Definitions
 
 ### Gherkin Definitions
@@ -72,7 +77,7 @@ The following behavior definitions utilize Gherkin syntax to explicitly mandate 
     And the system must trigger a major fallback or failure edge to permanently break the infinite retry loop
 ```
 
-**Feature: Post-Refactoring Direct Route to Final Critic**
+**Feature: Post-Refactoring Direct Route to Final Critic and Rejection Safety**
 ```gherkin
   Scenario: A successfully refactored codebase entirely bypasses the serial auditors
     Given the system has successfully completed the `refactor_node` execution
@@ -82,4 +87,11 @@ The following behavior definitions utilize Gherkin syntax to explicitly mandate 
     Then the router `route_sandbox_evaluate` must evaluate the `is_refactoring` flag
     And the router must explicitly bypass the `auditor_node` pathway
     And the router must route the state directly to the `final_critic_node` for ultimate verification before the cycle concludes
+
+  Scenario: A rejection from the Final Critic fully resets the state flags to prevent contamination
+    Given the code has reached the `final_critic_node` and `is_refactoring` is True
+    When the `final_critic_node` issues a Rejection
+    Then the system must forcibly reset `is_refactoring` to False
+    And the system must forcefully reset `current_auditor_index` to 1
+    And the flow must route securely back to the `coder_session`
 ```
