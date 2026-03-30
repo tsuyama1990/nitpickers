@@ -1,78 +1,42 @@
-# CYCLE03 Specification: Orchestration & UAT Phase Isolation
+# CYCLE03 Specification
 
 ## Summary
-CYCLE03 is the final technical cycle of the refactoring process. It focuses on the high-level orchestration of the entire 5-Phase pipeline and the strict isolation of Phase 4 (UAT & QA Graph). Previously, UAT evaluation might have been prematurely triggered or tightly coupled with the Coder Phase. This cycle ensures that UATs (e.g., Playwright E2E tests) are *only* executed after all parallel Coder cycles have completed and successfully integrated via Phase 3. It involves significant updates to the `WorkflowService` and CLI to manage parallel asynchronous execution of the Coder Graphs and sequential execution of the Integration and UAT graphs.
+Cycle 03 establishes the formal separation of the User Acceptance Testing (UAT) Phase from the Coder Phase. Previously, UAT evaluation was entangled within the parallel Coder iterations, leading to fragmented and premature End-to-End testing. This cycle extracts the `uat_evaluate` node and its associated use cases from Phase 2 and correctly positions them within Phase 4 (QA Graph). The objective is to ensure that UAT is executed solely after the system has successfully traversed the Integration Graph (Phase 3) and passed all global structural checks. This creates a definitive, system-wide QA boundary where Playwright tests and OpenRouter vision audits can evaluate the fully integrated application as a single entity.
+
+## Infrastructure & Dependencies
+- **A. Project Secrets (`.env.example`):** The QA Phase heavily relies on OpenRouter Vision models to diagnose complex UI/UX failures. The Coder must ensure `OPENROUTER_API_KEY` is present in `.env.example` with the `# Target Project Secrets` comment.
+- **B. System Configurations (`docker-compose.yml`):** Executing Playwright necessitates specific system dependencies (browsers) and potentially internal port bindings for live previews. The Coder must configure the `docker-compose.yml` environment block to explicitly support Playwright execution without disrupting the existing agent setups.
+- **C. Sandbox Resilience (CRITICAL TEST STRATEGY):** *All external API calls relying on the newly defined secrets in `.env.example` (specifically the OpenRouter vision calls within the `qa_auditor` node) MUST be mocked in unit and integration tests (using `unittest.mock` or `pytest-mock`)*. If tests attempt real network calls, the pipeline will fail, and infinite retry loops will occur during sandbox evaluation.
 
 ## System Architecture
-This cycle touches the highest-level orchestrators of the system, ensuring the workflow transitions logically from one phase to the next.
+This cycle focuses on decoupling the UAT execution from the individual Coder cycles.
 
-### File Structure Modifications
-The following files will be modified:
+**src/graph.py** (Modify)
+- Remove `uat_evaluate` from `_create_coder_graph`.
+- Refine the connections in `_create_qa_graph` to strictly follow the completion of Phase 3.
 
-```text
-src/
-├── **cli.py** (Updating run_cycle / full-pipeline commands)
-└── services/
-    ├── **workflow.py** (Implementing the async orchestrator)
-    └── **uat_usecase.py** (Isolating the UAT logic)
-```
+**src/services/uat_usecase.py** (Modify)
+- Refactor the class to accept an `IntegrationState` or a specialized QA state rather than a `CycleState`, ensuring it operates on the integrated codebase.
+- Remove any lingering triggers that would initiate UAT during Phase 2.
 
-### Components and Interactions
-1.  **Workflow Orchestrator (`src/services/workflow.py`)**: The `WorkflowService` must be upgraded from a linear sequence to a parallel-aware orchestrator.
-    -   It must spawn multiple `_create_coder_graph` executions asynchronously (using `asyncio.gather` or similar) for each defined cycle in the manifest.
-    -   It must `await` the successful completion (reaching the `END` state) of all parallel Coder Phase graphs.
-    -   It must implement a **State Aggregator**. This mechanism takes the array of completed `CycleState` objects, extracts the `session.integration_branch` from each, and constructs a new `IntegrationState` where `branches_to_merge` is populated with these targets.
-    -   Once all Coder Phases complete and the state is aggregated, it must sequentially invoke the Phase 3 `_create_integration_graph` using the newly formed `IntegrationState`.
-    -   Only upon successful integration, it must invoke Phase 4 `_create_qa_graph` via the `uat_usecase.py`.
-2.  **UAT UseCase (`src/services/uat_usecase.py`)**: This service currently might be invoked from within the Coder Phase. It must be cleanly extracted and modified to accept the final integrated state as its input. It is the sole entry point for Phase 4.
-3.  **CLI (`src/cli.py`)**: The CLI commands must be updated to reflect this new orchestration model, allowing users to run a single cycle (`run-cycle --id 01`) or the entire orchestrated pipeline (`run-pipeline`).
+**src/nodes/qa_nodes.py** (Create/Modify)
+- Implement or refine the `uat_evaluate`, `qa_auditor`, and `qa_session` nodes to operate as a self-healing loop within Phase 4.
+
+The architecture dictates that a failure in `uat_evaluate` routes to the multimodal `qa_auditor`, which generates a fix plan, passes it to the `qa_session` for implementation, and loops back to `uat_evaluate` until the entire integrated suite passes.
 
 ## Design Architecture
-The design philosophy here is strict sequential dependency at the macro level (Phase 1 $\rightarrow$ Phase 2 $\rightarrow$ Phase 3 $\rightarrow$ Phase 4), while allowing parallelism at the micro level (Cycle 01 || Cycle 02 inside Phase 2).
-
-### Domain Concepts
--   **Workflow Manifest**: A list of cycles (e.g., `["01", "02"]`) that need to be executed.
--   **Phase Barrier**: A synchronization point where the orchestrator blocks until all tasks in the current phase are complete before proceeding. The barrier between Phase 2 and Phase 3 is critical.
--   **UAT Execution State**: The state model managed by `uat_usecase.py`. It must be initialized with the state of the *integrated* repository, not just a single feature branch.
-
-### Invariants and Constraints
--   Phase 3 *must never* begin if any Phase 2 cycle fails or is still running.
--   Phase 4 (UAT) *must never* run against a non-integrated feature branch during the automated pipeline execution. It is designed to test the emergent behavior of all features combined.
--   The orchestrator must gracefully handle failures in any phase, bubbling the error up to the CLI and halting execution immediately to prevent cascaded failures.
-
-### Extensibility and Backward Compatibility
-The CLI will retain commands like `run-cycle --id 01` for backward compatibility and manual debugging of specific features. However, a new or updated `run-pipeline` (or equivalent) command will become the primary execution path for the fully automated system. The `uat_usecase.py` will maintain its internal logic for executing Playwright and analyzing failure artifacts via OpenRouter, but its entry constraints are tightened.
+The primary design adjustment is the realignment of the state input for the UAT use cases. The domain model, perhaps a new `QAExecutionState`, must extend or consume the `IntegrationState` to guarantee that the tests run against the fully merged repository. The invariants enforce that `uat_evaluate` can only trigger if the global sandbox status is strictly "pass". The `uat_evaluate` output must strictly define the path to any captured Playwright artifacts (screenshots, traces) to be consumed by the downstream `qa_auditor`. This ensures the vision models have the exact multimodal context required for accurate diagnosis. This architecture guarantees backward compatibility by isolating the UAT definitions; existing Coder logic is unaffected, as UAT is now a distinct, subsequent phase.
 
 ## Implementation Approach
-The implementation focuses on asynchronous programming and structural refactoring.
-
-1.  **Isolate UAT (`src/services/uat_usecase.py`)**:
-    -   Review `uat_usecase.py` and ensure it no longer contains logic coupling it to the `coder_session` or Phase 2 `CycleState` variables directly.
-    -   Ensure it can be instantiated and executed purely based on the current state of the global integration branch.
-
-2.  **Implement Orchestrator (`src/services/workflow.py`)**:
-    -   Locate or create the primary workflow execution method (e.g., `run_full_pipeline(cycles: list[str])`).
-    -   **Phase 2 (Parallel)**: Create a list of asyncio tasks, one for each cycle ID, invoking `build_coder_graph` and running it to completion. Use `asyncio.gather(*tasks, return_exceptions=True)` to execute them concurrently.
-    -   Inspect the results. If any task returned an exception or failed state, halt the entire workflow and report the error.
-    -   **Phase 3 (Sequential)**: If all Coder graphs succeed, invoke `build_integration_graph`. Await its completion. Check for failure and halt if necessary.
-    -   **Phase 4 (Sequential)**: If integration succeeds, invoke `build_qa_graph` (or call `uat_usecase.py` directly if it manages its own graph). Await completion.
-
-3.  **Update CLI (`src/cli.py`)**:
-    -   Modify the Typer commands to expose the new `run_full_pipeline` logic.
-    -   Ensure the console output (e.g., using `rich`) clearly indicates which phase the system is currently executing and the status of parallel tasks.
+1.  **Graph Decoupling:** Within `src/graph.py`, explicitly remove the `uat_evaluate` node from the Phase 2 sequence. Adjust the state typing of the graph to reflect this.
+2.  **Usecase Refactoring:** Modify `src/services/uat_usecase.py`. Remove dependencies on `CycleState` and adapt the input signature to accept the finalized state from Phase 3. Ensure the core Playwright execution logic remains robust but is merely triggered at a different lifecycle stage.
+3.  **QA Graph Refinement:** Ensure the Phase 4 graph correctly orchestrates the self-healing loop: `uat_evaluate` -> (on fail) -> `qa_auditor` -> `qa_session` -> `uat_evaluate`.
+4.  **Sandbox Resilience Validation:** Extensively unit test the modified nodes and use cases, strictly mocking all OpenRouter API calls and Playwright browser executions to maintain a lightning-fast, resilient sandbox environment.
 
 ## Test Strategy
 
 ### Unit Testing Approach (Min 300 words)
-The unit testing for CYCLE03 will focus on the state transitions and exception handling within the asynchronous orchestrator in `tests/services/test_workflow.py`.
-
-We will use `unittest.mock.AsyncMock` to simulate the execution of the LangGraph phases without actually invoking them. We will create a test suite that covers various execution paths. For example, a "Phase 2 Failure" test will mock `asyncio.gather` to return one success and one exception (simulating a failed Coder cycle). We will assert that the `run_full_pipeline` method catches this exception, correctly identifies the failing cycle, halts execution immediately, and crucially, does *not* invoke the subsequent Phase 3 integration method.
-
-Another unit test will simulate a "Phase 3 Failure". We will mock all Phase 2 tasks to succeed, but mock the `build_integration_graph` execution to return a failed state. We will assert that the orchestrator correctly halts and does *not* proceed to Phase 4 (UAT). These unit tests ensure that the foundational control flow and barrier logic of the 5-Phase pipeline are sound, preventing the system from proceeding in an invalid state.
+The unit testing strategy for the decoupled UAT Phase is exceptionally crucial due to its heavy reliance on complex external systems (Playwright browsers and Vision LLMs). The Coder agent must generate comprehensive tests utilizing Pytest and `pytest-mock` to perfectly isolate the `uat_evaluate` and `qa_auditor` nodes. For `uat_evaluate`, the tests must mock the subprocess call that initiates Playwright, simulating both a successful zero-exit-code run and a failure run that outputs a predefined artifact path (e.g., a dummy screenshot file). This asserts that the node correctly parses the result and updates the state without actually spinning up headless browsers during unit evaluation. For the `qa_auditor` node, the test suite must construct a mock HTTP request to the OpenRouter API, passing in a synthetic base64-encoded image payload and verifying that the node correctly structures the returned "fix plan" JSON. This rigorous mocking strategy strictly adheres to Sandbox Resilience, guaranteeing that the unit tests can execute deterministically and swiftly without network dependencies, preventing infinite retry loops or unexpected billing surges if the logic attempts unauthorized access during testing.
 
 ### Integration Testing Approach (Min 300 words)
-Integration testing for CYCLE03 will verify the end-to-end execution of the CLI and the `WorkflowService` using mocked graphs but a real event loop. This will be implemented in `tests/test_pipeline_orchestration.py`.
-
-We will use the Typer testing framework `CliRunner` to invoke the pipeline command. We will provide a dummy manifest specifying two cycles (`CYCLE01`, `CYCLE02`). We will heavily mock the internal graph factories (`_create_coder_graph`, `_create_integration_graph`, `_create_qa_graph`) to simply return successful `END` states almost immediately, avoiding any LLM calls or sandbox execution.
-
-The test will verify that when `CliRunner.invoke(app, ["run-pipeline"])` is called, the console output indicates the start of Phase 2, the parallel execution of the two cycles, the transition to Phase 3, and finally the transition to Phase 4. We will assert that the CLI command exits with a zero exit code (`exit_code == 0`). We will also write an integration test where one of the mocked Coder graphs intentionally raises an exception, verifying that the CLI catches it, outputs an appropriate error message using `rich`, and exits with a non-zero exit code (`exit_code != 0`), confirming the pipeline's fail-fast mechanism works correctly in a fully integrated environment.
+Integration testing for the Phase 4 graph must validate the complete self-healing loop of the UAT Phase without relying on real browsers or live API keys. The tests must construct a simulated `QAExecutionState` representing a failed E2E test, complete with a mocked artifact path. The integration test will then invoke the `_create_qa_graph`, ensuring that the workflow correctly routes from the failed `uat_evaluate` state to the `qa_auditor`. Here, the external LLM call MUST be mocked to return a successful diagnostic and a specific code modification plan. The test then traces the routing to the `qa_session` node, which applies the simulated fix, and finally loops back to the mocked `uat_evaluate` node, which must then return a simulated "pass" status. Crucially, adhering to the DB Rollback Rule, any persistent state modifications (such as generating mock artifact files) must utilize Pytest `tmp_path` fixtures, guaranteeing that the simulated UI failures do not pollute the main project directory. This end-to-end validation within a controlled, fully mocked environment confirms the structural integrity of the UAT self-healing pipeline before live execution.

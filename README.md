@@ -23,13 +23,11 @@ The system operates across 5 distinct phases to guarantee code quality from plan
 
 ```mermaid
 flowchart TD
-    %% Phase0: Init Phase (CLI Setup)
     subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
         direction TB
         InitCmd([CLI: nitpick init])
     end
 
-    %% Phase1: Architect Graph
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
@@ -40,7 +38,6 @@ flowchart TD
         ArchCritic -- "Reject" --> ArchSession
     end
 
-    %% Phase2: Coder Graph (Parallel: Cycle 1...N)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
         CoderSession["JULES: coder_session\n(Test/Implementation)"]
@@ -52,15 +49,15 @@ flowchart TD
 
         CoderSession --> SelfCritic
         SelfCritic --> SandboxEval
-        SandboxEval -- "Pass" --> AuditorNode
+        SandboxEval -- "Fail" --> CoderSession
+        SandboxEval -- "Pass (Not Refactoring)" --> AuditorNode
         AuditorNode -- "Reject" --> CoderSession
         AuditorNode -- "Pass All" --> RefactorNode
         RefactorNode --> SandboxEval
-        SandboxEval -- "Pass (Post-Refactor)" --> FinalCritic
+        SandboxEval -- "Pass (Refactoring)" --> FinalCritic
         FinalCritic -- "Reject" --> CoderSession
     end
 
-    %% Phase3: Integration Phase
     subgraph Phase3 ["Phase 3: Integration Phase"]
         direction TB
         MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
@@ -68,7 +65,6 @@ flowchart TD
         GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
     end
 
-    %% Phase4: UAT & QA Graph
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
         UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
@@ -77,21 +73,18 @@ flowchart TD
         QaSession["JULES: qa_session\n(Integration Fixes)"]
     end
 
-    %% Inter-Phase Connections
     Phase0 --> Phase1
     Phase1 --> Phase2
-    Phase2 -- "All Coder Cycles Complete" --> MergeTry
-
+    Phase2 -- "All Cycles Done" --> MergeTry
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
     MergeTry -- "Success" --> GlobalSandbox
-
     GlobalSandbox -- "Pass" --> UatEval
-
+    GlobalSandbox -- "Fail" --> MasterIntegrator
     UatEval -- "Fail" --> QaAuditor
-    UatEval -- "Pass" --> UxAuditor
     QaAuditor --> QaSession
     QaSession --> UatEval
+    UatEval -- "Pass" --> UxAuditor
 ```
 
 ## Prerequisites
@@ -104,14 +97,8 @@ Ensure the following tools are available on your system:
     - `JULES_API_KEY` (Gemini Pro/Worker)
     - `E2B_API_KEY` (Sandbox Execution)
     - `OPENROUTER_API_KEY` (Auditor/Vision Models)
-- LangSmith Observability Configuration (Optional):
-    - `LANGCHAIN_TRACING_V2=true`
-    - `LANGCHAIN_API_KEY`
-    - `LANGCHAIN_PROJECT`
 
-## Installation & Setup (Docker Recommended)
-
-The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
+## Installation & Setup
 
 1. Clone the repository and navigate to the project directory:
    ```bash
@@ -119,59 +106,44 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    cd <your-repository>
    ```
 
-2. Configure your core environment variables (Tool-Level):
+2. Sync dependencies using uv:
    ```bash
-   cp .env.example .env
-   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and (optionally) LangSmith variables.
-   # These tool-level infrastructure keys should stay within the nitpickers directory.
+   uv sync
    ```
 
-3. Quick Start (Build & Alias):
+3. Configure your core environment variables:
    ```bash
-   bash setup.sh
-   source ~/.bashrc
+   cp .env.example .env
+   # Edit .env and populate your API keys
    ```
-   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
 
 ## Usage
 
-Once your core `.env` is configured and you have run the setup script, you can navigate to *any* project directory and use the `nitpick` command seamlessly. Project-specific API keys should be placed in a separate `.env` file within the target project directory.
-
-The "Sidecar" workflow dynamically mounts your current working directory into the container using the `TARGET_PROJECT_PATH` alias configuration.
-
 ### Initialize Project Requirements
 
-For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure (`src/`, `tests/`, `dev_documents/`), initializes Git, and configures your environment.
+For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure, initializes Git, and configures your environment.
 
 ```bash
-cd /path/to/target/project
-nitpick init
+uv run nitpick init
 ```
-After initialization, follow the CLI prompts to fill in `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
+After initialization, edit `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
 
 ### Generate Development Cycles (Phase 1)
-Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.
+Parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
-cd /path/to/target/project
-nitpick gen-cycles
+uv run nitpick gen-cycles
 ```
 
 ### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
-Execute the complete orchestrated 5-phase pipeline against your currently active project directory, automatically managing parallel implementation and final integration.
+Execute the complete orchestrated 5-phase pipeline against your active project directory.
 ```bash
-nitpick run-pipeline
-```
-
-### Run a Specific Cycle Manually
-For debugging, execute a specific development cycle (e.g., `01`).
-```bash
-nitpick run-cycle --id 01
+uv run nitpick run-pipeline
 ```
 
 ### Interactive Tutorials (UAT Verification)
-To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
+To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally.
 ```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow
@@ -190,14 +162,15 @@ uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
 
 ```text
 /
-├── dev_documents/          # Auto-generated specs, UATs, logs
+├── dev_documents/          # Auto-generated specs, UATs, architecture logs
 │   ├── system_prompts/     # Cycle specific plans and documents
 │   └── USER_TEST_SCENARIO.md
 ├── src/                    # The main implementation for NITPICKERS
 │   ├── cli.py              # CLI entrypoint
-│   ├── state.py            # Pydantic state models (CycleState, etc.)
+│   ├── state.py            # Pydantic state models
 │   ├── graph.py            # Main LangGraph declarations
 │   ├── nodes/              # LangGraph node routing functions
+│   ├── domain_models/      # Pydantic schemas
 │   └── services/           # Orchestration (workflow.py) & Diff Logic (conflict_manager.py)
 ├── tests/                  # Unit, Integration, and UAT tests
 ├── tutorials/              # Marimo-based interactive tutorials
