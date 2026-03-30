@@ -1,78 +1,78 @@
-# CYCLE03 Specification: Orchestration & UAT Phase Isolation
+# CYCLE 03: Phase 3 Integration Graph (3-Way Diff)
 
 ## Summary
-CYCLE03 is the final technical cycle of the refactoring process. It focuses on the high-level orchestration of the entire 5-Phase pipeline and the strict isolation of Phase 4 (UAT & QA Graph). Previously, UAT evaluation might have been prematurely triggered or tightly coupled with the Coder Phase. This cycle ensures that UATs (e.g., Playwright E2E tests) are *only* executed after all parallel Coder cycles have completed and successfully integrated via Phase 3. It involves significant updates to the `WorkflowService` and CLI to manage parallel asynchronous execution of the Coder Graphs and sequential execution of the Integration and UAT graphs.
+The goal of Cycle 03 is to establish a dedicated Phase 3 (Integration Phase) capable of autonomously resolving Git merge conflicts generated during the concurrent execution of Phase 2 cycles.
+
+Instead of relying on standard text-based Git conflict markers (which confuse LLMs), this cycle implements a true 3-Way Diff resolution strategy. The `ConflictManager` will be updated to fetch the common ancestor (Base), the integration branch (Local), and the feature branch (Remote) contents, packaging them into a structured prompt for the Master Integrator agent. A dedicated `_create_integration_graph` will orchestrate this process and validate the merged result using a Global Sandbox.
+
+## Infrastructure & Dependencies
+
+### A. Project Secrets (`.env.example`)
+*Target Project Secrets:* No new external APIs are introduced. Existing keys (JULES_API_KEY) are sufficient for the Master Integrator.
+
+### B. System Configurations (`docker-compose.yml`)
+*Non-confidential configurations:* Ensure the Sidecar path variables are maintained.
+
+### C. Sandbox Resilience (CRITICAL TEST STRATEGY)
+*Mandate Mocking:* You MUST explicitly instruct the Coder that *all external API calls relying on the newly defined secrets in `.env.example` MUST be mocked in unit and integration tests (using `unittest.mock` or `pytest-mock`)*.
+The `ConflictManager` will execute real Git commands. These commands MUST be mocked or executed against a real, isolated, temporary bare Git repository (`pyfakefs` or `tempfile`) in the test suite to prevent destructive actions on the actual project repository during autonomous evaluation.
 
 ## System Architecture
-This cycle touches the highest-level orchestrators of the system, ensuring the workflow transitions logically from one phase to the next.
 
-### File Structure Modifications
-The following files will be modified:
+The following file structure must be implemented or modified to support Phase 3 integration:
 
 ```text
 src/
-├── **cli.py** (Updating run_cycle / full-pipeline commands)
+├── **state.py**                  # Ensure IntegrationState exists and is properly configured.
+├── **graph.py**                  # Implement _create_integration_graph.
 └── services/
-    ├── **workflow.py** (Implementing the async orchestrator)
-    └── **uat_usecase.py** (Isolating the UAT logic)
+    └── **conflict_manager.py**   # Implement 3-Way Diff package generation.
 ```
 
-### Components and Interactions
-1.  **Workflow Orchestrator (`src/services/workflow.py`)**: The `WorkflowService` must be upgraded from a linear sequence to a parallel-aware orchestrator.
-    -   It must spawn multiple `_create_coder_graph` executions asynchronously (using `asyncio.gather` or similar) for each defined cycle in the manifest.
-    -   It must `await` the successful completion (reaching the `END` state) of all parallel Coder Phase graphs.
-    -   It must implement a **State Aggregator**. This mechanism takes the array of completed `CycleState` objects, extracts the `session.integration_branch` from each, and constructs a new `IntegrationState` where `branches_to_merge` is populated with these targets.
-    -   Once all Coder Phases complete and the state is aggregated, it must sequentially invoke the Phase 3 `_create_integration_graph` using the newly formed `IntegrationState`.
-    -   Only upon successful integration, it must invoke Phase 4 `_create_qa_graph` via the `uat_usecase.py`.
-2.  **UAT UseCase (`src/services/uat_usecase.py`)**: This service currently might be invoked from within the Coder Phase. It must be cleanly extracted and modified to accept the final integrated state as its input. It is the sole entry point for Phase 4.
-3.  **CLI (`src/cli.py`)**: The CLI commands must be updated to reflect this new orchestration model, allowing users to run a single cycle (`run-cycle --id 01`) or the entire orchestrated pipeline (`run-pipeline`).
-
 ## Design Architecture
-The design philosophy here is strict sequential dependency at the macro level (Phase 1 $\rightarrow$ Phase 2 $\rightarrow$ Phase 3 $\rightarrow$ Phase 4), while allowing parallelism at the micro level (Cycle 01 || Cycle 02 inside Phase 2).
 
-### Domain Concepts
--   **Workflow Manifest**: A list of cycles (e.g., `["01", "02"]`) that need to be executed.
--   **Phase Barrier**: A synchronization point where the orchestrator blocks until all tasks in the current phase are complete before proceeding. The barrier between Phase 2 and Phase 3 is critical.
--   **UAT Execution State**: The state model managed by `uat_usecase.py`. It must be initialized with the state of the *integrated* repository, not just a single feature branch.
+This cycle focuses on generating a structured 3-Way Diff package and orchestrating the integration process.
 
-### Invariants and Constraints
--   Phase 3 *must never* begin if any Phase 2 cycle fails or is still running.
--   Phase 4 (UAT) *must never* run against a non-integrated feature branch during the automated pipeline execution. It is designed to test the emergent behavior of all features combined.
--   The orchestrator must gracefully handle failures in any phase, bubbling the error up to the CLI and halting execution immediately to prevent cascaded failures.
+1.  **`src/services/conflict_manager.py` (`build_conflict_package`)**:
+    *   **Domain Concept**: Responsible for gathering the exact state of conflicting files.
+    *   **Invariants**:
+        *   Must reliably execute `git show :1:{file_path}` to retrieve the base version.
+        *   Must reliably execute `git show :2:{file_path}` to retrieve the local (integration branch) version.
+        *   Must reliably execute `git show :3:{file_path}` to retrieve the remote (feature branch) version.
+        *   Must package these into a structured prompt string or Pydantic model for the LLM.
+    *   **Consumers**: `master_integrator_node` in the Integration Graph.
 
-### Extensibility and Backward Compatibility
-The CLI will retain commands like `run-cycle --id 01` for backward compatibility and manual debugging of specific features. However, a new or updated `run-pipeline` (or equivalent) command will become the primary execution path for the fully automated system. The `uat_usecase.py` will maintain its internal logic for executing Playwright and analyzing failure artifacts via OpenRouter, but its entry constraints are tightened.
+2.  **`src/graph.py` (`_create_integration_graph`)**:
+    *   **Domain Concept**: Orchestrates the sequential merging, resolution, and validation of branches.
+    *   **Constraints**:
+        *   Must use `IntegrationState` (not `CycleState`).
+        *   Must start with `git_merge_node`.
+        *   Must conditionally route (`route_merge`) to `master_integrator_node` on conflict, or `global_sandbox_node` on success.
+        *   `master_integrator_node` must loop back to `git_merge_node`.
+        *   `global_sandbox_node` must conditionally route (`route_global_sandbox`) to `END` on success, or back to a fixer node on failure.
 
 ## Implementation Approach
-The implementation focuses on asynchronous programming and structural refactoring.
 
-1.  **Isolate UAT (`src/services/uat_usecase.py`)**:
-    -   Review `uat_usecase.py` and ensure it no longer contains logic coupling it to the `coder_session` or Phase 2 `CycleState` variables directly.
-    -   Ensure it can be instantiated and executed purely based on the current state of the global integration branch.
-
-2.  **Implement Orchestrator (`src/services/workflow.py`)**:
-    -   Locate or create the primary workflow execution method (e.g., `run_full_pipeline(cycles: list[str])`).
-    -   **Phase 2 (Parallel)**: Create a list of asyncio tasks, one for each cycle ID, invoking `build_coder_graph` and running it to completion. Use `asyncio.gather(*tasks, return_exceptions=True)` to execute them concurrently.
-    -   Inspect the results. If any task returned an exception or failed state, halt the entire workflow and report the error.
-    -   **Phase 3 (Sequential)**: If all Coder graphs succeed, invoke `build_integration_graph`. Await its completion. Check for failure and halt if necessary.
-    -   **Phase 4 (Sequential)**: If integration succeeds, invoke `build_qa_graph` (or call `uat_usecase.py` directly if it manages its own graph). Await completion.
-
-3.  **Update CLI (`src/cli.py`)**:
-    -   Modify the Typer commands to expose the new `run_full_pipeline` logic.
-    -   Ensure the console output (e.g., using `rich`) clearly indicates which phase the system is currently executing and the status of parallel tasks.
+1.  **Update `ConflictManager`**: Open `src/services/conflict_manager.py`. Refactor the conflict generation logic to construct a 3-way diff prompt. Use `ProcessRunner` to execute `git show` commands asynchronously. Handle cases where a file might have been added or deleted (e.g., `:1` missing).
+2.  **Implement `_create_integration_graph`**: Open `src/graph.py`. Locate (or create) the `_create_integration_graph` method.
+    *   Initialize a `StateGraph(IntegrationState)`.
+    *   Add nodes: `git_merge_node`, `master_integrator_node`, `global_sandbox_node`.
+    *   Add unconditional edge: START -> `git_merge_node`.
+    *   Add conditional edge from `git_merge_node` using `route_merge` (or similar). Route to `master_integrator_node` ("conflict") or `global_sandbox_node` ("success").
+    *   Add unconditional edge: `master_integrator_node` -> `git_merge_node` (to attempt merge again after resolution).
+    *   Add conditional edge from `global_sandbox_node` routing to `END` ("pass") or a failure handler ("failed").
+3.  **Ensure Routing Support**: If `route_merge` or `route_global_sandbox` are missing, implement them in `src/nodes/routers.py` to evaluate the `conflict_status` within `IntegrationState`.
 
 ## Test Strategy
 
-### Unit Testing Approach (Min 300 words)
-The unit testing for CYCLE03 will focus on the state transitions and exception handling within the asynchronous orchestrator in `tests/services/test_workflow.py`.
+All tests must be executed without real LLM API calls, strictly using local, mocked dependencies.
 
-We will use `unittest.mock.AsyncMock` to simulate the execution of the LangGraph phases without actually invoking them. We will create a test suite that covers various execution paths. For example, a "Phase 2 Failure" test will mock `asyncio.gather` to return one success and one exception (simulating a failed Coder cycle). We will assert that the `run_full_pipeline` method catches this exception, correctly identifies the failing cycle, halts execution immediately, and crucially, does *not* invoke the subsequent Phase 3 integration method.
+**Unit Testing Approach (Min 300 words):**
+We must test the `build_conflict_package` logic within `ConflictManager` extensively. Create tests in `tests/unit/services/test_conflict_manager.py`.
+*   **Test 3-Way Diff Generation**: Mock `ProcessRunner.run_command` (or equivalent) to return predefined file contents for `:1`, `:2`, and `:3`. Execute `build_conflict_package`. Assert that the generated prompt correctly embeds the Base, Local, and Remote code blocks in the expected format.
+*   **Test Missing Ancestor**: Mock `ProcessRunner` to simulate an error when fetching `:1` (simulating a file added independently on both branches). Assert the function handles this gracefully, potentially omitting the Base block or indicating it is a newly added file.
 
-Another unit test will simulate a "Phase 3 Failure". We will mock all Phase 2 tasks to succeed, but mock the `build_integration_graph` execution to return a failed state. We will assert that the orchestrator correctly halts and does *not* proceed to Phase 4 (UAT). These unit tests ensure that the foundational control flow and barrier logic of the 5-Phase pipeline are sound, preventing the system from proceeding in an invalid state.
-
-### Integration Testing Approach (Min 300 words)
-Integration testing for CYCLE03 will verify the end-to-end execution of the CLI and the `WorkflowService` using mocked graphs but a real event loop. This will be implemented in `tests/test_pipeline_orchestration.py`.
-
-We will use the Typer testing framework `CliRunner` to invoke the pipeline command. We will provide a dummy manifest specifying two cycles (`CYCLE01`, `CYCLE02`). We will heavily mock the internal graph factories (`_create_coder_graph`, `_create_integration_graph`, `_create_qa_graph`) to simply return successful `END` states almost immediately, avoiding any LLM calls or sandbox execution.
-
-The test will verify that when `CliRunner.invoke(app, ["run-pipeline"])` is called, the console output indicates the start of Phase 2, the parallel execution of the two cycles, the transition to Phase 3, and finally the transition to Phase 4. We will assert that the CLI command exits with a zero exit code (`exit_code == 0`). We will also write an integration test where one of the mocked Coder graphs intentionally raises an exception, verifying that the CLI catches it, outputs an appropriate error message using `rich`, and exits with a non-zero exit code (`exit_code != 0`), confirming the pipeline's fail-fast mechanism works correctly in a fully integrated environment.
+**Integration Testing Approach (Min 300 words):**
+We must test the `_create_integration_graph` flow using deterministic mocks. Create tests in `tests/integration/test_integration_graph.py`.
+*   **Test Clean Merge Path**: Mock `git_merge_node` to succeed instantly. Execute the graph. Verify the execution trace hits `git_merge_node`, routes to `global_sandbox_node`, and terminates at `END`.
+*   **Test Conflict Resolution Loop**: Mock `git_merge_node` to return a "conflict" status initially, and "success" on the second invocation. Mock `master_integrator_node` to simulate successful resolution. Execute the graph. Verify the trace loops: `git_merge_node` -> `master_integrator_node` -> `git_merge_node` -> `global_sandbox_node` -> `END`. Use an `AsyncMock` for node execution to prevent coroutine warnings.
