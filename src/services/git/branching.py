@@ -94,7 +94,10 @@ class GitBranchingMixin(BaseGitManager):
         else:
             logger.info(f"Creating new integration branch: {integration_branch}")
             await self._run_git(["checkout", "-b", integration_branch])
-            await self._run_git(["push", "-u", "origin", integration_branch])
+            try:
+                await self._run_git(["push", "-u", "origin", integration_branch])
+            except Exception as e:
+                logger.warning(f"Could not push new integration branch to origin: {e}")
 
         return integration_branch
 
@@ -133,9 +136,12 @@ class GitBranchingMixin(BaseGitManager):
         else:
             await self._run_git(["checkout", "-b", branch_name])
             # Push the branch to origin
-            await self._run_git(["push", "-u", "origin", branch_name])
+            try:
+                await self._run_git(["push", "-u", "origin", branch_name])
+            except Exception as e:
+                logger.warning(f"Could not push new feature branch to origin: {e}")
 
-        logger.info(f"Created/verified and pushed feature branch: {branch_name}")
+        logger.info(f"Created/verified feature branch: {branch_name}")
         return branch_name
 
     async def create_session_branch(
