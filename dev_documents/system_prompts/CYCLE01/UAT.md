@@ -1,64 +1,68 @@
-# CYCLE01 UAT: Coder Graph & Serial Auditing
+# CYCLE01 User Acceptance Testing (UAT)
 
 ## Test Scenarios
 
-### Scenario ID: Coder_Phase_01 - Happy Path Serial Audit
-- **Priority**: High
-- **Description**: Verify that the Coder Graph successfully executes a complete, uninterrupted "Happy Path" cycle. This scenario ensures the foundational LangGraph routing operates correctly. The system must initialize a cycle, generate initial code via the Coder agent, pass the local Sandbox evaluation, sequentially traverse three independent Auditor agents (Auditor 1 -> 2 -> 3) without any rejections, proceed to the Refactor node to set the `is_refactoring` flag to `True`, pass the final Sandbox evaluation, and receive approval from the Final Critic, resulting in a successfully completed cycle state.
-- **Verification**: The LangGraph state at the `END` node must reflect `status="completed"`, `is_refactoring=True`, and `current_auditor_index=3` (or equivalent maximum). The execution trace (LangSmith or internal logger) must show the exact sequence of nodes visited.
+The User Acceptance Testing strategy for the 5-Phase Architecture is focused on providing an interactive, verifiable, and educational experience. We utilise `marimo` notebooks to allow the user (or automated CI pipelines) to execute and observe the system's behaviour step-by-step. The UAT for CYCLE01 specifically targets the Phase 2 Coder Graph, ensuring that its complex routing, serial auditing, and refactoring loops operate as intended under various simulated conditions. This guarantees that the foundation is rock-solid before integrating multiple cycles in Phase 3. The `tutorials/nitpickers_5_phase_architecture.py` notebook will contain all of these scenarios.
 
-### Scenario ID: Coder_Phase_02 - Auditor Rejection Loop
-- **Priority**: High
-- **Description**: Verify that the Coder Graph correctly handles a scenario where an Auditor agent rejects the proposed code. This test ensures the `audit_attempt_count` is functioning as a circuit breaker and the routing logic correctly loops back to the Coder. The system must initialize a cycle, pass the initial Sandbox, and reach the first Auditor. The Auditor must explicitly reject the code. The system must then route back to the Coder agent, incrementing the `audit_attempt_count`. After the Coder revises the code and passes the Sandbox again, the same Auditor must review the code. If approved on the second attempt, the system must proceed to the next Auditor.
-- **Verification**: The LangGraph trace must show the sequence: `... -> auditor_node -> (reject) -> coder_session -> ... -> sandbox_evaluate -> auditor_node -> (approve) -> ...`. The `audit_attempt_count` must be incremented during the rejection cycle and the cycle must ultimately succeed if subsequent reviews pass.
+### Scenario ID: UAT-C01-01 (Priority: High)
+**Title:** Coder Graph - Successful Single Iteration Loop
+**Description:** This scenario verifies the "happy path" of the Phase 2 Coder Graph. The objective is to demonstrate that a well-formed feature request can traverse the entire Coder Graph sequentially—from initial implementation, through a successful local sandbox evaluation, past all three serial auditors without rejection, through the final refactoring node, and ultimately receiving approval from the final critic. This scenario is executed in "Mock Mode," where the LLM agents (Coder, Critic, Auditor) and the Sandbox are replaced with deterministic `AsyncMock` objects that consistently return positive results. The user should observe the `CycleState` progressing smoothly, specifically noting the `current_auditor_index` incrementing from 1 to 3, the `is_refactoring` flag toggling to `True` after the third auditor, and the final transition to the `END` node. This confirms the fundamental routing logic is sound and the state machine operates correctly under optimal conditions.
 
-### Scenario ID: Coder_Phase_03 - Refactoring Sandbox Failure
-- **Priority**: Medium
-- **Description**: Verify that the Coder Graph correctly handles a Sandbox evaluation failure that occurs *after* the refactoring node. This ensures that the system differentiates between initial implementation failures and post-refactoring regressions. The system must complete the initial implementation and serial audit successfully. Upon reaching the Refactor node, it must intentionally introduce a syntax error or a failing test case (simulated for the test). The subsequent Sandbox evaluation must fail. The routing logic must detect `is_refactoring=True` and route the failure back to the Coder for correction, rather than restarting the entire audit process.
-- **Verification**: The LangGraph trace must show the sequence: `... -> refactor_node -> sandbox_evaluate -> (failed) -> coder_session -> ...`. The final state must successfully recover and complete the cycle after the Coder fixes the refactoring error.
+### Scenario ID: UAT-C01-02 (Priority: Critical)
+**Title:** Coder Graph - Auditor Rejection and Remediation Loop
+**Description:** This scenario tests the system's resilience and its ability to handle imperfect implementations. The objective is to verify that when a serial auditor identifies an issue, the Coder Graph correctly routes the cycle back to the `coder_session` for remediation, rather than proceeding to the next auditor or the refactoring phase. Using "Mock Mode," the scenario configures the first auditor (`current_auditor_index=1`) to intentionally reject the initial implementation, incrementing the `audit_attempt_count`. The graph must route back to the Coder. The scenario then configures the mock Coder to apply a "fix," and subsequent mock auditors are instructed to approve the changes. The user should observe the graph looping back to the implementation phase precisely once, demonstrating the system's capacity for self-correction before successfully navigating the remainder of the audit chain and reaching the `END` node. This validates the conditional routing (`route_auditor`) and the state mutation logic associated with rejections.
 
 ## Behavior Definitions
 
-### Feature: Serial Auditing & Refactoring Loop
-As an AI-native development system,
-I want to ensure that generated code passes through a strict sequence of independent reviews and a dedicated refactoring phase,
-So that I can guarantee high quality, maintainable, and robust code before integration.
+The following Gherkin-style definitions formalise the expected behaviour of the Phase 2 Coder Graph under specific conditions. These behaviours dictate the requirements for the `marimo` tutorial execution.
 
-**Background:**
-Given the system has successfully initialized Phase 0 and Phase 1,
-And the Architect has defined at least one executable development cycle (`CYCLE01`).
+**Feature:** Phase 2 Coder Graph Routing
+**As a** system orchestrator
+**I want** the Coder Graph to correctly route execution based on sandbox and auditor feedback
+**So that** only thoroughly validated and audited code progresses to the Integration Phase
 
-**Scenario: Successful execution of the full Coder Phase**
-- Given the system starts Phase 2 for `CYCLE01`
-- And the Coder agent generates valid code that passes initial Sandbox evaluation
-- When the first Auditor reviews the code
-- And the first Auditor approves the code
-- And the second Auditor reviews and approves the code
-- And the third Auditor reviews and approves the code
-- Then the system routes the cycle to the Refactor node
-- And the system updates the state to `is_refactoring=True`
-- And the Refactored code passes the final Sandbox evaluation
-- And the Final Critic approves the code
-- Then the Coder Phase completes successfully.
+**Scenario:** Successful Sandbox Evaluation routes to Serial Auditors
+**GIVEN** the system is currently executing the Phase 2 Coder Graph
+**AND** the `sandbox_evaluate` node has completed successfully
+**AND** the `CycleState` flag `is_refactoring` is `False`
+**WHEN** the `route_sandbox_evaluate` routing function is invoked
+**THEN** the function must return the string literal `"auditor_node"`
+**AND** the graph execution must transition to the serial auditor chain
 
-**Scenario: Auditor Rejection triggers a revision loop**
-- Given the system is executing Phase 2 for `CYCLE01`
-- And the code has passed the initial Sandbox evaluation
-- And the first Auditor reviews the code
-- When the first Auditor rejects the code due to a logic flaw
-- Then the system increments the `audit_attempt_count` by 1
-- And the system routes the cycle back to the Coder agent for revision
-- And the Coder agent generates revised code that passes Sandbox evaluation
-- When the first Auditor reviews the revised code and approves it
-- Then the system proceeds to the second Auditor.
+**Scenario:** Failed Sandbox Evaluation routes back to Implementation
+**GIVEN** the system is currently executing the Phase 2 Coder Graph
+**AND** the `sandbox_evaluate` node has failed (e.g., linting errors or test failures)
+**WHEN** the `route_sandbox_evaluate` routing function is invoked
+**THEN** the function must return the string literal `"coder_session"`
+**AND** the graph execution must transition back to the Coder for immediate remediation
 
-**Scenario: Refactoring introduces a regression**
-- Given the system has successfully passed all Auditors
-- And the system is executing the Refactor node
-- When the Refactor node introduces a change that breaks a unit test
-- And the subsequent Sandbox evaluation fails
-- Then the system routes the cycle back to the Coder agent for correction
-- And the system maintains the state `is_refactoring=True`
-- And the Coder agent fixes the regression
-- And the revised Refactored code passes Sandbox evaluation
-- Then the system routes the cycle directly to the Final Critic node.
+**Scenario:** Serial Auditor Approval increments the Index
+**GIVEN** the system is currently executing the `auditor_node` within the Phase 2 Coder Graph
+**AND** the OpenRouter model (or mock) returns an "Approve" status
+**AND** the current `CycleState` field `current_auditor_index` is less than 3
+**WHEN** the `route_auditor` routing function is invoked
+**THEN** the `CycleState` field `current_auditor_index` must be incremented by 1
+**AND** the function must return the string literal `"next_auditor"`
+**AND** the graph execution must loop back to the `auditor_node` for the next review
+
+**Scenario:** Final Serial Auditor Approval triggers Refactoring
+**GIVEN** the system is currently executing the `auditor_node` within the Phase 2 Coder Graph
+**AND** the OpenRouter model (or mock) returns an "Approve" status
+**AND** the current `CycleState` field `current_auditor_index` is exactly 3
+**WHEN** the `route_auditor` routing function is invoked
+**THEN** the function must return the string literal `"pass_all"`
+**AND** the graph execution must transition to the `refactor_node`
+
+**Scenario:** Refactoring Node updates State and loops to Sandbox
+**GIVEN** the system is currently executing the `refactor_node` within the Phase 2 Coder Graph
+**WHEN** the node logic completes its execution
+**THEN** the `CycleState` flag `is_refactoring` MUST be updated to `True`
+**AND** the graph execution must transition unconditionally back to the `sandbox_evaluate` node
+
+**Scenario:** Post-Refactoring Sandbox Evaluation routes to Final Critic
+**GIVEN** the system is currently executing the Phase 2 Coder Graph
+**AND** the `sandbox_evaluate` node has completed successfully
+**AND** the `CycleState` flag `is_refactoring` is `True`
+**WHEN** the `route_sandbox_evaluate` routing function is invoked
+**THEN** the function must return the string literal `"final_critic"`
+**AND** the graph execution must transition to the final self-review phase
