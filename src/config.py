@@ -29,7 +29,12 @@ def _validate_env_value(k: str, v: str) -> bool:
 # Load environment variables strictly from known safe environments
 def _load_env() -> None:
     """Load configuration from standard .env first, then override with strict .nitpick environment."""
-    load_dotenv(override=False)
+    # Always try loading the target project's .env file first
+    project_env = Path.cwd() / ".env"
+    if project_env.exists():
+        load_dotenv(dotenv_path=project_env, override=False)
+    else:
+        load_dotenv(override=False)
 
     _nitpick_env = Path.cwd() / ".nitpick" / ".env"
 
@@ -74,8 +79,21 @@ def _load_env() -> None:
     if safe_updates:
         os.environ.update(safe_updates)
 
+    # UI/UX Improvement: Simplify OpenRouter/OpenAI API key logic
+    # If the user only provided OPENROUTER_API_KEY, auto-map it to OPENAI_API_KEY
+    if "OPENROUTER_API_KEY" in os.environ and "OPENAI_API_KEY" not in os.environ:
+        os.environ["OPENAI_API_KEY"] = os.environ["OPENROUTER_API_KEY"]
+        if "OPENAI_BASE_URL" not in os.environ:
+            os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
+
 
 _load_env()
+
+# Second pass for auto-mapping if the keys were loaded from the root .env in the first pass
+if "OPENROUTER_API_KEY" in os.environ and "OPENAI_API_KEY" not in os.environ:
+    os.environ["OPENAI_API_KEY"] = os.environ["OPENROUTER_API_KEY"]
+    if "OPENAI_BASE_URL" not in os.environ:
+        os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
 
 # Constants
 PROMPT_FILENAME_MAP = {
@@ -467,11 +485,11 @@ class ASTAnalyzerConfig(BaseModel):
 
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
-        default="openai:gpt-4o",
+        default="openai:openrouter/nousresearch/hermes-3-llama-3.1-405b:free",
         alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
-        default="openai:gpt-4o",
+        default="openai:openrouter/nousresearch/hermes-3-llama-3.1-405b:free",
         alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
