@@ -34,22 +34,30 @@ flowchart TD
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
         ArchSession["JULES: architect_session\n(Requirement Decomposition)"]
+        ArchCritic{"JULES: architect_critic\n(Red Team Self-Critic)"}
         InitCmd2 --> ArchSession
+        ArchSession --> ArchCritic
+        ArchCritic -- "Reject" --> ArchSession
     end
 
-    %% Phase2: Coder Graph
+    %% Phase2: Coder Graph (Parallel: Cycle 1...N)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Implementation)"]
+        CoderSession["JULES: coder_session\n(Test/Implementation)"]
+        SelfCritic["JULES: self_critic\n(Pre-Sandbox Polish)"]
         SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
         AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Refactoring)"]
+        RefactorNode["JULES: refactor_node\n(Post-Audit Refactor)"]
+        FinalCritic["JULES: final_critic\n(Final Logic Verification)"]
 
-        CoderSession --> SandboxEval
+        CoderSession --> SelfCritic
+        SelfCritic --> SandboxEval
         SandboxEval -- "Pass" --> AuditorNode
         AuditorNode -- "Reject" --> CoderSession
         AuditorNode -- "Pass All" --> RefactorNode
         RefactorNode --> SandboxEval
+        SandboxEval -- "Pass (Post-Refactor)" --> FinalCritic
+        FinalCritic -- "Reject" --> CoderSession
     end
 
     %% Phase3: Integration Phase

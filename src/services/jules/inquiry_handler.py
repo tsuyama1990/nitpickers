@@ -46,32 +46,14 @@ class JulesInquiryHandler:
             return None
 
         try:
-            page_token = ""
-            # Check up to 3 pages (300 activities) to capture inquiries buried by logs
-            for _ in range(3):
-                act_url = f"{session_url}/activities?pageSize=100"
-                if page_token:
-                    act_url += f"&pageToken={page_token}"
-
-                act_resp = await client.get(
-                    act_url, headers=self.client_ref._get_headers(), timeout=10.0
-                )
-
-                if act_resp.status_code == httpx.codes.OK:
-                    data = act_resp.json()
-                    activities = data.get("activities", [])
-
-                    for act in activities:
-                        act_id = act.get("name", act.get("id"))
-                        if act_id in processed_ids:
-                            continue
-                        msg = self.extract_activity_message(act, jules_state)
-                        if msg:
-                            return (msg, act_id)
-
-                    page_token = data.get("nextPageToken")
-                    if not page_token:
-                        break
+            activities = await self.client_ref.list_activities(session_url)
+            for act in activities:
+                act_id = act.get("name", act.get("id"))
+                if act_id in processed_ids:
+                    continue
+                msg = self.extract_activity_message(act, jules_state)
+                if msg:
+                    return (msg, act_id)
         except Exception as e:
             logger.warning(f"Failed to check for inquiry: {e}")
         return None
@@ -110,16 +92,8 @@ class JulesInquiryHandler:
         self, client: httpx.AsyncClient, session_url: str, processed_ids: set[str]
     ) -> tuple[dict[str, Any], str] | None:
         """Fetches a pending plan from activities if one exists."""
-        act_url = f"{session_url}/activities"
         try:
-            act_resp = await client.get(
-                act_url, headers=self.client_ref._get_headers(), timeout=10.0
-            )
-            if act_resp.status_code != httpx.codes.OK:
-                logger.warning(f"Failed to fetch activities: HTTP {act_resp.status_code}")
-                return None
-
-            activities = act_resp.json().get("activities", [])
+            activities = await self.client_ref.list_activities(session_url)
             logger.debug(f"Checking {len(activities)} activities for planGenerated")
 
             for activity in activities:

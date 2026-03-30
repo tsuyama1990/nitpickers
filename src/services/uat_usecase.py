@@ -155,9 +155,10 @@ class UatUseCase:
             uat_state = UatExecutionState(
                 exit_code=exit_code, stdout=stdout, stderr=stderr, artifacts=artifacts
             )
+            uat_update = state.uat.model_copy(update={"uat_execution_state": uat_state})
             return {
                 "status": FlowStatus.UAT_FAILED,
-                "uat_execution_state": uat_state,
+                "uat": uat_update,
                 "error": "UAT dynamically failed",
             }
 

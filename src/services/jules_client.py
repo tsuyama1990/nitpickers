@@ -410,12 +410,8 @@ class JulesClient:
                     if session_resp.status_code == httpx.codes.OK:
                         state = session_resp.json().get("state", "UNKNOWN")
 
-                    act_url = f"{session_url}/activities?pageSize=100"
-                    act_resp = await client.get(
-                        act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
-                    )
-                    if act_resp.status_code == httpx.codes.OK:
-                        initial_acts = act_resp.json().get("activities", [])
+                # Fetch all activities using pagination
+                initial_acts = await self.list_activities(session_url)
             except Exception as e:
                 logger.warning(f"Failed to fetch initial session data: {e}")
 
@@ -508,16 +504,11 @@ class JulesClient:
     async def _log_activities_count(
         self, client: httpx.AsyncClient, session_url: str, last_count: int
     ) -> int:
-        act_url = f"{session_url}/{settings.jules.activities_path}"
         try:
-            resp = await client.get(
-                act_url, headers=self._get_headers(), timeout=settings.jules.request_timeout
-            )
-            if resp.status_code == httpx.codes.OK:
-                activities = resp.json().get("activities", [])
-                if len(activities) > last_count:
-                    self.console.print(f"[dim]Activity Count: {len(activities)}[/dim]")
-                    return len(activities)
+            activities = await self.list_activities(session_url)
+            if len(activities) > last_count:
+                self.console.print(f"[dim]Activity Count: {len(activities)}[/dim]")
+                return len(activities)
         except Exception:  # noqa: S110
             pass
         return last_count
@@ -663,7 +654,7 @@ class JulesClient:
 
             return content_str
 
-    async def _create_manual_pr(self, session_url: str) -> str | None:  # noqa: C901
+    async def _create_manual_pr(self, session_url: str) -> str | None:
         """
         Ask Jules to commit changes and create PR when auto-PR creation fails.
 
@@ -693,32 +684,25 @@ class JulesClient:
                     elapsed += poll_interval
 
                     # Check for PR and new activities
-                    act_url = f"{session_url}/{settings.jules.activities_path}"
                     try:
-                        act_resp = await client.get(
-                            act_url,
-                            headers=self._get_headers(),
-                            timeout=settings.jules.request_timeout,
-                        )
-                        if act_resp.status_code == httpx.codes.OK:
-                            activities = act_resp.json().get("activities", [])
-                            for activity in activities:
-                                # Check for PR
-                                if "pullRequest" in activity:
-                                    pr_url: str | None = activity["pullRequest"].get("url")
-                                    if pr_url:
-                                        self.console.print(
-                                            f"[bold green]PR Created: {pr_url}[/bold green]"
-                                        )
-                                        return pr_url
+                        activities = await self.list_activities(session_url)
+                        for activity in activities:
+                            # Check for PR
+                            if "pullRequest" in activity:
+                                pr_url: str | None = activity["pullRequest"].get("url")
+                                if pr_url:
+                                    self.console.print(
+                                        f"[bold green]PR Created: {pr_url}[/bold green]"
+                                    )
+                                    return pr_url
 
-                                # Log new activities to show progress
-                                act_id = activity.get("name", activity.get("id"))
-                                if act_id and act_id not in processed_fallback_ids:
-                                    msg = self.inquiry_handler.extract_activity_message(activity)
-                                    if msg:
-                                        self.console.print(f"[dim]Jules: {msg}[/dim]")
-                                    processed_fallback_ids.add(act_id)
+                            # Log new activities to show progress
+                            act_id = activity.get("name", activity.get("id"))
+                            if act_id and act_id not in processed_fallback_ids:
+                                msg = self.inquiry_handler.extract_activity_message(activity)
+                                if msg:
+                                    self.console.print(f"[dim]Jules: {msg}[/dim]")
+                                processed_fallback_ids.add(act_id)
 
                     except Exception as e:
                         logger.debug(f"Error checking for PR/activities: {e}")

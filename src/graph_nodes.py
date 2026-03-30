@@ -53,7 +53,7 @@ class CycleNodes(IGraphNodes):
         self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
 
         self._architect = ArchitectNodes(jules=self.jules, git=self.git)
-        self._architect_critic = ArchitectCriticNodes(self.jules)
+        self._architect_critic = ArchitectCriticNodes(self.jules, git_manager=self.git)
         self._coder = CoderNodes(self.jules)
         self._coder_critic = CoderCriticNodes(self.jules)
         self._auditor = AuditorNodes(self.jules, self.git, self.llm_reviewer)

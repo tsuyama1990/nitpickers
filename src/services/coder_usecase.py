@@ -124,10 +124,13 @@ class CoderUseCase:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
 
             # If we just finished a post-audit refactor, we are COMPLETED for this cycle
-            if is_post_audit_refactor:
-                return {"status": FlowStatus.COMPLETED, "pr_url": result.get("pr_url")}
+            pr_val = result.get("pr_url")
+            session_update = state.session.model_copy(update={"pr_url": pr_val}) if pr_val else state.session
 
-            return {"status": FlowStatus.READY_FOR_AUDIT, "pr_url": result.get("pr_url")}
+            if is_post_audit_refactor:
+                return {"status": FlowStatus.COMPLETED, "session": session_update}
+
+            return {"status": FlowStatus.READY_FOR_AUDIT, "session": session_update}
 
         # --- E. Failure Handling ---
         if result and result.get("status") == "failed":
@@ -417,7 +420,6 @@ class CoderUseCase:
                 )
                 return {
                     "status": FlowStatus.CODER_RETRY,
-                    "session_restart_count": new_restart_count,
                 }
 
             console.print(

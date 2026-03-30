@@ -118,10 +118,15 @@ class AuditorUseCase:
                                     console.print(
                                         f"[bold yellow]Jules session still active ({jules_status}). Delegating wait logic to graph router.[/bold yellow]"
                                     )
+                                    audit_update = state.audit.model_copy(
+                                        update={
+                                            "audit_result": state.audit_result,
+                                            "last_audited_commit": last_audited,
+                                        }
+                                    )
                                     return {
                                         "status": FlowStatus.WAITING_FOR_JULES,
-                                        "audit_result": state.audit_result,
-                                        "last_audited_commit": last_audited,
+                                        "audit": audit_update,
                                     }
                             except Exception as e:
                                 console.print(
@@ -204,10 +209,15 @@ class AuditorUseCase:
                     reason="No changed files",
                     feedback=audit_feedback,
                 )
+                audit_update = state.audit.model_copy(
+                    update={
+                        "audit_result": result,
+                        "last_audited_commit": new_last_audited_commit,
+                    }
+                )
                 return {
-                    "audit_result": result,
+                    "audit": audit_update,
                     "status": FlowStatus.REJECTED,
-                    "last_audited_commit": new_last_audited_commit,
                 }
 
             context_file_names = {str(p) for p in context_paths}
@@ -261,10 +271,15 @@ class AuditorUseCase:
             # Check for max audit retries and trigger pivot if exceeded
             status_enum = FlowStatus.REQUIRES_PIVOT
 
+        audit_update = state.audit.model_copy(
+            update={
+                "audit_result": result,
+                "last_audited_commit": new_last_audited_commit,
+            }
+        )
         return {
-            "audit_result": result,
+            "audit": audit_update,
             "status": status_enum,
-            "last_audited_commit": new_last_audited_commit,
         }
 
 
@@ -311,10 +326,15 @@ class UATAuditorUseCase:
             console.print(
                 f"[bold green]Diagnostic complete. Fix plan formulated with {len(fix_plan.patches)} patches.[/bold green]"
             )
+            uat_update = state.uat.model_copy(
+                update={
+                    "current_fix_plan": fix_plan,
+                    "uat_execution_state": None,
+                    "uat_retry_count": state.uat_retry_count,
+                }
+            )
             return {
-                "current_fix_plan": fix_plan,
+                "uat": uat_update,
                 "status": FlowStatus.RETRY_FIX,
-                "uat_execution_state": None,  # clear it so we don't loop
-                "last_feedback_time": 0,  # bypass cooldowns if any
-                "uat_retry_count": state.uat_retry_count,
+                "last_feedback_time": 0,
             }

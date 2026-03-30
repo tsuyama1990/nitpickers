@@ -20,6 +20,7 @@ class FlowStatus(StrEnum):
     # Architect
     ARCHITECT_COMPLETED = "architect_completed"
     ARCHITECT_FAILED = "architect_failed"
+    ARCHITECT_SESSION_COMPLETED = "architect_session_completed"
 
     # Coder / Session
     READY_FOR_AUDIT = "ready_for_audit"

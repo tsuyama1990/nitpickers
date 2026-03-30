@@ -83,10 +83,11 @@ class SandboxEvaluatorNodes:
                 )
                 error_trace = report.get_failure_report()
 
+                test_update = state.test.model_copy(update={"structural_report": report})
                 return {
                     "status": FlowStatus.TDD_FAILED,
                     "error": f"Verification failed:\n{error_trace}",
-                    "structural_report": report,
+                    "test": test_update,
                 }
 
         except Exception as e:
@@ -97,8 +98,9 @@ class SandboxEvaluatorNodes:
             }
         else:
             console.print("[bold green]All structural checks passed. Ready for Audit.[/bold green]")
+            test_update = state.test.model_copy(update={"structural_report": report})
             return {
                 "status": FlowStatus.READY_FOR_AUDIT,
-                "structural_report": report,
+                "test": test_update,
                 "error": None,
             }

@@ -37,3 +37,16 @@ Second, verify that the high-level architecture defined in `SYSTEM_ARCHITECTURE.
 4. Push your changes and update the Pull Request.
 
 If your Critic Agent confidently concludes that this architecture is already the absolute best possible approach and that the cycle plans are perfectly precise with no room for improvement, state the rationale in `ARCHITECT_CRITIC_REVIEW.md` and declare the task complete.
+
+## FINAL MESSAGE REQUIREMENT:
+At the very end of your final message to me, you **MUST** include a JSON code block that summarizes your review. This is used for automated parsing.
+
+```json
+{
+  "is_approved": true or false,
+  "vulnerabilities": ["List of identified vulnerabilities or issues", ...],
+  "suggestions": ["List of suggestions for improvement", ...]
+}
+```
+
+Ensure `vulnerabilities` and `suggestions` are empty lists `[]` if there are none. Set `is_approved` to `true` ONLY if there are no vulnerabilities.

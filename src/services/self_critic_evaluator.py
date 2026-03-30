@@ -1,5 +1,6 @@
 import json
 import re
+import traceback
 from typing import Any
 
 from rich.console import Console
@@ -72,13 +73,19 @@ class SelfCriticEvaluator:
             else ["Ensure the output follows the requested JSON schema."],
         )
 
-    async def evaluate(self, session_id: str) -> CriticResult:
+    async def evaluate(
+        self, session_id: str, template_name: str = "ARCHITECT_CRITIC_INSTRUCTION.md", **kwargs: Any
+    ) -> CriticResult:
         """
         Interacts with the Jules session to run the Red Team Critic evaluation
         and returns the parsed CriticResult.
         """
-        console.print("[bold magenta]Invoking Architect Self-Critic Evaluator...[/bold magenta]")
-        critic_instruction = settings.get_template("ARCHITECT_CRITIC_INSTRUCTION.md").read_text()
+        console.print(f"[bold magenta]Invoking Self-Critic Evaluator ({template_name})...[/bold magenta]")
+        critic_instruction = settings.get_template(template_name).read_text()
+
+        # Simple template variable substitution
+        for key, val in kwargs.items():
+            critic_instruction = critic_instruction.replace(f"{{{{{key}}}}}", str(val))
 
         try:
             session_url = self.jules._get_session_url(session_id)
@@ -96,9 +103,11 @@ class SelfCriticEvaluator:
 
             return self._parse_critic_result(result.get("raw"))
         except Exception as e:
+            tb = traceback.format_exc()
             console.print(f"[bold red]Critic Evaluation failed: {e}[/bold red]")
+            console.print(f"[dim red]{tb}[/dim red]")
             return CriticResult(
                 is_approved=False,
-                vulnerabilities=[f"Exception during self-critic evaluation: {e!s}"],
+                vulnerabilities=[f"Exception during self-critic evaluation: {e!s}\n{tb}"],
                 suggestions=[],
             )

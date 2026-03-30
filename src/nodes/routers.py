@@ -100,10 +100,10 @@ def route_qa(state: CycleState) -> str:
 
 def route_architect_critic(state: CycleState) -> str:
     status = getattr(state, "status", None)
-    if status == "architect_completed":
-        return "end"
-    if status == "architect_failed":
-        return "end"
-    if status == "architect_critic_rejected":
+    if status == FlowStatus.ARCHITECT_CRITIC_REJECTED:
         return "architect_session"
+    if status == FlowStatus.ARCHITECT_COMPLETED:
+        return "end"
+    if status == FlowStatus.ARCHITECT_FAILED:
+        return "end"
     return "end"

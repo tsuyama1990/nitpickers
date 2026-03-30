@@ -14,7 +14,9 @@ class CoderNodes:
         # Ensure we set tdd_phase so the usecase/prompt knows we only want failing tests
         state.test.tdd_phase = "red"
         result = dict(await usecase.execute(state))
-        result["tdd_phase"] = "red"
+
+        test_update = state.test.model_copy(update={"tdd_phase": "red"})
+        result["test"] = test_update
         return result
 
     async def impl_coder_node(self, state: CycleState) -> dict[str, Any]:
@@ -23,5 +25,7 @@ class CoderNodes:
         usecase = CoderUseCase(self.jules)
         state.test.tdd_phase = "green"
         result = dict(await usecase.execute(state))
-        result["tdd_phase"] = "green"
+
+        test_update = state.test.model_copy(update={"tdd_phase": "green"})
+        result["test"] = test_update
         return result

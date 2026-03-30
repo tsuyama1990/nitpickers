@@ -245,14 +245,11 @@ class JulesSessionNodes:
         self, state: JulesSessionState, client: httpx.AsyncClient
     ) -> None:
         """Update activity count for progress tracking."""
-        act_url = f"{state.session_url}/activities"
         try:
-            resp = await client.get(act_url, headers=self.client._get_headers(), timeout=10.0)
-            if resp.status_code == httpx.codes.OK:
-                activities = resp.json().get("activities", [])
-                if len(activities) > state.last_activity_count:
-                    console.print(f"[dim]Activity Count: {len(activities)}[/dim]")
-                    state.last_activity_count = len(activities)
+            activities = await self.client.list_activities(state.session_url)
+            if len(activities) > state.last_activity_count:
+                console.print(f"[dim]Activity Count: {len(activities)}[/dim]")
+                state.last_activity_count = len(activities)
         except Exception:  # noqa: S110
             pass
 
@@ -318,68 +315,63 @@ class JulesSessionNodes:
         state = _state_in.model_copy(deep=True)
 
         try:
-            async with httpx.AsyncClient() as client:
-                # Fetch recent activities
-                act_url = f"{state.session_url}/activities"
-                resp = await client.get(act_url, headers=self.client._get_headers(), timeout=10.0)
+            # Fetch recent activities
+            activities = await self.client.list_activities(state.session_url)
 
-                if resp.status_code == httpx.codes.OK:
-                    activities = resp.json().get("activities", [])
+            # First, check for sessionCompleted activity (most reliable indicator)
+            has_session_completed = False
+            stale_completion_detected = False
 
-                    # First, check for sessionCompleted activity (most reliable indicator)
-                    has_session_completed = False
-                    stale_completion_detected = False
+            for activity in activities:
+                if "sessionCompleted" in activity:
+                    # Check if this is a stale (already processed) event
+                    act_id = activity.get("name", activity.get("id"))
+                    if act_id and act_id in state.processed_completion_ids:
+                        stale_completion_detected = True
+                        continue
 
-                    for activity in activities:
-                        if "sessionCompleted" in activity:
-                            # Check if this is a stale (already processed) event
-                            act_id = activity.get("name", activity.get("id"))
-                            if act_id and act_id in state.processed_completion_ids:
-                                stale_completion_detected = True
-                                continue
+                    if act_id:
+                        state.processed_completion_ids.add(act_id)
 
-                            if act_id:
-                                state.processed_completion_ids.add(act_id)
+                    has_session_completed = True
+                    logger.info(
+                        "Found sessionCompleted activity - session is genuinely complete"
+                    )
+                    break
 
-                            has_session_completed = True
-                            logger.info(
-                                "Found sessionCompleted activity - session is genuinely complete"
-                            )
-                            break
+            # If sessionCompleted exists (and is new), it's genuinely complete
+            if has_session_completed:
+                state.completion_validated = True
+                state.status = SessionStatus.CHECKING_PR
+                return self._compute_diff(_state_in, state)
 
-                    # If sessionCompleted exists (and is new), it's genuinely complete
-                    if has_session_completed:
-                        state.completion_validated = True
-                        state.status = SessionStatus.CHECKING_PR
-                        return self._compute_diff(_state_in, state)
+            # If we found a STALE completion, we must NOT fall back to checking PRs
+            # because we are likely in a feedback loop where state hasn't updated yet.
+            if stale_completion_detected:
+                # Allow proceed if we observed a valid IN_PROGRESS -> COMPLETED transition
+                # This handles cases where Jules re-completes but doesn't emit a new completion event
+                if state.previous_jules_state == "IN_PROGRESS":
+                    logger.info(
+                        "Stale completion detected, BUT valid IN_PROGRESS->COMPLETED transition observed. Treating as complete."
+                    )
+                else:
+                    logger.info(
+                        "Stale completion detected (ignored). Waiting for new Agent activity..."
+                    )
+                    state.status = SessionStatus.MONITORING
+                    return self._compute_diff(_state_in, state)
 
-                    # If we found a STALE completion, we must NOT fall back to checking PRs
-                    # because we are likely in a feedback loop where state hasn't updated yet.
-                    if stale_completion_detected:
-                        # Allow proceed if we observed a valid IN_PROGRESS -> COMPLETED transition
-                        # This handles cases where Jules re-completes but doesn't emit a new completion event
-                        if state.previous_jules_state == "IN_PROGRESS":
-                            logger.info(
-                                "Stale completion detected, BUT valid IN_PROGRESS->COMPLETED transition observed. Treating as complete."
-                            )
-                        else:
-                            logger.info(
-                                "Stale completion detected (ignored). Waiting for new Agent activity..."
-                            )
-                            state.status = SessionStatus.MONITORING
-                            return self._compute_diff(_state_in, state)
+            # Logic removed: Checking for ongoing work indicators via keywords caused infinite loops.
 
-                    # Logic removed: Checking for ongoing work indicators via keywords caused infinite loops.
+            # NEW FIX: If sessionCompleted is missing, check for distress/objections in the last message.
+            # This prevents auditing when Jules is complaining (e.g. "feedback inconsistent") but ends session.
+            if not has_session_completed:
+                distress_state = await self._check_for_distress_in_messages(state, client=None)
+                if distress_state:
+                    return self._compute_diff(_state_in, distress_state)
 
-                    # NEW FIX: If sessionCompleted is missing, check for distress/objections in the last message.
-                    # This prevents auditing when Jules is complaining (e.g. "feedback inconsistent") but ends session.
-                    if not has_session_completed:
-                        distress_state = await self._check_for_distress_in_messages(state, client)
-                        if distress_state:
-                            return self._compute_diff(_state_in, distress_state)
-
-                    # If Jules API says COMPLETED, we should trust it and proceed to PR check.
-                    # If PR is missing, check_pr will handle it by requesting PR creation.
+            # If Jules API says COMPLETED, we should trust it and proceed to PR check.
+            # If PR is missing, check_pr will handle it by requesting PR creation.
 
         except Exception as e:
             logger.warning(f"Failed to validate completion: {e}")
@@ -452,12 +444,7 @@ class JulesSessionNodes:
         is via agentMessaged activities from GET /sessions/{session}/activities.
         """
         try:
-            act_url = f"{state.session_url}/activities"
-            act_resp = await client.get(act_url, headers=self.client._get_headers(), timeout=10.0)
-            if act_resp.status_code != httpx.codes.OK:
-                return None
-
-            activities = act_resp.json().get("activities", [])
+            activities = await self.client.list_activities(state.session_url)
 
             # Find the most recent agentMessaged activity (originator=agent)
             last_agent_msg: dict[str, Any] | None = None
@@ -597,12 +584,8 @@ class JulesSessionNodes:
                                 return self._compute_diff(_state_in, state)
 
                 # Log new agentMessaged activities (the only activity type with human-readable text)
-                act_url = f"{state.session_url}/activities"
-                act_resp = await client.get(
-                    act_url, headers=self.client._get_headers(), timeout=10.0
-                )
-                if act_resp.status_code == httpx.codes.OK:
-                    activities = act_resp.json().get("activities", [])
+                try:
+                    activities = await self.client.list_activities(state.session_url)
                     for activity in activities:
                         act_id = activity.get("name", activity.get("id"))
                         if act_id and act_id not in state.processed_fallback_ids:
@@ -610,6 +593,8 @@ class JulesSessionNodes:
                             if msg:
                                 console.print(f"[dim]Jules: {msg}[/dim]")
                             state.processed_fallback_ids.add(act_id)
+                except Exception as e:
+                    logger.debug(f"Failed to fetch activities during PR wait: {e}")
 
         except Exception as e:
             logger.debug(f"Error checking for PR/activities: {e}")

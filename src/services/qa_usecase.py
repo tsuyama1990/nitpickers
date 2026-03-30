@@ -146,10 +146,15 @@ class QaUseCase:
                 next_retries = current_retries + 1
 
                 if result:
+                    session_update = state.session.model_copy(
+                        update={
+                            "pr_url": result.get("pr_url"),
+                            "jules_session_name": qa_session_id,
+                        }
+                    )
                     return {
                         "status": FlowStatus.READY_FOR_AUDIT,
-                        "pr_url": result.get("pr_url"),
-                        "jules_session_name": qa_session_id,
+                        "session": session_update,
                         "qa_retry_count": next_retries,
                     }
 
@@ -185,13 +190,19 @@ class QaUseCase:
                 except Exception as e:
                     console.print(f"[red]Failed to persist QA Session ID: {e}[/red]")
 
+            session_updates = {"jules_session_name": real_session_name}
+            if result.get("pr_url"):
+                session_updates["pr_url"] = result["pr_url"]
+
+            session_obj = state.session.model_copy(update=session_updates)
+
             ret_dict = {
-                "jules_session_name": real_session_name,
+                "session": session_obj,
                 "qa_retry_count": state.qa_retry_count,
             }
 
             if result.get("pr_url"):
-                ret_dict.update({"status": FlowStatus.READY_FOR_AUDIT, "pr_url": result["pr_url"]})
+                ret_dict["status"] = FlowStatus.READY_FOR_AUDIT
                 return ret_dict
 
             if result.get("status") == "success":
@@ -265,7 +276,8 @@ class QaUseCase:
             )
         )
 
+        audit_update = state.audit.model_copy(update={"audit_result": result})
         return {
-            "audit_result": result,
+            "audit": audit_update,
             "status": status,
         }

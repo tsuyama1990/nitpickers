@@ -5,6 +5,7 @@ from typing import Any
 from rich.console import Console
 
 from src.config import settings
+from src.enums import FlowStatus
 from src.nodes.base import BaseNode
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -36,25 +37,13 @@ class ArchitectNodes(BaseNode):
             result = await self.send_audit_feedback_to_session(str(session_id), feedback)
             if result and result.get("pr_url"):
                 pr_url = result["pr_url"]
-                pr_number = pr_url.split("/")[-1]
-                try:
-                    console.print(
-                        f"[bold blue]Auto-merging updated Architecture PR #{pr_number}...[/bold blue]"
-                    )
-                    await self.git.merge_pr(pr_number)
-                    console.print(
-                        "[bold green]Architecture updated and merged successfully![/bold green]"
-                    )
-                except Exception as e:
-                    console.print(f"[bold red]Failed to auto-merge Architecture PR: {e}[/bold red]")
-
+                session_update = state.session.model_copy(update={"pr_url": pr_url})
                 return {
-                    "status": "architect_completed",
-                    "current_phase": "architect_done",
-                    "pr_url": pr_url,
+                    "status": FlowStatus.ARCHITECT_SESSION_COMPLETED,
+                    "session": session_update,
                 }
             return {
-                "status": "architect_failed",
+                "status": FlowStatus.ARCHITECT_FAILED,
                 "error": "Failed to handle architect critic feedback.",
             }
 
@@ -79,7 +68,7 @@ class ArchitectNodes(BaseNode):
             console.print(f"[dim]Working on integration branch: {integration_branch}[/dim]")
         except Exception as e:
             console.print(f"[bold red]Failed to setup architect branch: {e}[/bold red]")
-            return {"status": "architect_failed", "error": f"Git checkout failed: {e}"}
+            return {"status": FlowStatus.ARCHITECT_FAILED, "error": f"Git checkout failed: {e}"}
 
         context_files = ["dev_documents/ALL_SPEC.md", "README.md", "README_DEVELOPER.md"]
         from anyio import Path
@@ -102,38 +91,25 @@ class ArchitectNodes(BaseNode):
             and result.get("session_name")
         ):
             session_name = result["session_name"]
-
             pr_url = result["pr_url"]
-            pr_number = pr_url.split("/")[-1]
 
-            try:
-                console.print(
-                    f"[bold blue]Auto-merging Architecture PR #{pr_number}...[/bold blue]"
-                )
-                await self.git.merge_pr(pr_number)
-                console.print("[bold green]Architecture merged successfully![/bold green]")
-
-                try:
-                    await ProjectManager().prepare_environment()
-                except Exception as e:
-                    console.print(f"[yellow]Warning: Environment preparation issue: {e}[/yellow]")
-
-            except Exception as e:
-                console.print(f"[bold red]Failed to auto-merge Architecture PR: {e}[/bold red]")
-
+            session_update = state.session.model_copy(
+                update={
+                    "integration_branch": integration_branch,
+                    "active_branch": integration_branch,
+                    "project_session_id": session_name,
+                    "pr_url": pr_url,
+                }
+            )
             return {
-                "status": "architect_completed",
-                "current_phase": "architect_done",
-                "integration_branch": integration_branch,
-                "active_branch": integration_branch,
-                "project_session_id": session_name,
-                "pr_url": pr_url,
+                "status": FlowStatus.ARCHITECT_SESSION_COMPLETED,
+                "session": session_update,
             }
 
         if result.get("error"):
-            return {"status": "architect_failed", "error": result.get("error")}
+            return {"status": FlowStatus.ARCHITECT_FAILED, "error": result.get("error")}
 
-        return {"status": "architect_failed", "error": "Unknown Jules error or no PR URL"}
+        return {"status": FlowStatus.ARCHITECT_FAILED, "error": "Unknown Jules error or no PR URL"}
 
     async def send_audit_feedback_to_session(
         self, session_id: str, feedback: str
@@ -187,7 +163,7 @@ class ArchitectNodes(BaseNode):
             return None
 
         if result.get("status") == "success" or result.get("pr_url"):
-            return {"status": "ready_for_audit", "pr_url": result.get("pr_url")}
+            return {"pr_url": result.get("pr_url")}
 
         console.print(
             "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"

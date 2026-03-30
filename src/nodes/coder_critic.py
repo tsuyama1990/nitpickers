@@ -42,24 +42,18 @@ class CoderCriticNodes:
         critic_instruction = settings.get_prompt_content("POST_AUDIT_REFACTOR_INSTRUCTION.md")
 
         try:
-            session_url = self.jules._get_session_url(session_id)
-            await self.jules._send_message(session_url, critic_instruction)
-            console.print("[dim]Waiting for Coder Critic evaluation to complete...[/dim]")
-
-            result = await self.jules.wait_for_completion(session_id)
-
-            if result.get("status") != "success":
-                console.print(
-                    "[yellow]Warning: Coder Critic evaluation failed. Proceeding.[/yellow]"
-                )
-                return {"status": FlowStatus.COMPLETED}
-
-            critic_result = evaluator._parse_critic_result(result.get("raw"))
+            critic_result = await evaluator.evaluate(
+                session_id,
+                template_name="POST_AUDIT_REFACTOR_INSTRUCTION.md",
+                cycle_id=state.cycle_id,
+            )
 
             if not critic_result.is_approved:
                 console.print(
                     "[bold yellow]Coder Critic identified improvements. Routing back to Coder.[/bold yellow]"
                 )
+                for vuln in critic_result.vulnerabilities:
+                    console.print(f"[red] - {vuln}[/red]")
                 return {"status": FlowStatus.CODER_RETRY}
 
         except Exception as e:

@@ -32,7 +32,7 @@ class GlobalRefactorNodes:
             else:
                 logger.info("No global refactorings applied.")
 
+            committee_update = state.committee.model_copy(update={"is_refactoring": True})
             return {
-                "global_refactor_result": result,
-                "is_refactoring": True,
+                "committee": committee_update,
             }

@@ -37,9 +37,14 @@ class CommitteeUseCase:
                 console.print(
                     f"[bold green]Auditor #{i} Approved. Moving to Auditor #{next_idx}.[/bold green]"
                 )
+                committee_update = state.committee.model_copy(
+                    update={
+                        "current_auditor_index": next_idx,
+                        "current_auditor_review_count": 1,
+                    }
+                )
                 return {
-                    "current_auditor_index": next_idx,
-                    "current_auditor_review_count": 1,
+                    "committee": committee_update,
                     "status": FlowStatus.NEXT_AUDITOR,
                 }
             console.print(
@@ -65,9 +70,14 @@ class CommitteeUseCase:
                 )
                 await asyncio.sleep(wait)
 
+            committee_update = state.committee.model_copy(
+                update={
+                    "current_auditor_review_count": next_rev,
+                    "iteration_count": current_iter + 1,
+                }
+            )
             return {
-                "current_auditor_review_count": next_rev,
-                "iteration_count": current_iter + 1,
+                "committee": committee_update,
                 "status": FlowStatus.RETRY_FIX,
                 "last_feedback_time": time.time(),
             }
@@ -90,10 +100,15 @@ class CommitteeUseCase:
                 )
                 await asyncio.sleep(wait)
 
+            committee_update = state.committee.model_copy(
+                update={
+                    "current_auditor_index": next_idx,
+                    "current_auditor_review_count": 1,
+                    "iteration_count": current_iter + 1,
+                }
+            )
             return {
-                "current_auditor_index": next_idx,
-                "current_auditor_review_count": 1,
-                "iteration_count": current_iter + 1,
+                "committee": committee_update,
                 "status": FlowStatus.RETRY_FIX,
                 "last_feedback_time": time.time(),
             }
@@ -101,8 +116,13 @@ class CommitteeUseCase:
         console.print(
             "[bold yellow]Final Auditor limit reached. Fixing code then Merging.[/bold yellow]"
         )
+        committee_update = state.committee.model_copy(
+            update={
+                "iteration_count": current_iter + 1,
+            }
+        )
         return {
             "final_fix": True,
-            "iteration_count": current_iter + 1,
+            "committee": committee_update,
             "status": FlowStatus.RETRY_FIX,
         }
