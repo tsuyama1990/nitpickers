@@ -59,9 +59,12 @@ class GitBranchingMixin(BaseGitManager):
                     raise RuntimeError(error_msg)
 
             logger.info("Uncommitted changes detected. Auto-committing...")
-            await self._run_git(["add", "."])
-            await self._run_git(["commit", "-m", message])
-            logger.info("✓ Auto-committed changes.")
+            try:
+                await self._run_git(["add", "."])
+                await self._run_git(["commit", "-m", message])
+                logger.info("✓ Auto-committed changes.")
+            except Exception as e:
+                logger.warning(f"Auto-commit failed: {e}")
 
     async def create_integration_branch(
         self, session_id: str, prefix: str = "dev", branch_name: str | None = None
