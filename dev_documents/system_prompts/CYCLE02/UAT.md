@@ -1,60 +1,63 @@
-# CYCLE02 UAT: Integration Graph & 3-Way Diff
+# CYCLE02 UAT Plan
 
 ## Test Scenarios
 
-### Scenario ID: Integration_Phase_01 - Clean Merge
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly processes a merge between two branches that do not have any conflicting changes. This is the baseline "happy path" for Phase 3. The system must attempt a Git merge, detect no conflicts, and immediately route to the Global Sandbox node. The Global Sandbox must then execute the full suite of static analysis (Ruff, Mypy) and unit tests (Pytest) on the integrated codebase. Upon successful execution of all tests, the Integration Graph must reach the `END` state.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The final state must reflect a successfully integrated repository.
+### ID: UAT-C02-001 (Priority: High)
+- **Title**: Verify Phase 2 (Coder) Graph Instantiation and Edge Topology
+- **Description**: Ensure `GraphBuilder._create_coder_graph` physically constructs a `StateGraph` containing exactly the nodes (`coder_session`, `self_critic`, `sandbox_evaluate`, `auditor_node`, `refactor_node`, `final_critic_node`) and edges specified by the 5-Phase architecture.
+- **Why**: This validates the core sequential loop architecture and ensures the router functions from CYCLE01 are correctly wired into the graph's conditional edges.
 
-### Scenario ID: Integration_Phase_02 - Conflict Resolution via 3-Way Diff
-- **Priority**: High
-- **Description**: Verify that the Integration Graph correctly detects a Git merge conflict and invokes the Master Integrator agent using the 3-Way Diff strategy to resolve it automatically. The system must attempt a merge and fail due to conflicting changes in the same file. It must route to the `master_integrator_node`, which extracts the Base, Local, and Remote versions of the file and constructs a prompt. The LLM (mocked in testing) provides a resolved code block. The system must apply this resolution, successfully complete the merge, and proceed to the Global Sandbox.
-- **Verification**: The LangGraph trace must show the sequence: `START -> git_merge_node -> (conflict) -> master_integrator_node -> git_merge_node -> (success) -> global_sandbox_node -> (pass) -> END`. The prompt sent to the LLM must contain the `### Base`, `### Branch A`, and `### Branch B` sections.
+### ID: UAT-C02-002 (Priority: High)
+- **Title**: Verify Phase 3 (Integration) Graph Instantiation and Edge Topology
+- **Description**: Ensure `GraphBuilder._create_integration_graph` constructs the new graph containing `git_merge_node`, `master_integrator_node`, and `global_sandbox_node`, with the correct conditional routing back to `git_merge_node` upon conflict.
+- **Why**: This proves the integration phase is successfully modeled as a distinct, iterable state machine capable of self-healing merge conflicts.
 
-### Scenario ID: Integration_Phase_03 - Post-Merge Semantic Failure Recovery
-- **Priority**: Medium
-- **Description**: Verify that the Integration Graph correctly handles a scenario where a merge is successful (no Git conflicts) or a Git conflict is resolved, but the resulting codebase fails semantic checks in the Global Sandbox (e.g., a function signature changed in one branch, breaking a call in another). The system must complete the merge and execute the Global Sandbox. The Sandbox must fail (simulated). The graph must then route the failure back to the `master_integrator_node` (or a dedicated integration-fix node) to resolve the semantic error.
-- **Verification**: The LangGraph trace must show the sequence: `... -> global_sandbox_node -> (failed) -> master_integrator_node -> ... -> global_sandbox_node -> (pass) -> END`. The final state must successfully recover from the semantic failure.
+### ID: UAT-C02-003 (Priority: Critical)
+- **Title**: Verify Full Pipeline Orchestration Sequence
+- **Description**: Ensure `WorkflowService.run_pipeline` (or equivalent) successfully executes multiple Phase 2 Coder graphs concurrently, waits for their completion, executes the Phase 3 Integration graph, and finally executes the Phase 4 QA graph.
+- **Why**: This is the ultimate E2E test of the 5-Phase architecture's orchestration, proving the phases run in the exact order required to guarantee zero-trust integration.
+
+### ID: UAT-C02-004 (Priority: High)
+- **Title**: Verify Pipeline Orchestration Halts on Coder Failure
+- **Description**: Ensure `WorkflowService.run_pipeline` aborts the Integration and QA phases if one or more of the parallel Phase 2 Coder graphs fail (e.g., maximum audit rejections reached).
+- **Why**: This validates the zero-trust gatekeeping: flawed feature branches must never reach the integration phase.
 
 ## Behavior Definitions
 
-### Feature: Automated 3-Way Diff Conflict Resolution
-As a developer using an AI-native environment,
-I want the system to automatically and intelligently resolve Git merge conflicts,
-So that parallel development cycles can be integrated seamlessly without manual intervention.
+```gherkin
+Feature: 5-Phase Graph Orchestration
+  As the Workflow Orchestrator
+  I want the StateGraphs to be physically wired according to the specification
+  So that the execution flow seamlessly transitions between phases
 
-**Background:**
-Given the system has successfully completed at least two parallel Phase 2 (Coder Graph) cycles,
-And the resulting feature branches are ready to be merged into the integration branch.
+  Scenario: Coder Graph topological integrity
+    Given the GraphBuilder is initialized
+    When "_create_coder_graph" is called
+    Then the resulting graph should contain the node "auditor_node"
+    And it should contain a conditional edge originating from "sandbox_evaluate"
+    And it should contain a conditional edge originating from "auditor_node"
 
-**Scenario: Successful clean merge of feature branches**
-- Given the system starts Phase 3 (Integration Graph)
-- And the integration branch is clean
-- When the system attempts to merge Feature Branch A
-- And there are no Git conflicts
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the merge is finalized and the phase completes.
+  Scenario: Integration Graph topological integrity
+    Given the GraphBuilder is initialized
+    When "_create_integration_graph" is called
+    Then the resulting graph should contain the node "git_merge_node"
+    And it should contain a conditional edge originating from "git_merge_node" routing to "master_integrator_node" on conflict
 
-**Scenario: Automated resolution of a Git conflict using 3-Way Diff**
-- Given the system is executing Phase 3 (Integration Graph)
-- And the system attempts to merge Feature Branch B
-- When Git detects a merge conflict in `utils.py`
-- Then the system routes to the Master Integrator node
-- And the Master Integrator extracts the Base, Local, and Remote versions of `utils.py`
-- And the Master Integrator generates a unified, conflict-free version of `utils.py`
-- And the system applies the resolution and commits the merge
-- Then the system routes to the Global Sandbox
-- And the Global Sandbox executes all linters and tests successfully
-- Then the phase completes successfully.
+  Scenario: Full Pipeline Sequential Execution
+    Given the WorkflowService is initialized with two pending cycles
+    And the Coder, Integration, and QA graphs are mocked to succeed
+    When "run_pipeline" is called
+    Then it should execute the Coder graph twice concurrently
+    And upon completion, it should execute the Integration graph exactly once
+    And upon completion, it should execute the QA graph exactly once
 
-**Scenario: Handling a semantic failure introduced during integration**
-- Given the system has successfully merged Feature Branch C
-- And the system is executing the Global Sandbox
-- When the Global Sandbox detects a failing unit test due to an incompatible API change
-- Then the system routes the failure logs back to the Master Integrator node
-- And the Master Integrator analyzes the failure and applies a semantic fix
-- And the system re-runs the Global Sandbox
-- When the Global Sandbox tests pass
-- Then the phase completes successfully.
+  Scenario: Full Pipeline aborts on Coder failure
+    Given the WorkflowService is initialized with two pending cycles
+    And the first Coder graph is mocked to succeed
+    But the second Coder graph is mocked to fail (e.g., reject status)
+    When "run_pipeline" is called
+    Then it should execute both Coder graphs concurrently
+    And it should NOT execute the Integration graph
+    And it should NOT execute the QA graph
+    And it should raise or return a failure status
+```

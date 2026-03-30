@@ -33,8 +33,8 @@ flowchart TD
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
-        ArchSession["JULES: architect_session\n(Requirement Decomposition)"]
-        ArchCritic{"JULES: architect_critic\n(Red Team Self-Critic)"}
+        ArchSession["JULES: architect_session"]
+        ArchCritic{"JULES: architect_critic"}
         InitCmd2 --> ArchSession
         ArchSession --> ArchCritic
         ArchCritic -- "Reject" --> ArchSession
@@ -43,12 +43,12 @@ flowchart TD
     %% Phase2: Coder Graph (Parallel: Cycle 1...N)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Test/Implementation)"]
-        SelfCritic["JULES: self_critic\n(Pre-Sandbox Polish)"]
-        SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
-        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Post-Audit Refactor)"]
-        FinalCritic["JULES: final_critic\n(Final Logic Verification)"]
+        CoderSession["JULES: coder_session"]
+        SelfCritic["JULES: self_critic"]
+        SandboxEval{"LOCAL: sandbox_evaluate"}
+        AuditorNode{"OpenRouter: auditor_node (1 to 3)"}
+        RefactorNode["JULES: refactor_node"]
+        FinalCritic{"JULES: final_critic"}
 
         CoderSession --> SelfCritic
         SelfCritic --> SandboxEval
@@ -63,24 +63,24 @@ flowchart TD
     %% Phase3: Integration Phase
     subgraph Phase3 ["Phase 3: Integration Phase"]
         direction TB
-        MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
-        MasterIntegrator["JULES: master_integrator\n(3-Way Diff Resolution)"]
-        GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
+        MergeTry{"Local: Git PR Merge"}
+        MasterIntegrator["JULES: master_integrator"]
+        GlobalSandbox{"LOCAL: global_sandbox"}
     end
 
     %% Phase4: UAT & QA Graph
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
-        UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
-        UxAuditor["OpenRouter: ux_auditor\n(Multimodal UX Review)"]
-        QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
-        QaSession["JULES: qa_session\n(Integration Fixes)"]
+        UatEval{"LOCAL: uat_evaluate"}
+        UxAuditor["OpenRouter: ux_auditor"]
+        QaAuditor["OpenRouter: qa_auditor"]
+        QaSession["JULES: qa_session"]
     end
 
     %% Inter-Phase Connections
     Phase0 --> Phase1
     Phase1 --> Phase2
-    Phase2 -- "All Coder Cycles Complete" --> MergeTry
+    Phase2 -- "All Cycles Complete" --> MergeTry
 
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
@@ -171,7 +171,7 @@ nitpick run-cycle --id 01
 ### Interactive Tutorials (UAT Verification)
 To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
 ```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow

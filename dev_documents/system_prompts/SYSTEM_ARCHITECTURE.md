@@ -1,40 +1,23 @@
 # System Architecture
 
 ## Summary
-The NITPICKERS system is an AI-native development environment designed to enforce absolute zero-trust validation of AI-generated code. This architectural documentation outlines a comprehensive refactoring of the existing LangGraph-based AI agent workflow into a highly stable, decoupled, and robust "5-phase" configuration. The primary objective is to enhance role separation, ensure state consistency, and provide a systematic approach to code generation, red team auditing, dynamic execution in a secure sandbox, and automated conflict resolution.
-
-This refactoring aims to build upon the existing architecture, modifying specific Pydantic state models, graph routing logic, and service use-cases without discarding the underlying foundation. The new 5-phase structure will explicitly map out the lifecycle of a development cycle from initial planning to final integration and end-to-end testing, guaranteeing that all generated code passes rigorous structural and behavioral checks before being accepted.
+The NITPICKERS environment is evolving into a more rigorous and reliable "5-Phase" architecture. This restructure ensures strict zero-trust code validation, clearer separation of concerns between code generation, static analysis, and multimodal UAT, and safer integration. The new phases enforce sequential checks before integration and guarantee the codebase meets high professional standards at every step.
 
 ## System Design Objectives
-The primary goal of this architectural refactoring is to transition the current monolithic or tightly coupled LangGraph execution flow into a well-defined, modular 5-phase pipeline. This transition addresses several key objectives that are critical for maintaining a scalable and reliable AI-driven development environment.
+The core objective of the 5-Phase architecture is to systematically transform unpredictable AI-generated code into robust, production-ready software. To achieve this, the architecture imposes a strict zero-trust philosophy where no AI output is trusted implicitly. Every code change must traverse a gauntlet of static linters, isolated sandbox tests, and external red-team audits before it is considered for integration.
 
-Firstly, the system must achieve **Strict Role Separation**. By clearly defining the boundaries between different agents—such as the Architect, Coder, Auditor, and Master Integrator—the system prevents context bleeding and reduces cognitive load on individual language models. This separation ensures that each agent operates within a specific, focused context, thereby improving the quality and precision of their outputs. For instance, the Coder agent focuses solely on implementation, while the stateless Auditor agent acts as an independent diagnostician, evaluating the Coder's output without historical bias.
+A key constraint in our design is the need for isolated and reproducible testing. We rely heavily on containerized sandboxes (like E2B) to execute generated code without polluting the host environment or risking security breaches. This isolation ensures that if an AI agent generates malicious or unstable code, the damage is strictly contained. Furthermore, the architecture mandates deterministic state management via LangGraph, allowing us to trace, pause, resume, and debug every micro-interaction between the orchestrator and the worker agents.
 
-Secondly, the architecture must ensure **Robust State Management**. The LangGraph state, primarily represented by the `CycleState` Pydantic model, needs to be augmented to handle complex control flows, including series-based auditing and explicit refactoring loops. This involves introducing new state variables such as `is_refactoring`, `current_auditor_index`, and `audit_attempt_count`. These additions are crucial for tracking the progress of a cycle, managing retry limits to prevent infinite loops, and explicitly differentiating between the initial implementation phase and subsequent code improvement phases.
+Another crucial objective is maximizing the separation of concerns. The system is intentionally divided into distinct phases—from initial planning and architectural breakdown to parallel implementation, strict integration conflict resolution, and finally, full end-to-end user acceptance testing. This prevents the emergence of "God Classes" and chaotic agent behavior. By isolating the 'Coder' logic from the 'Auditor' and 'Integrator' logic, we ensure that agents do not suffer from context fatigue. Each agent has a single, well-defined responsibility.
 
-Thirdly, the system emphasizes **Safe and Automated Integration**. A significant enhancement is the introduction of a dedicated Integration Phase (Phase 3). This phase tackles the challenge of merging concurrent code changes by implementing a 3-Way Diff conflict resolution strategy. Instead of relying on standard source control merges that may fail or require human intervention, the Master Integrator agent will intelligently synthesize conflicting changes by analyzing the common ancestor (Base), local modifications, and remote modifications, ensuring that the intentions of both branches are preserved.
-
-Fourthly, the architecture mandates **Zero-Trust Validation**. Every piece of code generated must pass through a mechanical blockade. This means that pull requests or code integrations are explicitly blocked until all static analysis checks (like Ruff and Mypy) and dynamic tests (like Pytest) succeed with a zero exit code. This principle eliminates assumed success and guarantees that only structurally sound and functionally correct code progresses through the pipeline.
-
-Finally, the design must remain **Additive and Extensible**. The refactoring strategy explicitly avoids rewriting the entire system from scratch. Instead, it leverages the existing schemas, service containers, and test frameworks, extending them safely to accommodate the new 5-phase logic. This approach minimizes disruption, preserves existing functional capabilities, and ensures that the system can be easily adapted to future requirements or new agent capabilities.
+Success criteria for this architecture include the flawless execution of the entire 5-Phase pipeline without manual intervention. The system must autonomously detect syntax errors, failing tests, and integration conflicts, subsequently employing self-healing loops to resolve them. Ultimately, a successful implementation means the master branch remains entirely pristine, accepting only code that has demonstrably passed 100% of its required automated checks and architectural audits.
 
 ## System Architecture
-The refactored NITPICKERS system architecture is divided into five distinct phases, each managed by specific LangGraph nodes and interconnected through well-defined routing functions. This modular approach ensures that the development process is logical, traceable, and resilient to errors.
+The 5-Phase architecture establishes a robust, highly orchestrated workflow designed to govern the entire lifecycle of AI-driven software development. The system is fundamentally composed of five distinct, sequentially enforced phases, orchestrated by a central workflow service and mediated by strictly typed Pydantic state models passing through LangGraph nodes.
 
-**Phase 0: Init Phase (CLI Setup)**
-This phase is responsible for the static initialization of the environment. Triggered by CLI commands, it generates necessary boilerplate files, configures linters in `pyproject.toml`, and sets up the foundational workspace. It relies heavily on user-provided inputs, such as the `ALL_SPEC.md` document, to establish the requirements for the subsequent phases.
+At the highest level, the data flows linearly from requirement inception to final verified deployment, but internally, each phase may contain complex self-healing loops. External systems such as the LLM providers (Google, OpenRouter), the sandbox execution environment (E2B), and the local file system act as critical boundary points. Strict boundary management rules dictate that the orchestrator never interacts directly with the file system; instead, it issues serialized commands to the sandbox runner, which then applies the changes.
 
-**Phase 1: Architect Graph (Requirement Planning)**
-In this phase, the Architect agent analyzes the raw requirements and decomposes them into executable, sequential development cycles (e.g., `CYCLE01`, `CYCLE02`). This process includes a self-critic review mechanism to ensure that the proposed plan is viable and well-structured before proceeding. The output of this phase is a set of specification and User Acceptance Testing (UAT) documents for each cycle.
-
-**Phase 2: Coder Graph (Implementation and Audit)**
-This is the core execution loop for a given cycle. The Coder agent implements the required features and tests. The generated code is then evaluated in a local sandbox (static analysis and unit tests). If it passes, the code is subjected to a serial Audit process involving multiple independent Auditor agents. If any Auditor rejects the code, it is sent back to the Coder for revision. Once all Auditors approve, the code undergoes a final Refactor step to improve its quality, followed by a final sandbox evaluation and a self-critic review.
-
-**Phase 3: Integration Phase (3-Way Diff)**
-After all parallel Coder cycles complete successfully, the system attempts to merge the changes into an integration branch. If conflicts arise, the Master Integrator agent utilizes a 3-Way Diff strategy—analyzing the Base, Branch A, and Branch B code—to resolve the conflicts intelligently. The integrated code is then verified in a global sandbox to ensure that the merge did not introduce any regressions.
-
-**Phase 4: UAT & QA Graph (Dynamic E2E Testing)**
-The final phase involves rigorous End-to-End (E2E) testing against the integrated codebase. Playwright or similar tools execute the UAT scenarios. If a test fails, a stateless QA Auditor analyzes the failure artifacts (logs, screenshots) and provides a fix plan to a QA Session agent, which implements the necessary corrections. This loop continues until all UATs pass, signifying the completion of the project.
+The architectural boundary between the parallel implementation phase and the serial integration phase is absolute. Code generated in a parallel 'Coder' cycle is quarantined in an isolated branch. It is only permitted to advance to the Integration Phase after successfully navigating the local static analysis (Ruff, Mypy) and the external red-team Auditor evaluations. This separation guarantees that unstable code in one feature branch cannot contaminate the validation pipeline of another feature branch.
 
 ```mermaid
 flowchart TD
@@ -42,176 +25,106 @@ flowchart TD
     subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
         direction TB
         InitCmd([CLI: nitpick init])
-        GenTemplates[".env.sample / .gitignore, strict ruff, mypy settings (Local)"]
-        UpdateDocker["add .env path on docker-compose.yml (User)"]
-        PrepareSpec["define ALL_SPEC.md (User)"]
-
-        InitCmd --> GenTemplates --> UpdateDocker --> PrepareSpec
     end
 
     %% Phase1: Architect Graph
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
-
-        subgraph Architect_Phase ["JULES: Architect Phase"]
-            ArchSession["architect_session\n(Requirement Decomposition)"]
-            ArchCritic{"self-critic review\n(Plan Review)"}
-        end
-
-        OutputSpecs[/"Specs and UATs for each Cycle"/]
-
-        PrepareSpec --> InitCmd2 --> ArchSession
+        ArchSession["JULES: architect_session"]
+        ArchCritic{"JULES: architect_critic"}
+        InitCmd2 --> ArchSession
         ArchSession --> ArchCritic
         ArchCritic -- "Reject" --> ArchSession
-        ArchCritic -- "Approve" --> OutputSpecs
     end
 
-    %% Phase2: Coder Graph
+    %% Phase2: Coder Graph (Parallel: Cycle 1...N)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Implementation)"]
-        SelfCritic["JULES: SelfCriticReview\n(Initial Review)"]
-        SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
+        CoderSession["JULES: coder_session"]
+        SelfCritic["JULES: self_critic"]
+        SandboxEval{"LOCAL: sandbox_evaluate"}
+        AuditorNode{"OpenRouter: auditor_node (1 to 3)"}
+        RefactorNode["JULES: refactor_node"]
+        FinalCritic{"JULES: final_critic"}
 
-        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Refactoring)"]
-        FinalCritic{"JULES: Final Self-critic\n(Final Review)"}
-
-        OutputSpecs -->|Start Cycle N| CoderSession
-
-        CoderSession -- "1st Time" --> SelfCritic --> SandboxEval
-        CoderSession -- "2nd+ Time" --> SandboxEval
-
-        SandboxEval -- "Fail" --> CoderSession
-        SandboxEval -- "Pass (Implementing)" --> AuditorNode
-        SandboxEval -- "Pass (Refactored)" --> FinalCritic
-
+        CoderSession --> SelfCritic
+        SelfCritic --> SandboxEval
+        SandboxEval -- "Pass" --> AuditorNode
         AuditorNode -- "Reject" --> CoderSession
         AuditorNode -- "Pass All" --> RefactorNode
-
         RefactorNode --> SandboxEval
-
+        SandboxEval -- "Pass (Post-Refactor)" --> FinalCritic
         FinalCritic -- "Reject" --> CoderSession
     end
 
     %% Phase3: Integration Phase
     subgraph Phase3 ["Phase 3: Integration Phase"]
         direction TB
-        MergeTry{"Local: Git PR Merge\n(Integration Branch)"}
-        MasterIntegrator["JULES: master_integrator\n(3-Way Diff Resolution)"]
-        GlobalSandbox{"LOCAL: global_sandbox\n(Global Linter/Pytest)"}
+        MergeTry{"Local: Git PR Merge"}
+        MasterIntegrator["JULES: master_integrator"]
+        GlobalSandbox{"LOCAL: global_sandbox"}
     end
 
     %% Phase4: UAT & QA Graph
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
-        UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
-        QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
-        QaSession["JULES: qa_session\n(Integration Fixes)"]
-        EndNode(((END: Project Complete)))
+        UatEval{"LOCAL: uat_evaluate"}
+        UxAuditor["OpenRouter: ux_auditor"]
+        QaAuditor["OpenRouter: qa_auditor"]
+        QaSession["JULES: qa_session"]
     end
 
     %% Inter-Phase Connections
-    FinalCritic -- "Approve (All PRs Ready)" --> MergeTry
+    Phase0 --> Phase1
+    Phase1 --> Phase2
+    Phase2 -- "All Cycles Complete" --> MergeTry
 
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
-
     MergeTry -- "Success" --> GlobalSandbox
-    GlobalSandbox -- "Fail" --> MasterIntegrator
 
     GlobalSandbox -- "Pass" --> UatEval
 
     UatEval -- "Fail" --> QaAuditor
+    UatEval -- "Pass" --> UxAuditor
     QaAuditor --> QaSession
     QaSession --> UatEval
-
-    UatEval -- "Pass" --> EndNode
 ```
 
 ## Design Architecture
-The design architecture is heavily reliant on Pydantic models to enforce strict typing, validation, and schema definitions. By extending the existing models, we ensure backward compatibility while introducing the new capabilities required by the 5-phase structure.
+The design architecture is heavily rooted in robust, strictly typed Pydantic models. We utilize the power of Pydantic to ensure that data flowing between LangGraph nodes is always structurally sound. This preempts many runtime errors caused by unexpected LLM outputs or malformed internal state mutations.
+
+The core domain model is the `CycleState`. This object represents the cumulative state of a single development cycle as it traverses the graph. To avoid creating a monolithic "God Class", `CycleState` is composed of several specialized sub-states: `CommitteeState` (managing auditor iterations and refactoring flags), `SessionPersistenceState` (handling branch and git context), `AuditState` (storing reviews and feedback logs), `TestState` (holding sandbox execution results), and `UATState` (managing final UI validation). This composability allows internal modules to consume only the subset of data they require, strictly enforcing the Principle of Least Privilege.
+
+Key invariants include the `current_auditor_index` in the `CommitteeState`, which must strictly be an integer between 1 and 3, ensuring the serial audit loop cannot spin out of control. Similarly, the `is_refactoring` boolean flag acts as a critical constraint, preventing a cycle from endlessly bouncing between initial implementation and post-audit refactoring. Extensibility is achieved by allowing the addition of new sub-states to the `CycleState` without disrupting existing accessors, thanks to property delegates.
 
 ```text
 src/
-├── cli.py
-├── state.py
-├── graph.py
+├── state.py                  (Core Domain Models: CycleState, IntegrationState)
+├── graph.py                  (Graph Builder: Defines edges and nodes)
 ├── nodes/
-│   └── routers.py
-├── domain_models/
-│   └── (Existing schemas...)
+│   ├── routers.py            (Conditional edge routing logic)
+│   ├── base.py               (BaseNode definitions)
+│   └── ...
 └── services/
-    ├── conflict_manager.py
-    ├── uat_usecase.py
-    └── workflow.py
+    ├── conflict_manager.py   (3-Way Diff construction logic)
+    ├── workflow.py           (High-level phase orchestration)
+    └── uat_usecase.py        (UAT execution and QA orchestration)
 ```
-
-### Core Domain Pydantic Models Structure
-The central piece of state management is the `CycleState` model located in `src/state.py`. This model aggregates various sub-states (like `CommitteeState`, `AuditState`, `TestState`) to manage the lifecycle of a cycle.
-
-To support the new Phase 2 (Coder Graph) logic, the `CommitteeState` (or the root `CycleState` depending on the exact implementation preference, though `CommitteeState` is ideal for grouping) must be extended to include:
-- `is_refactoring: bool`: A flag to determine if the cycle has passed the audit phase and is currently undergoing the final refactoring loop.
-- `current_auditor_index: int`: Tracks which auditor in the serial chain (e.g., 1 to 3) is currently reviewing the code.
-- `audit_attempt_count: int`: Counts the number of times an auditor has rejected the code, acting as a circuit breaker to prevent infinite loops.
-
-In Phase 3 (Integration Graph), the `IntegrationState` model (which may need to be defined or extended) will handle variables specific to merging, such as a queue of successful feature branches (`branches_to_merge: list[str]`), lists of unresolved conflicts, or the current integration branch status. This state is strictly aggregated by the Orchestrator after Phase 2 completes successfully.
-
-### Integration Points & Structured Data Handoffs
-The new schema objects directly extend the existing domain objects. For instance, `route_sandbox_evaluate`, `route_auditor`, and `route_final_critic` in `src/nodes/routers.py` will explicitly rely on the newly added fields in `CycleState` to make routing decisions (dynamically querying configurations rather than using hardcoded limits).
-
-Crucially, the transition from Phase 2 to Phase 3 involves a **State Aggregator** mechanism within the Orchestrator (`workflow.py`). It extracts the `integration_branch` from the `SessionPersistenceState` of each successful `CycleState` and populates the `IntegrationState.branches_to_merge` list.
-
-All LLM interactions (Auditor feedback, Master Integrator resolution, Refactor outputs) must strictly utilize Pydantic-based structured outputs (e.g., `ConflictResolutionSchema`) to guarantee safe parsing and eliminate fragile markdown regex extraction. The `services/conflict_manager.py` will interact with `GitManager` or `GitOps` classes to safely retrieve the necessary Base, Local, and Remote file contents (gracefully handling missing files) to construct the 3-Way Diff prompt.
 
 ## Implementation Plan
 
-### CYCLE01: State Management and Coder Graph Refactoring
-- **Focus**: Implement the core state changes and re-wire Phase 2 (Coder Graph).
-- **Tasks**:
-  1. Update `src/state.py` to include `is_refactoring`, `current_auditor_index`, and `audit_attempt_count` in the appropriate Pydantic models (e.g., `CommitteeState` or `CycleState`).
-  2. Implement new routing functions in `src/nodes/routers.py`: `route_sandbox_evaluate`, `route_auditor`, and `route_final_critic`.
-  3. Modify `src/graph.py` to re-wire `_create_coder_graph` according to the 5-phase specification, replacing existing nodes as necessary and introducing `refactor_node` and `final_critic_node`.
-- **Expected Outcome**: A Coder Graph that properly loops through implementation, sandbox validation, serial auditing, and final refactoring based on the new state flags.
+### CYCLE01: State Management and Phase 2/3 Core Logic Refactoring
+In this initial cycle, we will focus on establishing the foundational state changes and the logic required for the Phase 2 (Coder) and Phase 3 (Integration) graphs. This involves extending the `CycleState` to support the new `is_refactoring` and `current_auditor_index` fields. We will also implement the crucial routing logic in `src/nodes/routers.py` to handle the new serial auditor progression and the conditional branching based on the refactoring flag. Finally, we will overhaul the `conflict_manager.py` to construct a true 3-way diff, moving away from simple conflict marker parsing. This cycle is purely structural and does not touch the overarching workflow orchestrator.
 
-### CYCLE02: Integration Phase and 3-Way Diff Resolution
-- **Focus**: Introduce Phase 3 (Integration Graph) and implement intelligent conflict resolution.
-- **Tasks**:
-  1. Define the `IntegrationState` model if not already present, ensuring it can track merge attempts and conflicts.
-  2. Implement the 3-Way Diff logic in `src/services/conflict_manager.py` (or equivalent service). This requires fetching the Base, Local (Branch A), and Remote (Branch B) versions of conflicted files using Git commands.
-  3. Create the `build_integration_graph` in `src/graph.py` containing the `git_merge_node`, `master_integrator_node`, and `global_sandbox_node`.
-- **Expected Outcome**: The system can automatically attempt merges and, upon encountering conflicts, intelligently synthesize a resolution using an LLM before validating the result globally.
-
-### CYCLE03: Orchestration and UAT/QA Graph Separation
-- **Focus**: Finalize Phase 4 (UAT & QA Graph) and orchestrate the entire 5-phase pipeline.
-- **Tasks**:
-  1. Refactor `src/services/uat_usecase.py` to ensure it only operates after Phase 3 is fully complete, acting as the dedicated executor for Phase 4.
-  2. Update `src/services/workflow.py` and `src/cli.py` to control the overall execution flow: running Phase 2 cycles in parallel, awaiting completion, triggering Phase 3 integration, and finally executing Phase 4 UAT.
-  3. Ensure that the QA Auditor loop in Phase 4 correctly analyzes failures and routes them back for correction within the integrated environment.
-- **Expected Outcome**: A fully cohesive system that seamlessly transitions from parallel feature development to integrated system testing and final validation without manual intervention.
+### CYCLE02: Orchestration, Graph Definition, and UAT Refactoring
+The second cycle builds upon the state and routing logic established in CYCLE01. We will update `src/graph.py` to physically wire up the new 5-Phase architecture, officially defining the `_create_integration_graph` and redefining the `_create_coder_graph` and `_create_qa_graph`. Concurrently, we will modify the high-level `WorkflowService` in `src/services/workflow.py` to properly execute these distinct graphs in the correct parallel and sequential order. Lastly, the UAT logic in `src/services/uat_usecase.py` will be isolated entirely into Phase 4, removing any legacy hooks that tied it prematurely to the Coder phase.
 
 ## Test Strategy
 
 ### CYCLE01
-- **Unit Testing**:
-  - Test the state transitions in `src/state.py` to ensure that setting `is_refactoring` or incrementing `current_auditor_index` behaves as expected and passes Pydantic validation.
-  - Test the routing logic in `src/nodes/routers.py` by providing mocked `CycleState` objects with various combinations of flags and asserting the correct string output (e.g., "failed", "auditor", "final_critic").
-- **Integration Testing**:
-  - Mock the LLM nodes and execute the `_create_coder_graph` to verify that the edges trigger correctly. Ensure that the loop breaks after `audit_attempt_count` exceeds its limit and that it transitions to `refactor_node` only when all auditors pass.
-  - **Side-effect Management**: Use an in-memory `Checkpointer` for LangGraph and mock `ProcessRunner` to avoid executing actual linting or testing commands during the graph traversal test.
+The testing strategy for CYCLE01 will focus heavily on unit and isolated integration tests. For the state extensions, we will instantiate `CycleState` objects and verify that the new fields (`is_refactoring`, `current_auditor_index`) initialize correctly and respect their Pydantic constraints. The routing functions in `routers.py` will be tested using purely mocked `CycleState` inputs, asserting that the correct next-node strings (e.g., "next_auditor", "pass_all") are returned under various simulated conditions. For the `conflict_manager.py`, we will use isolated temporary Git repositories (`pytest` fixtures) to simulate merge conflicts, verifying that the 3-way diff string is constructed perfectly without relying on external network calls. All database or persistent state setup must utilize Pytest fixtures that start a transaction before the test and roll it back after, ensuring lightning-fast state resets.
 
 ### CYCLE02
-- **Unit Testing**:
-  - Test the `build_conflict_package` method in `src/services/conflict_manager.py`. Mock the Git subprocess calls to return specific file strings for Base, Local, and Remote, and verify that the constructed prompt accurately contains all three sections.
-- **Integration Testing**:
-  - Test the `build_integration_graph` transition logic. Simulate a merge conflict state and ensure it routes to `master_integrator_node`. Simulate a successful merge and ensure it routes to `global_sandbox_node`.
-  - **Side-effect Management**: Utilize a temporary Git repository setup using `pytest.fixture(scope="function")` to safely test the Git operations and merge scenarios without affecting the real project repository.
-
-### CYCLE03
-- **Unit Testing**:
-  - Test the orchestration logic in `src/services/workflow.py`. Verify that the workflow correctly awaits all parallel Coder cycles before initiating the Integration phase.
-  - Test `src/services/uat_usecase.py` to ensure it correctly processes the integrated state and triggers the QA loop upon simulated test failures.
-- **Integration Testing**:
-  - Perform an end-to-end simulation of the workflow orchestrator. Mock the actual execution of the graphs but verify that `build_coder_graph`, `build_integration_graph`, and `build_qa_graph` are called in the correct sequence and with the appropriate state payloads.
-  - **Side-effect Management**: Ensure that mock API keys are active (via `tests/conftest.py` configurations) to prevent any actual LLM calls. Use mock directories for any file generation steps.
+CYCLE02 testing shifts focus towards integration and workflow orchestration. We will utilize the LangGraph testing utilities to verify the physical structure of the newly defined graphs in `graph.py`, ensuring that all edges and conditional routes connect the nodes exactly as depicted in the architectural diagrams. The `WorkflowService` will be tested using mocked instances of the graph builder, verifying that `run_cycle` correctly handles the parallel execution of multiple branches and sequentially invokes the integration graph only after all parallel tasks complete. UAT refactoring will be verified by asserting that the `uat_usecase.py` functions correctly process isolated state objects without side-effects, relying on mocked sandbox runners to simulate Playwright execution. All external API calls, especially those invoking OpenRouter or Jules, must be strictly mocked to ensure sandbox resilience.
