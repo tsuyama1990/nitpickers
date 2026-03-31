@@ -27,8 +27,10 @@ def init() -> None:
     console.print("[bold blue]Initializing new Nitpick project...[/bold blue]")
     manager = ProjectManager()
 
-    # The Docker container mounts the templates at /opt/nitpick/templates/
+    # Try Docker path first, then fallback to local templates directory
     templates_path = "/opt/nitpick/templates/"
+    if not Path(templates_path).exists():
+        templates_path = str(Path(__file__).parent / "templates")
 
     try:
         asyncio.run(manager.initialize_project(templates_path))

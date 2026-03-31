@@ -467,11 +467,11 @@ class ASTAnalyzerConfig(BaseModel):
 
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
-        default="openai:gpt-4o",
+        default="openrouter/stepfun/step-3.5-flash:free",
         alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
-        default="openai:gpt-4o",
+        default="openrouter/stepfun/step-3.5-flash:free",
         alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
@@ -479,12 +479,12 @@ class AgentsConfig(BaseSettings):
 
 class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
-        default="openai:gpt-4o",
+        default="openrouter/stepfun/step-3.5-flash:free",
         alias="NITPICK_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="openai:gpt-4o-mini",
+        default="openrouter/stepfun/step-3.5-flash:free",
         alias="NITPICK_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
