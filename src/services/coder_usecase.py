@@ -125,7 +125,9 @@ class CoderUseCase:
 
             # If we just finished a post-audit refactor, we are COMPLETED for this cycle
             pr_val = result.get("pr_url")
-            session_update = state.session.model_copy(update={"pr_url": pr_val}) if pr_val else state.session
+            session_update = (
+                state.session.model_copy(update={"pr_url": pr_val}) if pr_val else state.session
+            )
 
             if is_post_audit_refactor:
                 return {"status": FlowStatus.COMPLETED, "session": session_update}

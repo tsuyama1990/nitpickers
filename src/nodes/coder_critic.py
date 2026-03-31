@@ -2,7 +2,6 @@ from typing import Any
 
 from rich.console import Console
 
-from src.config import settings
 from src.enums import FlowStatus
 from src.state import CycleState
 
@@ -39,7 +38,6 @@ class CoderCriticNodes:
         evaluator = SelfCriticEvaluator(self.jules)
 
         console.print("[bold magenta]Invoking Coder Self-Critic Evaluator...[/bold magenta]")
-        critic_instruction = settings.get_prompt_content("POST_AUDIT_REFACTOR_INSTRUCTION.md")
 
         try:
             critic_result = await evaluator.evaluate(

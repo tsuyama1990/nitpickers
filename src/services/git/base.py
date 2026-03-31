@@ -29,6 +29,7 @@ class BaseGitManager:
         import asyncio
         import logging
         import random
+
         logger = logging.getLogger(__name__)
         for attempt in range(5):
             await self._ensure_no_lock()
@@ -42,11 +43,20 @@ class BaseGitManager:
 
             if "index.lock" in error_msg and attempt < 4:
                 logger.warning(f"Index locked, retrying {args}...")
-                await asyncio.sleep(random.uniform(  # noqa: S311
-                    0.5, 2.0))
+                await asyncio.sleep(
+                    random.uniform(  # noqa: S311
+                        0.5, 2.0
+                    )
+                )
                 continue
 
-            if args and args[0] == "pull" and ("no tracking information" in error_msg or "could not read Username" in error_msg):
+            if (
+                args
+                and args[0] == "pull"
+                and (
+                    "no tracking information" in error_msg or "could not read Username" in error_msg
+                )
+            ):
                 logger.warning(f"Git pull tracking/auth error suppressed: {error_msg}")
                 return ""
 
@@ -55,7 +65,6 @@ class BaseGitManager:
                 raise RuntimeError(msg)
             return str(stdout).strip()
         return ""
-
 
     async def get_current_commit(self) -> str:
         """Returns the current commit hash (HEAD)."""

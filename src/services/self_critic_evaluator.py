@@ -80,7 +80,9 @@ class SelfCriticEvaluator:
         Interacts with the Jules session to run the Red Team Critic evaluation
         and returns the parsed CriticResult.
         """
-        console.print(f"[bold magenta]Invoking Self-Critic Evaluator ({template_name})...[/bold magenta]")
+        console.print(
+            f"[bold magenta]Invoking Self-Critic Evaluator ({template_name})...[/bold magenta]"
+        )
         critic_instruction = settings.get_template(template_name).read_text()
 
         # Simple template variable substitution

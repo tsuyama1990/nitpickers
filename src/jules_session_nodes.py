@@ -334,9 +334,7 @@ class JulesSessionNodes:
                         state.processed_completion_ids.add(act_id)
 
                     has_session_completed = True
-                    logger.info(
-                        "Found sessionCompleted activity - session is genuinely complete"
-                    )
+                    logger.info("Found sessionCompleted activity - session is genuinely complete")
                     break
 
             # If sessionCompleted exists (and is new), it's genuinely complete
@@ -366,7 +364,7 @@ class JulesSessionNodes:
             # NEW FIX: If sessionCompleted is missing, check for distress/objections in the last message.
             # This prevents auditing when Jules is complaining (e.g. "feedback inconsistent") but ends session.
             if not has_session_completed:
-                distress_state = await self._check_for_distress_in_messages(state, client=None)
+                distress_state = await self._check_for_distress_in_messages(state)
                 if distress_state:
                     return self._compute_diff(_state_in, distress_state)
 
@@ -436,7 +434,7 @@ class JulesSessionNodes:
         return self._compute_diff(_state_in, state)
 
     async def _check_for_distress_in_messages(
-        self, state: JulesSessionState, client: httpx.AsyncClient
+        self, state: JulesSessionState
     ) -> JulesSessionState | None:
         """Checks the latest agentMessaged activity for distress signals/objections.
 

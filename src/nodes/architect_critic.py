@@ -53,7 +53,9 @@ class ArchitectCriticNodes:
             return {"status": FlowStatus.ARCHITECT_COMPLETED}
 
         critic_retry_count += 1
-        console.print(f"[bold yellow]Architecture Rejected by Critic (Retry {critic_retry_count}/1)[/bold yellow]")
+        console.print(
+            f"[bold yellow]Architecture Rejected by Critic (Retry {critic_retry_count}/1)[/bold yellow]"
+        )
 
         feedback_prompt = (
             "The architecture was rejected. Please fix the following vulnerabilities:\n"

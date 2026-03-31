@@ -678,43 +678,40 @@ class JulesClient:
             elapsed = 0
             processed_fallback_ids: set[str] = set()
 
-            async with httpx.AsyncClient() as client:
-                while elapsed < max_wait:
-                    await asyncio.sleep(poll_interval)
-                    elapsed += poll_interval
+            while elapsed < max_wait:
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
 
-                    # Check for PR and new activities
-                    try:
-                        activities = await self.list_activities(session_url)
-                        for activity in activities:
-                            # Check for PR
-                            if "pullRequest" in activity:
-                                pr_url: str | None = activity["pullRequest"].get("url")
-                                if pr_url:
-                                    self.console.print(
-                                        f"[bold green]PR Created: {pr_url}[/bold green]"
-                                    )
-                                    return pr_url
+                # Check for PR and new activities
+                try:
+                    activities = await self.list_activities(session_url)
+                    for activity in activities:
+                        # Check for PR
+                        if "pullRequest" in activity:
+                            pr_url: str | None = activity["pullRequest"].get("url")
+                            if pr_url:
+                                self.console.print(f"[bold green]PR Created: {pr_url}[/bold green]")
+                                return pr_url
 
-                            # Log new activities to show progress
-                            act_id = activity.get("name", activity.get("id"))
-                            if act_id and act_id not in processed_fallback_ids:
-                                msg = self.inquiry_handler.extract_activity_message(activity)
-                                if msg:
-                                    self.console.print(f"[dim]Jules: {msg}[/dim]")
-                                processed_fallback_ids.add(act_id)
+                        # Log new activities to show progress
+                        act_id = activity.get("name", activity.get("id"))
+                        if act_id and act_id not in processed_fallback_ids:
+                            msg = self.inquiry_handler.extract_activity_message(activity)
+                            if msg:
+                                self.console.print(f"[dim]Jules: {msg}[/dim]")
+                            processed_fallback_ids.add(act_id)
 
-                    except Exception as e:
-                        logger.debug(f"Error checking for PR/activities: {e}")
+                except Exception as e:
+                    logger.debug(f"Error checking for PR/activities: {e}")
 
-                    if elapsed % settings.jules.progress_update_interval == 0:
-                        self.console.print(
-                            f"[dim]Still waiting for PR... ({elapsed}/{max_wait}s elapsed)[/dim]"
-                        )
-
-                logger.warning(f"Timeout ({max_wait}s) waiting for Jules to create PR")
-                return None
+                if elapsed % settings.jules.progress_update_interval == 0:
+                    self.console.print(
+                        f"[dim]Still waiting for PR... ({elapsed}/{max_wait}s elapsed)[/dim]"
+                    )
 
         except Exception as e:
             logger.error(f"Error requesting Jules to create PR: {e}")
             return None
+
+        logger.warning(f"Timeout ({max_wait}s) waiting for Jules to create PR")
+        return None
