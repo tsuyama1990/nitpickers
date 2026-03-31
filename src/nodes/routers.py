@@ -1,3 +1,4 @@
+from typing import Any
 from src.config import settings
 from src.enums import FlowStatus
 from src.state import CycleState
@@ -20,7 +21,6 @@ def check_coder_outcome(state: CycleState) -> str:
         )
 
     if status == FlowStatus.READY_FOR_AUDIT:
-        # Route to self_critic only on the first attempt
         if (
             state.committee.iteration_count <= 1
             and state.committee.audit_attempt_count == 0
@@ -37,13 +37,10 @@ def route_sandbox_evaluate(state: CycleState) -> str:
 
     if getattr(state.test, "tdd_phase", None) == "red":
         if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
-            # The tests failed as expected, we can proceed to write the implementation
             return "impl_coder_node"
-        # If tests passed when they should fail, route back to test_coder_node to write failing tests
         if status == FlowStatus.READY_FOR_AUDIT:
             return "test_coder_node"
 
-    # Green phase routing logic
     if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
         return "impl_coder_node"
 
@@ -61,7 +58,6 @@ def route_auditor(state: CycleState) -> str:
         state.committee.audit_attempt_count += 1
         return "requires_pivot"
 
-    # Use explicit audit_result field from state.audit based on trace inspection
     is_approved = False
     if state.audit.audit_result is not None:
         is_approved = state.audit.audit_result.is_approved
@@ -72,7 +68,6 @@ def route_auditor(state: CycleState) -> str:
             return "requires_pivot"
         return "reject"
 
-    # Reset attempt count on pass
     state.committee.audit_attempt_count = 0
     state.committee.current_auditor_index += 1
 
@@ -107,3 +102,26 @@ def route_architect_critic(state: CycleState) -> str:
     if status == FlowStatus.ARCHITECT_FAILED:
         return "end"
     return "end"
+
+
+def route_merge(state: Any) -> str:
+    status = getattr(state, "status", None)
+    if not status and hasattr(state, "get"):
+        status = state.get("status")
+
+    if (
+        status == "conflict"
+        or getattr(state, "conflict_status", None) == "conflict_detected"
+        or (hasattr(state, "get") and state.get("conflict_status") == "conflict_detected")
+    ):
+        return "conflict"
+    return "success"
+
+
+def route_global_sandbox(state: Any) -> str:
+    status = getattr(state, "status", None)
+    if not status and hasattr(state, "get"):
+        status = state.get("status")
+    if status in ("failed", "tdd_failed"):
+        return "failed"
+    return "pass"
