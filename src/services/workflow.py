@@ -269,7 +269,7 @@ class WorkflowService:
 
     async def run_full_pipeline(
         self, project_session_id: str | None = None, parallel: bool = False
-    ) -> None:  # noqa: C901, PLR0915, PLR0912
+    ) -> None:
         """
         Orchestrates the entire 5-Phase pipeline.
         Phase 2: Parallel execution of all planned cycles.
