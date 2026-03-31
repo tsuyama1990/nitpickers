@@ -1,160 +1,239 @@
 ============================= test session starts ==============================
-platform linux -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0
+platform linux -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0 -- /app/.venv/bin/python
+cachedir: .pytest_cache
+hypothesis profile 'default'
 rootdir: /app
-configfile: pyproject.toml
-plugins: langsmith-0.7.22, base-url-2.1.0, playwright-0.7.2, asyncio-1.3.0, cov-7.1.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: langsmith-0.7.23, base-url-2.1.0, playwright-0.7.2, pytest_httpserver-1.1.5, asyncio-1.3.0, cov-7.1.0, anyio-4.13.0, pyfakefs-6.1.6, hypothesis-6.151.10, logfire-4.31.0, respx-0.22.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 142 items
+collecting ... collected 12 items
 
-tests/nitpick/integration/test_audit_loop.py .                           [  0%]
-tests/nitpick/integration/test_cli_commands.py .                         [  1%]
-tests/nitpick/integration/test_end_to_end_workflow.py .                  [  2%]
-tests/nitpick/integration/test_git_robustness.py ..                      [  3%]
-tests/nitpick/integration/test_pipeline_orchestration.py ..              [  4%]
-tests/nitpick/unit/test_audit_orchestrator.py ...                        [  7%]
-tests/nitpick/unit/test_audit_polling.py .                               [  7%]
-tests/nitpick/unit/test_auditor_polling_exit.py .                        [  8%]
-tests/nitpick/unit/test_auto_merge.py .                                  [  9%]
-tests/nitpick/unit/test_cli_reconstruction.py ...                        [ 11%]
-tests/nitpick/unit/test_coder_critic.py ..                               [ 12%]
-tests/nitpick/unit/test_coder_critic_flow.py .                           [ 13%]
-tests/nitpick/unit/test_committee_logic.py .                             [ 14%]
-tests/nitpick/unit/test_config.py ......                                 [ 18%]
-tests/nitpick/unit/test_file_patcher.py ...                              [ 20%]
-tests/nitpick/unit/test_gen_cycles_options.py .........                  [ 26%]
-tests/nitpick/unit/test_git_checkout.py .                                [ 27%]
-tests/nitpick/unit/test_git_operations.py .............                  [ 36%]
-tests/nitpick/unit/test_git_ops_merge.py ...                             [ 38%]
-tests/nitpick/unit/test_git_state_persistence.py ...                     [ 40%]
-tests/nitpick/unit/test_graph.py .                                       [ 41%]
-tests/nitpick/unit/test_jules_client.py ....                             [ 44%]
-tests/nitpick/unit/test_jules_client_logic.py ..                         [ 45%]
-tests/nitpick/unit/test_jules_session_fixes.py .....                     [ 49%]
-tests/nitpick/unit/test_jules_session_state.py ...                       [ 51%]
-tests/nitpick/unit/test_llm_reviewer.py ..                               [ 52%]
-tests/nitpick/unit/test_phase_transition.py .                            [ 53%]
-tests/nitpick/unit/test_plan_auditor.py ..                               [ 54%]
-tests/nitpick/unit/test_project_init_robustness.py .                     [ 55%]
-tests/nitpick/unit/test_project_manifest.py ...                          [ 57%]
-tests/nitpick/unit/test_resume_logic.py ..                               [ 59%]
-tests/nitpick/unit/test_robustness_fixes.py ...                          [ 61%]
-tests/nitpick/unit/test_routers.py ...                                   [ 63%]
-tests/nitpick/unit/test_sandbox.py ..........                            [ 70%]
-tests/nitpick/unit/test_session_manager.py .........                     [ 76%]
-tests/nitpick/unit/test_session_restart.py ..                            [ 78%]
-tests/nitpick/unit/test_session_reuse.py ...                             [ 80%]
-tests/nitpick/unit/test_state_manager.py ..............                  [ 90%]
-tests/nitpick/unit/test_utils.py ..                                      [ 91%]
-tests/nitpick/unit/test_validators.py .........                          [ 97%]
-tests/nitpick/unit/test_workflow_orchestration.py ...                    [100%]
+tests/unit/test_state.py::test_cycle_state_backward_compatibility PASSED [  8%]
+tests/unit/test_state.py::test_cycle_state_new_fields_assignment PASSED  [ 16%]
+tests/unit/test_state.py::test_integration_state_initialization PASSED   [ 25%]
+tests/unit/test_state.py::test_committee_state_new_fields PASSED         [ 33%]
+tests/unit/test_state.py::test_committee_state_validators PASSED         [ 41%]
+tests/unit/test_state.py::test_cycle_state_backward_compatibility_properties FAILED [ 50%]
+tests/unit/test_state.py::test_cycle_state_legacy_kwargs_mapping FAILED  [ 58%]
+tests/nodes/test_routers.py::test_route_sandbox_evaluate PASSED          [ 66%]
+tests/nodes/test_routers.py::test_route_auditor PASSED                   [ 75%]
+tests/nodes/test_routers.py::test_route_final_critic PASSED              [ 83%]
+tests/integration/test_coder_graph.py::test_coder_graph_happy_path ERROR [ 91%]
+tests/integration/test_coder_graph.py::test_coder_graph_auditor_rejection_loop ERROR [100%]
 
+==================================== ERRORS ====================================
+________________ ERROR at setup of test_coder_graph_happy_path _________________
+
+    @pytest.fixture
+    def graph_builder() -> GraphBuilder:
+        services = MagicMock()
+        sandbox = AsyncMock()
+        jules = AsyncMock()
+
+        # Needs to match all node attributes in nodes (IGraphNodes)
+        nodes_mock = MagicMock()
+        nodes_mock.test_coder_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.impl_coder_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.sandbox_evaluate_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.auditor_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.self_critic_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.refactor_node = AsyncMock(
+            side_effect=lambda state: {
+                "committee": {"is_refactoring": True},
+                "status": FlowStatus.READY_FOR_AUDIT,
+            }
+        )
+        nodes_mock.final_critic_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.COMPLETED}
+        )
+
+        from src.nodes.routers import (
+            check_coder_outcome,
+            route_auditor,
+            route_final_critic,
+            route_sandbox_evaluate,
+        )
+
+        nodes_mock.check_coder_outcome = check_coder_outcome
+        nodes_mock.route_sandbox_evaluate = route_sandbox_evaluate
+        nodes_mock.route_auditor = route_auditor
+        nodes_mock.route_final_critic = route_final_critic
+
+>       gb = GraphBuilder(services, sandbox, jules)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_coder_graph.py:58:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/graph.py:22: in __init__
+    self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.graph_nodes.CycleNodes object at 0x7fce883c4b90>
+sandbox_runner = <AsyncMock id='140525024982320'>
+jules_client = <AsyncMock id='140525025690832'>
+
+    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
+        self.sandbox = sandbox_runner
+        self.jules = jules_client
+
+        from src.service_container import ServiceContainer
+
+        container = ServiceContainer.default()
+
+        self.git = (
+            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
+        )
+        self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
+        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
+
+>       self._architect = ArchitectNodes(jules=self.jules, git=self.git)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ArchitectNodes
+E       jules
+E         Input should be an instance of JulesClient [type=is_instance_of, input_value=<AsyncMock id='140525025690832'>, input_type=AsyncMock]
+E           For further information visit https://errors.pydantic.dev/2.11/v/is_instance_of
+
+src/graph_nodes.py:55: ValidationError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+__________ ERROR at setup of test_coder_graph_auditor_rejection_loop ___________
+
+    @pytest.fixture
+    def graph_builder() -> GraphBuilder:
+        services = MagicMock()
+        sandbox = AsyncMock()
+        jules = AsyncMock()
+
+        # Needs to match all node attributes in nodes (IGraphNodes)
+        nodes_mock = MagicMock()
+        nodes_mock.test_coder_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.impl_coder_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.sandbox_evaluate_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.auditor_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.self_critic_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.READY_FOR_AUDIT}
+        )
+        nodes_mock.refactor_node = AsyncMock(
+            side_effect=lambda state: {
+                "committee": {"is_refactoring": True},
+                "status": FlowStatus.READY_FOR_AUDIT,
+            }
+        )
+        nodes_mock.final_critic_node = AsyncMock(
+            side_effect=lambda state: {"status": FlowStatus.COMPLETED}
+        )
+
+        from src.nodes.routers import (
+            check_coder_outcome,
+            route_auditor,
+            route_final_critic,
+            route_sandbox_evaluate,
+        )
+
+        nodes_mock.check_coder_outcome = check_coder_outcome
+        nodes_mock.route_sandbox_evaluate = route_sandbox_evaluate
+        nodes_mock.route_auditor = route_auditor
+        nodes_mock.route_final_critic = route_final_critic
+
+>       gb = GraphBuilder(services, sandbox, jules)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_coder_graph.py:58:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/graph.py:22: in __init__
+    self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <src.graph_nodes.CycleNodes object at 0x7fce883d2150>
+sandbox_runner = <AsyncMock id='140525024298144'>
+jules_client = <AsyncMock id='140525024301936'>
+
+    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
+        self.sandbox = sandbox_runner
+        self.jules = jules_client
+
+        from src.service_container import ServiceContainer
+
+        container = ServiceContainer.default()
+
+        self.git = (
+            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
+        )
+        self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
+        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
+
+>       self._architect = ArchitectNodes(jules=self.jules, git=self.git)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ArchitectNodes
+E       jules
+E         Input should be an instance of JulesClient [type=is_instance_of, input_value=<AsyncMock id='140525024301936'>, input_type=AsyncMock]
+E           For further information visit https://errors.pydantic.dev/2.11/v/is_instance_of
+
+src/graph_nodes.py:55: ValidationError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+=================================== FAILURES ===================================
+______________ test_cycle_state_backward_compatibility_properties ______________
+
+    def test_cycle_state_backward_compatibility_properties() -> None:
+        cycle = CycleState(
+            cycle_id="01",
+            committee=CommitteeState(
+                is_refactoring=True, audit_attempt_count=1, current_auditor_index=2
+            ),
+        )
+
+        # Test property getters
+>       assert cycle.get("is_refactoring") is True
+E       AssertionError: assert None is True
+E        +  where None = get('is_refactoring')
+E        +    where get = CycleState(cycle_id='01', committee=CommitteeState(current_auditor_index=2, current_auditor_review_count=1, iteration_count=0, is_refactoring=True, audit_attempt_count=1, fallback_count=0, anti_patterns_memory=[]), session=SessionPersistenceState(jules_session_name=None, critic_retry_count=0, pr_url=None, resume_mode=False, active_branch=None, project_session_id=None, feature_branch=None, integration_branch=None, is_session_finalized=False), audit=AuditState(audit_result=None, audit_feedback=[], audit_pass_count=0, audit_retries=0, audit_logs='', last_audited_commit=None), test=TestState(structural_report=None, test_logs='', test_exit_code=None, tdd_phase=None), uat=UATState(uat_analysis=None, uat_execution_state=None, current_fix_plan=None, sandbox_artifacts={}, uat_retry_count=0, ux_audit_report=None), config=ConfigurationState(planned_cycle_count=5, requested_cycle_count=None, planned_cycles=[]), current_phase=<WorkPhase.INIT: 'init'>, status=None, error=None, conflict_status=None, concurrent_dependencies=[], final_fix=False, qa_retry_count=0, sandbox_id=None, plan=None, code_changes=[], loop_count=0, correction_history=[], dry_run=False, interactive=False, goal=None, approved=None, coder_report=None, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None).get
+
+tests/unit/test_state.py:88: AssertionError
+____________________ test_cycle_state_legacy_kwargs_mapping ____________________
+
+    def test_cycle_state_legacy_kwargs_mapping() -> None:
+        # Test that instantiating CycleState with legacy kwargs maps to the correct nested state
+>       cycle = CycleState(cycle_id="01", is_refactoring=True, audit_attempt_count=5)  # type: ignore
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
+E       committee.audit_attempt_count
+E         Value error, Audit attempt count 5 exceeds absolute maximum threshold of 3 [type=value_error, input_value=5, input_type=int]
+E           For further information visit https://errors.pydantic.dev/2.11/v/value_error
+
+tests/unit/test_state.py:106: ValidationError
 =============================== warnings summary ===============================
-tests/nitpick/unit/test_jules_client_logic.py: 8 warnings
-tests/nitpick/unit/test_jules_session_fixes.py: 5 warnings
-  /app/src/jules_session_nodes.py:27: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
-    for field in current.model_fields:
+tests/integration/test_coder_graph.py::test_coder_graph_happy_path
+tests/integration/test_coder_graph.py::test_coder_graph_happy_path
+tests/integration/test_coder_graph.py::test_coder_graph_auditor_rejection_loop
+tests/integration/test_coder_graph.py::test_coder_graph_auditor_rejection_loop
+  /app/src/services/plan_auditor.py:17: DeprecationWarning: `OpenAIModel` was renamed to `OpenAIChatModel` to clearly distinguish it from `OpenAIResponsesModel` which uses OpenAI's newer Responses API. Use that unless you're using an OpenAI Chat Completions-compatible API, or require a feature that the Responses API doesn't support yet like audio.
+    return OpenAIModel(model_name, provider="openrouter")
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================================ tests coverage ================================
-_______________ coverage: platform linux, python 3.12.13-final-0 _______________
-
-Name                                               Stmts   Miss  Cover   Missing
---------------------------------------------------------------------------------
-src/__init__.py                                        0      0   100%
-src/agents.py                                         63     39    38%   16-19, 24-44, 49-57, 66-76, 83, 99-111, 136
-src/cli.py                                            21      0   100%
-src/config.py                                        362     92    75%   17-26, 39-75, 90-96, 102-106, 113-117, 124-128, 136, 140, 144, 148-160, 166-167, 208-210, 213-214, 577, 579, 597, 599, 604, 608-611, 618-623, 631, 637, 649, 661, 668, 689-691, 697, 701
-src/contracts/__init__.py                              0      0   100%
-src/contracts/e2b_executor.py                          9      0   100%
-src/domain_models/__init__.py                         15      0   100%
-src/domain_models/architecture.py                     11      0   100%
-src/domain_models/config.py                            6      0   100%
-src/domain_models/critic.py                            6      0   100%
-src/domain_models/execution.py                        23      0   100%
-src/domain_models/file_ops.py                         19      0   100%
-src/domain_models/fix_plan_schema.py                   8      0   100%
-src/domain_models/manifest.py                         27      0   100%
-src/domain_models/multimodal_artifact_schema.py       22     10    55%   19-28
-src/domain_models/observability_config.py             29     16    45%   32-43, 48-51
-src/domain_models/refactor.py                          6      0   100%
-src/domain_models/review.py                           28      0   100%
-src/domain_models/spec.py                             26      0   100%
-src/domain_models/tracing.py                          17      1    94%   27
-src/domain_models/uat_execution_state.py               8      0   100%
-src/domain_models/verification_schema.py              31     13    58%   20, 40, 47-62
-src/enums.py                                          32      0   100%
-src/error_messages.py                                  7      7     0%   4-18
-src/graph.py                                          90     65    28%   26-27, 31-61, 65-146, 149, 152, 156-174, 177, 181-211, 214
-src/graph_nodes.py                                   109     45    59%   68, 78, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113-121, 124-128, 131-135, 138-141, 144-147, 150, 153, 156, 159, 162, 165, 168, 171, 174, 177-179
-src/hash_utils.py                                     25      4    84%   15-16, 28-29
-src/interfaces.py                                      5      0   100%
-src/jules_session_graph.py                            45     12    73%   19-21, 29, 39, 46-52
-src/jules_session_nodes.py                           328    173    47%   57-60, 100-141, 146-176, 202-203, 225, 254-257, 264-265, 300-311, 341-348, 352-354, 379-385, 407-408, 421-444, 458, 466, 471-490, 499-542, 546-624
-src/jules_session_state.py                            46      0   100%
-src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
-src/nodes/__init__.py                                 10      0   100%
-src/nodes/architect.py                                97     61    37%   26-49, 73-75, 97-117, 127, 134-188
-src/nodes/architect_critic.py                         33     23    30%   18-62
-src/nodes/auditor.py                                  14      6    57%   13-20
-src/nodes/coder.py                                     9      3    67%   11-14
-src/nodes/coder_critic.py                             42     32    24%   18-71
-src/nodes/committee.py                                 7      3    57%   8-11
-src/nodes/global_refactor.py                          18     10    44%   19-35
-src/nodes/master_integrator.py                        20     20     0%   1-39
-src/nodes/qa.py                                       15      6    60%   13-16, 19-22
-src/nodes/routers.py                                  67     19    72%   14-32, 78-83, 94
-src/nodes/sandbox_evaluator.py                        43     28    35%   34-100
-src/nodes/uat.py                                       9      3    67%   11-14
-src/process_runner.py                                 30     24    20%   25-62
-src/sandbox.py                                       160     41    74%   20-21, 25-26, 33-34, 38-39, 53-61, 80-87, 108-109, 133-134, 141-144, 181, 206-207, 213-218, 221-222, 242, 254-255
-src/service_container.py                              18      0   100%
-src/services/__init__.py                               5      0   100%
-src/services/artifacts.py                             14      8    43%   17-28
-src/services/ast_analyzer.py                         109     92    16%   17-18, 25-64, 72-90, 93-95, 102-104, 108-133, 137-144, 151-185, 192-211
-src/services/async_dispatcher.py                      56     32    43%   28-38, 47-48, 57-100, 104-105
-src/services/audit_orchestrator.py                    76     11    86%   30-31, 72-73, 78-79, 124-125, 145-147
-src/services/auditor_usecase.py                      154     89    42%   45-46, 63, 68, 99-102, 126-257, 271, 274-307
-src/services/coder_usecase.py                        185     46    75%   38-39, 71-77, 123, 128-133, 144, 148, 155, 166-177, 199, 214-219, 232-243, 248, 265-266, 309-313, 320-323, 345, 355-365, 407, 419
-src/services/committee_usecase.py                     50     50     0%   1-104
-src/services/conflict_manager.py                      77     77     0%   1-143
-src/services/contracts.py                             26     21    19%   16-43
-src/services/e2b_executor.py                          28     19    32%   19-24, 32-48, 54
-src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
-src/services/git/base.py                              37     14    62%   20-25, 35-36, 41-44, 47, 50, 53, 56-57
-src/services/git/branching.py                        111     45    59%   10-13, 17, 23-38, 55-59, 87-97, 126-136, 159-160, 180-194
-src/services/git/checkout.py                         114     54    53%   18-21, 25, 33-35, 63-72, 79-97, 101-105, 113-118, 126-134, 138-143, 147-150
-src/services/git/merging.py                          127     59    54%   18-22, 30-31, 38-39, 42-43, 46-47, 50-51, 55-56, 73-81, 94-122, 141-144, 182-183, 218-219, 241-242
-src/services/git/state.py                             56     25    55%   27-68, 79-80, 90-92
-src/services/git_ops.py                                9      0   100%
-src/services/integration_usecase.py                   63     63     0%   1-112
-src/services/jules/api.py                            127     99    22%   22-23, 26, 29, 36-50, 53-58, 74-102, 105-106, 109-113, 124-135, 139-141, 144-167, 172-203
-src/services/jules/context_builder.py                 81     68    16%   20-32, 36-46, 50-80, 84-92, 101-138
-src/services/jules/git_context.py                     42     17    60%   23-26, 39-54, 59-60
-src/services/jules/inquiry_handler.py                143     81    43%   54, 67, 72-77, 107, 113-138, 142-175, 186-221, 244, 252, 277-286
-src/services/jules_client.py                         396    186    53%   10-11, 73-74, 84, 92, 103, 107, 114-116, 128-159, 163-182, 186-191, 257-260, 276-285, 342-349, 356, 419-420, 428, 433, 452-453, 469-485, 492-506, 521-522, 527, 530-535, 541, 547, 559-564, 568-576, 586-603, 607-610, 618, 632-665, 673-737
-src/services/llm_reviewer.py                         111     51    54%   26, 36-37, 47, 52-54, 58-59, 63-64, 82, 125, 137-217, 233-240
-src/services/plan_auditor.py                          27      5    81%   15-17, 63, 112-113
-src/services/project.py                               47     30    36%   22-45, 68-89
-src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 50-57, 61-78
-src/services/project_setup/permission_manager.py      77     28    64%   19-25, 35-36, 39-47, 56-57, 72-73, 75-76, 87-88, 90-91
-src/services/project_setup/template_manager.py        84     14    83%   43-44, 71-72, 84-87, 171-176
-src/services/qa_usecase.py                           146    146     0%   1-268
-src/services/refactor_usecase.py                      61     46    25%   23-31, 35-41, 48-120
-src/services/sandbox/sync.py                          31      0   100%
-src/services/self_critic_evaluator.py                 59     45    24%   16-17, 21-37, 40-65, 80-100
-src/services/tracing.py                               12      2    83%   16-17
-src/services/uat_usecase.py                           91     91     0%   1-171
-src/services/workflow.py                             499    398    20%   44-127, 138-147, 155-205, 223-225, 228-229, 297-298, 324-327, 331-333, 343-391, 395-402, 406-416, 429-455, 459-461, 471-509, 512-560, 566-630, 633-650, 656-715, 720-791, 798-820, 823-834, 837-854, 857-881, 884-890, 893-895, 898-905
-src/session_manager.py                                65      7    89%   48-50, 70, 85-86, 105
-src/state.py                                         253     29    89%   28-30, 35-37, 42-44, 144, 148, 168, 172, 200, 208, 212, 216, 220, 240, 244, 252, 256, 260, 280, 284, 288, 292, 296, 300, 316, 360, 365
-src/state_manager.py                                  94     25    73%   32-37, 55-57, 60-61, 89-91, 119, 193-211
-src/state_validators.py                               44     27    39%   11-12, 18-24, 29-35, 40-47, 57-58, 61-62
-src/tools.py                                          21     21     0%   1-48
-src/utils.py                                          72     45    38%   31-56, 65-78, 88, 93-94, 100, 112-113, 118-142, 151-160
-src/utils_sanitization.py                             11      1    91%   10
-src/validators.py                                     41      1    98%   56
---------------------------------------------------------------------------------
-TOTAL                                               6164   3020    51%
-================= 142 passed, 13 warnings in 94.44s (0:01:34) ==================
-/app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
-  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+=========================== short test summary info ============================
+FAILED tests/unit/test_state.py::test_cycle_state_backward_compatibility_properties
+FAILED tests/unit/test_state.py::test_cycle_state_legacy_kwargs_mapping - pyd...
+ERROR tests/integration/test_coder_graph.py::test_coder_graph_happy_path - py...
+ERROR tests/integration/test_coder_graph.py::test_coder_graph_auditor_rejection_loop
+============== 2 failed, 8 passed, 4 warnings, 2 errors in 10.38s ==============
