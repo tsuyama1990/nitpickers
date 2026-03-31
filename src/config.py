@@ -167,15 +167,23 @@ def _detect_package_dir() -> str:
 
 
 class PathsConfig(BaseModel):
-    workspace_root: Path = Field(default_factory=Path.cwd)
-    documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
+    workspace_root: Path = Field(
+        default_factory=lambda: Path("/home/tomo/project/TheJTC")
+    )
+    documents_dir: Path = Field(
+        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents")
+    )
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
-    artifacts_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts")
-    sessions_dir: str = ".jules/sessions"
-    src: Path = Field(default_factory=lambda: Path.cwd() / "src")
-    tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
-    templates: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "templates")
+    artifacts_dir: Path = Field(
+        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents/artifacts")
+    )
+    sessions_dir: str = "/home/tomo/project/TheJTC/.jules/sessions"
+    src: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC/src"))
+    tests: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC/tests"))
+    templates: Path = Field(
+        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents/templates")
+    )
     prompts_dir: str = "dev_src/src/prompts"
 
     @model_validator(mode="after")

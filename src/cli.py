@@ -101,10 +101,11 @@ def run_pipeline(
     session: str | None = typer.Option(
         None, "--session", help="Session ID (if not using current state)"
     ),
+    parallel: bool = typer.Option(False, "--parallel", help="Enable parallel execution"),
 ) -> None:
     """Run the complete orchestrated 5-Phase pipeline."""
     service = WorkflowService()
-    asyncio.run(service.run_full_pipeline(project_session_id=session))
+    asyncio.run(service.run_full_pipeline(project_session_id=session, parallel=parallel))
 
 
 @app.command()

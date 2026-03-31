@@ -22,7 +22,7 @@ class StateManager:
     """
 
     def __init__(self, project_root: str = ".") -> None:
-        self.root = Path(project_root)
+        self.root = Path(project_root).resolve()
         self.STATE_DIR = self.root / ".nitpick"
         self.STATE_FILE = self.STATE_DIR / "project_state_local.json"
 

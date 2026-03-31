@@ -267,7 +267,9 @@ class WorkflowService:
         except Exception as e:
             logger.warning(f"Error checking required_envs.json: {e}")
 
-    async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915, PLR0912
+    async def run_full_pipeline(
+        self, project_session_id: str | None = None, parallel: bool = False
+    ) -> None:  # noqa: C901, PLR0915, PLR0912
         """
         Orchestrates the entire 5-Phase pipeline.
         Phase 2: Parallel execution of all planned cycles.
@@ -277,7 +279,7 @@ class WorkflowService:
         self.verify_environment_and_observability()
         console.rule("[bold cyan]Starting Full Pipeline Orchestration[/bold cyan]")
 
-        mgr = StateManager()
+        mgr = StateManager(project_root=str(settings.paths.workspace_root))
         manifest = mgr.load_manifest()
 
         if manifest:
@@ -300,7 +302,7 @@ class WorkflowService:
         # --- Phase 2: Parallel Coder Graph ---
         console.rule("[bold blue]Phase 2: Parallel Coder Graph[/bold blue]")
         dispatcher = AsyncDispatcher()
-        batches = dispatcher.resolve_dag(cycles_to_run)
+        batches = dispatcher.resolve_dag(cycles_to_run, parallel=parallel)
         console.print(
             f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
         )
@@ -311,18 +313,16 @@ class WorkflowService:
             console.print(
                 f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
             )
-            tasks = [
-                dispatcher.run_with_semaphore(
-                    self._run_single_cycle(
-                        c.id,
-                        resume=False,
-                        auto=True,
-                        start_iter=1,
-                        project_session_id=project_session_id,
-                    )
+            tasks = []
+            for c in batch:
+                coro = self._run_single_cycle(
+                    c.id,
+                    resume=False,
+                    auto=True,
+                    start_iter=1,
+                    project_session_id=project_session_id,
                 )
-                for c in batch
-            ]
+                tasks.append(asyncio.create_task(dispatcher.run_with_semaphore(coro)))
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for cycle, result in zip(batch, results, strict=False):
@@ -560,7 +560,9 @@ class WorkflowService:
             if auto:
                 settings.auto_approve = True
 
-            mgr = StateManager()
+            root_to_use = str(settings.paths.workspace_root)
+            console.print(f"[bold blue]DEBUG: Cycle {cycle_id} initializing StateManager with root: {root_to_use}[/bold blue]")
+            mgr = StateManager(project_root=root_to_use)
             manifest = mgr.load_manifest()
 
             pid = project_session_id

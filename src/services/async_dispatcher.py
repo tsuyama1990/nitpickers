@@ -65,12 +65,17 @@ class AsyncDispatcher:
         self.config = config or DispatcherConfig()
         self.semaphore = asyncio.Semaphore(self.config.max_concurrent_tasks)
 
-    def resolve_dag(self, manifests: list[CycleManifest]) -> list[list[CycleManifest]]:
+    def resolve_dag(
+        self, manifests: list[CycleManifest], parallel: bool = False
+    ) -> list[list[CycleManifest]]:
         """
         Groups cycles into independent batches based on dependencies.
         Returns a list of batches, where each batch can be executed concurrently.
         Optimized using Kahn's algorithm principles for DAG sorting.
         """
+        if not parallel:
+            return [[c] for c in manifests]
+
         # Start with any cycle that is already completed.
         completed_ids = {c.id for c in manifests if c.status == "completed"}
 
@@ -120,4 +125,5 @@ class AsyncDispatcher:
     async def run_with_semaphore(self, coro: Coroutine[Any, Any, T]) -> T:
         """Executes a coroutine wrapped with a semaphore to limit concurrency."""
         async with self.semaphore:
+            logger.info(f"DEBUG: run_with_semaphore awaiting {coro}")
             return await coro
