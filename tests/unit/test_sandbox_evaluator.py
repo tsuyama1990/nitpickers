@@ -29,8 +29,8 @@ async def test_evaluate_success_passes(base_state: CycleState, mock_process_runn
 
     assert result["status"] == FlowStatus.READY_FOR_AUDIT
     assert result["error"] is None
-    assert "structural_report" in result
-    report = result["structural_report"]
+    assert "test" in result
+    report = result["test"].structural_report
     assert report.passed
 
 
@@ -47,6 +47,6 @@ async def test_evaluate_failure_fails(base_state: CycleState, mock_process_runne
 
     assert result["status"] == FlowStatus.TDD_FAILED
     assert "Verification failed" in result["error"]
-    assert "structural_report" in result
-    report = result["structural_report"]
+    assert "test" in result
+    report = result["test"].structural_report
     assert not report.passed

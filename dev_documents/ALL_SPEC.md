@@ -228,7 +228,7 @@ flowchart TD
         GenTemplates[".env.sample / .gitignore, strict ruff, mypy settings (Local)"]
         UpdateDocker["add .env path on docker-compose.yml (User)"]
         PrepareSpec["define ALL_SPEC.md (User)"]
-        
+
         InitCmd --> GenTemplates --> UpdateDocker --> PrepareSpec
     end
 
@@ -236,12 +236,12 @@ flowchart TD
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
-        
+
         subgraph Architect_Phase ["JULES: Architect Phase"]
             ArchSession["architect_session\n(要件をN個のサイクルに分割)"]
             ArchCritic{"self-critic review\n(固定プロンプトで計画レビュー)"}
         end
-        
+
         OutputSpecs[/"各サイクルの SPEC.md\n全体 UAT_SCENARIO.md"/]
 
         PrepareSpec --> InitCmd2 --> ArchSession
@@ -256,25 +256,25 @@ flowchart TD
         CoderSession["JULES: coder_session\n(実装 & PR作成)"]
         SelfCritic["JULES: SelfCriticReview\n(初期実装のレビュー)"]
         SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
-        
+
         AuditorNode{"OpenRouter: auditor_node\n(直列: Auditor 1→2→3)"}
         RefactorNode["JULES: refactor_node\n(固定プロンプトでリファクタ)"]
         FinalCritic{"JULES: Final Self-critic\n(自己最終レビュー)"}
 
         OutputSpecs -->|サイクルNとして開始| CoderSession
-        
+
         CoderSession -- "1回目" --> SelfCritic --> SandboxEval
         CoderSession -- "2回目以降" --> SandboxEval
-        
+
         SandboxEval -- "Fail" --> CoderSession
         SandboxEval -- "Pass (実装中)" --> AuditorNode
         SandboxEval -- "Pass (リファクタ済)" --> FinalCritic
-        
+
         AuditorNode -- "Reject (各最大2回)" --> CoderSession
         AuditorNode -- "Pass All" --> RefactorNode
-        
+
         RefactorNode --> SandboxEval
-        
+
         FinalCritic -- "Reject" --> CoderSession
     end
 
@@ -298,21 +298,21 @@ flowchart TD
     %% ==========================================
     %% フェーズ間の接続（エラー防止のため外側に記述）
     %% ==========================================
-    
+
     FinalCritic -- "Approve\n(全PR出揃う)" --> MergeTry
-    
+
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
-    
+
     MergeTry -- "Success" --> GlobalSandbox
     GlobalSandbox -- "Fail (統合による破壊)" --> MasterIntegrator
-    
+
     GlobalSandbox -- "Pass" --> UatEval
-    
+
     UatEval -- "Fail" --> QaAuditor
     QaAuditor --> QaSession
     QaSession --> UatEval
-    
+
     UatEval -- "Pass" --> EndNode
 
     %% ==========================================
@@ -322,7 +322,7 @@ flowchart TD
     classDef conditional fill:#fff3cd,stroke:#ffeeba,stroke-width:2px;
     classDef success fill:#d4edda,stroke:#c3e6cb,stroke-width:2px;
     classDef highlight fill:#e1f5fe,stroke:#03a9f4,stroke-width:2px;
-    
+
     class ArchCritic,SandboxEval,AuditorNode,FinalCritic,MergeTry,GlobalSandbox,UatEval conditional;
     class EndNode success;
     class GlobalSandbox highlight;
