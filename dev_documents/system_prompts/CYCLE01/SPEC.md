@@ -62,7 +62,8 @@ This section outlines the Pydantic-based schema design to ensure robust state tr
 **Key Invariants & Constraints:**
 - The `audit_attempt_count` must strictly cap at a defined threshold (e.g., 2) before forcing a transition or specific fallback.
 - The `current_auditor_index` should logically progress only when `Approve` is received.
-- `IntegrationState` requires absolute paths or strictly validated relative paths for `conflict_files` to avoid directory traversal risks during Git operations.
+- `IntegrationState` requires absolute paths or strictly validated relative paths for `conflict_files` to avoid directory traversal risks during Git operations. To prevent directory traversal and prefix attacks, all file and repository paths within `ConflictManager` must be rigorously validated using `path.resolve(strict=False).is_relative_to(settings.paths.workspace_root.resolve(strict=True))`.
+- When typing fields that may receive mocks, enforce the use of `Annotated[..., SkipValidation]` rather than reverting to `Any`.
 
 **Expected Consumers:**
 - The routing functions in `src/nodes/routers.py` will heavily consume these states to direct graph edges dynamically.
@@ -72,7 +73,7 @@ This section outlines the Pydantic-based schema design to ensure robust state tr
 1. **State Enhancement (`src/state.py`)**: Define the new boolean and integer fields in the primary `CycleState` or `CommitteeState` Pydantic models. Create or refine the `IntegrationState` to manage merging operations.
 2. **Routing Logic (`src/nodes/routers.py`)**: Implement `route_sandbox_evaluate` (evaluating `is_refactoring`), `route_auditor` (managing `current_auditor_index` and `audit_attempt_count`), and `route_final_critic`.
 3. **Graph Rewiring (`src/graph.py`)**: Reconstruct `_create_coder_graph` to establish the serial audit loop and refactor node. Construct `_create_integration_graph` to handle the merge nodes. Update the UAT triggers to ensure `_create_qa_graph` executes independently.
-4. **3-Way Diff Resolution (`src/services/conflict_manager.py`)**: Refactor `build_conflict_package` to construct a comprehensive prompt including Base (common ancestor), Local (Branch A), and Remote (Branch B) code blocks via specific Git commands (e.g., `git show :1:file`).
+4. **3-Way Diff Resolution (`src/services/conflict_manager.py`)**: Refactor `build_conflict_package` to construct a comprehensive prompt including Base (common ancestor), Local (Branch A), and Remote (Branch B) code blocks via specific Git commands (e.g., `git show :1:file`). **Critically**, to avoid blocking calls in async functions and partial executable paths (Ruff `ASYNC221`, `S607`), use the project's asynchronous `ProcessRunner` or `asyncio.create_subprocess_exec` along with `shutil.which()` to resolve absolute paths when executing system commands asynchronously.
 5. **Orchestration Refinement (`src/services/workflow.py`)**: Implement asynchronous, parallel execution of the `_create_coder_graph` for all detected cycles. Implement a barrier synchronization point before sequentially triggering the integration and UAT graphs.
 
 ## Test Strategy

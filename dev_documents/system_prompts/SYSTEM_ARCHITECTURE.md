@@ -133,6 +133,8 @@ flowchart TD
 ## Design Architecture
 The design architecture is heavily reliant on Pydantic models to enforce strict typing, validation, and schema definitions. By extending the existing models, we ensure backward compatibility while introducing the new capabilities required by the 5-phase structure.
 
+**Strict Base Node Governance:** To strictly enforce contract testing and prevent interface drift across the massive single-cycle implementation without relying on mocks, all Pipeline Nodes must inherit from a strongly typed Pydantic `BaseNode` configured with `ConfigDict(extra='forbid', strict=True, arbitrary_types_allowed=True, frozen=True)`.
+
 ```text
 src/
 ├── cli.py
@@ -161,7 +163,7 @@ In Phase 3 (Integration Graph), the `IntegrationState` model (which may need to 
 ### Integration Points & Structured Data Handoffs
 The new schema objects directly extend the existing domain objects. For instance, `route_sandbox_evaluate`, `route_auditor`, and `route_final_critic` in `src/nodes/routers.py` will explicitly rely on the newly added fields in `CycleState` to make routing decisions (dynamically querying configurations rather than using hardcoded limits).
 
-Crucially, the transition from Phase 2 to Phase 3 involves a **State Aggregator** mechanism within the Orchestrator (`workflow.py`). It extracts the `integration_branch` from the `SessionPersistenceState` of each successful `CycleState` and populates the `IntegrationState.branches_to_merge` list.
+Crucially, the transition from Phase 2 to Phase 3 involves a **State Aggregator** mechanism within the Orchestrator (`workflow.py`). It extracts the `integration_branch` from the `SessionPersistenceState` of each successful `CycleState` and populates the `IntegrationState.branches_to_merge` list. Furthermore, when strictly typing Pydantic fields within these frozen states that may need to receive test mocks (e.g., `JulesClient` or `GitManager`), the Coder must wrap the type hint in `Annotated[..., SkipValidation]` rather than reverting to `Any`.
 
 All LLM interactions (Auditor feedback, Master Integrator resolution, Refactor outputs) must strictly utilize Pydantic-based structured outputs (e.g., `ConflictResolutionSchema`) to guarantee safe parsing and eliminate fragile markdown regex extraction. The `services/conflict_manager.py` will interact with `GitManager` or `GitOps` classes to safely retrieve the necessary Base, Local, and Remote file contents (gracefully handling missing files) to construct the 3-Way Diff prompt.
 

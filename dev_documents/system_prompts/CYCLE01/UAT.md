@@ -34,6 +34,7 @@ This scenario is designed to stress-test the new Integration Graph (Phase 3) and
   **And** a Git merge conflict is detected within a specific file
   **When** the `master_integrator_node` is invoked
   **Then** the `ConflictManager` constructs a comprehensive diff package containing the Base, Local, and Remote file contents
+  **And** the `ConflictManager` rigorously validates all file paths against the `workspace_root` to prevent directory traversal attacks
   **And** the Master Integrator agent synthesizes a unified resolution that resolves the conflict markers
   **And** the system successfully commits the resolved file to the integration branch
   **And** the `global_sandbox_node` successfully validates the fully integrated codebase without regressions
