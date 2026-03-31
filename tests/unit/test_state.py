@@ -47,3 +47,32 @@ def test_integration_state_initialization() -> None:
     assert state.master_integrator_session_id == "session_123"
     assert len(state.unresolved_conflicts) == 1
     assert state.unresolved_conflicts[0].file_path == "src/main.py"
+
+
+def test_cycle_state_new_properties() -> None:
+    state = CycleState(cycle_id="03")
+
+    # Test default values via new properties
+    assert state.is_refactoring is False  # type: ignore
+    assert state.audit_attempt_count == 0  # type: ignore
+
+    # Test setters
+    state.is_refactoring = True  # type: ignore
+    state.audit_attempt_count = 1  # type: ignore
+
+    assert state.committee.is_refactoring is True
+    assert state.committee.audit_attempt_count == 1
+
+    # Test getting
+    assert state.is_refactoring is True  # type: ignore
+    assert state.audit_attempt_count == 1  # type: ignore
+
+
+def test_audit_attempt_count_validation() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    state = CycleState(cycle_id="04")
+
+    with pytest.raises(ValidationError, match="audit_attempt_count"):
+        state.audit_attempt_count = -1  # type: ignore
