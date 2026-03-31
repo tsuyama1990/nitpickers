@@ -41,7 +41,7 @@ class TestGenCyclesCountOption:
         with (
             patch("src.nodes.architect.settings") as mock_settings,
             patch("src.services.git_ops.GitManager") as mock_git_cls,
-            patch("src.nodes.architect.ProjectManager"),
+            patch("src.state_manager.StateManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -100,7 +100,7 @@ class TestGenCyclesCountOption:
         with (
             patch("src.nodes.architect.settings") as mock_settings,
             patch("src.services.git_ops.GitManager") as mock_git_cls,
-            patch("src.nodes.architect.ProjectManager"),
+            patch("src.state_manager.StateManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value
@@ -169,7 +169,7 @@ class TestGenCyclesCountOption:
         with (
             patch("src.nodes.architect.settings") as mock_settings,
             patch("src.services.git_ops.GitManager") as mock_git_cls,
-            patch("src.nodes.architect.ProjectManager"),
+            patch("src.state_manager.StateManager"),
         ):
             # Configure GitManager mock instance
             mock_git_instance = mock_git_cls.return_value

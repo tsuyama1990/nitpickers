@@ -13,6 +13,7 @@ async def test_monitor_session_batching() -> None:
     # Setup
     mock_client = MagicMock()
     mock_client._get_headers.return_value = {}
+    mock_client.list_activities = AsyncMock(return_value=[])
     mock_client._sleep = AsyncMock()
     mock_client.inquiry_handler = MagicMock()
     mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
@@ -51,7 +52,7 @@ async def test_monitor_session_batching() -> None:
         new_state = await nodes.monitor_session(state)
 
         # Verify
-        assert mock_instance.get.call_count == 24
+        assert mock_instance.get.call_count == 12
         assert mock_client._sleep.call_count == 12
         assert "status" not in new_state
 
@@ -62,6 +63,7 @@ async def test_monitor_session_returns_early_on_change() -> None:
     # Setup
     mock_client = MagicMock()
     mock_client._get_headers.return_value = {}
+    mock_client.list_activities = AsyncMock(return_value=[])
     mock_client._sleep = AsyncMock()
     mock_client.inquiry_handler = MagicMock()
     mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
@@ -102,7 +104,7 @@ async def test_monitor_session_returns_early_on_change() -> None:
 
         # Verify
         assert mock_instance.get.call_count == 3
-        assert mock_client._sleep.call_count == 1
+        assert mock_client._sleep.call_count == 2
         assert new_state["status"] == SessionStatus.VALIDATING_COMPLETION
 
 
@@ -112,6 +114,9 @@ async def test_validate_completion_stale_detection() -> None:
     # Setup
     mock_client = MagicMock()
     mock_client._get_headers.return_value = {}
+    mock_client.list_activities = AsyncMock(
+        return_value=[{"name": "act-123", "sessionCompleted": {}}]
+    )
 
     nodes = JulesSessionNodes(mock_client)
     state = JulesSessionState(session_url="http://test/session")
@@ -147,6 +152,9 @@ async def test_validate_completion_stale_but_new_transition() -> None:
     # Setup
     mock_client = MagicMock()
     mock_client._get_headers.return_value = {}
+    mock_client.list_activities = AsyncMock(
+        return_value=[{"name": "act-123", "sessionCompleted": {}}]
+    )
 
     nodes = JulesSessionNodes(mock_client)
     state = JulesSessionState(session_url="http://test/session")
@@ -179,6 +187,7 @@ async def test_monitor_session_avoids_validation_loop() -> None:
     # Setup
     mock_client = MagicMock()
     mock_client._get_headers.return_value = {}
+    mock_client.list_activities = AsyncMock(return_value=[])
     mock_client._sleep = AsyncMock()
     mock_client.inquiry_handler = MagicMock()
     mock_client.inquiry_handler.handle_plan_approval = AsyncMock()
@@ -223,4 +232,4 @@ async def test_monitor_session_avoids_validation_loop() -> None:
         # Should remain MONITORING (diff will not contain 'status')
         assert "status" not in new_state
         # Should have looped 12 times (batching) because it didn't exit early, 2 calls per loop
-        assert mock_instance.get.call_count == 24
+        assert mock_instance.get.call_count == 12
