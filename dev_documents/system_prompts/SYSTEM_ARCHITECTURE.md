@@ -25,7 +25,7 @@ The refactored NITPICKERS system architecture is divided into five distinct phas
 This phase is responsible for the static initialization of the environment. Triggered by CLI commands, it generates necessary boilerplate files, configures linters in `pyproject.toml`, and sets up the foundational workspace. It relies heavily on user-provided inputs, such as the `ALL_SPEC.md` document, to establish the requirements for the subsequent phases.
 
 **Phase 1: Architect Graph (Requirement Planning)**
-In this phase, the Architect agent analyzes the raw requirements and decomposes them into executable, sequential development cycles (e.g., `CYCLE01`, `CYCLE02`). This process includes a self-critic review mechanism to ensure that the proposed plan is viable and well-structured before proceeding. The output of this phase is a set of specification and User Acceptance Testing (UAT) documents for each cycle.
+In this phase, the Architect agent analyzes the raw requirements and decomposes them into executable, sequential development cycles (e.g., `CYCLE01`). This process includes a self-critic review mechanism to ensure that the proposed plan is viable and well-structured before proceeding. The output of this phase is a set of specification and User Acceptance Testing (UAT) documents for each cycle.
 
 **Phase 2: Coder Graph (Implementation and Audit)**
 This is the core execution loop for a given cycle. The Coder agent implements the required features and tests. The generated code is then evaluated in a local sandbox (static analysis and unit tests). If it passes, the code is subjected to a serial Audit process involving multiple independent Auditor agents. If any Auditor rejects the code, it is sent back to the Coder for revision. Once all Auditors approve, the code undergoes a final Refactor step to improve its quality, followed by a final sandbox evaluation and a self-critic review.
@@ -167,28 +167,14 @@ All LLM interactions (Auditor feedback, Master Integrator resolution, Refactor o
 
 ## Implementation Plan
 
-### CYCLE01: State Management and Coder Graph Refactoring
-- **Focus**: Implement the core state changes and re-wire Phase 2 (Coder Graph).
+### CYCLE01: Implement 5-Phase Workflows
+- **Focus**: Implement all required state changes, graph refactoring, 3-Way diff and UAT capabilities into a single cohesive development cycle. This encompasses state modifications, routing enhancements, integration graph, and UAT execution.
 - **Tasks**:
-  1. Update `src/state.py` to include `is_refactoring`, `current_auditor_index`, and `audit_attempt_count` in the appropriate Pydantic models (e.g., `CommitteeState` or `CycleState`).
+  1. Update `src/state.py` to include `is_refactoring`, `current_auditor_index`, and `audit_attempt_count` in the appropriate Pydantic models (e.g., `CommitteeState` or `CycleState`). Define the `IntegrationState` model, ensuring it can track merge attempts and conflicts.
   2. Implement new routing functions in `src/nodes/routers.py`: `route_sandbox_evaluate`, `route_auditor`, and `route_final_critic`.
-  3. Modify `src/graph.py` to re-wire `_create_coder_graph` according to the 5-phase specification, replacing existing nodes as necessary and introducing `refactor_node` and `final_critic_node`.
-- **Expected Outcome**: A Coder Graph that properly loops through implementation, sandbox validation, serial auditing, and final refactoring based on the new state flags.
-
-### CYCLE02: Integration Phase and 3-Way Diff Resolution
-- **Focus**: Introduce Phase 3 (Integration Graph) and implement intelligent conflict resolution.
-- **Tasks**:
-  1. Define the `IntegrationState` model if not already present, ensuring it can track merge attempts and conflicts.
-  2. Implement the 3-Way Diff logic in `src/services/conflict_manager.py` (or equivalent service). This requires fetching the Base, Local (Branch A), and Remote (Branch B) versions of conflicted files using Git commands.
-  3. Create the `build_integration_graph` in `src/graph.py` containing the `git_merge_node`, `master_integrator_node`, and `global_sandbox_node`.
-- **Expected Outcome**: The system can automatically attempt merges and, upon encountering conflicts, intelligently synthesize a resolution using an LLM before validating the result globally.
-
-### CYCLE03: Orchestration and UAT/QA Graph Separation
-- **Focus**: Finalize Phase 4 (UAT & QA Graph) and orchestrate the entire 5-phase pipeline.
-- **Tasks**:
-  1. Refactor `src/services/uat_usecase.py` to ensure it only operates after Phase 3 is fully complete, acting as the dedicated executor for Phase 4.
-  2. Update `src/services/workflow.py` and `src/cli.py` to control the overall execution flow: running Phase 2 cycles in parallel, awaiting completion, triggering Phase 3 integration, and finally executing Phase 4 UAT.
-  3. Ensure that the QA Auditor loop in Phase 4 correctly analyzes failures and routes them back for correction within the integrated environment.
+  3. Modify `src/graph.py` to re-wire `_create_coder_graph` according to the 5-phase specification, replacing existing nodes as necessary and introducing `refactor_node` and `final_critic_node`. Create the `build_integration_graph` containing the `git_merge_node`, `master_integrator_node`, and `global_sandbox_node`.
+  4. Implement the 3-Way Diff logic in `src/services/conflict_manager.py`. This requires fetching the Base, Local (Branch A), and Remote (Branch B) versions of conflicted files using Git commands.
+  5. Refactor `src/services/uat_usecase.py` to ensure it only operates after Phase 3 is fully complete, acting as the dedicated executor for Phase 4. Update `src/services/workflow.py` and `src/cli.py` to control the overall execution flow: running Phase 2 cycles in parallel, awaiting completion, triggering Phase 3 integration, and finally executing Phase 4 UAT. Ensure that the QA Auditor loop in Phase 4 correctly analyzes failures and routes them back for correction within the integrated environment.
 - **Expected Outcome**: A fully cohesive system that seamlessly transitions from parallel feature development to integrated system testing and final validation without manual intervention.
 
 ## Test Strategy
@@ -197,21 +183,11 @@ All LLM interactions (Auditor feedback, Master Integrator resolution, Refactor o
 - **Unit Testing**:
   - Test the state transitions in `src/state.py` to ensure that setting `is_refactoring` or incrementing `current_auditor_index` behaves as expected and passes Pydantic validation.
   - Test the routing logic in `src/nodes/routers.py` by providing mocked `CycleState` objects with various combinations of flags and asserting the correct string output (e.g., "failed", "auditor", "final_critic").
-- **Integration Testing**:
-  - Mock the LLM nodes and execute the `_create_coder_graph` to verify that the edges trigger correctly. Ensure that the loop breaks after `audit_attempt_count` exceeds its limit and that it transitions to `refactor_node` only when all auditors pass.
-  - **Side-effect Management**: Use an in-memory `Checkpointer` for LangGraph and mock `ProcessRunner` to avoid executing actual linting or testing commands during the graph traversal test.
-
-### CYCLE02
-- **Unit Testing**:
   - Test the `build_conflict_package` method in `src/services/conflict_manager.py`. Mock the Git subprocess calls to return specific file strings for Base, Local, and Remote, and verify that the constructed prompt accurately contains all three sections.
-- **Integration Testing**:
-  - Test the `build_integration_graph` transition logic. Simulate a merge conflict state and ensure it routes to `master_integrator_node`. Simulate a successful merge and ensure it routes to `global_sandbox_node`.
-  - **Side-effect Management**: Utilize a temporary Git repository setup using `pytest.fixture(scope="function")` to safely test the Git operations and merge scenarios without affecting the real project repository.
-
-### CYCLE03
-- **Unit Testing**:
   - Test the orchestration logic in `src/services/workflow.py`. Verify that the workflow correctly awaits all parallel Coder cycles before initiating the Integration phase.
   - Test `src/services/uat_usecase.py` to ensure it correctly processes the integrated state and triggers the QA loop upon simulated test failures.
 - **Integration Testing**:
+  - Mock the LLM nodes and execute the `_create_coder_graph` to verify that the edges trigger correctly. Ensure that the loop breaks after `audit_attempt_count` exceeds its limit and that it transitions to `refactor_node` only when all auditors pass.
+  - Test the `build_integration_graph` transition logic. Simulate a merge conflict state and ensure it routes to `master_integrator_node`. Simulate a successful merge and ensure it routes to `global_sandbox_node`.
   - Perform an end-to-end simulation of the workflow orchestrator. Mock the actual execution of the graphs but verify that `build_coder_graph`, `build_integration_graph`, and `build_qa_graph` are called in the correct sequence and with the appropriate state payloads.
-  - **Side-effect Management**: Ensure that mock API keys are active (via `tests/conftest.py` configurations) to prevent any actual LLM calls. Use mock directories for any file generation steps.
+  - **Side-effect Management**: Use an in-memory `Checkpointer` for LangGraph and mock `ProcessRunner` to avoid executing actual linting or testing commands during the graph traversal test. Utilize a temporary Git repository setup using `pytest.fixture(scope="function")` to safely test the Git operations and merge scenarios without affecting the real project repository. Ensure that mock API keys are active (via `tests/conftest.py` configurations) to prevent any actual LLM calls. Use mock directories for any file generation steps. Any testing requiring database or persistent state setup MUST utilize Pytest fixtures that start a transaction before the test and roll it back after, ensuring lightning-fast state resets without relying on heavy external CLI cleanup commands.
