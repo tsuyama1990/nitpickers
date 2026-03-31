@@ -38,6 +38,10 @@ nitpick = "src.cli:app"
 
 [dependency-groups]
 dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
     "shellingham",
     "pytest",
     "pytest-cov",
@@ -75,6 +79,7 @@ select = [
 ]
 
 ignore = [
+    # ANN101 is not ignored,
     "ANN002", "ANN003", "ANN001", "ANN401", "ARG001", "ARG005",
     "PLR2004", "E501", "TRY003", "D", "ANN201", "N806", "PLC0415", "BLE001",
     "PT019", "RUF003", "ARG002", "RUF043", "RUF059", "PLR0913", "ANN202"

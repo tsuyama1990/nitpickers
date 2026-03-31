@@ -1,6 +1,6 @@
-# NITPICKERS
+# NITPICKERS: AI-Native Zero-Trust Development Environment
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards.
+NITPICKERS is a state-of-the-art, AI-native software development environment architected from the ground up to enforce absolute zero-trust validation of automatically generated program code. By orchestrating a rigorous 5-phase execution pipeline, NITPICKERS utilizes static analysis, dynamic sandbox testing, serial red team auditing, and intelligent 3-Way Diff integration to guarantee that all AI-synthesized code meets uncompromising professional engineering standards before it ever reaches your main branch.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -11,15 +11,15 @@ An AI-native development environment based on a highly robust methodology design
 
 ## Key Features
 
-- **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
-- **5-Phase Parallel & Sequential Architecture:** Seamlessly orchestrates requirement decomposition, parallel feature implementation, 3-Way Diff integration, and full-system E2E UI testing.
-- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions.
-- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent.
-- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads.
+- **Automated Mechanical Blockade (Zero-Trust):** Pull requests and code integrations are explicitly and unconditionally blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with an absolute zero exit code. There is no assumed success.
+- **5-Phase Parallel & Sequential Architecture:** The system seamlessly, deterministically orchestrates complex requirement decomposition, massively parallel feature implementation, advanced 3-Way Diff conflict resolution, and exhaustive, full-system E2E UI testing.
+- **Serial Red Team Auditing:** Code must survive a grueling, sequential review process conducted by multiple, entirely independent Auditor agents. This stateless auditing eliminates historical bias and ensures absolute logical correctness.
+- **Intelligent 3-Way Diff Integration:** Instead of failing on complex branch collisions, a dedicated Master Integrator agent mathematically analyzes the Base, Local, and Remote file states to synthesize perfectly unified code blocks.
+- **Multi-Modal Diagnostic Automation:** The system automatically captures rich UI failure context, including high-resolution Playwright screenshots and DOM traces, routing them to Vision LLMs for completely autonomous, self-healing remediation.
 
 ## Architecture Overview
 
-The system operates across 5 distinct phases to guarantee code quality from planning to final integration.
+The NITPICKERS system operates across 5 meticulously designed, distinct phases to mathematically guarantee code quality from the initial planning stages to final, global integration.
 
 ```mermaid
 flowchart TD
@@ -96,92 +96,83 @@ flowchart TD
 
 ## Prerequisites
 
-Ensure the following tools are available on your system:
-- `uv` - The fastest Python package installer and resolver.
-- `git` - Version control for your codebase.
-- `Docker` - (Optional, depending on sandbox configuration).
-- Valid API keys:
-    - `JULES_API_KEY` (Gemini Pro/Worker)
-    - `E2B_API_KEY` (Sandbox Execution)
-    - `OPENROUTER_API_KEY` (Auditor/Vision Models)
-- LangSmith Observability Configuration (Optional):
-    - `LANGCHAIN_TRACING_V2=true`
-    - `LANGCHAIN_API_KEY`
-    - `LANGCHAIN_PROJECT`
+Ensure the following critical tools are securely installed and available within your system environment:
+- `python 3.12+`
+- `uv` - The blazingly fast Python package installer and dependency resolver.
+- `git` - Distributed version control for your codebase.
+- `Docker` - (Highly Recommended for secure sandbox execution and Sidecar configuration).
+- Valid, active API keys (must be configured in `.env`):
+    - `JULES_API_KEY` (Primary Worker/Architect)
+    - `E2B_API_KEY` (Secure Sandbox Execution)
+    - `OPENROUTER_API_KEY` (Serial Auditors/Vision Models)
 
-## Installation & Setup (Docker Recommended)
+## Installation & Setup
 
-The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
+The primary and highly recommended method for utilizing NITPICKERS is via Docker, operating efficiently in a secure "Sidecar" workflow. This allows you to mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases without contaminating your local environment.
 
-1. Clone the repository and navigate to the project directory:
+1. Clone the repository and navigate strictly to the project directory:
    ```bash
-   git clone <your-repository>
-   cd <your-repository>
+   git clone https://github.com/your-org/nitpickers.git
+   cd nitpickers
    ```
 
-2. Configure your core environment variables (Tool-Level):
+2. Configure your core environmental secrets (Tool-Level):
    ```bash
    cp .env.example .env
-   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and (optionally) LangSmith variables.
-   # These tool-level infrastructure keys should stay within the nitpickers directory.
+   # Edit .env and meticulously populate your JULES_API_KEY, E2B_API_KEY, and OPENROUTER_API_KEY.
+   # These tool-level infrastructure keys MUST stay within the isolated nitpickers directory.
    ```
 
-3. Quick Start (Build & Alias):
+3. Initialize the Environment:
    ```bash
+   uv sync
    bash setup.sh
    source ~/.bashrc
    ```
-   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
+   The `setup.sh` script will automatically construct the container and intelligently inject a `nitpick` alias into your `~/.bashrc`, enabling ubiquitous CLI access.
 
 ## Usage
 
-Once your core `.env` is configured and you have run the setup script, you can navigate to *any* project directory and use the `nitpick` command seamlessly. Project-specific API keys should be placed in a separate `.env` file within the target project directory.
+Once your core `.env` is securely configured and the setup script has successfully completed, you can navigate to *any* external project directory and utilize the highly powerful `nitpick` command seamlessly.
 
-The "Sidecar" workflow dynamically mounts your current working directory into the container using the `TARGET_PROJECT_PATH` alias configuration.
+### Initialize Project Requirements (Phase 0)
 
-### Initialize Project Requirements
-
-For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure (`src/`, `tests/`, `dev_documents/`), initializes Git, and configures your environment.
+For all new or external target projects, running `nitpick init` is an absolute, mandatory first step. It automatically scaffolds the strictly required directory structure (`src/`, `tests/`, `dev_documents/`), intelligently initializes Git, and perfectly configures your strict linting environment.
 
 ```bash
 cd /path/to/target/project
 nitpick init
 ```
-After initialization, follow the CLI prompts to fill in `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
+After successful initialization, meticulously fill in `dev_documents/ALL_SPEC.md` before executing generation commands.
 
 ### Generate Development Cycles (Phase 1)
-Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.
+Navigate to your active target project and systematically parse your raw architectural documents into highly structured specifications and rigorous UAT plans.
 ```bash
-cd /path/to/target/project
 nitpick gen-cycles
 ```
 
-### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
-Execute the complete orchestrated 5-phase pipeline against your currently active project directory, automatically managing parallel implementation and final integration.
+### Run Full Orchestrated Pipeline (Phases 2, 3 & 4)
+Execute the complete, highly orchestrated 5-phase pipeline against your currently active project directory. This command automatically and flawlessly manages parallel code implementation, strict serial auditing, 3-Way Diff integration, and final End-to-End validation.
 ```bash
 nitpick run-pipeline
 ```
 
-### Run a Specific Cycle Manually
-For debugging, execute a specific development cycle (e.g., `01`).
-```bash
-nitpick run-cycle --id 01
-```
-
 ### Interactive Tutorials (UAT Verification)
-To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
+To intimately experience the fully automated, zero-trust User Acceptance Testing (UAT) pipeline interactively, you can run our definitive, highly complex Marimo tutorial locally.
 ```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow
 
--   **Run Linters & Type Checks:**
+To ensure the architectural integrity of the NITPICKERS tool itself, strictly adhere to the following rigorous development commands:
+
+-   **Run Strict Linters & Type Checks:**
     ```bash
     uv run ruff check .
     uv run mypy .
     ```
--   **Run Unit & Integration Tests:**
+-   **Run Exhaustive Unit & Integration Tests (with Coverage):**
     ```bash
     uv run pytest
     ```
@@ -190,19 +181,20 @@ uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
 
 ```text
 /
-├── dev_documents/          # Auto-generated specs, UATs, logs
-│   ├── system_prompts/     # Cycle specific plans and documents
-│   └── USER_TEST_SCENARIO.md
-├── src/                    # The main implementation for NITPICKERS
-│   ├── cli.py              # CLI entrypoint
-│   ├── state.py            # Pydantic state models (CycleState, etc.)
-│   ├── graph.py            # Main LangGraph declarations
-│   ├── nodes/              # LangGraph node routing functions
-│   └── services/           # Orchestration (workflow.py) & Diff Logic (conflict_manager.py)
-├── tests/                  # Unit, Integration, and UAT tests
-├── tutorials/              # Marimo-based interactive tutorials
-├── pyproject.toml          # Project configuration (Dependencies & Linting)
-└── README.md               # User documentation
+├── dev_documents/          # Auto-generated specifications, UAT scenarios, and system architecture plans
+│   ├── system_prompts/     # Cycle specific operational plans and Pydantic schemas
+│   ├── USER_TEST_SCENARIO.md
+│   └── required_envs.json
+├── src/                    # The highly robust core implementation for NITPICKERS
+│   ├── cli.py              # Centralized CLI entrypoint
+│   ├── state.py            # Strictly typed Pydantic state models (CycleState, IntegrationState)
+│   ├── graph.py            # Complex LangGraph deterministic declarations
+│   ├── nodes/              # Advanced LangGraph conditional routing logic
+│   └── services/           # Orchestrator (workflow.py) & 3-Way Diff Logic (conflict_manager.py)
+├── tests/                  # Exhaustive Unit, Integration, and UAT test suites
+├── tutorials/              # Marimo-based interactive, executable tutorials
+├── pyproject.toml          # Strict Project configuration (Dependencies & Linting rules)
+└── README.md               # User documentation and architectural overview
 ```
 
 ## License
