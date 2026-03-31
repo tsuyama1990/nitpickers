@@ -155,6 +155,9 @@ async def test_interactive_inquiry_handling(
     mock_client.manager_agent.run = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
 
     mock_client.inquiry_handler.context_builder = MagicMock()
+    mock_client.list_activities = AsyncMock(  # type: ignore[method-assign]
+        return_value=[{"name": "act1", "agentMessaged": {"agentMessage": "Should I continue?"}}]
+    )
     mock_client.inquiry_handler.context_builder.build_question_context = AsyncMock(
         return_value="mock context"
     )

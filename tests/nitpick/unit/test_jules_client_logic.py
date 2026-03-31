@@ -75,7 +75,12 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         monologue_id = "sessions/123/activities/monologue"
         question_id = "sessions/123/activities/question"
 
-        self.client.list_activities = MagicMock(return_value=[])  # type: ignore[method-assign]
+        def mock_list_activities(x: str) -> Any:
+            call_counts["activities"] += 1
+            return activities_response(call_counts["activities"]).json().get("activities", [])
+
+        self.client.list_activities = AsyncMock(side_effect=mock_list_activities)  # type: ignore[method-assign]
+
         self.client._send_message = AsyncMock()
 
         call_counts: dict[str, int] = {"state": 0, "activities": 0}

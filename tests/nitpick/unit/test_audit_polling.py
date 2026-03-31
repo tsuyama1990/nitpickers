@@ -42,5 +42,5 @@ class TestAuditPolling:
 
         # Should short-circuit with WAITING_FOR_JULES when commit hasn't changed
         assert result["status"] == FlowStatus.WAITING_FOR_JULES
-        assert result["last_audited_commit"] == "commit_A"
+        assert result["audit"].last_audited_commit == "commit_A"
         mock_jules.get_session_state.assert_called_with("sessions/123")
