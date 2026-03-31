@@ -42,7 +42,7 @@ def test_config_defaults() -> None:
         clear=True,
     ):
         local_settings = Settings()
-        assert local_settings.reviewer.smart_model == "openai:gpt-4o"
+        assert local_settings.reviewer.smart_model == "openrouter/stepfun/step-3.5-flash:free"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert str(local_settings.paths.templates) == str(
             Path.cwd() / "dev_documents" / "templates"
