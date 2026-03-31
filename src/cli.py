@@ -28,6 +28,7 @@ def init() -> None:
     manager = ProjectManager()
 
     # Try Docker path first, then fallback to local templates directory
+    from pathlib import Path
     templates_path = "/opt/nitpick/templates/"
     if not Path(templates_path).exists():
         templates_path = str(Path(__file__).parent / "templates")
