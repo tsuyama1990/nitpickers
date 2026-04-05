@@ -68,14 +68,19 @@ class JulesClient:
         self.git = GitManager()
         self.test_mode = settings.test_mode
 
+        api_key_to_use = settings.JULES_API_KEY.get_secret_value() or os.getenv("JULES_API_KEY")
+
         try:
             self.credentials, self.project_id_from_auth = google.auth.default()
             if not self.project_id:
                 self.project_id = self.project_id_from_auth
         except Exception as e:
-            logger.warning(
-                f"Could not load Google Credentials: {e}. Falling back to API Key if available."
-            )
+            if not api_key_to_use:
+                logger.warning(
+                    f"Could not load Google Credentials: {e}. Falling back to API Key if available."
+                )
+            else:
+                logger.debug(f"Google ADC not found: {e}. Falling back to API Key.")
             self.credentials = None  # type: ignore[assignment]
 
         self.manager_agent = manager_agent if manager_agent else get_manager_agent()
@@ -87,7 +92,6 @@ class JulesClient:
 
             self.plan_auditor = PlanAuditor()
 
-        api_key_to_use = settings.JULES_API_KEY.get_secret_value() or os.getenv("JULES_API_KEY")
         if not api_key_to_use and self.credentials:
             api_key_to_use = self.credentials.token
 
@@ -148,15 +152,8 @@ class JulesClient:
 
         session_name = await self._create_jules_session(payload)
 
-        # Session persistence is handled by the caller (graph_nodes.py)
-
-        if require_plan_approval:
-            return {"session_name": session_name, "status": "running"}
-
-        logger.info(f"Session created: {session_name}. Waiting for PR creation...")
-        result = await self.wait_for_completion_legacy(session_name, require_plan_approval=False)
-        result["session_name"] = session_name
-        return result
+        # Return immediately; caller should use wait_for_completion
+        return {"session_name": session_name, "status": "running"}
 
     async def _create_jules_session(self, payload: dict[str, Any]) -> str:
         """Wrapper to call create_session via api_client."""

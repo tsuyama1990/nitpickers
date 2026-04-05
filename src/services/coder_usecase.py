@@ -8,6 +8,8 @@ from rich.console import Console
 from src.config import settings
 from src.domain_models import CycleManifest
 from src.enums import FlowStatus, WorkPhase
+from src.enums import FlowStatus, WorkPhase
+from src.services.git_ops import GitManager, workspace_lock
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
@@ -76,8 +78,12 @@ class CoderUseCase:
                 console.print(f"[yellow]Wait/Resume failed: {e}. Starting new session.[/yellow]")
                 result = None
 
-        # --- B. Handle session REUSE (Retry Fix or Post-Audit Refactor) ---
-        if not result and state.status in {FlowStatus.RETRY_FIX, FlowStatus.POST_AUDIT_REFACTOR}:
+        # --- B. Handle session REUSE (Retry Fix, Post-Audit Refactor, or TDD Failure) ---
+        if not result and state.status in {
+            FlowStatus.RETRY_FIX,
+            FlowStatus.POST_AUDIT_REFACTOR,
+            FlowStatus.TDD_FAILED,
+        }:
             reuse_result = await self._try_reuse_session(cycle_manifest, state)
             if reuse_result:
                 result = reuse_result
@@ -89,23 +95,32 @@ class CoderUseCase:
                 f"[bold green]Starting {phase_label} Session for Cycle {cycle_id} "
                 f"(Iteration {iteration})...[/bold green]"
             )
-            instruction = self._build_instruction(cycle_id, current_phase, state, cycle_manifest)
-            target_files = settings.get_target_files()
-            context_files = settings.get_context_files()
-
             try:
-                import uuid
+                async with workspace_lock:
+                    instruction = self._build_instruction(cycle_id, current_phase, state, cycle_manifest)
+                    target_files = settings.get_target_files()
+                    context_files = settings.get_context_files()
 
-                timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
-                prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
-                # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
-                session_req_id = (
-                    f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
-                )
+                    import uuid
 
-                jules_session_name, result = await self._run_jules_session(
-                    session_req_id, instruction, target_files, context_files, cycle_id, mgr
-                )
+                    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
+                    prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
+                    # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
+                    session_req_id = (
+                        f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
+                    )
+
+                    jules_session_name, result = await self._run_jules_session(
+                        session_req_id, instruction, target_files, context_files, cycle_id, mgr
+                    )
+
+                # --- Outside lock, wait for completion if running ---
+                if result.get("status") == "running" and jules_session_name:
+                    console.print(
+                        f"[bold blue]Session {jules_session_name} created. Waiting for completion...[/bold blue]"
+                    )
+                    result = await self.jules.wait_for_completion(jules_session_name)
+
             except Exception as e:
                 console.print(f"[red]{phase_label} Session Failed: {e}[/red]")
                 return self._handle_session_failure(cycle_manifest, cycle_id, str(e), mgr)
@@ -183,6 +198,11 @@ class CoderUseCase:
                 last_audit.feedback, cycle_manifest.pr_url if cycle_manifest else None
             )
 
+        if state.status == FlowStatus.TDD_FAILED and state.error:
+            instruction += "\n\n" + self._build_feedback_injection(
+                state.error, cycle_manifest.pr_url if cycle_manifest else None
+            )
+
         if state.status == FlowStatus.RETRY_FIX and state.current_fix_plan:
             fix_plan_text = (
                 f"## Automated UAT Diagnostic Fix Plan\n"
@@ -207,13 +227,14 @@ class CoderUseCase:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
         cycle_id = state.cycle_id
         last_audit = state.audit_result
-        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan
+        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan OR TDD Failure
         is_retry_audit = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
         is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
+        is_tdd_failure = state.status == FlowStatus.TDD_FAILED and state.error
 
         if not (
-            (is_retry_audit or is_retry_uat or is_post_refactor)
+            (is_retry_audit or is_retry_uat or is_post_refactor or is_tdd_failure)
             and cycle_manifest
             and cycle_manifest.jules_session_id
         ):
@@ -262,6 +283,8 @@ class CoderUseCase:
                         f"**Required Changes:**\n```\n{patch.git_diff_patch}\n```\n\n"
                     )
                 feedback_payload += "Please implement these exact changes immediately."
+            elif is_tdd_failure and state.error:
+                feedback_payload = state.error
 
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id, feedback_payload
@@ -277,10 +300,9 @@ class CoderUseCase:
         cycle_id: str,
         mgr: StateManager,
     ) -> tuple[str | None, dict[str, Any]]:
-        """Launch a new Jules session and wait for it to complete.
+        """Launch a new Jules session.
 
-        Returns (jules_session_name, result_dict). The session_name is saved
-        separately so it survives the wait_for_completion() result overwrite.
+        This method should be called within workspace_lock.
         """
         if not re.match(settings.SESSION_ID_PATTERN, session_req_id):
             msg = f"Invalid session_req_id format: {session_req_id}"
@@ -294,20 +316,12 @@ class CoderUseCase:
             require_plan_approval=False,
         )
 
-        # Capture session_name BEFORE wait_for_completion() overwrites result —
-        # wait_for_completion() does NOT include session_name in its return value.
         jules_session_name: str | None = result.get("session_name")
 
         if jules_session_name:
             mgr.update_cycle_state(
                 cycle_id, jules_session_id=jules_session_name, status="in_progress"
             )
-
-        if result.get("status") == "running" and jules_session_name:
-            console.print(
-                f"[bold blue]Session {jules_session_name} created. Waiting for completion...[/bold blue]"
-            )
-            result = await self.jules.wait_for_completion(jules_session_name)
 
         return jules_session_name, result
 

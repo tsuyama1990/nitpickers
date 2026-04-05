@@ -23,7 +23,7 @@ class JulesContextBuilder:
             if context_files:
                 full_prompt += "\nREAD-ONLY CONTEXT (Do not edit):\n" + "\n".join(context_files)
             if target_files:
-                full_prompt += "\n\nTARGET FILES (To be implemented/edited):\n" + "\n".join(
+                full_prompt += "\n\nTARGET FILES (You are AUTHORIZED to edit these files and CREATE new source/test files as needed for the Spec):\n" + "\n".join(
                     target_files
                 )
         elif files:

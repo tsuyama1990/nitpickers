@@ -15,7 +15,7 @@ def mock_env() -> Generator[None, None, None]:
         os.environ,
         {
             "NITPICK_REVIEWER__SMART_MODEL": "test-smart-model",
-            "NITPICK_PATHS__DOCUMENTS_DIR": "/home/tomo/project/TheJTC/docs_tmp",
+            "NITPICK_PATHS__DOCUMENTS_DIR": str(Path.cwd() / "docs_tmp"),
             "NITPICK_JULES__TIMEOUT_SECONDS": "999",
         },
     ):
@@ -29,7 +29,7 @@ def test_config_env_vars_loaded(mock_env: Any) -> None:
     local_settings = Settings()
 
     assert local_settings.reviewer.smart_model == "test-smart-model"
-    assert str(local_settings.paths.documents_dir) == "/home/tomo/project/TheJTC/docs_tmp"
+    assert str(local_settings.paths.documents_dir) == str(Path.cwd() / "docs_tmp")
     assert local_settings.jules.timeout_seconds == 999
 
 
@@ -43,10 +43,10 @@ def test_config_defaults() -> None:
     ):
         local_settings = Settings()
         assert local_settings.reviewer.smart_model == "openrouter/stepfun/step-3.5-flash:free"
-        assert str(local_settings.paths.src) == "/home/tomo/project/TheJTC/src"
+        assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert (
             str(local_settings.paths.templates)
-            == "/home/tomo/project/TheJTC/dev_documents/templates"
+            == str(Path.cwd() / "dev_documents" / "templates")
         )
 
 

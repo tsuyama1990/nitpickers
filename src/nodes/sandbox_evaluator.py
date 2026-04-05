@@ -8,6 +8,7 @@ from src.domain_models.verification_schema import StructuralGateReport, Verifica
 from src.enums import FlowStatus
 from src.process_runner import ProcessRunner
 from src.services.e2b_executor import E2BExecutorServiceImpl
+from src.services.git_ops import GitManager, workspace_lock
 from src.state import CycleState
 
 console = Console()
@@ -34,43 +35,52 @@ class SandboxEvaluatorNodes:
         console.print("[bold cyan]Running Mechanical Verification Blockade...[/bold cyan]")
 
         try:
-            timeout_limit = settings.sandbox.timeout
+            async with workspace_lock:
+                # JIT Synchronization: Ensure local workspace matches the cycle's branch
+                git = GitManager()
+                if state.feature_branch:
+                    console.print(f"[dim]Synchronizing workspace to branch: {state.feature_branch}[/dim]")
+                    await git.checkout_branch(state.feature_branch)
+                    await git.pull_changes()
 
-            import shlex
+                timeout_limit = settings.sandbox.timeout
 
-            # Fallback to defaults if empty
-            lint_cmd = settings.sandbox.lint_check_cmd or ["uv", "run", "ruff", "check", "."]
-            type_cmd = settings.sandbox.type_check_cmd or ["uv", "run", "mypy", "."]
+                import shlex
 
-            # `test_cmd` might be a string based on `SandboxConfig`
-            raw_test_cmd = settings.sandbox.test_cmd or "uv run pytest"
-            if isinstance(raw_test_cmd, str):
-                try:
-                    test_cmd = shlex.split(raw_test_cmd)
-                except ValueError:
-                    test_cmd = raw_test_cmd.split()
-            else:
-                test_cmd = raw_test_cmd
+                # Fallback to defaults if empty
+                lint_cmd = settings.sandbox.lint_check_cmd or ["uv", "run", "ruff", "check", "."]
+                type_cmd = settings.sandbox.type_check_cmd or ["uv", "run", "mypy", "."]
 
-            commands = {
-                "lint": lint_cmd,
-                "type": type_cmd,
-                "test": test_cmd,
-            }
-            results = {}
+                # `test_cmd` might be a string based on `SandboxConfig`
+                raw_test_cmd = settings.sandbox.test_cmd or "uv run pytest"
+                if isinstance(raw_test_cmd, str):
+                    try:
+                        test_cmd = shlex.split(raw_test_cmd)
+                    except ValueError:
+                        test_cmd = raw_test_cmd.split()
+                else:
+                    test_cmd = raw_test_cmd
 
-            for check_name, cmd in commands.items():
-                out, err, code, timeout_occurred = await self.process_runner.run_command(
-                    cmd, check=False, timeout=timeout_limit
-                )
-                results[check_name] = VerificationResult(
-                    command=" ".join(cmd),
-                    exit_code=code,
-                    stdout=out,
-                    stderr=err,
-                    timeout_occurred=timeout_occurred,
-                )
+                commands = {
+                    "lint": lint_cmd,
+                    "type": type_cmd,
+                    "test": test_cmd,
+                }
+                results = {}
 
+                for check_name, cmd in commands.items():
+                    out, err, code, timeout_occurred = await self.process_runner.run_command(
+                        cmd, check=False, timeout=timeout_limit
+                    )
+                    results[check_name] = VerificationResult(
+                        command=" ".join(cmd),
+                        exit_code=code,
+                        stdout=out,
+                        stderr=err,
+                        timeout_occurred=timeout_occurred,
+                    )
+
+            # --- Lock released, process results ---
             report = StructuralGateReport(
                 lint_result=results["lint"],
                 type_check_result=results["type"],
@@ -84,10 +94,14 @@ class SandboxEvaluatorNodes:
                 error_trace = report.get_failure_report()
 
                 test_update = state.test.model_copy(update={"structural_report": report})
+                committee_update = state.committee.model_copy(
+                    update={"iteration_count": state.committee.iteration_count + 1}
+                )
                 return {
                     "status": FlowStatus.TDD_FAILED,
                     "error": f"Verification failed:\n{error_trace}",
                     "test": test_update,
+                    "committee": committee_update,
                 }
 
         except Exception as e:

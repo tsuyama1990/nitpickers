@@ -7,7 +7,7 @@ class DispatcherConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_concurrent_tasks: int = Field(
-        default=6, ge=1, description="Maximum number of concurrent tasks"
+        default=10, ge=1, description="Maximum number of concurrent tasks"
     )
     retry_backoff_factor: float = Field(
         default=2.0, gt=0, description="Backoff factor for retry on 429"

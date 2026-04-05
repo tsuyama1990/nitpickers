@@ -10,6 +10,7 @@ from dotenv import dotenv_values, load_dotenv
 from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.domain_models.config import DispatcherConfig
 from src.domain_models.tracing import LangSmithConfig
 
 
@@ -167,20 +168,20 @@ def _detect_package_dir() -> str:
 
 
 class PathsConfig(BaseModel):
-    workspace_root: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC"))
+    workspace_root: Path = Field(default_factory=lambda: Path.cwd())
     documents_dir: Path = Field(
-        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents")
+        default_factory=lambda: Path.cwd() / "dev_documents"
     )
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
     artifacts_dir: Path = Field(
-        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents/artifacts")
+        default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts"
     )
-    sessions_dir: str = "/home/tomo/project/TheJTC/.jules/sessions"
-    src: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC/src"))
-    tests: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC/tests"))
+    sessions_dir: str = str(Path.cwd() / ".jules" / "sessions")
+    src: Path = Field(default_factory=lambda: Path.cwd() / "src")
+    tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
     templates: Path = Field(
-        default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents/templates")
+        default_factory=lambda: Path.cwd() / "dev_documents" / "templates"
     )
     prompts_dir: str = "dev_src/src/prompts"
 
@@ -582,6 +583,7 @@ class Settings(BaseSettings):
     reviewer: ReviewerConfig = Field(default_factory=ReviewerConfig)
     ast_analyzer: ASTAnalyzerConfig = Field(default_factory=ASTAnalyzerConfig)
     tracing: LangSmithConfig = Field(default_factory=LangSmithConfig)
+    dispatcher: DispatcherConfig = Field(default_factory=DispatcherConfig)
 
     @property
     def tracing_service(self) -> "Any":
@@ -738,8 +740,14 @@ class Settings(BaseSettings):
 
         if src.exists():
             targets.extend([str(p) for p in src.rglob("*.py")])
+        else:
+            # Hint at common directories if they don't exist yet (for bootstrap)
+            targets.append("src/domain_models/")
+
         if tests.exists():
             targets.extend([str(p) for p in tests.rglob("*.py")])
+        else:
+            targets.append("tests/")
 
         # Include pyproject.toml if it exists (for dependencies)
         pyproject = Path.cwd() / "pyproject.toml"

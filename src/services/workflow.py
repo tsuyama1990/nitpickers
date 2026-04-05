@@ -66,11 +66,11 @@ class WorkflowService:
             final_state = await graph.ainvoke(initial_state, config)
 
             if final_state.get("error"):
-                console.print(f"[red]Architect Phase Failed:[/red] {final_state['error']}")
+                console.print(f"[red]Architect Phase Failed:[/red] {final_state.get('error')}")
                 sys.exit(1)
             else:
-                session_id_val = final_state["project_session_id"]
-                integration_branch = final_state["integration_branch"]
+                session_id_val = final_state.get("project_session_id")
+                integration_branch = final_state.get("integration_branch")
 
                 # In new strategy, integration_branch IS the feature branch
                 feature_branch = integration_branch
@@ -452,7 +452,7 @@ class WorkflowService:
                 )
         else:
             dispatcher = AsyncDispatcher()
-            batches = dispatcher.resolve_dag(cycles_to_run)
+            batches = dispatcher.resolve_dag(cycles_to_run, parallel=True)
             console.print(
                 f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
             )
@@ -488,19 +488,7 @@ class WorkflowService:
                 return True
         return False
 
-    async def _checkout_feature_branch(self, fb: str | None) -> None:
-        """Check out the feature branch for the cycle."""
-        if fb:
-            logger.info(f"Checking out feature branch: {fb}")
-            try:
-                await self.git.checkout_branch(fb)
-                await self.git.pull_changes()
-                logger.info(f"Successfully checked out feature branch: {fb}")
-            except Exception as e:
-                logger.warning(f"Could not checkout feature branch: {e}")
-                logger.warning("Proceeding with current branch (may cause issues!)")
-        else:
-            logger.warning("No feature branch found in manifest. Using current branch.")
+
 
     async def _execute_cycle_graph(
         self,
@@ -595,7 +583,7 @@ class WorkflowService:
                 sys.exit(1)
 
             fb = manifest.feature_branch if manifest else None
-            await self._checkout_feature_branch(fb)
+
 
             planned_count = len(manifest.cycles) if manifest else 0
             await self._execute_cycle_graph(

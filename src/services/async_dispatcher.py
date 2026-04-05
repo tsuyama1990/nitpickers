@@ -6,6 +6,7 @@ from typing import Any, TypeVar
 
 import httpx
 
+from src.config import settings
 from src.domain_models.config import DispatcherConfig
 from src.domain_models.manifest import CycleManifest
 from src.utils import logger
@@ -62,7 +63,7 @@ def retry_on_429(config: DispatcherConfig) -> Callable[..., Any]:
 
 class AsyncDispatcher:
     def __init__(self, config: DispatcherConfig | None = None) -> None:
-        self.config = config or DispatcherConfig()
+        self.config = config or settings.dispatcher
         self.semaphore = asyncio.Semaphore(self.config.max_concurrent_tasks)
 
     def resolve_dag(
