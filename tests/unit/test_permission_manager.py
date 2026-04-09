@@ -54,9 +54,9 @@ async def test_fix_permissions_traverses_all_files() -> None:
 
         assert mock_scandir.call_count >= 1
 
-        mock_chmod.assert_any_call("/mock/root", 0o777)
-        mock_chmod.assert_any_call("/mock/root/file1", 0o666)
-        mock_chmod.assert_any_call("/mock/root/dir1", 0o777)
+        mock_chmod.assert_any_call("/mock/root", 0o755)
+        mock_chmod.assert_any_call("/mock/root/file1", 0o644)
+        mock_chmod.assert_any_call("/mock/root/dir1", 0o755)
 
 
 @pytest.mark.asyncio

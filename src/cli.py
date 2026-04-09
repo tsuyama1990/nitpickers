@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+from pathlib import Path
 
 import pydantic
 import pydantic.fields
@@ -28,6 +29,7 @@ def init() -> None:
     manager = ProjectManager()
 
     # Try Docker path first, then fallback to local templates directory
+    from pathlib import Path
     templates_path = "/opt/nitpick/templates/"
     if not Path(templates_path).exists():
         templates_path = str(Path(__file__).parent / "templates")
@@ -75,7 +77,7 @@ def run_cycle(
     start_iter: int = typer.Option(1, "--start-iter", "-s", help="Starting iteration count"),
     session: str = typer.Option(None, "--session", help="Session ID (if not using current state)"),
     parallel: bool = typer.Option(
-        False, "--parallel", "-p", help="Run multiple cycles concurrently based on DAG"
+        True, "--parallel/--no-parallel", "-p", help="Run multiple cycles concurrently based on DAG"
     ),
 ) -> None:
     """Run one or all development cycles."""
@@ -101,11 +103,27 @@ def run_pipeline(
     session: str | None = typer.Option(
         None, "--session", help="Session ID (if not using current state)"
     ),
-    parallel: bool = typer.Option(False, "--parallel", help="Enable parallel execution"),
+    parallel: bool = typer.Option(
+        True, "--parallel/--no-parallel", help="Enable parallel execution"
+    ),
 ) -> None:
     """Run the complete orchestrated 5-Phase pipeline."""
     service = WorkflowService()
     asyncio.run(service.run_full_pipeline(project_session_id=session, parallel=parallel))
+
+
+@app.command()
+def integrate(session: str | None = typer.Option(None, "--session", help="Session ID")) -> None:
+    """Phase 3: Run the Integration Graph."""
+    service = WorkflowService()
+    asyncio.run(service.run_integration_phase(project_session_id=session))
+
+
+@app.command()
+def uat(session: str | None = typer.Option(None, "--session", help="Session ID")) -> None:
+    """Phase 4: Run the QA/UAT Graph."""
+    service = WorkflowService()
+    asyncio.run(service.run_qa_phase(project_session_id=session))
 
 
 @app.command()
