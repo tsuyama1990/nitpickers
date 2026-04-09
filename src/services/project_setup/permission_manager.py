@@ -81,11 +81,11 @@ class PermissionManager:
                     for item_path, is_dir in _walk(str(path)):
                         try:
                             if is_dir:
-                                os.chmod(item_path, 0o777)  # noqa: S103, PTH101
+                                os.chmod(item_path, 0o755)  # noqa: S103, PTH101
                             else:
-                                os.chmod(item_path, 0o666)  # noqa: S103, PTH101
+                                os.chmod(item_path, 0o644)  # noqa: PTH101
                         except (PermissionError, OSError) as e:
                             logger.debug(f"Could not relax permissions for {item_path}: {e}")
-            logger.debug("✓ Set permissive file permissions (rw-rw-rw-)")
+            logger.debug("✓ Set hardened file permissions (rwxr-xr-x / rw-r--r--)")
         except Exception as e:
             logger.debug(f"Could not fix permissions via chmod: {e}")
