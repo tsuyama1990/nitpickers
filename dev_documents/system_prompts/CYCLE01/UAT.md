@@ -1,64 +1,49 @@
-# CYCLE01 UAT: Coder Graph & Serial Auditing
+# User Acceptance Testing Plan: CYCLE01
 
 ## Test Scenarios
 
-### Scenario ID: Coder_Phase_01 - Happy Path Serial Audit
-- **Priority**: High
-- **Description**: Verify that the Coder Graph successfully executes a complete, uninterrupted "Happy Path" cycle. This scenario ensures the foundational LangGraph routing operates correctly. The system must initialize a cycle, generate initial code via the Coder agent, pass the local Sandbox evaluation, sequentially traverse three independent Auditor agents (Auditor 1 -> 2 -> 3) without any rejections, proceed to the Refactor node to set the `is_refactoring` flag to `True`, pass the final Sandbox evaluation, and receive approval from the Final Critic, resulting in a successfully completed cycle state.
-- **Verification**: The LangGraph state at the `END` node must reflect `status="completed"`, `is_refactoring=True`, and `current_auditor_index=3` (or equivalent maximum). The execution trace (LangSmith or internal logger) must show the exact sequence of nodes visited.
+### Scenario 1: The 5-Phase Parallel Execution and Serial Auditing Workflow
+**Priority:** High
+**Description:**
+This scenario validates the core functionality of the newly refactored Coder Graph (Phase 2), specifically ensuring that multiple development cycles can run concurrently without interference and that the serial auditing mechanism correctly processes the generated code. The test will simulate the creation of a simple utility function. We expect the system to successfully traverse the initial implementation (`coder_session`), pass the initial `sandbox_evaluate`, and correctly iterate through the sequential `auditor_node`s. The primary objective is to verify that the `current_auditor_index` increments correctly upon approval and that the `is_refactoring` state boolean is toggled accurately before the final self-critique. The test must demonstrate that the system avoids infinite loops by enforcing the `audit_attempt_count` limit. This scenario will be implemented as an interactive, executable tutorial block within the `tutorials/UAT_AND_TUTORIAL.py` Marimo notebook, utilizing mocked LLM responses to ensure rapid, deterministic execution in CI environments without incurring real API costs. The user will be able to visually trace the path of the state object as it moves through the graph.
 
-### Scenario ID: Coder_Phase_02 - Auditor Rejection Loop
-- **Priority**: High
-- **Description**: Verify that the Coder Graph correctly handles a scenario where an Auditor agent rejects the proposed code. This test ensures the `audit_attempt_count` is functioning as a circuit breaker and the routing logic correctly loops back to the Coder. The system must initialize a cycle, pass the initial Sandbox, and reach the first Auditor. The Auditor must explicitly reject the code. The system must then route back to the Coder agent, incrementing the `audit_attempt_count`. After the Coder revises the code and passes the Sandbox again, the same Auditor must review the code. If approved on the second attempt, the system must proceed to the next Auditor.
-- **Verification**: The LangGraph trace must show the sequence: `... -> auditor_node -> (reject) -> coder_session -> ... -> sandbox_evaluate -> auditor_node -> (approve) -> ...`. The `audit_attempt_count` must be incremented during the rejection cycle and the cycle must ultimately succeed if subsequent reviews pass.
-
-### Scenario ID: Coder_Phase_03 - Refactoring Sandbox Failure
-- **Priority**: Medium
-- **Description**: Verify that the Coder Graph correctly handles a Sandbox evaluation failure that occurs *after* the refactoring node. This ensures that the system differentiates between initial implementation failures and post-refactoring regressions. The system must complete the initial implementation and serial audit successfully. Upon reaching the Refactor node, it must intentionally introduce a syntax error or a failing test case (simulated for the test). The subsequent Sandbox evaluation must fail. The routing logic must detect `is_refactoring=True` and route the failure back to the Coder for correction, rather than restarting the entire audit process.
-- **Verification**: The LangGraph trace must show the sequence: `... -> refactor_node -> sandbox_evaluate -> (failed) -> coder_session -> ...`. The final state must successfully recover and complete the cycle after the Coder fixes the refactoring error.
+### Scenario 2: The 3-Way Diff Integration and Conflict Resolution
+**Priority:** Critical
+**Description:**
+This scenario is designed to stress-test the new Integration Graph (Phase 3) and the enhanced 3-Way Diff resolution capabilities of the Master Integrator agent. The test will programmatically create a mock repository state where a common ancestor (Base) file has been modified in two divergent ways by two simulated parallel feature branches (Branch A and Branch B), resulting in a direct Git merge conflict. The system must attempt the standard merge, detect the conflict, and correctly invoke the `master_integrator_node`. The crucial validation step is to examine the prompt constructed by the `ConflictManager`; it must accurately contain the contents of the Base, Local, and Remote versions of the conflicted file. The test will then mock the LLM's response with a successfully synthesized file, verifying that the system applies this resolution, commits the change, and successfully passes the subsequent `global_sandbox_node` evaluation. This scenario will also be embedded within the `tutorials/UAT_AND_TUTORIAL.py` Marimo notebook, providing a clear, interactive demonstration of the system's ability to self-heal complex integration issues autonomously.
 
 ## Behavior Definitions
 
-### Feature: Serial Auditing & Refactoring Loop
-As an AI-native development system,
-I want to ensure that generated code passes through a strict sequence of independent reviews and a dedicated refactoring phase,
-So that I can guarantee high quality, maintainable, and robust code before integration.
+**Feature:** 5-Phase Pipeline Orchestration and Conflict Resolution
 
-**Background:**
-Given the system has successfully initialized Phase 0 and Phase 1,
-And the Architect has defined at least one executable development cycle (`CYCLE01`).
+**Scenario Outline:** Concurrent execution of Coder cycles with serial auditing
+  **Given** the orchestrator is initialized with multiple independent feature requests
+  **And** the `is_refactoring` flag is set to `False` for all cycles initially
+  **When** the system triggers parallel execution of the `_create_coder_graph` for each request
+  **Then** the Coder agent generates the initial implementation and unit tests
+  **And** the `sandbox_evaluate` node validates the syntax and test execution successfully
+  **And** the state is routed to the `auditor_node` based on the routing logic
+  **And** the system sequentially invokes multiple independent auditors, incrementing `current_auditor_index` upon approval
+  **And** upon successful approval from all auditors, the state transitions to the `refactor_node`
+  **And** the `is_refactoring` flag is definitively set to `True`
+  **And** the final logic is verified by the `final_critic_node` before completing Phase 2
 
-**Scenario: Successful execution of the full Coder Phase**
-- Given the system starts Phase 2 for `CYCLE01`
-- And the Coder agent generates valid code that passes initial Sandbox evaluation
-- When the first Auditor reviews the code
-- And the first Auditor approves the code
-- And the second Auditor reviews and approves the code
-- And the third Auditor reviews and approves the code
-- Then the system routes the cycle to the Refactor node
-- And the system updates the state to `is_refactoring=True`
-- And the Refactored code passes the final Sandbox evaluation
-- And the Final Critic approves the code
-- Then the Coder Phase completes successfully.
+**Scenario Outline:** Automated 3-Way Diff Conflict Resolution
+  **Given** Phase 2 completes successfully for multiple cycles, resulting in divergent feature branches
+  **And** the Integration Phase attempts to merge Branch A and Branch B into the integration branch
+  **And** a Git merge conflict is detected within a specific file
+  **When** the `master_integrator_node` is invoked
+  **Then** the `ConflictManager` constructs a comprehensive diff package containing the Base, Local, and Remote file contents
+  **And** the `ConflictManager` rigorously validates all file paths against the `workspace_root` to prevent directory traversal attacks
+  **And** the Master Integrator agent synthesizes a unified resolution that resolves the conflict markers
+  **And** the system successfully commits the resolved file to the integration branch
+  **And** the `global_sandbox_node` successfully validates the fully integrated codebase without regressions
 
-**Scenario: Auditor Rejection triggers a revision loop**
-- Given the system is executing Phase 2 for `CYCLE01`
-- And the code has passed the initial Sandbox evaluation
-- And the first Auditor reviews the code
-- When the first Auditor rejects the code due to a logic flaw
-- Then the system increments the `audit_attempt_count` by 1
-- And the system routes the cycle back to the Coder agent for revision
-- And the Coder agent generates revised code that passes Sandbox evaluation
-- When the first Auditor reviews the revised code and approves it
-- Then the system proceeds to the second Auditor.
-
-**Scenario: Refactoring introduces a regression**
-- Given the system has successfully passed all Auditors
-- And the system is executing the Refactor node
-- When the Refactor node introduces a change that breaks a unit test
-- And the subsequent Sandbox evaluation fails
-- Then the system routes the cycle back to the Coder agent for correction
-- And the system maintains the state `is_refactoring=True`
-- And the Coder agent fixes the regression
-- And the revised Refactored code passes Sandbox evaluation
-- Then the system routes the cycle directly to the Final Critic node.
+**Scenario Outline:** Separation of UAT from Implementation Phases
+  **Given** the Orchestrator has successfully completed the Integration Phase (Phase 3)
+  **When** the Orchestrator initiates the UAT & QA Graph (Phase 4)
+  **Then** the system executes the comprehensive end-to-end testing suite against the integrated application
+  **And** if an E2E test fails, the system captures rich multi-modal context (e.g., Playwright traces, DOM snapshots)
+  **And** the `qa_auditor` analyzes the failure artifacts to formulate a diagnostic plan
+  **And** the `qa_session` implements the necessary corrections within the integrated environment
+  **And** the UAT suite is re-executed until all validations pass seamlessly, concluding the 5-phase pipeline.

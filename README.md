@@ -1,6 +1,6 @@
 # NITPICKERS
 
-An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards.
+An AI-native development environment based on a highly robust methodology designed to enforce absolute zero-trust validation of AI-generated code. NITPICKERS uses static analysis, dynamic testing in a secure sandbox, and automated red team auditing to ensure that generated code meets professional engineering standards. This version introduces a powerful new 5-Phase Architecture, enabling parallel implementation, sequential auditing, and intelligent 3-Way diff conflict resolution.
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![Python Version](https://img.shields.io/badge/python-3.12%2B-blue)
@@ -11,11 +11,11 @@ An AI-native development environment based on a highly robust methodology design
 
 ## Key Features
 
+- **5-Phase Parallel & Sequential Architecture:** Seamlessly orchestrates requirement decomposition, parallel feature implementation, 3-Way Diff integration, and full-system E2E testing.
+- **Serial Auditing and Refactoring Loops:** Code is strictly audited by multiple independent agents sequentially before entering a final refactoring loop, enforcing high standards of code quality.
+- **Intelligent 3-Way Diff Conflict Resolution:** Merging concurrent modifications is handled securely and automatically via a dedicated Master Integrator that synthesizes conflicting changes by understanding the Base, Branch A, and Branch B code.
 - **Automated Mechanical Blockade:** Zero-trust validation. Pull requests are explicitly blocked until all static (Ruff, Mypy) and dynamic (Pytest) structural checks pass with a zero exit code, eliminating assumed success.
-- **5-Phase Parallel & Sequential Architecture:** Seamlessly orchestrates requirement decomposition, parallel feature implementation, 3-Way Diff integration, and full-system E2E UI testing.
-- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces via Playwright, providing undeniable evidence of frontend regressions.
-- **Self-Healing Loop with Stateless Auditor:** Utilize advanced Vision LLMs (via OpenRouter) strictly as outer-loop diagnosticians. They analyze error artifacts without project context fatigue and return structured JSON fix plans to the Worker agent.
-- **Total Observability:** Fully integrated LangSmith tracing visualizes complex LangGraph node transitions, internal state mutations, and multi-modal API payloads.
+- **Multi-Modal Diagnostic Capture:** Automatically capture rich UI failure context, including high-resolution screenshots and DOM traces, providing undeniable evidence of regressions.
 
 ## Architecture Overview
 
@@ -27,36 +27,56 @@ flowchart TD
     subgraph Phase0 ["Phase 0: Init Phase (CLI Setup)"]
         direction TB
         InitCmd([CLI: nitpick init])
+        GenTemplates[".env.sample / .gitignore, strict ruff, mypy settings (Local)"]
+        UpdateDocker["add .env path on docker-compose.yml (User)"]
+        PrepareSpec["define ALL_SPEC.md (User)"]
+
+        InitCmd --> GenTemplates --> UpdateDocker --> PrepareSpec
     end
 
     %% Phase1: Architect Graph
     subgraph Phase1 ["Phase 1: Architect Graph"]
         direction TB
         InitCmd2([CLI: nitpick gen-cycles])
-        ArchSession["JULES: architect_session\n(Requirement Decomposition)"]
-        ArchCritic{"JULES: architect_critic\n(Red Team Self-Critic)"}
-        InitCmd2 --> ArchSession
+
+        subgraph Architect_Phase ["JULES: Architect Phase"]
+            ArchSession["architect_session\n(Requirement Decomposition)"]
+            ArchCritic{"self-critic review\n(Plan Review)"}
+        end
+
+        OutputSpecs[/"Specs and UATs for each Cycle"/]
+
+        PrepareSpec --> InitCmd2 --> ArchSession
         ArchSession --> ArchCritic
         ArchCritic -- "Reject" --> ArchSession
+        ArchCritic -- "Approve" --> OutputSpecs
     end
 
-    %% Phase2: Coder Graph (Parallel: Cycle 1...N)
+    %% Phase2: Coder Graph
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Test/Implementation)"]
-        SelfCritic["JULES: self_critic\n(Pre-Sandbox Polish)"]
+        CoderSession["JULES: coder_session\n(Implementation)"]
+        SelfCritic["JULES: SelfCriticReview\n(Initial Review)"]
         SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
-        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
-        RefactorNode["JULES: refactor_node\n(Post-Audit Refactor)"]
-        FinalCritic["JULES: final_critic\n(Final Logic Verification)"]
 
-        CoderSession --> SelfCritic
-        SelfCritic --> SandboxEval
-        SandboxEval -- "Pass" --> AuditorNode
+        AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}
+        RefactorNode["JULES: refactor_node\n(Refactoring)"]
+        FinalCritic{"JULES: Final Self-critic\n(Final Review)"}
+
+        OutputSpecs -->|Start Cycle N| CoderSession
+
+        CoderSession -- "1st Time" --> SelfCritic --> SandboxEval
+        CoderSession -- "2nd+ Time" --> SandboxEval
+
+        SandboxEval -- "Fail" --> CoderSession
+        SandboxEval -- "Pass (Implementing)" --> AuditorNode
+        SandboxEval -- "Pass (Refactored)" --> FinalCritic
+
         AuditorNode -- "Reject" --> CoderSession
         AuditorNode -- "Pass All" --> RefactorNode
+
         RefactorNode --> SandboxEval
-        SandboxEval -- "Pass (Post-Refactor)" --> FinalCritic
+
         FinalCritic -- "Reject" --> CoderSession
     end
 
@@ -72,26 +92,27 @@ flowchart TD
     subgraph Phase4 ["Phase 4: UAT & QA Graph"]
         direction TB
         UatEval{"LOCAL: uat_evaluate\n(Playwright E2E Tests)"}
-        UxAuditor["OpenRouter: ux_auditor\n(Multimodal UX Review)"]
         QaAuditor["OpenRouter: qa_auditor\n(Diagnostic Analysis)"]
         QaSession["JULES: qa_session\n(Integration Fixes)"]
+        EndNode(((END: Project Complete)))
     end
 
     %% Inter-Phase Connections
-    Phase0 --> Phase1
-    Phase1 --> Phase2
-    Phase2 -- "All Coder Cycles Complete" --> MergeTry
+    FinalCritic -- "Approve (All PRs Ready)" --> MergeTry
 
     MergeTry -- "Conflict" --> MasterIntegrator
     MasterIntegrator --> MergeTry
+
     MergeTry -- "Success" --> GlobalSandbox
+    GlobalSandbox -- "Fail" --> MasterIntegrator
 
     GlobalSandbox -- "Pass" --> UatEval
 
     UatEval -- "Fail" --> QaAuditor
-    UatEval -- "Pass" --> UxAuditor
     QaAuditor --> QaSession
     QaSession --> UatEval
+
+    UatEval -- "Pass" --> EndNode
 ```
 
 ## Prerequisites
@@ -109,9 +130,9 @@ Ensure the following tools are available on your system:
     - `LANGCHAIN_API_KEY`
     - `LANGCHAIN_PROJECT`
 
-## Installation & Setup (Docker Recommended)
+## Installation & Setup
 
-The primary and recommended way to use NITPICKERS is via Docker. This ensures a clean, isolated environment and simplifies dependency management. It operates efficiently in a "Sidecar" workflow, meaning you can mount any target project directory directly into the tool's container to seamlessly audit, build, and interact with external codebases.
+The recommended way to use NITPICKERS is by cloning the repository and setting up the dependencies via `uv`.
 
 1. Clone the repository and navigate to the project directory:
    ```bash
@@ -119,59 +140,44 @@ The primary and recommended way to use NITPICKERS is via Docker. This ensures a 
    cd <your-repository>
    ```
 
-2. Configure your core environment variables (Tool-Level):
+2. Setup dependencies:
+   ```bash
+   uv sync
+   ```
+
+3. Configure your core environment variables:
    ```bash
    cp .env.example .env
-   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, OPENROUTER_API_KEY, and (optionally) LangSmith variables.
-   # These tool-level infrastructure keys should stay within the nitpickers directory.
+   # Edit .env and populate your JULES_API_KEY, E2B_API_KEY, and OPENROUTER_API_KEY.
    ```
-
-3. Quick Start (Build & Alias):
-   ```bash
-   bash setup.sh
-   source ~/.bashrc
-   ```
-   The `setup.sh` script will automatically build the container and optionally add a `nitpick` alias to your `~/.bashrc`. This allows you to run `nitpick` commands from anywhere.
 
 ## Usage
-
-Once your core `.env` is configured and you have run the setup script, you can navigate to *any* project directory and use the `nitpick` command seamlessly. Project-specific API keys should be placed in a separate `.env` file within the target project directory.
-
-The "Sidecar" workflow dynamically mounts your current working directory into the container using the `TARGET_PROJECT_PATH` alias configuration.
 
 ### Initialize Project Requirements
 
 For new or external projects, running `nitpick init` is the mandatory first step. It automatically scaffolds the required directory structure (`src/`, `tests/`, `dev_documents/`), initializes Git, and configures your environment.
 
 ```bash
-cd /path/to/target/project
 nitpick init
 ```
 After initialization, follow the CLI prompts to fill in `ALL_SPEC.md` and `USER_TEST_SCENARIO.md` inside the `dev_documents/` folder before running generation commands.
 
 ### Generate Development Cycles (Phase 1)
-Navigate to your target project and parse your raw architectural documents into structured specifications and UAT plans.
+Parse your raw architectural documents into structured specifications and UAT plans.
 ```bash
-cd /path/to/target/project
 nitpick gen-cycles
 ```
 
-### Run Full Orchestrated Pipeline (Phase 2, 3 & 4)
+### Run Full Orchestrated Pipeline (Phases 2, 3 & 4)
 Execute the complete orchestrated 5-phase pipeline against your currently active project directory, automatically managing parallel implementation and final integration.
 ```bash
 nitpick run-pipeline
 ```
 
-### Run a Specific Cycle Manually
-For debugging, execute a specific development cycle (e.g., `01`).
-```bash
-nitpick run-cycle --id 01
-```
-
 ### Interactive Tutorials (UAT Verification)
-To experience the fully automated, multi-modal User Acceptance Testing (UAT) pipeline interactively, you can run our definitive Marimo tutorial locally (requires local `uv` installation).
+To experience the fully automated pipeline interactively, you can run our definitive Marimo tutorial locally.
 ```bash
-uv run marimo edit tutorials/nitpickers_5_phase_architecture.py
+uv run marimo edit tutorials/UAT_AND_TUTORIAL.py
 ```
 
 ## Development Workflow
