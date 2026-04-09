@@ -389,13 +389,16 @@ class IntegrationState(BaseModel):
     branches_to_merge: list[str] = Field(default_factory=list)
     master_integrator_session_id: str | None = None
     unresolved_conflicts: list[ConflictRegistryItem] = Field(default_factory=list)
-    status: str | None = None
     conflict_status: str | None = None
+    status: str | None = None
 
     langgraph_step: int | None = None
     langgraph_node: str | None = None
     langgraph_triggers: list[Any] | None = None
     langgraph_path: tuple[Any, ...] | None = None
     langgraph_checkpoint: dict[str, Any] | None = None
+
+    def get(self, item: str, default: Any = None) -> Any:
+        return getattr(self, item, default)
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)

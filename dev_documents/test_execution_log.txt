@@ -1,160 +1,744 @@
 ============================= test session starts ==============================
 platform linux -- Python 3.12.13, pytest-9.0.2, pluggy-1.6.0
 rootdir: /app
-configfile: pyproject.toml
-plugins: langsmith-0.7.22, base-url-2.1.0, playwright-0.7.2, asyncio-1.3.0, cov-7.1.0, anyio-4.12.1, logfire-4.29.0, hypothesis-6.151.9
+configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
+plugins: langsmith-0.7.23, base-url-2.1.0, playwright-0.7.2, pytest_httpserver-1.1.5, asyncio-1.3.0, cov-7.1.0, anyio-4.13.0, pyfakefs-6.1.6, hypothesis-6.151.10, logfire-4.31.0, respx-0.22.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 142 items
+<<<<<<< jules-16292834997286059139-f397eb97
+collected 229 items / 4 deselected / 225 selected
 
-tests/nitpick/integration/test_audit_loop.py .                           [  0%]
-tests/nitpick/integration/test_cli_commands.py .                         [  1%]
-tests/nitpick/integration/test_end_to_end_workflow.py .                  [  2%]
+tests/integration/test_integration_graph.py FFF                          [  1%]
+tests/integration/test_tracing_integration.py ..                         [  2%]
+tests/nitpick/integration/clients/test_jules_api.py ...                  [  3%]
+tests/nitpick/integration/test_git_robustness.py ..                      [  4%]
+tests/nitpick/integration/test_pipeline_orchestration.py .               [  4%]
+tests/nitpick/unit/test_audit_orchestrator.py ...                        [  6%]
+tests/nitpick/unit/test_audit_polling.py .                               [  6%]
+tests/nitpick/unit/test_auto_merge.py .                                  [  7%]
+tests/nitpick/unit/test_cli_reconstruction.py ...                        [  8%]
+tests/nitpick/unit/test_committee_logic.py .                             [  8%]
+tests/nitpick/unit/test_config.py FF....                                 [ 11%]
+tests/nitpick/unit/test_file_patcher.py ...                              [ 12%]
+tests/nitpick/unit/test_gen_cycles_options.py .........                  [ 16%]
+tests/nitpick/unit/test_git_checkout.py .                                [ 17%]
+tests/nitpick/unit/test_git_operations.py .............                  [ 23%]
+tests/nitpick/unit/test_git_ops_merge.py ...                             [ 24%]
+tests/nitpick/unit/test_git_state_persistence.py ...                     [ 25%]
+tests/nitpick/unit/test_graph.py .                                       [ 26%]
+tests/nitpick/unit/test_jules_client.py ....                             [ 28%]
+tests/nitpick/unit/test_jules_client_logic.py ..                         [ 28%]
+tests/nitpick/unit/test_jules_session_fixes.py .....                     [ 31%]
+tests/nitpick/unit/test_jules_session_state.py ...                       [ 32%]
+tests/nitpick/unit/test_llm_reviewer.py ..                               [ 33%]
+tests/nitpick/unit/test_phase_transition.py .                            [ 33%]
+tests/nitpick/unit/test_plan_auditor.py ..                               [ 34%]
+tests/nitpick/unit/test_project_init_robustness.py .                     [ 35%]
+tests/nitpick/unit/test_project_manifest.py ...                          [ 36%]
+tests/nitpick/unit/test_resume_logic.py ..                               [ 37%]
+tests/nitpick/unit/test_robustness_fixes.py ...                          [ 38%]
+tests/nitpick/unit/test_routers.py .....                                 [ 40%]
+tests/nitpick/unit/test_sandbox.py ..........                            [ 45%]
+tests/nitpick/unit/test_session_manager.py .........                     [ 49%]
+tests/nitpick/unit/test_session_restart.py ..                            [ 50%]
+tests/nitpick/unit/test_session_reuse.py ...                             [ 51%]
+tests/nitpick/unit/test_state_manager.py ..............                  [ 57%]
+tests/nitpick/unit/test_utils.py ..                                      [ 58%]
+tests/nitpick/unit/test_validators.py .........                          [ 62%]
+tests/nitpick/unit/test_workflow_orchestration.py ...                    [ 64%]
+tests/unit/project_setup/test_template_manager.py ........               [ 67%]
+tests/unit/test_ast_analyzer.py ....                                     [ 69%]
+tests/unit/test_conflict.py .....                                        [ 71%]
+tests/unit/test_conflict_manager_3way.py ..                              [ 72%]
+tests/unit/test_dispatcher.py FFF...                                     [ 75%]
+tests/unit/test_domain_models.py .....                                   [ 77%]
+tests/unit/test_e2b_executor.py ....                                     [ 79%]
+tests/unit/test_integration_usecase.py ...                               [ 80%]
+tests/unit/test_jules_session_state.py .........                         [ 84%]
+tests/unit/test_messages.py .....                                        [ 86%]
+tests/unit/test_permission_manager.py ...                                [ 88%]
+tests/unit/test_refactor_usecase.py ...                                  [ 89%]
+tests/unit/test_sandbox_evaluator.py ..                                  [ 90%]
+tests/unit/test_self_critic_evaluator.py ...                             [ 91%]
+tests/unit/test_state.py ...                                             [ 92%]
+=======
+collected 236 items / 4 deselected / 232 selected
+
+tests/integration/test_coder_graph.py F                                  [  0%]
+tests/integration/test_tracing_integration.py ..                         [  1%]
+tests/nitpick/integration/clients/test_jules_api.py ...                  [  2%]
 tests/nitpick/integration/test_git_robustness.py ..                      [  3%]
-tests/nitpick/integration/test_pipeline_orchestration.py ..              [  4%]
-tests/nitpick/unit/test_audit_orchestrator.py ...                        [  7%]
-tests/nitpick/unit/test_audit_polling.py .                               [  7%]
-tests/nitpick/unit/test_auditor_polling_exit.py .                        [  8%]
-tests/nitpick/unit/test_auto_merge.py .                                  [  9%]
-tests/nitpick/unit/test_cli_reconstruction.py ...                        [ 11%]
-tests/nitpick/unit/test_coder_critic.py ..                               [ 12%]
-tests/nitpick/unit/test_coder_critic_flow.py .                           [ 13%]
-tests/nitpick/unit/test_committee_logic.py .                             [ 14%]
-tests/nitpick/unit/test_config.py ......                                 [ 18%]
-tests/nitpick/unit/test_file_patcher.py ...                              [ 20%]
-tests/nitpick/unit/test_gen_cycles_options.py .........                  [ 26%]
-tests/nitpick/unit/test_git_checkout.py .                                [ 27%]
-tests/nitpick/unit/test_git_operations.py .............                  [ 36%]
-tests/nitpick/unit/test_git_ops_merge.py ...                             [ 38%]
-tests/nitpick/unit/test_git_state_persistence.py ...                     [ 40%]
-tests/nitpick/unit/test_graph.py .                                       [ 41%]
-tests/nitpick/unit/test_jules_client.py ....                             [ 44%]
-tests/nitpick/unit/test_jules_client_logic.py ..                         [ 45%]
-tests/nitpick/unit/test_jules_session_fixes.py .....                     [ 49%]
-tests/nitpick/unit/test_jules_session_state.py ...                       [ 51%]
-tests/nitpick/unit/test_llm_reviewer.py ..                               [ 52%]
-tests/nitpick/unit/test_phase_transition.py .                            [ 53%]
-tests/nitpick/unit/test_plan_auditor.py ..                               [ 54%]
-tests/nitpick/unit/test_project_init_robustness.py .                     [ 55%]
-tests/nitpick/unit/test_project_manifest.py ...                          [ 57%]
-tests/nitpick/unit/test_resume_logic.py ..                               [ 59%]
-tests/nitpick/unit/test_robustness_fixes.py ...                          [ 61%]
-tests/nitpick/unit/test_routers.py ...                                   [ 63%]
-tests/nitpick/unit/test_sandbox.py ..........                            [ 70%]
-tests/nitpick/unit/test_session_manager.py .........                     [ 76%]
-tests/nitpick/unit/test_session_restart.py ..                            [ 78%]
-tests/nitpick/unit/test_session_reuse.py ...                             [ 80%]
-tests/nitpick/unit/test_state_manager.py ..............                  [ 90%]
-tests/nitpick/unit/test_utils.py ..                                      [ 91%]
-tests/nitpick/unit/test_validators.py .........                          [ 97%]
-tests/nitpick/unit/test_workflow_orchestration.py ...                    [100%]
+tests/nitpick/integration/test_pipeline_orchestration.py .               [  3%]
+tests/nitpick/unit/test_audit_orchestrator.py ...                        [  5%]
+tests/nitpick/unit/test_audit_polling.py .                               [  5%]
+tests/nitpick/unit/test_auto_merge.py .                                  [  6%]
+tests/nitpick/unit/test_cli_reconstruction.py ...                        [  7%]
+tests/nitpick/unit/test_committee_logic.py .                             [  7%]
+tests/nitpick/unit/test_config.py FF....                                 [ 10%]
+tests/nitpick/unit/test_file_patcher.py ...                              [ 11%]
+tests/nitpick/unit/test_gen_cycles_options.py .........                  [ 15%]
+tests/nitpick/unit/test_git_checkout.py .                                [ 15%]
+tests/nitpick/unit/test_git_operations.py .............                  [ 21%]
+tests/nitpick/unit/test_git_ops_merge.py ...                             [ 22%]
+tests/nitpick/unit/test_git_state_persistence.py ...                     [ 24%]
+tests/nitpick/unit/test_graph.py .                                       [ 24%]
+tests/nitpick/unit/test_jules_client.py ....                             [ 26%]
+tests/nitpick/unit/test_jules_client_logic.py ..                         [ 27%]
+tests/nitpick/unit/test_jules_session_fixes.py .....                     [ 29%]
+tests/nitpick/unit/test_jules_session_state.py ...                       [ 30%]
+tests/nitpick/unit/test_llm_reviewer.py ..                               [ 31%]
+tests/nitpick/unit/test_phase_transition.py .                            [ 31%]
+tests/nitpick/unit/test_plan_auditor.py ..                               [ 32%]
+tests/nitpick/unit/test_project_init_robustness.py .                     [ 33%]
+tests/nitpick/unit/test_project_manifest.py ...                          [ 34%]
+tests/nitpick/unit/test_resume_logic.py ..                               [ 35%]
+tests/nitpick/unit/test_robustness_fixes.py ...                          [ 36%]
+tests/nitpick/unit/test_routers.py .....                                 [ 38%]
+tests/nitpick/unit/test_sandbox.py ..........                            [ 43%]
+tests/nitpick/unit/test_session_manager.py .........                     [ 46%]
+tests/nitpick/unit/test_session_restart.py ..                            [ 47%]
+tests/nitpick/unit/test_session_reuse.py ...                             [ 49%]
+tests/nitpick/unit/test_state_manager.py ..............                  [ 55%]
+tests/nitpick/unit/test_utils.py ..                                      [ 56%]
+tests/nitpick/unit/test_validators.py .........                          [ 59%]
+tests/nitpick/unit/test_workflow_orchestration.py ...                    [ 61%]
+tests/unit/nodes/test_routers.py F.......F                               [ 65%]
+tests/unit/project_setup/test_template_manager.py ........               [ 68%]
+tests/unit/test_ast_analyzer.py ....                                     [ 70%]
+tests/unit/test_conflict.py .....                                        [ 72%]
+tests/unit/test_dispatcher.py FFF...                                     [ 75%]
+tests/unit/test_domain_models.py .....                                   [ 77%]
+tests/unit/test_e2b_executor.py ....                                     [ 78%]
+tests/unit/test_integration_usecase.py ...                               [ 80%]
+tests/unit/test_jules_session_state.py .........                         [ 84%]
+tests/unit/test_messages.py .....                                        [ 86%]
+tests/unit/test_permission_manager.py ...                                [ 87%]
+tests/unit/test_refactor_usecase.py ...                                  [ 88%]
+tests/unit/test_sandbox_evaluator.py ..                                  [ 89%]
+tests/unit/test_self_critic_evaluator.py ...                             [ 90%]
+tests/unit/test_state.py ...F.                                           [ 93%]
+>>>>>>> main
+tests/unit/test_state_validators.py ...                                  [ 94%]
+tests/unit/test_tracing_service.py ...                                   [ 95%]
+tests/unit/test_utils.py ....                                            [ 97%]
+tests/unit/test_utils_sanitization.py ......                             [100%]
 
+<<<<<<< jules-16292834997286059139-f397eb97
+=================================== FAILURES ===================================
+______________________ test_integration_graph_clean_merge ______________________
+
+repo_path = PosixPath('/tmp/pytest-of-jules/pytest-2/test_integration_graph_clean_m0/repo')
+integration_graph = <langgraph.graph.state.CompiledStateGraph object at 0x7f31e28a1f40>
+
+    @pytest.mark.asyncio
+    async def test_integration_graph_clean_merge(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+        """Test Scenario 1: Clean Merge"""
+        # Create a clean branch to merge
+        subprocess.run(["git", "checkout", "-b", "clean-branch"], cwd=repo_path, check=True, capture_output=True)
+        new_file = repo_path / "new_file.py"
+        new_file.write_text("def new_func():\n    pass\n")
+        subprocess.run(["git", "add", "new_file.py"], cwd=repo_path, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "Clean branch"], cwd=repo_path, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", "master"], cwd=repo_path, check=True, capture_output=True)
+
+        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
+            # Provide the branch to merge
+            state = IntegrationState(branches_to_merge=["clean-branch"])
+>           result = await integration_graph.ainvoke(
+                state,
+                config={"configurable": {"thread_id": "test_clean_merge"}},
+            )
+
+tests/integration/test_integration_graph.py:74:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3462: in ainvoke
+    async for chunk in self.astream(
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3111: in astream
+    async for _ in runner.atick(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_runner.py:304: in atick
+    await arun_with_retry(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_retry.py:211: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:711: in ainvoke
+    input = await step.ainvoke(input, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:473: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/graph/_branch.py:189: in _aroute
+    result = await self.path.ainvoke(value, config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:464: in ainvoke
+    ret = await asyncio.create_task(coro, context=context)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:636: in run_in_executor
+    return await asyncio.get_running_loop().run_in_executor(
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:627: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+src/graph_nodes.py:160: in route_merge
+    status = state.get("conflict_status")
+             ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = IntegrationState(branches_to_merge=['clean-branch'], master_integrator_session_id=None, unresolved_conflicts=[], langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'get'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'IntegrationState' object has no attribute 'get'
+E                   During task with name 'git_merge_node' and id 'bb0856f7-6f53-df03-70c5-5a75214cd168'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+------------------------------ Captured log call -------------------------------
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr view 1 --json isDraft --jq .isDraft': [Errno 2] No such file or directory: 'gh'
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr merge 1 --squash --delete-branch': [Errno 2] No such file or directory: 'gh'
+__________________ test_integration_graph_conflict_resolution __________________
+
+repo_path = PosixPath('/tmp/pytest-of-jules/pytest-2/test_integration_graph_conflic0/repo')
+integration_graph = <langgraph.graph.state.CompiledStateGraph object at 0x7f31e27a0b90>
+
+    @pytest.mark.asyncio
+    async def test_integration_graph_conflict_resolution(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+        """Test Scenario 2: Conflict Resolution via 3-Way Diff"""
+        # Master is currently at Base. We merge feature-a, then feature-b to create a conflict.
+        subprocess.run(["git", "merge", "feature-a"], cwd=repo_path, check=True, capture_output=True)
+
+        # Now we simulate the graph merging feature-b
+        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
+
+            # We need to mock the LLM inside master_integrator_node
+            with patch("src.nodes.master_integrator.JulesClient") as MockJules:
+                mock_jules_instance = MagicMock()
+                MockJules.return_value = mock_jules_instance
+                mock_jules_instance.create_master_integrator_session.return_value = "session_id"
+                mock_jules_instance.send_message_to_session = AsyncMock(
+                    return_value='{"resolved_code": "def my_func():\\n    return \'resolved\'\\n"}'
+                )
+
+                state = IntegrationState(branches_to_merge=["feature-b"])
+>               result = await integration_graph.ainvoke(
+                    state,
+                    config={"configurable": {"thread_id": "test_conflict"}},
+                )
+
+tests/integration/test_integration_graph.py:110:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3462: in ainvoke
+    async for chunk in self.astream(
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3111: in astream
+    async for _ in runner.atick(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_runner.py:304: in atick
+    await arun_with_retry(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_retry.py:211: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:711: in ainvoke
+    input = await step.ainvoke(input, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:473: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/graph/_branch.py:189: in _aroute
+    result = await self.path.ainvoke(value, config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:464: in ainvoke
+    ret = await asyncio.create_task(coro, context=context)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:636: in run_in_executor
+    return await asyncio.get_running_loop().run_in_executor(
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:627: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+src/graph_nodes.py:160: in route_merge
+    status = state.get("conflict_status")
+             ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = IntegrationState(branches_to_merge=['feature-b'], master_integrator_session_id=None, unresolved_conflicts=[], langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'get'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'IntegrationState' object has no attribute 'get'
+E                   During task with name 'git_merge_node' and id 'e0093486-cfc0-9aa7-9a99-36f01782574a'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+------------------------------ Captured log call -------------------------------
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr view 1 --json isDraft --jq .isDraft': [Errno 2] No such file or directory: 'gh'
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr merge 1 --squash --delete-branch': [Errno 2] No such file or directory: 'gh'
+___________________ test_integration_graph_semantic_failure ____________________
+
+repo_path = PosixPath('/tmp/pytest-of-jules/pytest-2/test_integration_graph_semanti0/repo')
+integration_graph = <langgraph.graph.state.CompiledStateGraph object at 0x7f31e27fd370>
+
+    @pytest.mark.asyncio
+    async def test_integration_graph_semantic_failure(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+        """Test Scenario 3: Post-Merge Semantic Failure Recovery"""
+        # Simulate a merge that succeeds without conflicts but fails the sandbox
+        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
+            # Mock global_sandbox_node to fail initially, then pass
+            with patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox:
+                mock_sandbox.side_effect = [
+                    {"status": "tdd_failed"},
+                    {"status": "pass"}
+                ]
+
+                # Mock the integration fixer node to resolve the issue
+                with patch("src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node") as mock_fixer:
+                    mock_fixer.return_value = {"status": "success"}
+
+                    state = IntegrationState(branches_to_merge=["feature-a"])
+>                   result = await integration_graph.ainvoke(
+                        state,
+                        config={"configurable": {"thread_id": "test_semantic"}},
+                    )
+
+tests/integration/test_integration_graph.py:141:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3462: in ainvoke
+    async for chunk in self.astream(
+.venv/lib/python3.12/site-packages/langgraph/pregel/main.py:3111: in astream
+    async for _ in runner.atick(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_runner.py:304: in atick
+    await arun_with_retry(
+.venv/lib/python3.12/site-packages/langgraph/pregel/_retry.py:211: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:711: in ainvoke
+    input = await step.ainvoke(input, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:473: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/graph/_branch.py:189: in _aroute
+    result = await self.path.ainvoke(value, config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langgraph/_internal/_runnable.py:464: in ainvoke
+    ret = await asyncio.create_task(coro, context=context)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:636: in run_in_executor
+    return await asyncio.get_running_loop().run_in_executor(
+/home/jules/.pyenv/versions/3.12.13/lib/python3.12/concurrent/futures/thread.py:59: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/langchain_core/runnables/config.py:627: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+src/graph_nodes.py:160: in route_merge
+    status = state.get("conflict_status")
+             ^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = IntegrationState(branches_to_merge=['feature-a'], master_integrator_session_id=None, unresolved_conflicts=[], langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'get'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'IntegrationState' object has no attribute 'get'
+E                   During task with name 'git_merge_node' and id 'd701ab30-2d17-d535-2539-c8fb5f6688ec'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
+------------------------------ Captured log setup ------------------------------
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
+------------------------------ Captured log call -------------------------------
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr view 1 --json isDraft --jq .isDraft': [Errno 2] No such file or directory: 'gh'
+ERROR    AC-CDD:process_runner.py:59 Execution failed for 'gh pr merge 1 --squash --delete-branch': [Errno 2] No such file or directory: 'gh'
+_________________________ test_config_env_vars_loaded __________________________
+
+mock_env = None
+
+    def test_config_env_vars_loaded(mock_env: Any) -> None:
+        """Test that environment variables override defaults."""
+        # We must instantiate a new Settings object to pick up the env vars
+        # because the global 'settings' object is instantiated at import time.
+>       local_settings = Settings()
+                         ^^^^^^^^^^
+
+tests/nitpick/unit/test_config.py:29:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+__pydantic_self__ = Settings(), _case_sensitive = None
+_nested_model_default_partial_update = None, _env_prefix = None
+_env_prefix_target = None, _env_file = PosixPath('.'), _env_file_encoding = None
+_env_ignore_empty = None, _env_nested_delimiter = None
+_env_nested_max_split = None, _env_parse_none_str = None
+_env_parse_enums = None, _cli_prog_name = None, _cli_parse_args = None
+_cli_settings_source = None, _cli_parse_none_str = None
+_cli_hide_none_type = None, _cli_avoid_json = None, _cli_enforce_required = None
+_cli_use_class_docs_for_groups = None, _cli_exit_on_error = None
+_cli_prefix = None, _cli_flag_prefix_char = None, _cli_implicit_flags = None
+_cli_ignore_unknown_args = None, _cli_kebab_case = None, _cli_shortcuts = None
+_secrets_dir = None, _build_sources = None, values = {}
+sources = (InitSettingsSource(init_kwargs={}), EnvSettingsSource(env_nested_delimiter='__', env_prefix_len=8), DotEnvSettingsSou...efix_len=8), SecretsSettingsSource(secrets_dir=None), DefaultSettingsSource(nested_model_default_partial_update=False))
+init_kwargs = {}
+
+    def __init__(
+        __pydantic_self__,
+        _case_sensitive: bool | None = None,
+        _nested_model_default_partial_update: bool | None = None,
+        _env_prefix: str | None = None,
+        _env_prefix_target: EnvPrefixTarget | None = None,
+        _env_file: DotenvType | None = ENV_FILE_SENTINEL,
+        _env_file_encoding: str | None = None,
+        _env_ignore_empty: bool | None = None,
+        _env_nested_delimiter: str | None = None,
+        _env_nested_max_split: int | None = None,
+        _env_parse_none_str: str | None = None,
+        _env_parse_enums: bool | None = None,
+        _cli_prog_name: str | None = None,
+        _cli_parse_args: bool | list[str] | tuple[str, ...] | None = None,
+        _cli_settings_source: CliSettingsSource[Any] | None = None,
+        _cli_parse_none_str: str | None = None,
+        _cli_hide_none_type: bool | None = None,
+        _cli_avoid_json: bool | None = None,
+        _cli_enforce_required: bool | None = None,
+        _cli_use_class_docs_for_groups: bool | None = None,
+        _cli_exit_on_error: bool | None = None,
+        _cli_prefix: str | None = None,
+        _cli_flag_prefix_char: str | None = None,
+        _cli_implicit_flags: bool | Literal['dual', 'toggle'] | None = None,
+        _cli_ignore_unknown_args: bool | None = None,
+        _cli_kebab_case: bool | Literal['all', 'no_enums'] | None = None,
+        _cli_shortcuts: Mapping[str, str | list[str]] | None = None,
+        _secrets_dir: PathType | None = None,
+        _build_sources: tuple[tuple[PydanticBaseSettingsSource, ...], dict[str, Any]] | None = None,
+        **values: Any,
+    ) -> None:
+        sources, init_kwargs = (
+            _build_sources
+            if _build_sources is not None
+            else __pydantic_self__.__class__._settings_init_sources(
+                _case_sensitive=_case_sensitive,
+                _nested_model_default_partial_update=_nested_model_default_partial_update,
+                _env_prefix=_env_prefix,
+                _env_prefix_target=_env_prefix_target,
+                _env_file=_env_file,
+                _env_file_encoding=_env_file_encoding,
+                _env_ignore_empty=_env_ignore_empty,
+                _env_nested_delimiter=_env_nested_delimiter,
+                _env_nested_max_split=_env_nested_max_split,
+                _env_parse_none_str=_env_parse_none_str,
+                _env_parse_enums=_env_parse_enums,
+                _cli_prog_name=_cli_prog_name,
+                _cli_parse_args=_cli_parse_args,
+                _cli_settings_source=_cli_settings_source,
+                _cli_parse_none_str=_cli_parse_none_str,
+                _cli_hide_none_type=_cli_hide_none_type,
+                _cli_avoid_json=_cli_avoid_json,
+                _cli_enforce_required=_cli_enforce_required,
+                _cli_use_class_docs_for_groups=_cli_use_class_docs_for_groups,
+                _cli_exit_on_error=_cli_exit_on_error,
+                _cli_prefix=_cli_prefix,
+                _cli_flag_prefix_char=_cli_flag_prefix_char,
+                _cli_implicit_flags=_cli_implicit_flags,
+                _cli_ignore_unknown_args=_cli_ignore_unknown_args,
+                _cli_kebab_case=_cli_kebab_case,
+                _cli_shortcuts=_cli_shortcuts,
+                _secrets_dir=_secrets_dir,
+                **values,
+            )
+        )
+
+>       super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings
+E       paths
+E         Value error, Configured paths escape workspace root boundaries: ['/app/docs_tmp'] [type=value_error, input_value={'documents_dir': '/app/docs_tmp'}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.11/v/value_error
+
+.venv/lib/python3.12/site-packages/pydantic_settings/main.py:242: ValidationError
+_____________________________ test_config_defaults _____________________________
+
+    def test_config_defaults() -> None:
+        """Test default values without env overrides."""
+        # Clean env for this test
+        with patch.dict(
+            os.environ,
+            {"JULES_API_KEY": "dummy", "E2B_API_KEY": "dummy", "OPENROUTER_API_KEY": "dummy"},
+            clear=True,
+        ):
+            local_settings = Settings()
+>           assert local_settings.reviewer.smart_model == "openai:gpt-4o"
+E           AssertionError: assert 'openrouter/s....5-flash:free' == 'openai:gpt-4o'
+E
+E             - openai:gpt-4o
+E             + openrouter/stepfun/step-3.5-flash:free
+
+tests/nitpick/unit/test_config.py:45: AssertionError
+=======
+>       assert route_sandbox_evaluate(state) == "failed"
+E       AssertionError: assert 'impl_coder_node' == 'failed'
+E
+E         - failed
+E         + impl_coder_node
+
+tests/unit/nodes/test_routers.py:107: AssertionError
+>>>>>>> main
+_________________________ test_resolve_dag_independent _________________________
+
+    def test_resolve_dag_independent() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01"),
+            CycleManifest(id="02"),
+            CycleManifest(id="03"),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
+
+>       assert len(batches) == 1
+E       AssertionError: assert 3 == 1
+<<<<<<< jules-16292834997286059139-f397eb97
+E        +  where 3 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...o=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 4, 52, 787859, tzinfo=datetime.timezone.utc))]])
+=======
+E        +  where 3 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 746284, tzinfo=datetime.timezone.utc))]])
+>>>>>>> main
+
+tests/unit/test_dispatcher.py:20: AssertionError
+______________________ test_resolve_dag_with_dependencies ______________________
+
+    def test_resolve_dag_with_dependencies() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01"),
+            CycleManifest(id="02", depends_on=["01"]),
+            CycleManifest(id="03", depends_on=["01"]),
+            CycleManifest(id="04", depends_on=["02", "03"]),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
+
+>       assert len(batches) == 3
+E       AssertionError: assert 4 == 3
+<<<<<<< jules-16292834997286059139-f397eb97
+E        +  where 4 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...o=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 4, 52, 796028, tzinfo=datetime.timezone.utc))]])
+=======
+E        +  where 4 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 753706, tzinfo=datetime.timezone.utc))]])
+>>>>>>> main
+
+tests/unit/test_dispatcher.py:34: AssertionError
+____________________ test_resolve_dag_with_completed_cycle _____________________
+
+    def test_resolve_dag_with_completed_cycle() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01", status="completed"),
+            CycleManifest(id="02", depends_on=["01"]),
+            CycleManifest(id="03", depends_on=["01"]),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
+
+>       assert len(batches) == 1
+E       AssertionError: assert 3 == 1
+<<<<<<< jules-16292834997286059139-f397eb97
+E        +  where 3 = len([[CycleManifest(id='01', status='completed', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None...o=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 4, 52, 803538, tzinfo=datetime.timezone.utc))]])
+
+tests/unit/test_dispatcher.py:57: AssertionError
 =============================== warnings summary ===============================
-tests/nitpick/unit/test_jules_client_logic.py: 8 warnings
+tests/live/test_live_auditor.py:13
+  /app/tests/live/test_live_auditor.py:13: PytestUnknownMarkWarning: Unknown pytest.mark.timeout - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.timeout(30)
+
+tests/integration/test_integration_graph.py: 9 warnings
+tests/nitpick/integration/clients/test_jules_api.py: 2 warnings
+tests/nitpick/integration/test_pipeline_orchestration.py: 3 warnings
+tests/nitpick/unit/test_gen_cycles_options.py: 7 warnings
+tests/nitpick/unit/test_plan_auditor.py: 2 warnings
+tests/nitpick/unit/test_robustness_fixes.py: 1 warning
+tests/nitpick/unit/test_workflow_orchestration.py: 9 warnings
+  /app/src/services/plan_auditor.py:17: DeprecationWarning: `OpenAIModel` was renamed to `OpenAIChatModel` to clearly distinguish it from `OpenAIResponsesModel` which uses OpenAI's newer Responses API. Use that unless you're using an OpenAI Chat Completions-compatible API, or require a feature that the Responses API doesn't support yet like audio.
+    return OpenAIModel(model_name, provider="openrouter")
+
+tests/nitpick/unit/test_jules_client_logic.py: 9 warnings
 tests/nitpick/unit/test_jules_session_fixes.py: 5 warnings
   /app/src/jules_session_nodes.py:27: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
     for field in current.model_fields:
+=======
+E        +  where 3 = len([[CycleManifest(id='01', status='completed', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 760711, tzinfo=datetime.timezone.utc))]])
+
+tests/unit/test_dispatcher.py:57: AssertionError
+_______________________ test_cycle_state_new_properties ________________________
+
+    def test_cycle_state_new_properties() -> None:
+        state = CycleState(cycle_id="03")
+
+        # Test default values via new properties
+>       assert state.is_refactoring is False  # type: ignore
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_state.py:56:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = CycleState(cycle_id='03', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'is_refactoring'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'CycleState' object has no attribute 'is_refactoring'
+
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
+
+tests/unit/test_e2b_executor.py::test_push_files
+  /app/src/services/e2b_executor.py:24: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    sandbox.files.write(remote_path, content)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+>>>>>>> main
+
+tests/unit/test_e2b_executor.py::test_push_files
+  /app/src/services/e2b_executor.py:24: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    sandbox.files.write(remote_path, content)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================================ tests coverage ================================
-_______________ coverage: platform linux, python 3.12.13-final-0 _______________
-
-Name                                               Stmts   Miss  Cover   Missing
---------------------------------------------------------------------------------
-src/__init__.py                                        0      0   100%
-src/agents.py                                         63     39    38%   16-19, 24-44, 49-57, 66-76, 83, 99-111, 136
-src/cli.py                                            21      0   100%
-src/config.py                                        362     92    75%   17-26, 39-75, 90-96, 102-106, 113-117, 124-128, 136, 140, 144, 148-160, 166-167, 208-210, 213-214, 577, 579, 597, 599, 604, 608-611, 618-623, 631, 637, 649, 661, 668, 689-691, 697, 701
-src/contracts/__init__.py                              0      0   100%
-src/contracts/e2b_executor.py                          9      0   100%
-src/domain_models/__init__.py                         15      0   100%
-src/domain_models/architecture.py                     11      0   100%
-src/domain_models/config.py                            6      0   100%
-src/domain_models/critic.py                            6      0   100%
-src/domain_models/execution.py                        23      0   100%
-src/domain_models/file_ops.py                         19      0   100%
-src/domain_models/fix_plan_schema.py                   8      0   100%
-src/domain_models/manifest.py                         27      0   100%
-src/domain_models/multimodal_artifact_schema.py       22     10    55%   19-28
-src/domain_models/observability_config.py             29     16    45%   32-43, 48-51
-src/domain_models/refactor.py                          6      0   100%
-src/domain_models/review.py                           28      0   100%
-src/domain_models/spec.py                             26      0   100%
-src/domain_models/tracing.py                          17      1    94%   27
-src/domain_models/uat_execution_state.py               8      0   100%
-src/domain_models/verification_schema.py              31     13    58%   20, 40, 47-62
-src/enums.py                                          32      0   100%
-src/error_messages.py                                  7      7     0%   4-18
-src/graph.py                                          90     65    28%   26-27, 31-61, 65-146, 149, 152, 156-174, 177, 181-211, 214
-src/graph_nodes.py                                   109     45    59%   68, 78, 83, 86, 89, 92, 95, 98, 101, 104, 107, 110, 113-121, 124-128, 131-135, 138-141, 144-147, 150, 153, 156, 159, 162, 165, 168, 171, 174, 177-179
-src/hash_utils.py                                     25      4    84%   15-16, 28-29
-src/interfaces.py                                      5      0   100%
-src/jules_session_graph.py                            45     12    73%   19-21, 29, 39, 46-52
-src/jules_session_nodes.py                           328    173    47%   57-60, 100-141, 146-176, 202-203, 225, 254-257, 264-265, 300-311, 341-348, 352-354, 379-385, 407-408, 421-444, 458, 466, 471-490, 499-542, 546-624
-src/jules_session_state.py                            46      0   100%
-src/messages.py                                       56     25    55%   17-18, 30, 41-42, 47, 52-53, 67, 76, 96-97, 111-112, 127, 137-138, 151-152, 157-162
-src/nodes/__init__.py                                 10      0   100%
-src/nodes/architect.py                                97     61    37%   26-49, 73-75, 97-117, 127, 134-188
-src/nodes/architect_critic.py                         33     23    30%   18-62
-src/nodes/auditor.py                                  14      6    57%   13-20
-src/nodes/coder.py                                     9      3    67%   11-14
-src/nodes/coder_critic.py                             42     32    24%   18-71
-src/nodes/committee.py                                 7      3    57%   8-11
-src/nodes/global_refactor.py                          18     10    44%   19-35
-src/nodes/master_integrator.py                        20     20     0%   1-39
-src/nodes/qa.py                                       15      6    60%   13-16, 19-22
-src/nodes/routers.py                                  67     19    72%   14-32, 78-83, 94
-src/nodes/sandbox_evaluator.py                        43     28    35%   34-100
-src/nodes/uat.py                                       9      3    67%   11-14
-src/process_runner.py                                 30     24    20%   25-62
-src/sandbox.py                                       160     41    74%   20-21, 25-26, 33-34, 38-39, 53-61, 80-87, 108-109, 133-134, 141-144, 181, 206-207, 213-218, 221-222, 242, 254-255
-src/service_container.py                              18      0   100%
-src/services/__init__.py                               5      0   100%
-src/services/artifacts.py                             14      8    43%   17-28
-src/services/ast_analyzer.py                         109     92    16%   17-18, 25-64, 72-90, 93-95, 102-104, 108-133, 137-144, 151-185, 192-211
-src/services/async_dispatcher.py                      56     32    43%   28-38, 47-48, 57-100, 104-105
-src/services/audit_orchestrator.py                    76     11    86%   30-31, 72-73, 78-79, 124-125, 145-147
-src/services/auditor_usecase.py                      154     89    42%   45-46, 63, 68, 99-102, 126-257, 271, 274-307
-src/services/coder_usecase.py                        185     46    75%   38-39, 71-77, 123, 128-133, 144, 148, 155, 166-177, 199, 214-219, 232-243, 248, 265-266, 309-313, 320-323, 345, 355-365, 407, 419
-src/services/committee_usecase.py                     50     50     0%   1-104
-src/services/conflict_manager.py                      77     77     0%   1-143
-src/services/contracts.py                             26     21    19%   16-43
-src/services/e2b_executor.py                          28     19    32%   19-24, 32-48, 54
-src/services/file_ops.py                             110     52    53%   67-74, 89, 95, 112-123, 126-137, 140-145, 153-171
-src/services/git/base.py                              37     14    62%   20-25, 35-36, 41-44, 47, 50, 53, 56-57
-src/services/git/branching.py                        111     45    59%   10-13, 17, 23-38, 55-59, 87-97, 126-136, 159-160, 180-194
-src/services/git/checkout.py                         114     54    53%   18-21, 25, 33-35, 63-72, 79-97, 101-105, 113-118, 126-134, 138-143, 147-150
-src/services/git/merging.py                          127     59    54%   18-22, 30-31, 38-39, 42-43, 46-47, 50-51, 55-56, 73-81, 94-122, 141-144, 182-183, 218-219, 241-242
-src/services/git/state.py                             56     25    55%   27-68, 79-80, 90-92
-src/services/git_ops.py                                9      0   100%
-src/services/integration_usecase.py                   63     63     0%   1-112
-src/services/jules/api.py                            127     99    22%   22-23, 26, 29, 36-50, 53-58, 74-102, 105-106, 109-113, 124-135, 139-141, 144-167, 172-203
-src/services/jules/context_builder.py                 81     68    16%   20-32, 36-46, 50-80, 84-92, 101-138
-src/services/jules/git_context.py                     42     17    60%   23-26, 39-54, 59-60
-src/services/jules/inquiry_handler.py                143     81    43%   54, 67, 72-77, 107, 113-138, 142-175, 186-221, 244, 252, 277-286
-src/services/jules_client.py                         396    186    53%   10-11, 73-74, 84, 92, 103, 107, 114-116, 128-159, 163-182, 186-191, 257-260, 276-285, 342-349, 356, 419-420, 428, 433, 452-453, 469-485, 492-506, 521-522, 527, 530-535, 541, 547, 559-564, 568-576, 586-603, 607-610, 618, 632-665, 673-737
-src/services/llm_reviewer.py                         111     51    54%   26, 36-37, 47, 52-54, 58-59, 63-64, 82, 125, 137-217, 233-240
-src/services/plan_auditor.py                          27      5    81%   15-17, 63, 112-113
-src/services/project.py                               47     30    36%   22-45, 68-89
-src/services/project_setup/dependency_manager.py      50     19    62%   27-28, 50-57, 61-78
-src/services/project_setup/permission_manager.py      77     28    64%   19-25, 35-36, 39-47, 56-57, 72-73, 75-76, 87-88, 90-91
-src/services/project_setup/template_manager.py        84     14    83%   43-44, 71-72, 84-87, 171-176
-src/services/qa_usecase.py                           146    146     0%   1-268
-src/services/refactor_usecase.py                      61     46    25%   23-31, 35-41, 48-120
-src/services/sandbox/sync.py                          31      0   100%
-src/services/self_critic_evaluator.py                 59     45    24%   16-17, 21-37, 40-65, 80-100
-src/services/tracing.py                               12      2    83%   16-17
-src/services/uat_usecase.py                           91     91     0%   1-171
-src/services/workflow.py                             499    398    20%   44-127, 138-147, 155-205, 223-225, 228-229, 297-298, 324-327, 331-333, 343-391, 395-402, 406-416, 429-455, 459-461, 471-509, 512-560, 566-630, 633-650, 656-715, 720-791, 798-820, 823-834, 837-854, 857-881, 884-890, 893-895, 898-905
-src/session_manager.py                                65      7    89%   48-50, 70, 85-86, 105
-src/state.py                                         253     29    89%   28-30, 35-37, 42-44, 144, 148, 168, 172, 200, 208, 212, 216, 220, 240, 244, 252, 256, 260, 280, 284, 288, 292, 296, 300, 316, 360, 365
-src/state_manager.py                                  94     25    73%   32-37, 55-57, 60-61, 89-91, 119, 193-211
-src/state_validators.py                               44     27    39%   11-12, 18-24, 29-35, 40-47, 57-58, 61-62
-src/tools.py                                          21     21     0%   1-48
-src/utils.py                                          72     45    38%   31-56, 65-78, 88, 93-94, 100, 112-113, 118-142, 151-160
-src/utils_sanitization.py                             11      1    91%   10
-src/validators.py                                     41      1    98%   56
---------------------------------------------------------------------------------
-TOTAL                                               6164   3020    51%
-================= 142 passed, 13 warnings in 94.44s (0:01:34) ==================
-/app/.venv/lib/python3.12/site-packages/coverage/inorout.py:561: CoverageWarning: Module dev_src was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.5/messages.html#warning-module-not-imported
-  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+=========================== short test summary info ============================
+<<<<<<< jules-16292834997286059139-f397eb97
+FAILED tests/integration/test_integration_graph.py::test_integration_graph_clean_merge
+FAILED tests/integration/test_integration_graph.py::test_integration_graph_conflict_resolution
+FAILED tests/integration/test_integration_graph.py::test_integration_graph_semantic_failure
+FAILED tests/nitpick/unit/test_config.py::test_config_env_vars_loaded - pydan...
+FAILED tests/nitpick/unit/test_config.py::test_config_defaults - AssertionErr...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_independent - Assertio...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_dependencies - As...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_completed_cycle
+===== 8 failed, 217 passed, 4 deselected, 49 warnings in 203.97s (0:03:23) =====
+=======
+FAILED tests/integration/test_coder_graph.py::test_coder_graph_structure - As...
+FAILED tests/nitpick/unit/test_config.py::test_config_env_vars_loaded - pydan...
+FAILED tests/nitpick/unit/test_config.py::test_config_defaults - AssertionErr...
+FAILED tests/unit/nodes/test_routers.py::test_route_sandbox_evaluate_failed
+FAILED tests/unit/nodes/test_routers.py::test_route_sandbox_evaluate_failed_sandbox_status
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_independent - Assertio...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_dependencies - As...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_completed_cycle
+FAILED tests/unit/test_state.py::test_cycle_state_new_properties - AttributeE...
+===== 9 failed, 223 passed, 4 deselected, 40 warnings in 187.34s (0:03:07) =====
+>>>>>>> main
