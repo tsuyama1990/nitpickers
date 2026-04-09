@@ -16,6 +16,7 @@ class ASTAnalyzer:
     ) -> None:
         self.base_dir = base_dir or settings.paths.src
         self.config = config or settings.ast_analyzer
+        self._files_cache: list[Path] | None = None
 
     def _hash_ast(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
         """
@@ -150,7 +151,10 @@ class ASTAnalyzer:
         """
         hash_to_funcs: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
-        for file_path in self._get_python_files():
+        if self._files_cache is None:
+            self._files_cache = list(self._get_python_files())
+
+        for file_path in self._files_cache:
             module = self._parse_file(file_path)
             if not module:
                 continue
@@ -191,7 +195,10 @@ class ASTAnalyzer:
         """
         complex_funcs = []
 
-        for file_path in self._get_python_files():
+        if self._files_cache is None:
+            self._files_cache = list(self._get_python_files())
+
+        for file_path in self._files_cache:
             module = self._parse_file(file_path)
             if not module:
                 continue
