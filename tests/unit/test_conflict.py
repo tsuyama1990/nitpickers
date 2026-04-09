@@ -105,3 +105,76 @@ async def test_build_conflict_package_path_traversal(
 
         with pytest.raises(ValueError, match="escapes workspace root"):
             await conflict_manager.build_conflict_package(item, unsafe_path)
+
+
+@pytest.mark.asyncio
+async def test_build_conflict_package_success(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
+    from src.config import settings
+    from src.domain_models.execution import ConflictRegistryItem
+
+    item = ConflictRegistryItem(file_path="test.py", conflict_markers=[])
+
+    with (
+        patch.object(settings.paths, "workspace_root", tmp_path),
+        patch.object(conflict_manager.runner, "run_command", new_callable=AsyncMock) as mock_run,
+    ):
+
+        def run_command_side_effect(cmd, cwd, check):
+            stage = cmd[2].split(":")[1]
+            if stage == "1":
+                return ("base_content", "", 0, False)
+            elif stage == "2":
+                return ("local_content", "", 0, False)
+            elif stage == "3":
+                return ("remote_content", "", 0, False)
+            return ("", "", 1, False)
+
+        mock_run.side_effect = run_command_side_effect
+
+        prompt = await conflict_manager.build_conflict_package(item, tmp_path)
+
+        assert "### Base (元のコード)" in prompt
+        assert "base_content" in prompt
+        assert "### Branch A の変更 (Local)" in prompt
+        assert "local_content" in prompt
+        assert "### Branch B の変更 (Remote)" in prompt
+        assert "remote_content" in prompt
+
+
+@pytest.mark.asyncio
+async def test_build_conflict_package_no_base(
+    conflict_manager: ConflictManager, tmp_path: Path
+) -> None:
+    from src.config import settings
+    from src.domain_models.execution import ConflictRegistryItem
+    import subprocess
+
+    item = ConflictRegistryItem(file_path="test.py", conflict_markers=[])
+
+    with (
+        patch.object(settings.paths, "workspace_root", tmp_path),
+        patch.object(conflict_manager.runner, "run_command", new_callable=AsyncMock) as mock_run,
+    ):
+
+        def run_command_side_effect(cmd, cwd, check):
+            stage = cmd[2].split(":")[1]
+            if stage == "1":
+                raise subprocess.CalledProcessError(128, cmd)
+            elif stage == "2":
+                return ("local_content", "", 0, False)
+            elif stage == "3":
+                return ("remote_content", "", 0, False)
+            return ("", "", 1, False)
+
+        mock_run.side_effect = run_command_side_effect
+
+        prompt = await conflict_manager.build_conflict_package(item, tmp_path)
+
+        assert "### Base (元のコード)" in prompt
+        assert "<FILE_NOT_IN_BASE>" in prompt
+        assert "### Branch A の変更 (Local)" in prompt
+        assert "local_content" in prompt
+        assert "### Branch B の変更 (Remote)" in prompt
+        assert "remote_content" in prompt

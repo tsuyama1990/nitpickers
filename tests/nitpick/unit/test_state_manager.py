@@ -238,6 +238,9 @@ class TestStateManager:
         data = json.loads(content)
         assert data["project_session_id"] == "test"
 
+        # Verify permissions (0o644)
+        assert (temp_state_file.stat().st_mode & 0o777) == 0o644
+
     def test_concurrent_updates(self, manager: StateManager, temp_state_file: Path) -> None:
         """Test that updates don't corrupt the file."""
         # Create initial manifest

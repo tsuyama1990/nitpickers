@@ -83,7 +83,7 @@ class StateManager:
 
             # Fix permissions to allow host user editing (essential for Docker usage)
             with contextlib.suppress(Exception):
-                self.STATE_FILE.chmod(0o666)
+                self.STATE_FILE.chmod(0o644)
 
             logger.debug(f"Saved manifest to {self.STATE_FILE}")
         except Exception:
