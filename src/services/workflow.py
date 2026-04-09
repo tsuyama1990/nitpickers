@@ -267,7 +267,11 @@ class WorkflowService:
         except Exception as e:
             logger.warning(f"Error checking required_envs.json: {e}")
 
-    async def run_full_pipeline(self, project_session_id: str | None = None) -> None:  # noqa: C901, PLR0915, PLR0912
+    async def run_full_pipeline(
+        self,
+        project_session_id: str | None = None,
+        parallel: bool = True,
+    ) -> None:
         """
         Orchestrates the entire 5-Phase pipeline.
         Phase 2: Parallel execution of all planned cycles.
@@ -277,8 +281,20 @@ class WorkflowService:
         self.verify_environment_and_observability()
         console.rule("[bold cyan]Starting Full Pipeline Orchestration[/bold cyan]")
 
-        mgr = StateManager()
-        manifest = mgr.load_manifest()
+        await self._run_parallel_coder_phase(project_session_id, parallel)
+        await self.run_integration_phase(project_session_id)
+        await self.run_qa_phase(project_session_id)
+
+        console.print("[bold green]Full Pipeline Execution Completed Successfully.[/bold green]")
+
+    def _get_manifest(self) -> Any:
+        mgr = StateManager(project_root=str(settings.paths.workspace_root))
+        return mgr.load_manifest()
+
+    async def _run_parallel_coder_phase(
+        self, project_session_id: str | None, parallel: bool
+    ) -> None:
+        manifest = self._get_manifest()
 
         if manifest:
             if not hasattr(manifest, "feature_branch") or not manifest.feature_branch:
@@ -300,7 +316,7 @@ class WorkflowService:
         # --- Phase 2: Parallel Coder Graph ---
         console.rule("[bold blue]Phase 2: Parallel Coder Graph[/bold blue]")
         dispatcher = AsyncDispatcher()
-        batches = dispatcher.resolve_dag(cycles_to_run)
+        batches = dispatcher.resolve_dag(cycles_to_run, parallel=parallel)
         console.print(
             f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
         )
@@ -311,18 +327,16 @@ class WorkflowService:
             console.print(
                 f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
             )
-            tasks = [
-                dispatcher.run_with_semaphore(
-                    self._run_single_cycle(
-                        c.id,
-                        resume=False,
-                        auto=True,
-                        start_iter=1,
-                        project_session_id=project_session_id,
-                    )
+            tasks = []
+            for c in batch:
+                coro = self._run_single_cycle(
+                    c.id,
+                    resume=False,
+                    auto=True,
+                    start_iter=1,
+                    project_session_id=project_session_id,
                 )
-                for c in batch
-            ]
+                tasks.append(asyncio.create_task(dispatcher.run_with_semaphore(coro)))
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for cycle, result in zip(batch, results, strict=False):
@@ -333,8 +347,12 @@ class WorkflowService:
 
             console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
 
+    async def run_integration_phase(self, project_session_id: str | None = None) -> None:
+        self.verify_environment_and_observability()
         # --- Phase 3: Integration Graph ---
         console.rule("[bold blue]Phase 3: Integration Graph[/bold blue]")
+        manifest = self._get_manifest()
+
         # Aggregate states and branches
         # In this implementation, feature_branch holds the state
         branches_to_merge = []
@@ -362,16 +380,19 @@ class WorkflowService:
                     "[bold red]Integration Phase Failed: Unresolved conflicts.[/bold red]"
                 )
                 sys.exit(1)
+            console.print("[bold green]Integration Phase Completed Successfully.[/bold green]")
         except Exception as e:
             console.print(f"[bold red]Integration Graph execution failed: {e}[/bold red]")
             sys.exit(1)
 
+    async def run_qa_phase(self, project_session_id: str | None = None) -> None:
+        self.verify_environment_and_observability()
         # --- Phase 4: QA/UAT Graph ---
         console.rule("[bold blue]Phase 4: QA/UAT Graph[/bold blue]")
         qa_graph = self.builder.build_qa_graph()
 
         initial_qa_state = CycleState(
-            cycle_id="99",
+            cycle_id=settings.dummy_qa_cycle_id if hasattr(settings, "dummy_qa_cycle_id") else "99",
             current_phase=WorkPhase.QA,
             status=FlowStatus.START,
         )
@@ -394,9 +415,7 @@ class WorkflowService:
                     f"[bold red]QA Phase Failed: {final_qa_state.get('error')}[/bold red]"
                 )
                 sys.exit(1)
-            console.print(
-                "[bold green]Full Pipeline Execution Completed Successfully.[/bold green]"
-            )
+            console.print("[bold green]QA Phase Completed Successfully.[/bold green]")
         except Exception as e:
             console.print(f"[bold red]QA Graph execution failed: {e}[/bold red]")
             sys.exit(1)
@@ -409,8 +428,7 @@ class WorkflowService:
         project_session_id: str | None,
         parallel: bool = False,
     ) -> None:
-        mgr = StateManager()
-        manifest = mgr.load_manifest()
+        manifest = self._get_manifest()
 
         if manifest:
             # We construct instances of CycleManifest for all remaining ones to feed the dispatcher
@@ -560,7 +578,11 @@ class WorkflowService:
             if auto:
                 settings.auto_approve = True
 
-            mgr = StateManager()
+            root_to_use = str(settings.paths.workspace_root)
+            console.print(
+                f"[bold blue]DEBUG: Cycle {cycle_id} initializing StateManager with root: {root_to_use}[/bold blue]"
+            )
+            mgr = StateManager(project_root=root_to_use)
             manifest = mgr.load_manifest()
 
             pid = project_session_id

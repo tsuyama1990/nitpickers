@@ -22,7 +22,7 @@ class StateManager:
     """
 
     def __init__(self, project_root: str = ".") -> None:
-        self.root = Path(project_root)
+        self.root = Path(project_root).resolve()
         self.STATE_DIR = self.root / ".nitpick"
         self.STATE_FILE = self.STATE_DIR / "project_state_local.json"
 
@@ -83,7 +83,7 @@ class StateManager:
 
             # Fix permissions to allow host user editing (essential for Docker usage)
             with contextlib.suppress(Exception):
-                self.STATE_FILE.chmod(0o666)
+                self.STATE_FILE.chmod(0o644)
 
             logger.debug(f"Saved manifest to {self.STATE_FILE}")
         except Exception:

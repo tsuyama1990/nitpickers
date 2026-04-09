@@ -15,7 +15,7 @@ def test_resolve_dag_independent() -> None:
         CycleManifest(id="02"),
         CycleManifest(id="03"),
     ]
-    batches = dispatcher.resolve_dag(manifests)
+    batches = dispatcher.resolve_dag(manifests, parallel=True)
 
     assert len(batches) == 1
     assert len(batches[0]) == 3
@@ -29,7 +29,7 @@ def test_resolve_dag_with_dependencies() -> None:
         CycleManifest(id="03", depends_on=["01"]),
         CycleManifest(id="04", depends_on=["02", "03"]),
     ]
-    batches = dispatcher.resolve_dag(manifests)
+    batches = dispatcher.resolve_dag(manifests, parallel=True)
 
     assert len(batches) == 3
     # First batch: 01
@@ -52,7 +52,7 @@ def test_resolve_dag_with_completed_cycle() -> None:
         CycleManifest(id="02", depends_on=["01"]),
         CycleManifest(id="03", depends_on=["01"]),
     ]
-    batches = dispatcher.resolve_dag(manifests)
+    batches = dispatcher.resolve_dag(manifests, parallel=True)
 
     assert len(batches) == 1
     # 01 is completed, so 02 and 03 are ready immediately
