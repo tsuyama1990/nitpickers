@@ -4,165 +4,187 @@ rootdir: /app
 configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
 plugins: langsmith-0.7.23, base-url-2.1.0, playwright-0.7.2, pytest_httpserver-1.1.5, asyncio-1.3.0, cov-7.1.0, anyio-4.13.0, pyfakefs-6.1.6, hypothesis-6.151.10, logfire-4.31.0, respx-0.22.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 15 items
+collected 236 items / 4 deselected / 232 selected
 
-tests/unit/test_state.py ....F                                           [ 33%]
-tests/nodes/test_routers.py F.......                                     [ 86%]
-tests/e2e/test_coder_graph.py FF                                         [100%]
+tests/integration/test_coder_graph.py F                                  [  0%]
+tests/integration/test_tracing_integration.py ..                         [  1%]
+tests/nitpick/integration/clients/test_jules_api.py ...                  [  2%]
+tests/nitpick/integration/test_git_robustness.py ..                      [  3%]
+tests/nitpick/integration/test_pipeline_orchestration.py .               [  3%]
+tests/nitpick/unit/test_audit_orchestrator.py ...                        [  5%]
+tests/nitpick/unit/test_audit_polling.py .                               [  5%]
+tests/nitpick/unit/test_auto_merge.py .                                  [  6%]
+tests/nitpick/unit/test_cli_reconstruction.py ...                        [  7%]
+tests/nitpick/unit/test_committee_logic.py .                             [  7%]
+tests/nitpick/unit/test_config.py FF....                                 [ 10%]
+tests/nitpick/unit/test_file_patcher.py ...                              [ 11%]
+tests/nitpick/unit/test_gen_cycles_options.py .........                  [ 15%]
+tests/nitpick/unit/test_git_checkout.py .                                [ 15%]
+tests/nitpick/unit/test_git_operations.py .............                  [ 21%]
+tests/nitpick/unit/test_git_ops_merge.py ...                             [ 22%]
+tests/nitpick/unit/test_git_state_persistence.py ...                     [ 24%]
+tests/nitpick/unit/test_graph.py .                                       [ 24%]
+tests/nitpick/unit/test_jules_client.py ....                             [ 26%]
+tests/nitpick/unit/test_jules_client_logic.py ..                         [ 27%]
+tests/nitpick/unit/test_jules_session_fixes.py .....                     [ 29%]
+tests/nitpick/unit/test_jules_session_state.py ...                       [ 30%]
+tests/nitpick/unit/test_llm_reviewer.py ..                               [ 31%]
+tests/nitpick/unit/test_phase_transition.py .                            [ 31%]
+tests/nitpick/unit/test_plan_auditor.py ..                               [ 32%]
+tests/nitpick/unit/test_project_init_robustness.py .                     [ 33%]
+tests/nitpick/unit/test_project_manifest.py ...                          [ 34%]
+tests/nitpick/unit/test_resume_logic.py ..                               [ 35%]
+tests/nitpick/unit/test_robustness_fixes.py ...                          [ 36%]
+tests/nitpick/unit/test_routers.py .....                                 [ 38%]
+tests/nitpick/unit/test_sandbox.py ..........                            [ 43%]
+tests/nitpick/unit/test_session_manager.py .........                     [ 46%]
+tests/nitpick/unit/test_session_restart.py ..                            [ 47%]
+tests/nitpick/unit/test_session_reuse.py ...                             [ 49%]
+tests/nitpick/unit/test_state_manager.py ..............                  [ 55%]
+tests/nitpick/unit/test_utils.py ..                                      [ 56%]
+tests/nitpick/unit/test_validators.py .........                          [ 59%]
+tests/nitpick/unit/test_workflow_orchestration.py ...                    [ 61%]
+tests/unit/nodes/test_routers.py F.......F                               [ 65%]
+tests/unit/project_setup/test_template_manager.py ........               [ 68%]
+tests/unit/test_ast_analyzer.py ....                                     [ 70%]
+tests/unit/test_conflict.py .....                                        [ 72%]
+tests/unit/test_dispatcher.py FFF...                                     [ 75%]
+tests/unit/test_domain_models.py .....                                   [ 77%]
+tests/unit/test_e2b_executor.py ....                                     [ 78%]
+tests/unit/test_integration_usecase.py ...                               [ 80%]
+tests/unit/test_jules_session_state.py .........                         [ 84%]
+tests/unit/test_messages.py .....                                        [ 86%]
+tests/unit/test_permission_manager.py ...                                [ 87%]
+tests/unit/test_refactor_usecase.py ...                                  [ 88%]
+tests/unit/test_sandbox_evaluator.py ..                                  [ 89%]
+tests/unit/test_self_critic_evaluator.py ...                             [ 90%]
+tests/unit/test_state.py ...F.                                           [ 93%]
+tests/unit/test_state_validators.py ...                                  [ 94%]
+tests/unit/test_tracing_service.py ...                                   [ 95%]
+tests/unit/test_utils.py ....                                            [ 97%]
+tests/unit/test_utils_sanitization.py ......                             [100%]
 
-=================================== FAILURES ===================================
-____________ test_cycle_state_new_properties_backward_compatibility ____________
-
-    def test_cycle_state_new_properties_backward_compatibility() -> None:
-        from src.state import CycleState
-
-        state = CycleState(cycle_id="03")
-
-        # Set new properties via CycleState
->       state.is_refactoring = True
-        ^^^^^^^^^^^^^^^^^^^^
-
-tests/unit/test_state.py:69:
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-.venv/lib/python3.12/site-packages/pydantic/main.py:998: in __setattr__
-    setattr_handler(self, name, value)  # call here to not memo on possibly unknown fields
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-model = CycleState(cycle_id='03', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
-name = 'is_refactoring', val = True
-
->       'validate_assignment': lambda model, name, val: model.__pydantic_validator__.validate_assignment(model, name, val),  # pyright: ignore[reportAssignmentType]
-                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'private': _private_setattr_handler,
-        'cached_property': lambda model, name, val: model.__dict__.__setitem__(name, val),
-        'extra_known': lambda model, name, val: _object_setattr(model, name, val),
-    }
-E   pydantic_core._pydantic_core.ValidationError: 1 validation error for CycleState
-E   is_refactoring
-E     Object has no attribute 'is_refactoring' [type=no_such_attribute, input_value=True, input_type=bool]
-E       For further information visit https://errors.pydantic.dev/2.11/v/no_such_attribute
-
-.venv/lib/python3.12/site-packages/pydantic/main.py:114: ValidationError
-______________________ test_route_sandbox_evaluate_failed ______________________
-
-    def test_route_sandbox_evaluate_failed() -> None:
-        state = CycleState(cycle_id="01")
-        state.status = FlowStatus.FAILED
-        assert (
-            route_sandbox_evaluate(state) == "impl_coder_node"
-        )  # Looking at the code for green phase routing, but wait, if it's failed in Green phase, it goes to impl_coder_node according to the code, but SPEC says: "If state.get("sandbox_status") == "failed", return "failed"." I will assert the SPEC behavior to make it fail against current code.
-
-        # Asserting spec behavior to force test failure on current code
 >       assert route_sandbox_evaluate(state) == "failed"
 E       AssertionError: assert 'impl_coder_node' == 'failed'
 E
 E         - failed
 E         + impl_coder_node
 
-tests/nodes/test_routers.py:16: AssertionError
-_________________________ test_coder_graph_happy_path __________________________
+tests/unit/nodes/test_routers.py:107: AssertionError
+_________________________ test_resolve_dag_independent _________________________
 
-    def test_coder_graph_happy_path() -> None:
-        services = MagicMock()
-        sandbox = MagicMock()
-        jules = MagicMock()
+    def test_resolve_dag_independent() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01"),
+            CycleManifest(id="02"),
+            CycleManifest(id="03"),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
 
->       builder = GraphBuilder(services, sandbox, jules)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>       assert len(batches) == 1
+E       AssertionError: assert 3 == 1
+E        +  where 3 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 746284, tzinfo=datetime.timezone.utc))]])
 
-tests/e2e/test_coder_graph.py:13:
+tests/unit/test_dispatcher.py:20: AssertionError
+______________________ test_resolve_dag_with_dependencies ______________________
+
+    def test_resolve_dag_with_dependencies() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01"),
+            CycleManifest(id="02", depends_on=["01"]),
+            CycleManifest(id="03", depends_on=["01"]),
+            CycleManifest(id="04", depends_on=["02", "03"]),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
+
+>       assert len(batches) == 3
+E       AssertionError: assert 4 == 3
+E        +  where 4 = len([[CycleManifest(id='01', status='planned', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None, ...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 753706, tzinfo=datetime.timezone.utc))]])
+
+tests/unit/test_dispatcher.py:34: AssertionError
+____________________ test_resolve_dag_with_completed_cycle _____________________
+
+    def test_resolve_dag_with_completed_cycle() -> None:
+        dispatcher = AsyncDispatcher()
+        manifests = [
+            CycleManifest(id="01", status="completed"),
+            CycleManifest(id="02", depends_on=["01"]),
+            CycleManifest(id="03", depends_on=["01"]),
+        ]
+        batches = dispatcher.resolve_dag(manifests)
+
+>       assert len(batches) == 1
+E       AssertionError: assert 3 == 1
+E        +  where 3 = len([[CycleManifest(id='01', status='completed', branch_name=None, jules_session_id=None, current_iteration=1, pr_url=None...=datetime.timezone.utc), updated_at=datetime.datetime(2026, 3, 31, 11, 11, 15, 760711, tzinfo=datetime.timezone.utc))]])
+
+tests/unit/test_dispatcher.py:57: AssertionError
+_______________________ test_cycle_state_new_properties ________________________
+
+    def test_cycle_state_new_properties() -> None:
+        state = CycleState(cycle_id="03")
+
+        # Test default values via new properties
+>       assert state.is_refactoring is False  # type: ignore
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests/unit/test_state.py:56:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-src/graph.py:22: in __init__
-    self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
-                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
-self = <src.graph_nodes.CycleNodes object at 0x7fb295ef8e90>
-sandbox_runner = <MagicMock id='140404997123744'>
-jules_client = <MagicMock id='140404997128112'>
+self = CycleState(cycle_id='03', committee=CommitteeState(current_auditor_index=1, current_auditor_review_count=1, iteration_...one, langgraph_step=None, langgraph_node=None, langgraph_triggers=None, langgraph_path=None, langgraph_checkpoint=None)
+item = 'is_refactoring'
 
-    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
-        self.sandbox = sandbox_runner
-        self.jules = jules_client
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
 
-        from src.service_container import ServiceContainer
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
 
-        container = ServiceContainer.default()
+            if pydantic_extra:
+                try:
+                    return pydantic_extra[item]
+                except KeyError as exc:
+                    raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'CycleState' object has no attribute 'is_refactoring'
 
-        self.git = (
-            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
-        )
-        self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
-        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
+.venv/lib/python3.12/site-packages/pydantic/main.py:991: AttributeError
 
->       self._architect = ArchitectNodes(jules=self.jules, git=self.git)
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ArchitectNodes
-E       jules
-E         Input should be an instance of JulesClient [type=is_instance_of, input_value=<MagicMock id='140404997128112'>, input_type=MagicMock]
-E           For further information visit https://errors.pydantic.dev/2.11/v/is_instance_of
-
-src/graph_nodes.py:55: ValidationError
------------------------------- Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
-_______________________ test_coder_graph_rejection_loop ________________________
-
-    def test_coder_graph_rejection_loop() -> None:
-        services = MagicMock()
-        sandbox = MagicMock()
-        jules = MagicMock()
-
->       builder = GraphBuilder(services, sandbox, jules)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-tests/e2e/test_coder_graph.py:87:
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-src/graph.py:22: in __init__
-    self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
-                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
-
-self = <src.graph_nodes.CycleNodes object at 0x7fb295ee5fa0>
-sandbox_runner = <MagicMock id='140404996325744'>
-jules_client = <MagicMock id='140404996329680'>
-
-    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
-        self.sandbox = sandbox_runner
-        self.jules = jules_client
-
-        from src.service_container import ServiceContainer
-
-        container = ServiceContainer.default()
-
-        self.git = (
-            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
-        )
-        self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
-        self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)
-
->       self._architect = ArchitectNodes(jules=self.jules, git=self.git)
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ArchitectNodes
-E       jules
-E         Input should be an instance of JulesClient [type=is_instance_of, input_value=<MagicMock id='140404996329680'>, input_type=MagicMock]
-E           For further information visit https://errors.pydantic.dev/2.11/v/is_instance_of
-
-src/graph_nodes.py:55: ValidationError
------------------------------- Captured log call -------------------------------
-WARNING  AC-CDD:jules_client.py:76 Could not load Google Credentials: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Falling back to API Key if available.
-=============================== warnings summary ===============================
-tests/e2e/test_coder_graph.py::test_coder_graph_happy_path
-tests/e2e/test_coder_graph.py::test_coder_graph_happy_path
-tests/e2e/test_coder_graph.py::test_coder_graph_rejection_loop
-tests/e2e/test_coder_graph.py::test_coder_graph_rejection_loop
-  /app/src/services/plan_auditor.py:17: DeprecationWarning: `OpenAIModel` was renamed to `OpenAIChatModel` to clearly distinguish it from `OpenAIResponsesModel` which uses OpenAI's newer Responses API. Use that unless you're using an OpenAI Chat Completions-compatible API, or require a feature that the Responses API doesn't support yet like audio.
-    return OpenAIModel(model_name, provider="openrouter")
+tests/unit/test_e2b_executor.py::test_push_files
+  /app/src/services/e2b_executor.py:24: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    sandbox.files.write(remote_path, content)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 =========================== short test summary info ============================
-FAILED tests/unit/test_state.py::test_cycle_state_new_properties_backward_compatibility
-FAILED tests/nodes/test_routers.py::test_route_sandbox_evaluate_failed - Asse...
-FAILED tests/e2e/test_coder_graph.py::test_coder_graph_happy_path - pydantic_...
-FAILED tests/e2e/test_coder_graph.py::test_coder_graph_rejection_loop - pydan...
-================== 4 failed, 11 passed, 4 warnings in 11.09s ===================
+FAILED tests/integration/test_coder_graph.py::test_coder_graph_structure - As...
+FAILED tests/nitpick/unit/test_config.py::test_config_env_vars_loaded - pydan...
+FAILED tests/nitpick/unit/test_config.py::test_config_defaults - AssertionErr...
+FAILED tests/unit/nodes/test_routers.py::test_route_sandbox_evaluate_failed
+FAILED tests/unit/nodes/test_routers.py::test_route_sandbox_evaluate_failed_sandbox_status
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_independent - Assertio...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_dependencies - As...
+FAILED tests/unit/test_dispatcher.py::test_resolve_dag_with_completed_cycle
+FAILED tests/unit/test_state.py::test_cycle_state_new_properties - AttributeE...
+===== 9 failed, 223 passed, 4 deselected, 40 warnings in 187.34s (0:03:07) =====
