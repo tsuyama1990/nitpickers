@@ -167,9 +167,7 @@ def _detect_package_dir() -> str:
 
 
 class PathsConfig(BaseModel):
-    workspace_root: Path = Field(
-        default_factory=lambda: Path("/home/tomo/project/TheJTC")
-    )
+    workspace_root: Path = Field(default_factory=lambda: Path("/home/tomo/project/TheJTC"))
     documents_dir: Path = Field(
         default_factory=lambda: Path("/home/tomo/project/TheJTC/dev_documents")
     )

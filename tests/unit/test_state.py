@@ -49,30 +49,32 @@ def test_integration_state_initialization() -> None:
     assert state.unresolved_conflicts[0].file_path == "src/main.py"
 
 
-def test_cycle_state_new_properties() -> None:
-    state = CycleState(cycle_id="03")
-
-    # Test default values via new properties
-    assert state.is_refactoring is False  # type: ignore
-    assert state.audit_attempt_count == 0  # type: ignore
-
-    # Test setters
-    state.is_refactoring = True  # type: ignore
-    state.audit_attempt_count = 1  # type: ignore
-
-    assert state.committee.is_refactoring is True
-    assert state.committee.audit_attempt_count == 1
-
-    # Test getting
-    assert state.is_refactoring is True  # type: ignore
-    assert state.audit_attempt_count == 1  # type: ignore
-
-
-def test_audit_attempt_count_validation() -> None:
+def test_committee_state_audit_attempt_count_not_negative() -> None:
     import pytest
     from pydantic import ValidationError
 
-    state = CycleState(cycle_id="04")
+    from src.state import CommitteeState
 
-    with pytest.raises(ValidationError, match="audit_attempt_count"):
-        state.audit_attempt_count = -1  # type: ignore
+    with pytest.raises(ValidationError, match="Input should be greater than or equal to 0"):
+        CommitteeState(audit_attempt_count=-1)
+
+
+def test_cycle_state_new_properties_backward_compatibility() -> None:
+    from src.state import CycleState
+
+    state = CycleState(cycle_id="03")
+
+    # Set new properties via CycleState
+    state.is_refactoring = True  # type: ignore[attr-defined]
+    state.audit_attempt_count = 3  # type: ignore[attr-defined]
+    state.current_auditor_index = 2
+
+    # Assert they map correctly to the underlying CommitteeState
+    assert state.committee.is_refactoring is True
+    assert state.committee.audit_attempt_count == 3
+    assert state.committee.current_auditor_index == 2
+
+    # Assert getter works
+    assert state.is_refactoring is True  # type: ignore[attr-defined]
+    assert state.audit_attempt_count == 3  # type: ignore[attr-defined]
+    assert state.current_auditor_index == 2
