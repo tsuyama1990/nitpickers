@@ -30,8 +30,11 @@ from .jules.context_builder import JulesContextBuilder
 from .jules.git_context import JulesGitContext
 from .jules.inquiry_handler import JulesInquiryHandler
 
-litellm.success_callback = ["langsmith"]
-litellm.failure_callback = ["langsmith"]
+if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
+    if "langsmith" not in litellm.success_callback:
+        litellm.success_callback.append("langsmith")
+    if "langsmith" not in litellm.failure_callback:
+        litellm.failure_callback.append("langsmith")
 
 console = Console()
 
@@ -179,11 +182,18 @@ class JulesClient:
         return str(resp.get("name", ""))
 
     async def continue_session(self, session_name: str, prompt: str) -> dict[str, Any]:
-        """Continues an existing session."""
+        """Continues an existing session using LangGraph-based monitoring."""
         logger.info(f"Continuing Session {session_name} with info...")
-        await self._send_message(session_name, prompt)
+        try:
+            await self._send_message(session_name, prompt)
+        except Exception as e:
+            logger.error(f"Failed to send message to session {session_name}: {repr(e)}")
+            raise
+
         logger.info(f"Waiting for Jules to process feedback for {session_name}...")
-        result = await self.wait_for_completion_legacy(session_name)
+        
+        # We must wait for completion via LangGraph which handles inquiries and stale states.
+        result = await self.wait_for_completion(session_name)
         result["session_name"] = session_name
         return result
 
@@ -191,18 +201,14 @@ class JulesClient:
         self, session_name: str, require_plan_approval: bool = False
     ) -> dict[str, Any]:
         """Wait for Jules session completion using LangGraph state management.
-        This method uses LangGraph to manage the complex state transitions of:
-        - Monitoring session progress
-        - Handling inquiries (questions from Jules)
-        - Validating completion state
-        - Checking for PR creation
-        - Requesting manual PR creation if needed
-        - Waiting for PR with state re-validation
+        
+        This method is now used for both new sessions and session continuations.
+        It has been hardened against the 'Stale COMPLETED' race condition.
         """
         from langchain_core.runnables import RunnableConfig
 
         from src.jules_session_graph import build_jules_session_graph
-        from src.jules_session_state import JulesSessionState
+        from src.jules_session_state import JulesSessionState, SessionStatus
 
         self.console.print(
             f"[bold green]Jules is working... (Session: {session_name})[/bold green]"
@@ -213,7 +219,13 @@ class JulesClient:
 
         session_url = self._get_session_url(session_name)
 
-        # Initialize processed IDs
+        # 1. Check current state. If COMPLETED, we MUST wait for an IN_PROGRESS transition.
+        current_state = await self.get_session_state(session_name)
+        expect_transition = current_state == "COMPLETED"
+        if expect_transition:
+            logger.info(f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work...")
+
+        # 2. Initialize processed IDs (important for ignoring previous Turn's activities)
         processed_ids: set[str] = set()
         processed_completion_ids: set[str] = set()
         await self._initialize_processed_ids(
@@ -234,6 +246,8 @@ class JulesClient:
             fallback_max_wait=settings.jules.wait_for_pr_timeout_seconds,
             processed_activity_ids=processed_ids,
             processed_completion_ids=processed_completion_ids,
+            jules_state=current_state,
+            expect_new_work=expect_transition,
         )
 
         # Run graph
@@ -267,6 +281,7 @@ class JulesClient:
             return {
                 "status": "success",
                 "pr_url": _get(final_state, "pr_url"),
+                "branch_name": _get(final_state, "branch_name"),
                 "raw": _get(final_state, "raw_data"),
             }
 
@@ -280,72 +295,6 @@ class JulesClient:
 
         msg = f"Session ended in unexpected state: {status}"
         raise JulesSessionError(msg)
-
-    async def wait_for_completion_legacy(
-        self, session_name: str, require_plan_approval: bool = False
-    ) -> dict[str, Any]:
-        """Legacy polling-based implementation (kept for reference/fallback)."""
-        processed_activity_ids: set[str] = set()
-        start_time = asyncio.get_running_loop().time()
-
-        self.console.print(
-            f"[bold green]Jules is working... (Session: {session_name})[/bold green]"
-        )
-        self.console.print(
-            "[dim]Type your message and press Enter at any time to chat with Jules.[/dim]"
-        )
-
-        session_url = self._get_session_url(session_name)
-        await self._initialize_processed_ids(session_url, processed_activity_ids)
-
-        last_activity_count = 0
-        plan_rejection_count = [0]  # Use list to persist across iterations
-        max_plan_rejections = settings.jules.max_plan_rejections
-        async with httpx.AsyncClient() as client:
-            while True:
-                if asyncio.get_running_loop().time() - start_time > self.timeout:
-                    tmsg = "Timed out waiting for Jules to complete."
-                    raise JulesTimeoutError(tmsg)
-
-                try:
-                    response = await client.get(session_url, headers=self._get_headers())
-                    response.raise_for_status()
-                    data = response.json()
-
-                    if data:
-                        state = data.get("state")
-                        logger.info(f"Jules session state: {state}")
-                        await self.inquiry_handler.process_inquiries(
-                            client,
-                            session_url,
-                            state,
-                            processed_activity_ids,
-                            plan_rejection_count,
-                            max_plan_rejections,
-                            require_plan_approval,
-                        )
-                        success_result = await self._check_success_state(
-                            client, session_url, data, state
-                        )
-                        if success_result:
-                            return success_result
-                        self._check_failure_state(data, state)
-
-                    last_activity_count = await self._log_activities_count(
-                        client, session_url, last_activity_count
-                    )
-                    await self._handle_manual_input(session_url)
-
-                except httpx.RequestError as e:
-                    logger.warning(f"Polling loop network error (transient): {e}")
-                except JulesSessionError:
-                    raise
-                except JulesApiError as e:
-                    logger.warning(f"Poll check failed (transient): {e}")
-                except Exception as e:
-                    logger.warning(f"Polling loop unexpected error: {e}")
-
-                await self._sleep(self.poll_interval)
 
     def _get_session_url(self, session_name: str) -> str:
         if session_name.startswith("sessions/"):
@@ -537,18 +486,25 @@ class JulesClient:
         url = f"{session_url}{settings.jules.send_message_action}"
         payload = {"prompt": content}
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, json=payload, headers=self._get_headers())
-            resp.raise_for_status()
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            try:
+                resp = await client.post(url, json=payload, headers=self._get_headers())
+                resp.raise_for_status()
 
-            if resp.status_code == httpx.codes.OK:
-                self.console.print("[dim]Message sent.[/dim]")
-                logger.info(f"DEBUG: Message sent successfully to {url}")
-            else:
-                self.console.print(
-                    f"[bold red]Failed to send message: {resp.status_code}[/bold red]"
-                )
-                logger.error(f"SendMessage failed: {resp.text}")
+                if resp.status_code == httpx.codes.OK:
+                    self.console.print("[dim]Message sent.[/dim]")
+                    logger.info(f"DEBUG: Message sent successfully to {url}")
+                else:
+                    self.console.print(
+                        f"[bold red]Failed to send message: {resp.status_code}[/bold red]"
+                    )
+                    logger.error(f"SendMessage failed with status {resp.status_code}: {resp.text}")
+            except httpx.HTTPStatusError as e:
+                logger.error(f"Jules API HTTP error {e.response.status_code} for {url}: {e.response.text}")
+                raise
+            except Exception as e:
+                logger.error(f"Unexpected error sending message to {url}: {repr(e)}")
+                raise
 
     async def get_latest_plan(self, session_id: str) -> dict[str, Any] | None:
         """Fetches the latest 'planGenerated' activity."""

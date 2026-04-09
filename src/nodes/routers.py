@@ -9,24 +9,14 @@ def check_coder_outcome(state: CycleState) -> str:
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
         return str(FlowStatus.FAILED.value)
 
-    if getattr(state, "final_fix", False):
+    if status == FlowStatus.COMPLETED or getattr(state, "final_fix", False):
         return str(FlowStatus.COMPLETED.value)
 
+    # Always route to implementation node, bypassing the TDD test loop
     if status == FlowStatus.CODER_RETRY:
-        return (
-            "test_coder_node"
-            if getattr(state.test, "tdd_phase", None) == "red"
-            else "impl_coder_node"
-        )
+        return "impl_coder_node"
 
     if status == FlowStatus.READY_FOR_AUDIT:
-        # Route to self_critic only on the first attempt
-        if (
-            state.committee.iteration_count <= 1
-            and state.committee.audit_attempt_count == 0
-            and state.committee.current_auditor_index == 1
-        ):
-            return "self_critic"
         return settings.node_sandbox_evaluate
 
     return settings.node_sandbox_evaluate
@@ -35,21 +25,14 @@ def check_coder_outcome(state: CycleState) -> str:
 def route_sandbox_evaluate(state: CycleState) -> str:
     status = getattr(state, "status", None)
 
-    if getattr(state.test, "tdd_phase", None) == "red":
-        if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
-            # The tests failed as expected, we can proceed to write the implementation
-            return "impl_coder_node"
-        # If tests passed when they should fail, route back to test_coder_node to write failing tests
-        if status == FlowStatus.READY_FOR_AUDIT:
-            return "test_coder_node"
-
-    # Green phase routing logic
+    # Simplified routing enforcing 20-step linear path
     if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
         return "impl_coder_node"
 
+    if status == FlowStatus.POST_AUDIT_REFACTOR:
+        return "impl_coder_node"
+
     if status == FlowStatus.READY_FOR_AUDIT:
-        if state.committee.is_refactoring:
-            return "final_critic"
         return "auditor"
 
     return "impl_coder_node"
@@ -96,6 +79,13 @@ def route_qa(state: CycleState) -> str:
     if status == FlowStatus.REJECTED:
         return "retry_fix"
     return "failed"
+
+
+def route_architect_session(state: CycleState) -> str:
+    status = getattr(state, "status", None)
+    if status == FlowStatus.ARCHITECT_SESSION_COMPLETED:
+        return "architect_critic"
+    return "end"
 
 
 def route_architect_critic(state: CycleState) -> str:

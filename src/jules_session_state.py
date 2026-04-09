@@ -54,6 +54,7 @@ class JulesSessionState(BaseModel):
 
     # PR tracking
     pr_url: str | None = None
+    branch_name: str | None = None
 
     # Fallback PR creation tracking
     fallback_elapsed_seconds: int = 0
@@ -72,6 +73,7 @@ class JulesSessionState(BaseModel):
     # Flags for routing decisions
     has_recent_activity: bool = False
     completion_validated: bool = False
+    expect_new_work: bool = False
 
     # Stale (silent) Jules detection
     last_jules_state_change_time: float = 0.0  # loop time when jules_state last changed

@@ -8,8 +8,7 @@ from rich.console import Console
 from src.config import settings
 from src.domain_models import CycleManifest
 from src.enums import FlowStatus, WorkPhase
-from src.enums import FlowStatus, WorkPhase
-from src.services.git_ops import GitManager, workspace_lock
+from src.services.git_ops import workspace_lock
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
@@ -45,7 +44,7 @@ class CoderUseCase:
     #  Public entry point                                                  #
     # ------------------------------------------------------------------ #
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
         """Routes the coder session through its many possible modes."""
         cycle_id = state.cycle_id
         iteration = state.iteration_count
@@ -81,6 +80,7 @@ class CoderUseCase:
         # --- B. Handle session REUSE (Retry Fix, Post-Audit Refactor, or TDD Failure) ---
         if not result and state.status in {
             FlowStatus.RETRY_FIX,
+            FlowStatus.REJECTED,
             FlowStatus.POST_AUDIT_REFACTOR,
             FlowStatus.TDD_FAILED,
         }:
@@ -123,13 +123,13 @@ class CoderUseCase:
 
             except Exception as e:
                 console.print(f"[red]{phase_label} Session Failed: {e}[/red]")
-                return self._handle_session_failure(cycle_manifest, cycle_id, str(e), mgr)
+                return await self._handle_session_failure(cycle_manifest, cycle_id, str(e), mgr)
 
         # --- D. Post-Session Processing (Success Handling & Self-Critic) ---
         if result and (result.get("status") == "success" or result.get("pr_url")):
             # Self-Critic phase: initial PR only OR post-audit refactor
             # CRITICAL: This triggers for the very first PR in a cycle AND the final polish PR.
-            is_initial_pr = iteration <= 1 and state.status != FlowStatus.RETRY_FIX
+            is_initial_pr = iteration <= 1 and state.status not in {FlowStatus.RETRY_FIX, FlowStatus.REJECTED}
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
             if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
@@ -140,24 +140,47 @@ class CoderUseCase:
 
             # If we just finished a post-audit refactor, we are COMPLETED for this cycle
             pr_val = result.get("pr_url")
-            session_update = (
-                state.session.model_copy(update={"pr_url": pr_val}) if pr_val else state.session
-            )
+            branch_val = result.get("branch_name")
+
+            session_updates = {}
+            if pr_val:
+                session_updates["pr_url"] = pr_val
+            if branch_val:
+                session_updates["branch_name"] = branch_val
+
+            session_update = state.session.model_copy(update=session_updates) if session_updates else state.session
+
+            # Update the cycle's feature branch if a new one was created by Jules
+            if cycle_manifest:
+                mgr.update_cycle_state(
+                    cycle_id,
+                    session_restart_count=0,
+                    pr_url=pr_val,
+                    branch_name=branch_val
+                )
 
             if is_post_audit_refactor:
-                return {"status": FlowStatus.COMPLETED, "session": session_update}
+                return {
+                    "status": FlowStatus.COMPLETED,
+                    "session": session_update,
+                    "branch_name": branch_val,
+                }
 
-            return {"status": FlowStatus.READY_FOR_AUDIT, "session": session_update}
+            return {
+                "status": FlowStatus.READY_FOR_AUDIT,
+                "session": session_update,
+                "branch_name": branch_val,
+            }
 
         # --- E. Failure Handling ---
         if result and result.get("status") == "failed":
-            return self._handle_session_failure(
+            return await self._handle_session_failure(
                 cycle_manifest, cycle_id, result.get("error", "Unknown error"), mgr
             )
 
         return {"status": FlowStatus.FAILED, "error": "Jules failed to produce PR"}
 
-    def _build_instruction(
+    def _build_instruction(  # noqa: C901
         self,
         cycle_id: str,
         current_phase: WorkPhase | str | None,
@@ -228,7 +251,11 @@ class CoderUseCase:
         cycle_id = state.cycle_id
         last_audit = state.audit_result
         # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan OR TDD Failure
-        is_retry_audit = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        is_retry_audit = (
+            state.status in {FlowStatus.RETRY_FIX, FlowStatus.REJECTED}
+            and last_audit
+            and last_audit.feedback
+        )
         is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
         is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
         is_tdd_failure = state.status == FlowStatus.TDD_FAILED and state.error
@@ -353,7 +380,6 @@ class CoderUseCase:
             await self.jules._send_message(session_url, critic_instruction)
 
             console.print("[dim]Waiting for Coder Critic to finish review and push fixes...[/dim]")
-            await asyncio.sleep(10)
 
             return dict(await self.jules.wait_for_completion(jules_session_name))
         except Exception as e:
@@ -382,40 +408,45 @@ class CoderUseCase:
         console.print(
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
-        try:
-            from src.utils_sanitization import sanitize_for_llm
+        max_attempts = 2
+        for attempt in range(1, max_attempts + 1):
+            try:
+                from src.utils_sanitization import sanitize_for_llm
 
-            feedback_template = settings.get_prompt_content(
-                settings.template_files.audit_feedback_message
-            )
-            if not feedback_template:
-                feedback_template = "{{feedback}}"
+                feedback_template = settings.get_prompt_content(
+                    settings.template_files.audit_feedback_message
+                )
+                if not feedback_template:
+                    feedback_template = "{{feedback}}"
 
-            safe_feedback = sanitize_for_llm(feedback)
-            feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
+                safe_feedback = sanitize_for_llm(feedback)
+                feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
 
-            # Continue session sends the message and waits for completion
-            result = await self.jules.continue_session(session_id, feedback_msg)
-            if result and (result.get("status") == "success" or result.get("pr_url")):
-                return dict(result)
+                # Continue session sends the message and waits for completion
+                result = await self.jules.continue_session(session_id, feedback_msg)
+                if result and (result.get("status") == "success" or result.get("pr_url")):
+                    return dict(result)
 
-            console.print(
-                "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
-            )
-
-        except Exception as e:
-            console.print(
-                f"[yellow]Failed to send feedback to existing session: {e}. Creating new session...[/yellow]"
-            )
-        else:
-            return None
+                console.print(
+                    "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
+                )
+            except Exception as e:
+                if attempt < max_attempts:
+                    console.print(
+                        f"[yellow]Failed to send feedback (attempt {attempt}/{max_attempts}): {e!r}. Retrying...[/yellow]"
+                    )
+                    await asyncio.sleep(2)  # Short sleep before retry
+                    continue
+                console.print(
+                    f"[yellow]Failed to send feedback after {max_attempts} attempts: {e!r}. Creating new session...[/yellow]"
+                )
         return None
 
     # ------------------------------------------------------------------ #
     #  Utility helpers                                                     #
     # ------------------------------------------------------------------ #
 
-    def _handle_session_failure(
+    async def _handle_session_failure(
         self, cycle_manifest: Any, cycle_id: str, error_msg: str, mgr: StateManager
     ) -> dict[str, Any]:
         """Handle session failures and manage restart counting."""
@@ -425,6 +456,14 @@ class CoderUseCase:
 
             if restart_count < max_restarts:
                 new_restart_count = restart_count + 1
+
+                # Add jittered exponential backoff if the error looks like a temporary rate/concurrency limit
+                if "400" in error_msg or "FAILED_PRECONDITION" in error_msg:
+                    import random
+                    backoff = (2 ** new_restart_count) + random.uniform(0.5, 2.0)  # noqa: S311
+                    console.print(f"[yellow]Jules API reported precondition failure. Backing off for {backoff:.1f}s...[/yellow]")
+                    await asyncio.sleep(backoff)
+
                 console.print(
                     f"[yellow]Restarting session (attempt {new_restart_count}/{max_restarts + 1})...[/yellow]"
                 )

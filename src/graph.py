@@ -45,10 +45,17 @@ class GraphBuilder:
 
         workflow.add_edge(START, "architect_session")
 
-        # from architect_session to architect_critic instead of END
-        workflow.add_edge("architect_session", "architect_critic")
+        # from architect_session to architect_critic only if successful
+        workflow.add_conditional_edges(
+            "architect_session",
+            self.nodes.route_architect_session,
+            {
+                "architect_critic": "architect_critic",
+                "end": END,
+            },
+        )
 
-        # from architect_critic to END or back to architect_critic
+        # from architect_critic to END or back to architect_session
         workflow.add_conditional_edges(
             "architect_critic",
             self.nodes.route_architect_critic,
@@ -67,7 +74,6 @@ class GraphBuilder:
             raise ValueError(msg)
 
         required_nodes = [
-            "test_coder_node",
             "impl_coder_node",
             "sandbox_evaluate_node",
             "auditor_node",
@@ -84,7 +90,6 @@ class GraphBuilder:
 
         from src.config import settings
 
-        workflow.add_node("test_coder_node", self.nodes.test_coder_node)
         workflow.add_node("impl_coder_node", self.nodes.impl_coder_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
@@ -92,21 +97,8 @@ class GraphBuilder:
         workflow.add_node("refactor_node", self.nodes.refactor_node)
         workflow.add_node("final_critic_node", self.nodes.final_critic_node)
 
-        workflow.add_edge(START, "test_coder_node")
+        workflow.add_edge(START, "impl_coder_node")
 
-        # Conditional edge from test_coder_node
-        workflow.add_conditional_edges(
-            "test_coder_node",
-            self.nodes.check_coder_outcome,
-            {
-                "self_critic": "self_critic_node",
-                settings.node_sandbox_evaluate: settings.node_sandbox_evaluate,
-                FlowStatus.FAILED.value: END,
-                FlowStatus.COMPLETED.value: END,
-                "test_coder_node": "test_coder_node",
-                "impl_coder_node": "impl_coder_node",
-            },
-        )
 
         # Conditional edge from impl_coder_node
         workflow.add_conditional_edges(
@@ -118,20 +110,18 @@ class GraphBuilder:
                 FlowStatus.FAILED.value: END,
                 FlowStatus.COMPLETED.value: END,
                 "impl_coder_node": "impl_coder_node",
-                "test_coder_node": "test_coder_node",
             },
         )
 
         # self_critic_node -> sandbox_evaluate
         workflow.add_edge("self_critic_node", settings.node_sandbox_evaluate)
 
-        # Sandbox Evaluate -> Auditor, final_critic_node, failed, test_coder_node or impl_coder_node
+        # Sandbox Evaluate -> Auditor, final_critic_node, failed, or impl_coder_node
         workflow.add_conditional_edges(
             settings.node_sandbox_evaluate,
             self.nodes.route_sandbox_evaluate,
             {
                 "auditor": "auditor",
-                "test_coder_node": "test_coder_node",
                 "impl_coder_node": "impl_coder_node",
                 "final_critic": "final_critic_node",
             },
@@ -142,7 +132,7 @@ class GraphBuilder:
             "auditor",
             self.nodes.route_auditor,
             {
-                "reject": "test_coder_node",
+                "reject": "impl_coder_node",
                 "next_auditor": "auditor",
                 "pass_all": "refactor_node",
                 "failed": END,

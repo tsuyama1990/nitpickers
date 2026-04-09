@@ -59,6 +59,7 @@ class SessionPersistenceState(BaseModel):
     feature_branch: str | None = None
     integration_branch: str | None = None
     is_session_finalized: bool = False
+    branch_name: str | None = None
 
 
 class AuditState(BaseModel):
@@ -123,6 +124,7 @@ class CycleState(BaseModel):
     concurrent_dependencies: list[str] = Field(default_factory=list)
     final_fix: bool = Field(default=False)
     qa_retry_count: int = 0
+    branch_name: str | None = None
 
     # Legacy/Optional Fields - kept at root level for legacy backward compatibility easily
     sandbox_id: str | None = None
@@ -204,6 +206,10 @@ class CycleState(BaseModel):
     @property
     def feature_branch(self) -> str | None:
         return self.session.feature_branch
+
+    @feature_branch.setter
+    def feature_branch(self, value: str | None) -> None:
+        self.session.feature_branch = value
 
     @feature_branch.setter
     def feature_branch(self, value: str | None) -> None:

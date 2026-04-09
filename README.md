@@ -43,7 +43,7 @@ flowchart TD
     %% Phase2: Coder Graph (Parallel: Cycle 1...N)
     subgraph Phase2 ["Phase 2: Coder Graph (Parallel: Cycle 1...N)"]
         direction TB
-        CoderSession["JULES: coder_session\n(Test/Implementation)"]
+        CoderSession["JULES: coder_session\n(Implementation & PR)"]
         SelfCritic["JULES: self_critic\n(Pre-Sandbox Polish)"]
         SandboxEval{"LOCAL: sandbox_evaluate\n(Linter / Unit Test)"}
         AuditorNode{"OpenRouter: auditor_node\n(Serial: Auditor 1→2→3)"}

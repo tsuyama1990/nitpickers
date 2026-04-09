@@ -38,9 +38,11 @@ class SandboxEvaluatorNodes:
             async with workspace_lock:
                 # JIT Synchronization: Ensure local workspace matches the cycle's branch
                 git = GitManager()
-                if state.feature_branch:
-                    console.print(f"[dim]Synchronizing workspace to branch: {state.feature_branch}[/dim]")
-                    await git.checkout_branch(state.feature_branch)
+                # Prioritize cycle-specific branch (Jules PR) over base feature branch
+                target_branch = state.branch_name or state.feature_branch
+                if target_branch:
+                    console.print(f"[dim]Synchronizing workspace to branch: {target_branch}[/dim]")
+                    await git.checkout_branch(target_branch)
                     await git.pull_changes()
 
                 timeout_limit = settings.sandbox.timeout
@@ -111,10 +113,12 @@ class SandboxEvaluatorNodes:
                 "error": f"Sandbox error: {e!s}",
             }
         else:
-            console.print("[bold green]All structural checks passed. Ready for Audit.[/bold green]")
+            console.print("[bold green]All structural checks passed.[/bold green]")
             test_update = state.test.model_copy(update={"structural_report": report})
+            original_status = getattr(state, "status", None)
+            new_status = FlowStatus.POST_AUDIT_REFACTOR if original_status == FlowStatus.POST_AUDIT_REFACTOR else FlowStatus.READY_FOR_AUDIT
             return {
-                "status": FlowStatus.READY_FOR_AUDIT,
+                "status": new_status,
                 "test": test_update,
                 "error": None,
             }

@@ -23,11 +23,14 @@ class LLMReviewer:
 
         # Enable LangSmith supervision natively through litellm if configured
         if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
-            litellm.success_callback = ["langsmith"]
+            if "langsmith" not in litellm.success_callback:
+                litellm.success_callback.append("langsmith")
+            if "langsmith" not in litellm.failure_callback:
+                litellm.failure_callback.append("langsmith")
 
         # We rely on litellm's environment variable handling for API keys.
-        # Ensure litellm is verbose enough for debugging if needed, but keep logs clean by default.
-        litellm.suppress_instrumentation = True
+        # Ensure litellm is verbose enough for debugging if needed.
+        # DO NOT set suppress_instrumentation = True as it can interfere with callbacks.
 
     async def _validate_paths(
         self, target_files: dict[str, str], context_docs: dict[str, str]
@@ -100,8 +103,8 @@ class LLMReviewer:
                             "content": (
                                 "You are an automated code reviewer. You must strictly follow the "
                                 "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issues. Limit your 'issues' array to a "
-                                "MAXIMUM of 10 issues to prevent excessively large JSON generation."
+                                "IMPORTANT: Report only the most critical issue. Limit your 'issues' array to a "
+                                "MAXIMUM of 1 issue to prevent excessively large JSON generation and context overflow."
                             ),
                         },
                         {"role": "user", "content": prompt},
@@ -111,16 +114,24 @@ class LLMReviewer:
                 )
 
                 content_str = response.choices[0].message.content
+                if content_str is None:
+                    # Specific log for missing content without raising but triggering retry or fallback
+                    logger.warning(f"LLMReviewer: received empty content (None) for model {model}")
+                    logger.debug(f"DEBUG Response Object: {response}")
+                    
+                    if attempt == 2:
+                        return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API returned empty content. \n  - Location: `Unknown` (Response: {response})\n  - Concrete Fix: Check if the model {model} is available and supports the request."
+                    continue # Try again
 
                 # Parse the response safely into our robust Pydantic model
                 report = AuditorReport.model_validate_json(content_str)
                 return self._format_as_markdown(report)
 
             except (ValidationError, Exception) as e:
-                logger.warning(f"LLMReviewer attempt {attempt + 1} failed to parse JSON: {e}")
+                logger.warning(f"LLMReviewer attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
-                    logger.error("LLMReviewer failed completely after 3 attempts.")
-                    return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
+                    logger.error(f"LLMReviewer failed completely after 3 attempts. Last error: {e}")
+                    return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API generated invalid JSON or failed. ({e})\n  - Location: `Unknown` (Line Unknown)\n  - Concrete Fix: Ensure your changes are simple and try again."
 
         return "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: Review loop failed unexpectedly\n  - Location: `Unknown`\n  - Concrete Fix: Ensure your changes are simple and try again."
 
@@ -190,14 +201,21 @@ class LLMReviewer:
                 )
 
                 content_str = response.choices[0].message.content
-                if not content_str:
-                    pass  # We'll just try again, it's inside the loop
-                else:
-                    return FixPlanSchema.model_validate_json(content_str)
+                if content_str is None:
+                    logger.warning(f"diagnose_uat_failure: received empty content (None) for model {model}")
+                    if attempt == 2:
+                        from src.domain_models.fix_plan_schema import FilePatch
+                        return FixPlanSchema(
+                            defect_description=f"SYSTEM_ERROR: LLM API returned empty content for model {model}.",
+                            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please check model availability.")]
+                        )
+                    continue
+
+                return FixPlanSchema.model_validate_json(content_str)
             except (ValidationError, Exception) as e:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
-                    logger.error("diagnose_uat_failure failed completely after 3 attempts.")
+                    logger.error(f"diagnose_uat_failure failed completely after 3 attempts. Last error: {e}")
                     from src.domain_models.fix_plan_schema import FilePatch
 
                     # Fallback schema to not break the pipeline entirely, though we ideally raise

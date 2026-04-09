@@ -49,6 +49,8 @@ def _load_env() -> None:
         "OPENROUTER_",
         "OPENAI_",
         "ANTHROPIC_",
+        "LANGCHAIN_",
+        "LANGSMITH_",
     )
     safe_key_pattern = re.compile(r"^[A-Za-z0-9_]+$")
     env_vars = dotenv_values(_nitpick_env)
@@ -474,11 +476,11 @@ class ASTAnalyzerConfig(BaseModel):
 
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
-        default="openrouter/stepfun/step-3.5-flash:free",
+        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
-        default="openrouter/stepfun/step-3.5-flash:free",
+        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
@@ -486,12 +488,12 @@ class AgentsConfig(BaseSettings):
 
 class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
-        default="openrouter/stepfun/step-3.5-flash:free",
+        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         alias="NITPICK_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="openrouter/stepfun/step-3.5-flash:free",
+        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         alias="NITPICK_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )

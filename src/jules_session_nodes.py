@@ -60,7 +60,7 @@ class JulesSessionNodes:
                 return self._compute_diff(_state_in, state)
 
             try:
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(timeout=60.0) as client:
                     # Fetch session state
                     response = await client.get(
                         state.session_url, headers=self.client._get_headers()
@@ -187,11 +187,17 @@ class JulesSessionNodes:
                     # (All states except COMPLETED and FAILED reset the flag)
                     if state.jules_state not in ["COMPLETED", "FAILED"]:
                         state.completion_validated = False
+                        state.expect_new_work = False  # Work has started!
 
-                    # Check for completion (official Jules API only has COMPLETED, not SUCCEEDED)
+                    # Check for completion
                     if state.jules_state == "COMPLETED" and not state.completion_validated:
-                        state.status = SessionStatus.VALIDATING_COMPLETION
-                        return self._compute_diff(_state_in, state)
+                        # If we just sent a message and Jules is still in COMPLETED, 
+                        # we must wait for it to actually start working.
+                        if state.expect_new_work:
+                            logger.info("Session still in stale COMPLETED state. Waiting for work to start...")
+                        else:
+                            state.status = SessionStatus.VALIDATING_COMPLETION
+                            return self._compute_diff(_state_in, state)
 
                     # Update activity count
                     await self._update_activity_count(state, client)
@@ -346,6 +352,12 @@ class JulesSessionNodes:
             # If we found a STALE completion, we must NOT fall back to checking PRs
             # because we are likely in a feedback loop where state hasn't updated yet.
             if stale_completion_detected:
+                # Force wait if we explicitly expect new work
+                if state.expect_new_work:
+                    logger.info("Stale completion detected while expecting new work. Returning to monitor.")
+                    state.status = SessionStatus.MONITORING
+                    return self._compute_diff(_state_in, state)
+
                 # Allow proceed if we observed a valid IN_PROGRESS -> COMPLETED transition
                 # This handles cases where Jules re-completes but doesn't emit a new completion event
                 if state.previous_jules_state == "IN_PROGRESS":
@@ -400,16 +412,18 @@ class JulesSessionNodes:
         # PR can ONLY be in session outputs (Jules API spec)
         for output in state.raw_data.get("outputs", []):
             if "pullRequest" in output:
-                pr_url = output["pullRequest"].get("url")
+                pr = output["pullRequest"]
+                pr_url = pr.get("url")
                 if pr_url:
                     console.print(f"\n[bold green]PR Created: {pr_url}[/bold green]")
                     state.pr_url = pr_url
+                    state.branch_name = pr.get("headRef")
                     state.status = SessionStatus.SUCCESS
                     return self._compute_diff(_state_in, state)
 
         # Re-fetch session to get fresh outputs (raw_data may be stale)
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.get(
                     state.session_url, headers=self.client._get_headers(), timeout=10.0
                 )
@@ -417,11 +431,13 @@ class JulesSessionNodes:
                     fresh_data = resp.json()
                     for output in fresh_data.get("outputs", []):
                         if "pullRequest" in output:
-                            pr_url = output["pullRequest"].get("url")
+                            pr = output["pullRequest"]
+                            pr_url = pr.get("url")
                             if pr_url:
                                 console.print(f"\n[bold green]PR Created: {pr_url}[/bold green]")
                                 logger.info(f"Found PR in fresh session outputs: {pr_url}")
                                 state.pr_url = pr_url
+                                state.branch_name = pr.get("headRef")
                                 state.raw_data = fresh_data
                                 state.status = SessionStatus.SUCCESS
                                 return self._compute_diff(_state_in, state)
@@ -487,7 +503,7 @@ class JulesSessionNodes:
         # AUTO_CREATE_PR mode should create the PR automatically. If we reach this node
         # it means check_pr didn't find a PR, but the data might have been stale.
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 resp = await client.get(
                     state.session_url, headers=self.client._get_headers(), timeout=10.0
                 )
@@ -541,7 +557,7 @@ class JulesSessionNodes:
             return self._compute_diff(_state_in, state)
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 # Re-check session state (Jules might have gone back to work)
                 session_resp = await client.get(
                     state.session_url, headers=self.client._get_headers()

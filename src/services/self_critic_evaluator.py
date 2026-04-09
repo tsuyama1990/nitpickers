@@ -110,6 +110,6 @@ class SelfCriticEvaluator:
             console.print(f"[dim red]{tb}[/dim red]")
             return CriticResult(
                 is_approved=False,
-                vulnerabilities=[f"Exception during self-critic evaluation: {e!s}\n{tb}"],
+                vulnerabilities=["SYSTEM_ERROR: Self-critic evaluation encountered a network timeout or system failure. Please remain on standby while the system retries."],
                 suggestions=[],
             )

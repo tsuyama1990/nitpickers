@@ -16,6 +16,7 @@ from src.nodes import (
     UxAuditorNodes,
     check_coder_outcome,
     route_architect_critic,
+    route_architect_session,
     route_auditor,
     route_final_critic,
     route_qa,
@@ -173,6 +174,9 @@ class CycleNodes(IGraphNodes):
 
     def route_architect_critic(self, state: CycleState) -> str:
         return route_architect_critic(state)
+
+    def route_architect_session(self, state: CycleState) -> str:
+        return route_architect_session(state)
 
     def route_auditor(self, state: CycleState) -> str:
         return route_auditor(state)

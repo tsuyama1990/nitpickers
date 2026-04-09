@@ -134,13 +134,21 @@ class GitCheckoutMixin(BaseGitManager):
             raise
 
     async def push_branch(self, branch: str) -> None:
-        """Pushes the specified branch to origin."""
+        """Pushes the specified branch to origin, skipping if already pushed in this batch."""
+        from src.services.git_ops import _pushed_commit_hashes
+
+        current_hash = await self.get_current_commit()
+        if _pushed_commit_hashes.get(branch) == current_hash:
+            logger.debug(f"Skipping redundant push for branch {branch} (hash {current_hash} already pushed)")
+            return
+
         if os.environ.get("GITHUB_TOKEN"):
             with contextlib.suppress(Exception):
                 await self.runner.run_command([self.gh_cmd, "auth", "setup-git"], check=False)
 
         logger.info(f"Pushing branch {branch} to origin...")
         await self._run_git(["push", "-u", "origin", branch])
+        _pushed_commit_hashes[branch] = current_hash
 
     async def get_diff(self, target_branch: str | None = None) -> str:
         """Returns the diff between HEAD and target branch."""

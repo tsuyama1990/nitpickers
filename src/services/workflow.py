@@ -69,8 +69,16 @@ class WorkflowService:
                 console.print(f"[red]Architect Phase Failed:[/red] {final_state.get('error')}")
                 sys.exit(1)
             else:
-                session_id_val = final_state.get("project_session_id")
-                integration_branch = final_state.get("integration_branch")
+                # final_state can be a dict or object in LangGraph depending on integration
+                # It is safest to pull directly from the session sub-model
+                session_obj = final_state.get("session") if isinstance(final_state, dict) else getattr(final_state, "session", None)
+                
+                if session_obj:
+                    session_id_val = getattr(session_obj, "project_session_id", None)
+                    integration_branch = getattr(session_obj, "integration_branch", None)
+                else:
+                    session_id_val = final_state.get("project_session_id")
+                    integration_branch = final_state.get("integration_branch")
 
                 # In new strategy, integration_branch IS the feature branch
                 feature_branch = integration_branch
@@ -461,12 +469,16 @@ class WorkflowService:
                 console.print(
                     f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
                 )
-                tasks = [
-                    dispatcher.run_with_semaphore(
-                        self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)
+                tasks = []
+                for idx, c in enumerate(batch):
+                    if idx > 0:
+                        # Stagger starts slightly to avoid hammering Jules API and Git concurrently
+                        await asyncio.sleep(0.5)
+                    tasks.append(
+                        dispatcher.run_with_semaphore(
+                            self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)
+                        )
                     )
-                    for c in batch
-                ]
                 await asyncio.gather(*tasks)
                 console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
 

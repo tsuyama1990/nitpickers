@@ -172,7 +172,7 @@ class JulesApiClient:
         all_activities: list[dict[str, Any]] = []
         page_token = ""
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 while True:
                     url = f"{self.BASE_URL}/{session_id_path}/{settings.jules.activities_path}"
                     params = {"pageSize": str(settings.jules.page_size)}

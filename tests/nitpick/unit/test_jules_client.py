@@ -80,7 +80,7 @@ async def test_wait_for_completion_sucess_first_try(
     }
     mock_httpx.get.return_value = mock_response
 
-    result = await mock_client.wait_for_completion_legacy("sessions/123")
+    result = await mock_client.wait_for_completion("sessions/123")
     assert result["pr_url"] == "https://pr"
 
     # Should not sleep if immediate success
@@ -118,7 +118,7 @@ async def test_wait_for_completion_loop_success(
 
     mock_httpx.get.side_effect = get_side_effect
 
-    result = await mock_client.wait_for_completion_legacy("sessions/123")
+    result = await mock_client.wait_for_completion("sessions/123")
     assert result["pr_url"] == "https://pr"
     assert mock_client._sleep.call_count >= expected_calls
 
@@ -202,7 +202,7 @@ async def test_interactive_inquiry_handling(
     mock_httpx.post.return_value.status_code = 200
     mock_httpx.post.return_value.raise_for_status = MagicMock()
 
-    result = await mock_client.wait_for_completion_legacy("sessions/123")
+    result = await mock_client.wait_for_completion("sessions/123")
 
     assert result["pr_url"] == "https://pr"
     assert mock_client.manager_agent.run.called

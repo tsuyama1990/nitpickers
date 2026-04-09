@@ -8,6 +8,7 @@ from .qa import QaNodes
 from .routers import (
     check_coder_outcome,
     route_architect_critic,
+    route_architect_session,
     route_auditor,
     route_final_critic,
     route_qa,
@@ -28,6 +29,7 @@ __all__ = [
     "UxAuditorNodes",
     "check_coder_outcome",
     "route_architect_critic",
+    "route_architect_session",
     "route_auditor",
     "route_final_critic",
     "route_qa",
