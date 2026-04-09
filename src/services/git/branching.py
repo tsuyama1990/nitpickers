@@ -16,27 +16,6 @@ class GitBranchingMixin(BaseGitManager):
         """Returns the URL of the 'origin' remote."""
         return await self._run_git(["config", "--get", "remote.origin.url"])
 
-    async def create_working_branch(self, prefix: str, branch_id: str) -> str:
-        """
-        Creates and checks out a feature branch: feature/{prefix}-{branch_id}.
-        """
-        branch_name = f"feature/{prefix}-{branch_id}"
-        logger.info(f"Switching to branch {branch_name}...")
-
-        # Check if branch exists
-        _stdout, _stderr, code, _ = await self.runner.run_command(
-            [self.git_cmd, "rev-parse", "--verify", branch_name], check=False
-        )
-
-        if code == 0:
-            logger.info(f"Branch {branch_name} exists. Checking out...")
-            await self._run_git(["checkout", branch_name])
-        else:
-            logger.info(f"Branch does not exist. Creating {branch_name}...")
-            await self._run_git(["checkout", "-b", branch_name])
-
-        return branch_name
-
     async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
         """Automatically commits changes if the working directory is dirty."""
         # Check for uncommitted changes
