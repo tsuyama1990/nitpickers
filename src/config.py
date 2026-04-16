@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -170,7 +171,7 @@ def _detect_package_dir() -> str:
 
 
 class PathsConfig(BaseModel):
-    workspace_root: Path = Field(default_factory=lambda: Path.cwd())
+    workspace_root: Path = Field(default_factory=Path.cwd)
     documents_dir: Path = Field(
         default_factory=lambda: Path.cwd() / "dev_documents"
     )
@@ -687,6 +688,11 @@ class Settings(BaseSettings):
             return package_template_path
 
         return user_path
+
+    @functools.cache  # noqa: B019
+    def read_template(self, name: str) -> str:
+        """Read and cache template content."""
+        return self.get_template(name).read_text(encoding="utf-8")
 
     def get_prompt_content(self, filename: str, default: str = "") -> str:
         """Reads prompt content."""

@@ -83,7 +83,7 @@ class SelfCriticEvaluator:
         console.print(
             f"[bold magenta]Invoking Self-Critic Evaluator ({template_name})...[/bold magenta]"
         )
-        critic_instruction = settings.get_template(template_name).read_text()
+        critic_instruction = settings.read_template(template_name)
 
         # Simple template variable substitution
         for key, val in kwargs.items():
