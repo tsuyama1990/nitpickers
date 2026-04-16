@@ -187,11 +187,11 @@ class JulesClient:
         try:
             await self._send_message(session_name, prompt)
         except Exception as e:
-            logger.error(f"Failed to send message to session {session_name}: {repr(e)}")
+            logger.error(f"Failed to send message to session {session_name}: {e!r}")
             raise
 
         logger.info(f"Waiting for Jules to process feedback for {session_name}...")
-        
+
         # We must wait for completion via LangGraph which handles inquiries and stale states.
         result = await self.wait_for_completion(session_name)
         result["session_name"] = session_name
@@ -201,14 +201,14 @@ class JulesClient:
         self, session_name: str, require_plan_approval: bool = False
     ) -> dict[str, Any]:
         """Wait for Jules session completion using LangGraph state management.
-        
+
         This method is now used for both new sessions and session continuations.
         It has been hardened against the 'Stale COMPLETED' race condition.
         """
         from langchain_core.runnables import RunnableConfig
 
         from src.jules_session_graph import build_jules_session_graph
-        from src.jules_session_state import JulesSessionState, SessionStatus
+        from src.jules_session_state import JulesSessionState
 
         self.console.print(
             f"[bold green]Jules is working... (Session: {session_name})[/bold green]"
@@ -223,7 +223,9 @@ class JulesClient:
         current_state = await self.get_session_state(session_name)
         expect_transition = current_state == "COMPLETED"
         if expect_transition:
-            logger.info(f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work...")
+            logger.info(
+                f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work..."
+            )
 
         # 2. Initialize processed IDs (important for ignoring previous Turn's activities)
         processed_ids: set[str] = set()
@@ -500,10 +502,12 @@ class JulesClient:
                     )
                     logger.error(f"SendMessage failed with status {resp.status_code}: {resp.text}")
             except httpx.HTTPStatusError as e:
-                logger.error(f"Jules API HTTP error {e.response.status_code} for {url}: {e.response.text}")
+                logger.error(
+                    f"Jules API HTTP error {e.response.status_code} for {url}: {e.response.text}"
+                )
                 raise
             except Exception as e:
-                logger.error(f"Unexpected error sending message to {url}: {repr(e)}")
+                logger.error(f"Unexpected error sending message to {url}: {e!r}")
                 raise
 
     async def get_latest_plan(self, session_id: str) -> dict[str, Any] | None:

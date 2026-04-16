@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 from src.domain_models import AuditorReport, FixPlanSchema, UatExecutionState
 from src.utils import logger
+from src.utils_json import extract_json_from_text
 
 
 class LLMReviewer:
@@ -13,6 +14,7 @@ class LLMReviewer:
     Direct LLM Client for conducting static code reviews.
     Uses litellm to communicate with various LLM providers (OpenRouter, Gemini, etc.).
     """
+
 
     def __init__(self, sandbox_runner: object | None = None) -> None:
         # sandbox_runner is accepted for dependency injection compatibility
@@ -92,6 +94,20 @@ class LLMReviewer:
         # specific prompt construction with strict separation
         prompt = self._construct_prompt(target_files, context_docs, instruction)
 
+        # Estimate tokens (approx 4 chars per token)
+        estimated_tokens = len(prompt) // 4
+        logger.info(f"LLMReviewer: estimated payload size: {estimated_tokens} tokens")
+
+        if estimated_tokens > 100000:  # Threshold for most common models
+            logger.warning(
+                f"LLMReviewer: extremely large payload detected ({estimated_tokens} tokens). This may cause timeouts or 500 errors on some providers."
+            )
+
+        # Schema injection to guarantee correct JSON structure
+        import json
+
+        schema_prompt = json.dumps(AuditorReport.model_json_schema(), indent=2)
+
         # Retry logic (up to 2 retries, total 3 attempts)
         for attempt in range(3):
             try:
@@ -103,14 +119,16 @@ class LLMReviewer:
                             "content": (
                                 "You are an automated code reviewer. You must strictly follow the "
                                 "provided instructions and only review the target code. You MUST return valid JSON. "
-                                "IMPORTANT: Report only the most critical issue. Limit your 'issues' array to a "
-                                "MAXIMUM of 1 issue to prevent excessively large JSON generation and context overflow."
+                                f"Your response MUST exactly match the following JSON schema:\n```json\n{schema_prompt}\n```\n"
+                                "IMPORTANT: Provide a comprehensive review. Report at least 3 critical issues if they exist, "
+                                "but limit your 'issues' array to a MAXIMUM of 10 issues to prevent context overflow. "
+                                "Keep your 'thought' field EXTREMELY concise (max 2 sentences) to ensure the JSON structure is completed within the token limit."
                             ),
                         },
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.0,  # Deterministic output for reviews
-                    max_tokens=8192,  # Prevent generating astronomically huge JSON strings that get truncated
+                    max_tokens=16384,  # Increased to prevent JSON truncation on large reviews
                 )
 
                 content_str = response.choices[0].message.content
@@ -118,13 +136,14 @@ class LLMReviewer:
                     # Specific log for missing content without raising but triggering retry or fallback
                     logger.warning(f"LLMReviewer: received empty content (None) for model {model}")
                     logger.debug(f"DEBUG Response Object: {response}")
-                    
+
                     if attempt == 2:
                         return f"-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: SYSTEM_ERROR: LLM API returned empty content. \n  - Location: `Unknown` (Response: {response})\n  - Concrete Fix: Check if the model {model} is available and supports the request."
-                    continue # Try again
+                    continue  # Try again
 
                 # Parse the response safely into our robust Pydantic model
-                report = AuditorReport.model_validate_json(content_str)
+                clean_json = extract_json_from_text(content_str)
+                report = AuditorReport.model_validate_json(clean_json)
                 return self._format_as_markdown(report)
 
             except (ValidationError, Exception) as e:
@@ -202,20 +221,31 @@ class LLMReviewer:
 
                 content_str = response.choices[0].message.content
                 if content_str is None:
-                    logger.warning(f"diagnose_uat_failure: received empty content (None) for model {model}")
+                    logger.warning(
+                        f"diagnose_uat_failure: received empty content (None) for model {model}"
+                    )
                     if attempt == 2:
                         from src.domain_models.fix_plan_schema import FilePatch
+
                         return FixPlanSchema(
                             defect_description=f"SYSTEM_ERROR: LLM API returned empty content for model {model}.",
-                            patches=[FilePatch(target_file="Unknown", git_diff_patch="Please check model availability.")]
+                            patches=[
+                                FilePatch(
+                                    target_file="Unknown",
+                                    git_diff_patch="Please check model availability.",
+                                )
+                            ],
                         )
                     continue
 
-                return FixPlanSchema.model_validate_json(content_str)
+                clean_json = extract_json_from_text(content_str)
+                return FixPlanSchema.model_validate_json(clean_json)
             except (ValidationError, Exception) as e:
                 logger.warning(f"diagnose_uat_failure attempt {attempt + 1} failed: {e}")
                 if attempt == 2:
-                    logger.error(f"diagnose_uat_failure failed completely after 3 attempts. Last error: {e}")
+                    logger.error(
+                        f"diagnose_uat_failure failed completely after 3 attempts. Last error: {e}"
+                    )
                     from src.domain_models.fix_plan_schema import FilePatch
 
                     # Fallback schema to not break the pipeline entirely, though we ideally raise

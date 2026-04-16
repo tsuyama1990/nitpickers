@@ -7,6 +7,7 @@ Before your work is submitted to the external strict Auditor, you must criticall
 1. **SELF-CORRECTION**: Do NOT just output an audit report to me. **YOU MUST FIX THE CODE YOURSELF.** If you find any issues during this self-review, use your tools to modify the files, run tests, and ensure everything is perfect.
 2. **BE STRICT**: The external Auditor is extremely unforgiving. Catch your own mistakes now.
 
+
 **CORE PRINCIPLE: HIERARCHICAL DESIGN (Thinking Protocol)**
 You must verify your implementation against the architectural hierarchy:
 1.  **Global Vision** (`SYSTEM_ARCHITECTURE.md`): Does the code respect the global boundaries and design patterns?

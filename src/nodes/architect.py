@@ -86,14 +86,12 @@ class ArchitectNodes(BaseNode):
 
         session_name = result.get("session_name")
         if session_name and result.get("status") == "running":
-            console.print(f"[bold blue]Architect Session {session_name} created. Waiting for completion...[/bold blue]")
+            console.print(
+                f"[bold blue]Architect Session {session_name} created. Waiting for completion...[/bold blue]"
+            )
             result = await self.jules.wait_for_completion(session_name)
 
-        if (
-            result.get("status") == "success"
-            and result.get("pr_url")
-            and session_name
-        ):
+        if result.get("status") == "success" and result.get("pr_url") and session_name:
             pr_url = result["pr_url"]
 
             session_update = state.session.model_copy(

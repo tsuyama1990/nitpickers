@@ -113,9 +113,22 @@ class CommitteeUseCase:
                 "last_feedback_time": time.time(),
             }
 
+        # --- Final Fallback: Budget Exhausted ---
+        # If we reach here and final_fix is ALREADY True, it means we've already done the polish.
+        # We must transition to the next phase (final_critic or completed).
+        if getattr(state, "final_fix", False):
+            console.print(
+                "[bold green]Final Polish complete. Moving to Final Review.[/bold green]"
+            )
+            return {"status": FlowStatus.READY_FOR_AUDIT}
+
+        round_count = (
+            state.current_auditor_index - 1
+        ) * settings.REVIEWS_PER_AUDITOR + state.current_auditor_review_count
         console.print(
-            "[bold yellow]Final Auditor limit reached. Fixing code then Merging.[/bold yellow]"
+            f"[bold red]Final Auditor budget reached ({round_count} rounds). Fixing code one last time then Merging.[/bold red]"
         )
+
         committee_update = state.committee.model_copy(
             update={
                 "iteration_count": current_iter + 1,
@@ -125,4 +138,5 @@ class CommitteeUseCase:
             "final_fix": True,
             "committee": committee_update,
             "status": FlowStatus.RETRY_FIX,
+            "last_feedback_time": time.time(),
         }

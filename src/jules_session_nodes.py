@@ -143,12 +143,6 @@ class JulesSessionNodes:
 
                     # Check for failure
                     if state.jules_state == "FAILED":
-                        import json
-
-                        logger.error(
-                            f"Jules Session FAILED. Response: {json.dumps(data, indent=2)}"
-                        )
-
                         # Per Jules API spec, the failure reason is in the 'sessionFailed'
                         # Activity's 'reason' field, NOT in the Session resource itself.
                         # The Session resource has no 'error' field.
@@ -158,6 +152,8 @@ class JulesSessionNodes:
                             if reason:
                                 error_msg = reason
                                 break
+
+                        logger.error(f"Jules Session FAILED. Reason: {error_msg}")
 
                         # Resilience: Check if a PR was created despite the failure
                         # Jules API: PR is in session outputs only (not in Activity types)
@@ -191,10 +187,12 @@ class JulesSessionNodes:
 
                     # Check for completion
                     if state.jules_state == "COMPLETED" and not state.completion_validated:
-                        # If we just sent a message and Jules is still in COMPLETED, 
+                        # If we just sent a message and Jules is still in COMPLETED,
                         # we must wait for it to actually start working.
                         if state.expect_new_work:
-                            logger.info("Session still in stale COMPLETED state. Waiting for work to start...")
+                            logger.info(
+                                "Session still in stale COMPLETED state. Waiting for work to start..."
+                            )
                         else:
                             state.status = SessionStatus.VALIDATING_COMPLETION
                             return self._compute_diff(_state_in, state)
@@ -354,7 +352,9 @@ class JulesSessionNodes:
             if stale_completion_detected:
                 # Force wait if we explicitly expect new work
                 if state.expect_new_work:
-                    logger.info("Stale completion detected while expecting new work. Returning to monitor.")
+                    logger.info(
+                        "Stale completion detected while expecting new work. Returning to monitor."
+                    )
                     state.status = SessionStatus.MONITORING
                     return self._compute_diff(_state_in, state)
 

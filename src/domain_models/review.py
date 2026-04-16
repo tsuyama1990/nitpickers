@@ -15,6 +15,7 @@ class ReviewIssue(BaseModel):
         "Architecture",
         "Type Safety",
         "Logic Error",
+        "Test Coverage",
         "Other",
     ] = Field(description="Issue category. Be highly sensitive to 'Hardcoding'.")
     severity: Literal["fatal", "warning"] = Field(

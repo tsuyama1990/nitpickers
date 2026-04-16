@@ -109,14 +109,18 @@ class SandboxEvaluatorNodes:
         except Exception as e:
             console.print(f"[bold red]Execution Error in Verification Gate: {e}[/bold red]")
             return {
-                "status": FlowStatus.TDD_FAILED,
+                "status": FlowStatus.FAILED,
                 "error": f"Sandbox error: {e!s}",
             }
         else:
             console.print("[bold green]All structural checks passed.[/bold green]")
             test_update = state.test.model_copy(update={"structural_report": report})
             original_status = getattr(state, "status", None)
-            new_status = FlowStatus.POST_AUDIT_REFACTOR if original_status == FlowStatus.POST_AUDIT_REFACTOR else FlowStatus.READY_FOR_AUDIT
+            new_status = (
+                FlowStatus.POST_AUDIT_REFACTOR
+                if original_status == FlowStatus.POST_AUDIT_REFACTOR
+                else FlowStatus.READY_FOR_AUDIT
+            )
             return {
                 "status": new_status,
                 "test": test_update,

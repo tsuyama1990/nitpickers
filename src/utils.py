@@ -117,7 +117,9 @@ class KeepAwake:
         # Check if systemd-inhibit exists
         if not shutil.which("systemd-inhibit"):
             if os.environ.get("DOCKER_CONTAINER") == "true":
-                logger.debug("systemd-inhibit not found (running in Docker). Sleep inhibition disabled.")
+                logger.debug(
+                    "systemd-inhibit not found (running in Docker). Sleep inhibition disabled."
+                )
             else:
                 logger.warning("systemd-inhibit not found. Sleep inhibition disabled.")
             return self

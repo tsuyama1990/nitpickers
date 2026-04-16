@@ -52,8 +52,8 @@ services:
       # -----------------------------------------------------------------------
 
       # Tier B: Tuning Tier (Version-controlled configuration)
-      - NITPICK_AUDITOR_MODEL=openrouter/stepfun/step-3.5-flash:free
-      - NITPICK_REVIEWER__SMART_MODEL=openrouter/stepfun/step-3.5-flash:free
+      - NITPICK_AUDITOR_MODEL=openrouter/arcee-ai/trinity-large-preview:free
+      - NITPICK_REVIEWER__SMART_MODEL=openrouter/arcee-ai/trinity-large-preview:free
       - NITPICK_NUM_AUDITORS=3
       - NITPICK_REVIEWS_PER_AUDITOR=2
       - NITPICK_MAX_ITERATIONS=3

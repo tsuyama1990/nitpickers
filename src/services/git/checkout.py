@@ -139,7 +139,9 @@ class GitCheckoutMixin(BaseGitManager):
 
         current_hash = await self.get_current_commit()
         if _pushed_commit_hashes.get(branch) == current_hash:
-            logger.debug(f"Skipping redundant push for branch {branch} (hash {current_hash} already pushed)")
+            logger.debug(
+                f"Skipping redundant push for branch {branch} (hash {current_hash} already pushed)"
+            )
             return
 
         if os.environ.get("GITHUB_TOKEN"):
