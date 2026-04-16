@@ -43,11 +43,7 @@ class BaseGitManager:
 
             if "index.lock" in error_msg and attempt < 4:
                 logger.warning(f"Index locked, retrying {args}...")
-                await asyncio.sleep(
-                    random.uniform(  # noqa: S311
-                        0.5, 2.0
-                    )
-                )
+                await asyncio.sleep(random.SystemRandom().uniform(0.5, 2.0))
                 continue
 
             if (
