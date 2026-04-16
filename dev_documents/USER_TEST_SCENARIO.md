@@ -31,19 +31,19 @@ The `tutorials/UAT_AND_TUTORIAL.py` file will contain the following interactive 
 1.  **Introduction & Setup (Phase 0)**:
     -   Explanation of the 5-Phase Architecture (CLI Init -> Architect -> Coder -> Integration -> UAT/QA).
     -   Environment validation cell (checking for `.env` or applying mock configurations based on a toggle).
-2.  **Phase 1 & 2: The Coder Graph & Serial Auditing**:
+2.  **Phase 1 & 2: The Coder Graph & Serial Auditing (CYCLE01 & CYCLE02)**:
     -   **Quick Start Scenario**: Instantiate a single `CycleState` representing a simple feature request (e.g., "Create a utility to calculate the Fibonacci sequence").
     -   Execute the `_create_coder_graph`.
     -   Observe the state transitions: The Coder generates code, the Sandbox evaluates it, and a simulated Auditor chain reviews it. The tutorial will explicitly highlight the `current_auditor_index` incrementing and the `is_refactoring` flag toggling before the final critique.
-3.  **Phase 3: The Integration Graph & 3-Way Diff**:
+3.  **Phase 3: The Integration Graph & 3-Way Diff (CYCLE03)**:
     -   **Advanced Scenario**: Set up a simulated conflict state using `IntegrationState`. We will programmatically create a mock "Base", "Branch A", and "Branch B" version of a file.
     -   Execute the `_create_integration_graph`.
     -   Observe the `master_integrator_node` resolving the conflict by generating a unified code block. The tutorial will display the exact prompt sent to the LLM (the 3-Way Diff package).
-4.  **Phase 4 & 5: UAT & QA Graph (Automated Remediation)**:
+4.  **Phase 4 & 5: UAT & QA Graph (Automated Remediation) (CYCLE04)**:
     -   **Advanced Scenario**: Introduce an intentional failure in a mock Playwright test.
     -   Execute the `_create_qa_graph`.
     -   Observe the system capturing the failure (simulated screenshot/logs), the `qa_auditor` diagnosing the issue, and the `qa_session` applying the fix before passing the final validation.
-5.  **Full Pipeline Orchestration**:
+5.  **Full Pipeline Orchestration (CYCLE05)**:
     -   Demonstrate the CLI entrypoint (`run-pipeline` equivalent) programmatically invoking the `WorkflowService` to run multiple cycles concurrently and integrate them sequentially.
 
 ## Tutorial Validation
