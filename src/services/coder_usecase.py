@@ -97,7 +97,9 @@ class CoderUseCase:
             )
             try:
                 async with workspace_lock:
-                    instruction = self._build_instruction(cycle_id, current_phase, state, cycle_manifest)
+                    instruction = self._build_instruction(
+                        cycle_id, current_phase, state, cycle_manifest
+                    )
                     target_files = settings.get_target_files()
                     context_files = settings.get_context_files()
 
@@ -106,9 +108,7 @@ class CoderUseCase:
                     timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M")
                     prefix = "refactor" if current_phase == WorkPhase.REFACTORING else "coder"
                     # Use timestamp + UUID to absolutely ensure collision avoidance across parallel phases
-                    session_req_id = (
-                        f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
-                    )
+                    session_req_id = f"{prefix}-cycle-{cycle_id}-iter-{iteration}-{timestamp}-{uuid.uuid4().hex[:6]}"
 
                     jules_session_name, result = await self._run_jules_session(
                         session_req_id, instruction, target_files, context_files, cycle_id, mgr
@@ -129,7 +129,10 @@ class CoderUseCase:
         if result and (result.get("status") == "success" or result.get("pr_url")):
             # Self-Critic phase: initial PR only OR post-audit refactor
             # CRITICAL: This triggers for the very first PR in a cycle AND the final polish PR.
-            is_initial_pr = iteration <= 1 and state.status not in {FlowStatus.RETRY_FIX, FlowStatus.REJECTED}
+            is_initial_pr = iteration <= 1 and state.status not in {
+                FlowStatus.RETRY_FIX,
+                FlowStatus.REJECTED,
+            }
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
             if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
@@ -148,15 +151,16 @@ class CoderUseCase:
             if branch_val:
                 session_updates["branch_name"] = branch_val
 
-            session_update = state.session.model_copy(update=session_updates) if session_updates else state.session
+            session_update = (
+                state.session.model_copy(update=session_updates)
+                if session_updates
+                else state.session
+            )
 
             # Update the cycle's feature branch if a new one was created by Jules
             if cycle_manifest:
                 mgr.update_cycle_state(
-                    cycle_id,
-                    session_restart_count=0,
-                    pr_url=pr_val,
-                    branch_name=branch_val
+                    cycle_id, session_restart_count=0, pr_url=pr_val, branch_name=branch_val
                 )
 
             if is_post_audit_refactor:
@@ -460,8 +464,11 @@ class CoderUseCase:
                 # Add jittered exponential backoff if the error looks like a temporary rate/concurrency limit
                 if "400" in error_msg or "FAILED_PRECONDITION" in error_msg:
                     import random
-                    backoff = (2 ** new_restart_count) + random.uniform(0.5, 2.0)  # noqa: S311
-                    console.print(f"[yellow]Jules API reported precondition failure. Backing off for {backoff:.1f}s...[/yellow]")
+
+                    backoff = (2**new_restart_count) + random.SystemRandom().uniform(0.5, 2.0)
+                    console.print(
+                        f"[yellow]Jules API reported precondition failure. Backing off for {backoff:.1f}s...[/yellow]"
+                    )
                     await asyncio.sleep(backoff)
 
                 console.print(
