@@ -24,6 +24,7 @@ You must follow the architectural hierarchy in your reasoning process:
 - **SYSTEM INTEGRITY**: Do NOT delete or modify the `.nitpick/` directory. Ensure it is in `.gitignore`.
 - **PRESERVE BEHAVIOR**: Since the Audit passed, DO NOT change the functional behavior or external API of the logic. Only improve the *internal* quality.
 
+
 # Process
 1. **Holistic Review & Context Gathering**:
    - Read `SYSTEM_ARCHITECTURE.md`, `ALL_SPEC.md`, and **ALL** individual cycle specification files (specifically `dev_documents/system_prompts/CYCLE{{cycle_id}}/SPEC.md`).

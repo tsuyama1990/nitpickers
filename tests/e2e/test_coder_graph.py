@@ -139,7 +139,9 @@ def test_coder_graph_rejection_loop() -> None:  # noqa: C901
     initial_state.status = FlowStatus.READY_FOR_AUDIT
 
     result_state = None
-    for iteration_count, state in enumerate(graph.stream(initial_state, config={"configurable": {"thread_id": "2"}})):
+    for iteration_count, state in enumerate(
+        graph.stream(initial_state, config={"configurable": {"thread_id": "2"}})
+    ):
         for _node_name, node_state in state.items():
             result_state = node_state
         if iteration_count > 10:  # Prevent infinite loop

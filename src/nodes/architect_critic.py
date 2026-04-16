@@ -32,7 +32,7 @@ class ArchitectCriticNodes:
 
         critic_retry_count = state.critic_retry_count
 
-        if critic_result.is_approved or critic_retry_count >= 1:
+        if critic_result.is_approved or critic_retry_count >= 0:
             if critic_result.is_approved:
                 console.print("[bold green]Architecture Approved by Critic![/bold green]")
             else:

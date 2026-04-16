@@ -1,7 +1,8 @@
+from typing import Any
+
 from src.config import settings
 from src.domain_models import AuditResult
 from src.enums import FlowStatus
-from typing import Any
 from src.nodes.routers import route_auditor, route_final_critic, route_sandbox_evaluate
 from src.state import AuditState, CommitteeState, CycleState
 
@@ -44,9 +45,8 @@ def test_route_auditor_reject() -> None:
         ),
     )
     state.committee.audit_attempt_count = 0
-    # when rejected, should return "reject" and increment audit_attempt_count
+    # when rejected, should return "reject"
     assert route_auditor(state) == "reject"
-    assert state.committee.audit_attempt_count == 1
 
 
 def test_route_auditor_pass_next_auditor() -> None:
@@ -59,11 +59,9 @@ def test_route_auditor_pass_next_auditor() -> None:
         ),
         committee=CommitteeState(current_auditor_index=1, audit_attempt_count=1),
     )
-    # when passed, should reset attempt count, increment index, and go to next_auditor if not last
+    # when passed, should return next_auditor if not last
     res = route_auditor(state)
     assert res == "next_auditor"
-    assert state.committee.audit_attempt_count == 0
-    assert state.committee.current_auditor_index == 2
 
 
 def test_route_auditor_pass_all() -> None:

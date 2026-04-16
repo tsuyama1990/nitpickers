@@ -125,9 +125,9 @@ async def test_build_conflict_package_success(
             stage = cmd[2].split(":")[1]
             if stage == "1":
                 return ("base_content", "", 0, False)
-            elif stage == "2":
+            if stage == "2":
                 return ("local_content", "", 0, False)
-            elif stage == "3":
+            if stage == "3":
                 return ("remote_content", "", 0, False)
             return ("", "", 1, False)
 
@@ -147,9 +147,10 @@ async def test_build_conflict_package_success(
 async def test_build_conflict_package_no_base(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
+    import subprocess
+
     from src.config import settings
     from src.domain_models.execution import ConflictRegistryItem
-    import subprocess
 
     item = ConflictRegistryItem(file_path="test.py", conflict_markers=[])
 
@@ -162,9 +163,9 @@ async def test_build_conflict_package_no_base(
             stage = cmd[2].split(":")[1]
             if stage == "1":
                 raise subprocess.CalledProcessError(128, cmd)
-            elif stage == "2":
+            if stage == "2":
                 return ("local_content", "", 0, False)
-            elif stage == "3":
+            if stage == "3":
                 return ("remote_content", "", 0, False)
             return ("", "", 1, False)
 

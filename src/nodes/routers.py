@@ -1,4 +1,5 @@
 from typing import Any
+
 from src.config import settings
 from src.enums import FlowStatus
 from src.state import CycleState
@@ -10,7 +11,7 @@ def check_coder_outcome(state: CycleState) -> str:
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
         return str(FlowStatus.FAILED.value)
 
-    if status == FlowStatus.COMPLETED or getattr(state, "final_fix", False):
+    if status in {FlowStatus.COMPLETED}:
         return str(FlowStatus.COMPLETED.value)
 
     # Always route to implementation node, bypassing the TDD test loop
@@ -18,12 +19,6 @@ def check_coder_outcome(state: CycleState) -> str:
         return "impl_coder_node"
 
     if status == FlowStatus.READY_FOR_AUDIT:
-        if (
-            state.committee.iteration_count <= 1
-            and state.committee.audit_attempt_count == 0
-            and state.committee.current_auditor_index == 1
-        ):
-            return "self_critic"
         return settings.node_sandbox_evaluate
 
     return settings.node_sandbox_evaluate
@@ -33,46 +28,60 @@ def route_sandbox_evaluate(state: CycleState) -> str:
     status = getattr(state, "status", None)
 
     if getattr(state.test, "tdd_phase", None) == "red":
-        if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
+        if status == FlowStatus.FAILED:
+            return "failed"
+        if status == FlowStatus.TDD_FAILED:
             return "impl_coder_node"
         if status == FlowStatus.READY_FOR_AUDIT:
             return "test_coder_node"
 
-    if status in {FlowStatus.FAILED, FlowStatus.TDD_FAILED}:
+    if status == FlowStatus.FAILED:
+        return "failed"
+
+    if status == FlowStatus.TDD_FAILED:
         return "impl_coder_node"
 
     if status == FlowStatus.POST_AUDIT_REFACTOR:
         return "impl_coder_node"
 
     if status == FlowStatus.READY_FOR_AUDIT:
+        if getattr(state, "final_fix", False) or getattr(state.committee, "is_refactoring", False):
+            return "final_critic"
         return "auditor"
 
     return "impl_coder_node"
 
 
 def route_auditor(state: CycleState) -> str:
-    status = getattr(state, "status", None)
-    if status == FlowStatus.REQUIRES_PIVOT:
-        state.committee.audit_attempt_count += 1
-        return "requires_pivot"
-
     is_approved = False
     if state.audit.audit_result is not None:
         is_approved = state.audit.audit_result.is_approved
 
     if not is_approved:
-        state.committee.audit_attempt_count += 1
-        if state.committee.audit_attempt_count > settings.max_audit_retries:
-            return "requires_pivot"
         return "reject"
 
-    state.committee.audit_attempt_count = 0
-    state.committee.current_auditor_index += 1
-
-    if state.committee.current_auditor_index > settings.NUM_AUDITORS:
+    # Note: Committee index increment is now handled in CommitteeUseCase or AuditorUseCase
+    if state.committee.current_auditor_index >= settings.NUM_AUDITORS:
         return "pass_all"
 
     return "next_auditor"
+
+
+def route_committee(state: CycleState) -> str:
+    """Routes after CommitteeUseCase executes, based on the returned status."""
+    status = getattr(state, "status", None)
+
+    if status == FlowStatus.NEXT_AUDITOR:
+        return "next_auditor"
+    if status == FlowStatus.POST_AUDIT_REFACTOR:
+        return "refactor_node"
+    if status == FlowStatus.READY_FOR_AUDIT:
+        return "final_critic"
+    if status == FlowStatus.WAIT_FOR_JULES_COMPLETION:
+        return "impl_coder_node"
+
+    # Default: send back to coder for a fix (RETRY_FIX or any other status)
+    return "impl_coder_node"
 
 
 def route_final_critic(state: CycleState) -> str:

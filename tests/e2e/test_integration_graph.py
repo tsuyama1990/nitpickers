@@ -1,16 +1,20 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from pathlib import Path
-from src.state import IntegrationState
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from src.domain_models.execution import ConflictRegistryItem
 from src.graph import GraphBuilder
+from src.sandbox import SandboxRunner
 from src.service_container import ServiceContainer
 from src.services.jules_client import JulesClient
-from src.sandbox import SandboxRunner
+from src.state import IntegrationState
+
 
 @pytest.fixture
 def repo_path(tmp_path: Path) -> Path:
     return tmp_path
+
 
 @pytest.mark.asyncio
 async def test_integration_graph_conflict_resolution(repo_path: Path) -> None:
@@ -22,16 +26,27 @@ async def test_integration_graph_conflict_resolution(repo_path: Path) -> None:
 
     mock_git_merge = AsyncMock()
     mock_git_merge.side_effect = [
-        {"status": "conflict", "conflict_status": "conflict_detected", "unresolved_conflicts": [
-            ConflictRegistryItem(file_path="main.py", conflict_markers=["<<<<<<<"], resolution_attempts=0, resolved=False)
-        ]},
-        {"status": "success", "conflict_status": "conflict_resolved"}
+        {
+            "status": "conflict",
+            "conflict_status": "conflict_detected",
+            "unresolved_conflicts": [
+                ConflictRegistryItem(
+                    file_path="main.py",
+                    conflict_markers=["<<<<<<<"],
+                    resolution_attempts=0,
+                    resolved=False,
+                )
+            ],
+        },
+        {"status": "success", "conflict_status": "conflict_resolved"},
     ]
 
     mock_master_integrator = AsyncMock()
     mock_master_integrator.return_value = {
         "unresolved_conflicts": [
-            ConflictRegistryItem(file_path="main.py", conflict_markers=[], resolution_attempts=1, resolved=True)
+            ConflictRegistryItem(
+                file_path="main.py", conflict_markers=[], resolution_attempts=1, resolved=True
+            )
         ]
     }
 

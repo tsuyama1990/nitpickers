@@ -164,6 +164,22 @@ class CycleState(BaseModel):
         self.committee.iteration_count = value
 
     @property
+    def is_refactoring(self) -> bool:
+        return self.committee.is_refactoring
+
+    @is_refactoring.setter
+    def is_refactoring(self, value: bool) -> None:
+        self.committee.is_refactoring = value
+
+    @property
+    def audit_attempt_count(self) -> int:
+        return self.committee.audit_attempt_count
+
+    @audit_attempt_count.setter
+    def audit_attempt_count(self, value: int) -> None:
+        self.committee.audit_attempt_count = value
+
+    @property
     def project_session_id(self) -> str | None:
         return self.session.project_session_id
 

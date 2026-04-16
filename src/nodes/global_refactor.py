@@ -33,7 +33,7 @@ class GlobalRefactorNodes:
                 logger.info("No global refactorings applied.")
 
             from src.enums import FlowStatus
-            
+
             committee_update = state.committee.model_copy(update={"is_refactoring": True})
             return {
                 "committee": committee_update,

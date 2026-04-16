@@ -71,6 +71,7 @@ async def test_build_conflict_package_success(
         patch.object(conflict_manager.runner, "run_command", new_callable=AsyncMock) as mock_run,
         patch.object(settings.paths, "workspace_root", tmp_path),
     ):
+
         def mock_git_show(cmd: list[str], cwd: Path, check: bool) -> tuple[str, str, int, bool]:
             if cmd == ["git", "show", ":1:existing_file.py"]:
                 return ("base_code", "", 0, False)

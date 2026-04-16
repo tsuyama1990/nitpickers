@@ -177,15 +177,11 @@ class PathsConfig(BaseModel):
     )
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
-    artifacts_dir: Path = Field(
-        default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts"
-    )
+    artifacts_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "artifacts")
     sessions_dir: str = str(Path.cwd() / ".jules" / "sessions")
     src: Path = Field(default_factory=lambda: Path.cwd() / "src")
     tests: Path = Field(default_factory=lambda: Path.cwd() / "tests")
-    templates: Path = Field(
-        default_factory=lambda: Path.cwd() / "dev_documents" / "templates"
-    )
+    templates: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents" / "templates")
     prompts_dir: str = "dev_src/src/prompts"
 
     @model_validator(mode="after")
@@ -477,11 +473,15 @@ class ASTAnalyzerConfig(BaseModel):
 
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
-        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        default_factory=lambda: os.getenv(
+            "NITPICK_AUDITOR_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
+        ),
         alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
-        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        default_factory=lambda: os.getenv(
+            "NITPICK_QA_ANALYST_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
+        ),
         alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
@@ -489,12 +489,16 @@ class AgentsConfig(BaseSettings):
 
 class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
-        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        default_factory=lambda: os.getenv(
+            "NITPICK_REVIEWER__SMART_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
+        ),
         alias="NITPICK_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default="openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        default_factory=lambda: os.getenv(
+            "NITPICK_REVIEWER__FAST_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
+        ),
         alias="NITPICK_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
@@ -715,15 +719,24 @@ class Settings(BaseSettings):
 
         # explicit file list to include all vital architectural and testing context
         target_files = [
-            self.filename_spec,
-            self.filename_arch,
+            self.filename_spec,  # ALL_SPEC.md
+            self.filename_arch,  # SYSTEM_ARCHITECTURE.md
             "SPEC.md",
             "UAT.md",
             "USER_TEST_SCENARIO.md",
         ]
 
+        # Context Optimization: If both ALL_SPEC and SPEC.md exist, ALL_SPEC is likely too large (64KB+)
+        # and redundant for a specific cycle audit. We prune it if SPEC.md is available.
+        has_all_spec = (p / self.filename_spec).exists()
+        has_cycle_spec = (p / "SPEC.md").exists()
+
+        pruned_targets = target_files.copy()
+        if has_all_spec and has_cycle_spec:
+            pruned_targets.remove(self.filename_spec)
+
         found_files = []
-        for fname in target_files:
+        for fname in pruned_targets:
             fpath = p / fname
             if fpath.exists() and str(fpath) not in found_files:
                 found_files.append(str(fpath))

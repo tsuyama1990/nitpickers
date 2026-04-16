@@ -1,0 +1,72 @@
+import re
+import json
+
+def _repair_json(json_str: str) -> str:
+    """Simple JSON repair for truncated EOF strings"""
+    stack = []
+    in_string = False
+    escaped = False
+
+    repaired = ""
+    for char in json_str:
+        if char == '"' and not escaped:
+            in_string = not in_string
+
+        if not in_string:
+            if char == "{" or char == "[":
+                stack.append(char)
+            elif char == "}":
+                if stack and stack[-1] == "{":
+                    stack.pop()
+            elif char == "]":
+                if stack and stack[-1] == "[":
+                    stack.pop()
+
+        repaired += char
+        escaped = char == "\\" and not escaped
+
+    # Apply repair if truncated
+    if in_string:
+        repaired += '"'
+    while stack:
+        brace = stack.pop()
+        repaired += "}" if brace == "{" else "]"
+
+    return repaired
+
+def extract_json_from_text(content: str) -> str:
+    """Extracts JSON from an LLM response, stripping markdown and <thought> tags.
+    Handles multiple markdown code blocks by trying to parse each one until a valid JSON dict/list is found.
+    Handles truncated JSON gracefully using simple stack-based repair."""
+
+    content = re.sub(r"<thought>.*?</thought>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    # Handle cases where <thought> tag is opened but NOT closed (truncation)
+    content = re.sub(r"<thought>.*", "", content, flags=re.DOTALL | re.IGNORECASE)
+
+    # 1. Try to find all markdown blocks and parse them.
+    blocks = re.findall(r"```(?:json|python)?\s*(.*?)\s*```", content, flags=re.DOTALL | re.IGNORECASE)
+    for block in blocks:
+        repaired = _repair_json(block.strip())
+        try:
+            parsed = json.loads(repaired)
+            if isinstance(parsed, (dict, list)):
+                return repaired
+        except json.JSONDecodeError:
+            continue
+
+    # 2. If no valid block, fallback to finding the outermost { ... }
+    start_idx = content.find("{")
+    if start_idx != -1:
+        json_str = content[start_idx:].strip()
+        repaired = _repair_json(json_str)
+        try:
+            parsed = json.loads(repaired)
+            if isinstance(parsed, (dict, list)):
+                return repaired
+        except json.JSONDecodeError:
+            pass
+        # Return repaired anyway as a best-effort
+        return repaired
+
+    # 3. Ultimate fallback
+    return _repair_json(content.strip())

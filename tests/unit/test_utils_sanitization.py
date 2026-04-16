@@ -32,9 +32,10 @@ def test_sanitize_drops_ansi_and_unprintable() -> None:
     expected = "[31mRed Text[0m and normal text"
     assert sanitize_for_llm(text) == expected
 
-    # Text with zero-width space (U+200B) and other non-ascii
+    # Text with zero-width space (U+200B) and other non-ascii (Snowman emoji \u2603)
     text_non_ascii = "Hello\u200bWorld \u2603"
-    assert sanitize_for_llm(text_non_ascii) == "HelloWorld "
+    # Zero-width space should be dropped (control/space category), but Snowman is preserved
+    assert sanitize_for_llm(text_non_ascii) == "HelloWorld \u2603"
 
 
 def test_sanitize_drops_vertical_tab_and_form_feed() -> None:

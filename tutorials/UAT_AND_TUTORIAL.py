@@ -7,6 +7,7 @@ app = marimo.App()
 @app.cell
 def mo_cell() -> tuple[object]:
     import marimo as mo
+
     return (mo,)
 
 
@@ -14,7 +15,7 @@ def mo_cell() -> tuple[object]:
 def intro_cell(mo: object) -> None:
     # Use generic object for mo to avoid mypy errors for dynamically imported marimo module
     if hasattr(mo, "md"):
-        mo.md( # type: ignore
+        mo.md(  # type: ignore
             """
             # CYCLE 02 UAT: Integration Graph & 3-Way Diff
 
@@ -25,7 +26,9 @@ def intro_cell(mo: object) -> None:
 
 
 @app.cell
-def imports_cell() -> tuple[object, object, object, object, object, object, object, object, object, object, object]:
+def imports_cell() -> tuple[
+    object, object, object, object, object, object, object, object, object, object, object
+]:
     import asyncio
     from pathlib import Path
     from unittest.mock import AsyncMock, MagicMock, patch
@@ -36,7 +39,20 @@ def imports_cell() -> tuple[object, object, object, object, object, object, obje
     from src.service_container import ServiceContainer
     from src.services.jules_client import JulesClient
     from src.state import IntegrationState
-    return AsyncMock, GraphBuilder, IntegrationState, JulesClient, MagicMock, Path, SandboxRunner, ServiceContainer, asyncio, patch, settings
+
+    return (
+        AsyncMock,
+        GraphBuilder,
+        IntegrationState,
+        JulesClient,
+        MagicMock,
+        Path,
+        SandboxRunner,
+        ServiceContainer,
+        asyncio,
+        patch,
+        settings,
+    )
 
 
 @app.cell
@@ -48,137 +64,212 @@ def setup_cell(
     ServiceContainer: object,
 ) -> tuple[object, object, object, object, object]:
     # Setup the mocked integration graph for UAT scenarios
-    sandbox = MagicMock(spec=SandboxRunner) # type: ignore
-    jules = MagicMock(spec=JulesClient) # type: ignore
+    sandbox = MagicMock(spec=SandboxRunner)  # type: ignore
+    jules = MagicMock(spec=JulesClient)  # type: ignore
 
-    container = ServiceContainer.default() # type: ignore
-    builder = GraphBuilder(container, sandbox, jules) # type: ignore
-    integration_graph = builder.build_integration_graph() # type: ignore
+    container = ServiceContainer.default()  # type: ignore
+    builder = GraphBuilder(container, sandbox, jules)  # type: ignore
+    integration_graph = builder.build_integration_graph()  # type: ignore
     return builder, container, integration_graph, jules, sandbox
 
 
 @app.cell
-def scenario1_cell(IntegrationState: object, Path: object, asyncio: object, integration_graph: object, mo: object, patch: object, settings: object) -> tuple[bool, object, object, bool]:
+def scenario1_cell(
+    IntegrationState: object,
+    Path: object,
+    asyncio: object,
+    integration_graph: object,
+    mo: object,
+    patch: object,
+    settings: object,
+) -> tuple[bool, object, object, bool]:
     if hasattr(mo, "md"):
-        mo.md("## Scenario 1: Clean Merge") # type: ignore
+        mo.md("## Scenario 1: Clean Merge")  # type: ignore
 
     async def run_scenario_1() -> tuple[object, bool, bool]:
         # Using a mock repository path to pass path validations
         repo_path = Path("/tmp/mock_repo")  # type: ignore # noqa: S108
 
         # We mock the internal node methods to simulate a clean merge
-        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)): # type: ignore
-            with patch("src.nodes.master_integrator.MasterIntegratorNodes.master_integrator_node") as mock_mi, \
-                 patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox, \
-                 patch("src.services.git_ops.GitManager.merge_pr"): # type: ignore
-
+        with (
+            patch.object(settings.paths, "workspace_root", repo_path),
+            patch("os.getcwd", return_value=str(repo_path)),
+        ):  # type: ignore
+            with (
+                patch(
+                    "src.nodes.master_integrator.MasterIntegratorNodes.master_integrator_node"
+                ) as mock_mi,
+                patch(
+                    "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
+                ) as mock_sandbox,
+                patch("src.services.git_ops.GitManager.merge_pr"),
+            ):  # type: ignore
                 mock_sandbox.return_value = {"status": "pass"}
 
-                state = IntegrationState(branches_to_merge=["clean-feature"]) # type: ignore
+                state = IntegrationState(branches_to_merge=["clean-feature"])  # type: ignore
 
                 # Ainvoke the graph
                 try:
-                    result = await integration_graph.ainvoke( # type: ignore
-                        state,
-                        config={"configurable": {"thread_id": "uat_clean_merge"}}
+                    result = await integration_graph.ainvoke(  # type: ignore
+                        state, config={"configurable": {"thread_id": "uat_clean_merge"}}
                     )
                 except Exception as e:
                     return str(e), False, False
                 else:
                     return result, mock_sandbox.called, mock_mi.called
 
-    result_1, sandbox_called_1, mi_called_1 = asyncio.run(run_scenario_1()) # type: ignore
+    result_1, sandbox_called_1, mi_called_1 = asyncio.run(run_scenario_1())  # type: ignore
 
     if hasattr(mo, "ui"):
-        mo.ui.table([ # type: ignore
-            {"Step": "Merge PR", "Expected": "Success", "Actual": "Success (Mocked)"},
-            {"Step": "Global Sandbox", "Expected": "Called & Passed", "Actual": f"Called: {sandbox_called_1}"},
-            {"Step": "Master Integrator", "Expected": "Skipped", "Actual": f"Called: {mi_called_1}"},
-        ])
+        mo.ui.table(
+            [  # type: ignore
+                {"Step": "Merge PR", "Expected": "Success", "Actual": "Success (Mocked)"},
+                {
+                    "Step": "Global Sandbox",
+                    "Expected": "Called & Passed",
+                    "Actual": f"Called: {sandbox_called_1}",
+                },
+                {
+                    "Step": "Master Integrator",
+                    "Expected": "Skipped",
+                    "Actual": f"Called: {mi_called_1}",
+                },
+            ]
+        )
     return mi_called_1, result_1, run_scenario_1, sandbox_called_1
 
 
 @app.cell
-def scenario2_cell(IntegrationState: object, Path: object, asyncio: object, integration_graph: object, mo: object, patch: object, settings: object) -> tuple[int, bool, object, object, bool]:
+def scenario2_cell(
+    IntegrationState: object,
+    Path: object,
+    asyncio: object,
+    integration_graph: object,
+    mo: object,
+    patch: object,
+    settings: object,
+) -> tuple[int, bool, object, object, bool]:
     if hasattr(mo, "md"):
-        mo.md("## Scenario 2: Conflict Resolution via 3-Way Diff") # type: ignore
+        mo.md("## Scenario 2: Conflict Resolution via 3-Way Diff")  # type: ignore
 
     async def run_scenario_2() -> tuple[object, bool, bool, int]:
         repo_path = Path("/tmp/mock_repo")  # type: ignore # noqa: S108
 
-        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)): # type: ignore
-            with patch("src.nodes.master_integrator.MasterIntegratorNodes.master_integrator_node") as mock_mi, \
-                 patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox, \
-                 patch("src.services.git_ops.GitManager.merge_pr") as mock_merge: # type: ignore
-
+        with (
+            patch.object(settings.paths, "workspace_root", repo_path),
+            patch("os.getcwd", return_value=str(repo_path)),
+        ):  # type: ignore
+            with (
+                patch(
+                    "src.nodes.master_integrator.MasterIntegratorNodes.master_integrator_node"
+                ) as mock_mi,
+                patch(
+                    "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
+                ) as mock_sandbox,
+                patch("src.services.git_ops.GitManager.merge_pr") as mock_merge,
+            ):  # type: ignore
                 # Force the first merge to fail with conflict, then succeed
-                mock_merge.side_effect = [Exception("conflict detected"), None] # type: ignore
+                mock_merge.side_effect = [Exception("conflict detected"), None]  # type: ignore
                 # Master integrator resolves the conflict
                 mock_mi.return_value = {"unresolved_conflicts": []}
                 # Sandbox passes
                 mock_sandbox.return_value = {"status": "pass"}
 
-                state = IntegrationState(branches_to_merge=["conflict-feature"]) # type: ignore
+                state = IntegrationState(branches_to_merge=["conflict-feature"])  # type: ignore
 
                 try:
-                    result = await integration_graph.ainvoke( # type: ignore
-                        state,
-                        config={"configurable": {"thread_id": "uat_conflict"}}
+                    result = await integration_graph.ainvoke(  # type: ignore
+                        state, config={"configurable": {"thread_id": "uat_conflict"}}
                     )
                 except Exception as e:
                     return str(e), False, False, 0
                 else:
-                    return result, mock_sandbox.called, mock_mi.called, mock_merge.call_count # type: ignore
+                    return result, mock_sandbox.called, mock_mi.called, mock_merge.call_count  # type: ignore
 
-    result_2, sandbox_called_2, mi_called_2, merge_calls_2 = asyncio.run(run_scenario_2()) # type: ignore
+    result_2, sandbox_called_2, mi_called_2, merge_calls_2 = asyncio.run(run_scenario_2())  # type: ignore
 
     if hasattr(mo, "ui"):
-        mo.ui.table([ # type: ignore
-            {"Step": "Merge PR attempts", "Expected": "2", "Actual": f"{merge_calls_2}"},
-            {"Step": "Master Integrator", "Expected": "Called", "Actual": f"Called: {mi_called_2}"},
-            {"Step": "Global Sandbox", "Expected": "Called & Passed", "Actual": f"Called: {sandbox_called_2}"},
-        ])
+        mo.ui.table(
+            [  # type: ignore
+                {"Step": "Merge PR attempts", "Expected": "2", "Actual": f"{merge_calls_2}"},
+                {
+                    "Step": "Master Integrator",
+                    "Expected": "Called",
+                    "Actual": f"Called: {mi_called_2}",
+                },
+                {
+                    "Step": "Global Sandbox",
+                    "Expected": "Called & Passed",
+                    "Actual": f"Called: {sandbox_called_2}",
+                },
+            ]
+        )
     return merge_calls_2, mi_called_2, result_2, run_scenario_2, sandbox_called_2
 
 
 @app.cell
-def scenario3_cell(IntegrationState: object, Path: object, asyncio: object, integration_graph: object, mo: object, patch: object, settings: object) -> tuple[bool, object, object, int]:
+def scenario3_cell(
+    IntegrationState: object,
+    Path: object,
+    asyncio: object,
+    integration_graph: object,
+    mo: object,
+    patch: object,
+    settings: object,
+) -> tuple[bool, object, object, int]:
     if hasattr(mo, "md"):
-        mo.md("## Scenario 3: Post-Merge Semantic Failure Recovery") # type: ignore
+        mo.md("## Scenario 3: Post-Merge Semantic Failure Recovery")  # type: ignore
 
     async def run_scenario_3() -> tuple[object, int, bool]:
         repo_path = Path("/tmp/mock_repo")  # type: ignore # noqa: S108
 
-        with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)): # type: ignore
-            with patch("src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node") as mock_fixer, \
-                 patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox, \
-                 patch("src.services.git_ops.GitManager.merge_pr"): # type: ignore
-
+        with (
+            patch.object(settings.paths, "workspace_root", repo_path),
+            patch("os.getcwd", return_value=str(repo_path)),
+        ):  # type: ignore
+            with (
+                patch(
+                    "src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node"
+                ) as mock_fixer,
+                patch(
+                    "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
+                ) as mock_sandbox,
+                patch("src.services.git_ops.GitManager.merge_pr"),
+            ):  # type: ignore
                 # Merge succeeds without conflict
                 # Sandbox fails first, then passes
                 mock_sandbox.side_effect = [{"status": "tdd_failed"}, {"status": "pass"}]
                 # Fixer node acts
                 mock_fixer.return_value = {"status": "fixed"}
 
-                state = IntegrationState(branches_to_merge=["semantic-failure-feature"]) # type: ignore
+                state = IntegrationState(branches_to_merge=["semantic-failure-feature"])  # type: ignore
 
                 try:
-                    result = await integration_graph.ainvoke( # type: ignore
-                        state,
-                        config={"configurable": {"thread_id": "uat_semantic"}}
+                    result = await integration_graph.ainvoke(  # type: ignore
+                        state, config={"configurable": {"thread_id": "uat_semantic"}}
                     )
                 except Exception as e:
                     return str(e), 0, False
                 else:
                     return result, mock_sandbox.call_count, mock_fixer.called
 
-    result_3, sandbox_calls_3, fixer_called_3 = asyncio.run(run_scenario_3()) # type: ignore
+    result_3, sandbox_calls_3, fixer_called_3 = asyncio.run(run_scenario_3())  # type: ignore
 
     if hasattr(mo, "ui"):
-        mo.ui.table([ # type: ignore
-            {"Step": "Global Sandbox attempts", "Expected": "2", "Actual": f"{sandbox_calls_3}"},
-            {"Step": "Integration Fixer", "Expected": "Called", "Actual": f"Called: {fixer_called_3}"},
-        ])
+        mo.ui.table(
+            [  # type: ignore
+                {
+                    "Step": "Global Sandbox attempts",
+                    "Expected": "2",
+                    "Actual": f"{sandbox_calls_3}",
+                },
+                {
+                    "Step": "Integration Fixer",
+                    "Expected": "Called",
+                    "Actual": f"Called: {fixer_called_3}",
+                },
+            ]
+        )
     return fixer_called_3, result_3, run_scenario_3, sandbox_calls_3
 
 

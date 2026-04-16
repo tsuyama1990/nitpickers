@@ -44,9 +44,8 @@ def test_config_defaults() -> None:
         local_settings = Settings()
         assert local_settings.reviewer.smart_model == "openrouter/stepfun/step-3.5-flash:free"
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
-        assert (
-            str(local_settings.paths.templates)
-            == str(Path.cwd() / "dev_documents" / "templates")
+        assert str(local_settings.paths.templates) == str(
+            Path.cwd() / "dev_documents" / "templates"
         )
 
 

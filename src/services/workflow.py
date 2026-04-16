@@ -71,8 +71,12 @@ class WorkflowService:
             else:
                 # final_state can be a dict or object in LangGraph depending on integration
                 # It is safest to pull directly from the session sub-model
-                session_obj = final_state.get("session") if isinstance(final_state, dict) else getattr(final_state, "session", None)
-                
+                session_obj = (
+                    final_state.get("session")
+                    if isinstance(final_state, dict)
+                    else getattr(final_state, "session", None)
+                )
+
                 if session_obj:
                     session_id_val = getattr(session_obj, "project_session_id", None)
                     integration_branch = getattr(session_obj, "integration_branch", None)
@@ -82,6 +86,10 @@ class WorkflowService:
 
                 # In new strategy, integration_branch IS the feature branch
                 feature_branch = integration_branch
+
+                if session_id_val is None or integration_branch is None or feature_branch is None:
+                    msg = "Unexpected None for session_id or branch after Architect phase."
+                    raise ValueError(msg)
 
                 # Create Manifest with Cycles
                 mgr = StateManager()
@@ -476,7 +484,9 @@ class WorkflowService:
                         await asyncio.sleep(0.5)
                     tasks.append(
                         dispatcher.run_with_semaphore(
-                            self._run_single_cycle(c.id, resume, auto, start_iter, project_session_id)
+                            self._run_single_cycle(
+                                c.id, resume, auto, start_iter, project_session_id
+                            )
                         )
                     )
                 await asyncio.gather(*tasks)
@@ -499,8 +509,6 @@ class WorkflowService:
                 console.print(f"[yellow]Cycle {cycle_id} is already completed. Skipping.[/yellow]")
                 return True
         return False
-
-
 
     async def _execute_cycle_graph(
         self,
@@ -595,7 +603,6 @@ class WorkflowService:
                 sys.exit(1)
 
             fb = manifest.feature_branch if manifest else None
-
 
             planned_count = len(manifest.cycles) if manifest else 0
             await self._execute_cycle_graph(

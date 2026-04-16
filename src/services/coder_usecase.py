@@ -136,7 +136,15 @@ class CoderUseCase:
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
             if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
-                result = await self._run_critic_phase(cycle_id, jules_session_name) or result
+                critic_result = await self._run_critic_phase(cycle_id, jules_session_name)
+                if critic_result:
+                    # Self-critic usually pushes commits but doesn't create a NEW PR;
+                    # preserve the original PR URL if the critic result doesn't include one.
+                    if not critic_result.get("pr_url") and result.get("pr_url"):
+                        critic_result["pr_url"] = result.get("pr_url")
+                    if not critic_result.get("branch_name") and result.get("branch_name"):
+                        critic_result["branch_name"] = result.get("branch_name")
+                    result = critic_result
 
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
@@ -402,12 +410,10 @@ class CoderUseCase:
             msg = "Feedback exceeds maximum size of 100000 characters"
             raise ValueError(msg)
 
-        # Sanitize for potential injection using whitelist
-        import string
+        # Sanitize feedback while allowing non-ASCII UTF-8 characters
+        from src.utils_sanitization import sanitize_for_llm
 
-        if not all(char in string.printable for char in feedback):
-            msg = "Feedback contains non-printable, potentially dangerous characters"
-            raise ValueError(msg)
+        feedback = sanitize_for_llm(feedback)
 
         console.print(
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"

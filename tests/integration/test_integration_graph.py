@@ -21,23 +21,36 @@ def repo_path(tmp_path: Path) -> Path:
 
     # Initialize a git repository
     subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Create base commit
     base_file = repo / "utils.py"
     base_file.write_text("def my_func():\n    return 'base'\n")
     subprocess.run(["git", "add", "utils.py"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Base commit"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Base commit"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create Branch A
-    subprocess.run(["git", "checkout", "-b", "feature-a"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "feature-a"], cwd=repo, check=True, capture_output=True
+    )
     base_file.write_text("def my_func():\n    return 'branch-a'\n")
     subprocess.run(["git", "commit", "-am", "Feature A"], cwd=repo, check=True, capture_output=True)
 
     # Create Branch B
     subprocess.run(["git", "checkout", "master"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "checkout", "-b", "feature-b"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "feature-b"], cwd=repo, check=True, capture_output=True
+    )
     base_file.write_text("def my_func():\n    return 'branch-b'\n")
     subprocess.run(["git", "commit", "-am", "Feature B"], cwd=repo, check=True, capture_output=True)
 
@@ -58,17 +71,26 @@ def integration_graph() -> CompiledStateGraph:
 
 
 @pytest.mark.asyncio
-async def test_integration_graph_clean_merge(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+async def test_integration_graph_clean_merge(
+    repo_path: Path, integration_graph: CompiledStateGraph
+) -> None:
     """Test Scenario 1: Clean Merge"""
     # Create a clean branch to merge
-    subprocess.run(["git", "checkout", "-b", "clean-branch"], cwd=repo_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "clean-branch"], cwd=repo_path, check=True, capture_output=True
+    )
     new_file = repo_path / "new_file.py"
     new_file.write_text("def new_func():\n    pass\n")
     subprocess.run(["git", "add", "new_file.py"], cwd=repo_path, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Clean branch"], cwd=repo_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Clean branch"], cwd=repo_path, check=True, capture_output=True
+    )
     subprocess.run(["git", "checkout", "master"], cwd=repo_path, check=True, capture_output=True)
 
-    with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
+    with (
+        patch.object(settings.paths, "workspace_root", repo_path),
+        patch("os.getcwd", return_value=str(repo_path)),
+    ):
         # Provide the branch to merge
         state = IntegrationState(branches_to_merge=["clean-branch"])
         result = await integration_graph.ainvoke(
@@ -84,19 +106,25 @@ async def test_integration_graph_clean_merge(repo_path: Path, integration_graph:
 
     # Check if branch is merged
     # (If the real implementation was there, we'd see 'clean-branch' merged)
-    git_log = subprocess.run(["git", "log", "--oneline"], cwd=repo_path, check=True, capture_output=True, text=True).stdout
+    git_log = subprocess.run(
+        ["git", "log", "--oneline"], cwd=repo_path, check=True, capture_output=True, text=True
+    ).stdout
     assert "Clean branch" in git_log
 
 
 @pytest.mark.asyncio
-async def test_integration_graph_conflict_resolution(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+async def test_integration_graph_conflict_resolution(
+    repo_path: Path, integration_graph: CompiledStateGraph
+) -> None:
     """Test Scenario 2: Conflict Resolution via 3-Way Diff"""
     # Master is currently at Base. We merge feature-a, then feature-b to create a conflict.
     subprocess.run(["git", "merge", "feature-a"], cwd=repo_path, check=True, capture_output=True)
 
     # Now we simulate the graph merging feature-b
-    with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
-
+    with (
+        patch.object(settings.paths, "workspace_root", repo_path),
+        patch("os.getcwd", return_value=str(repo_path)),
+    ):
         # We need to mock the LLM inside master_integrator_node
         with patch("src.nodes.master_integrator.JulesClient") as MockJules:
             mock_jules_instance = MagicMock()
@@ -122,19 +150,25 @@ async def test_integration_graph_conflict_resolution(repo_path: Path, integratio
 
 
 @pytest.mark.asyncio
-async def test_integration_graph_semantic_failure(repo_path: Path, integration_graph: CompiledStateGraph) -> None:
+async def test_integration_graph_semantic_failure(
+    repo_path: Path, integration_graph: CompiledStateGraph
+) -> None:
     """Test Scenario 3: Post-Merge Semantic Failure Recovery"""
     # Simulate a merge that succeeds without conflicts but fails the sandbox
-    with patch.object(settings.paths, "workspace_root", repo_path), patch("os.getcwd", return_value=str(repo_path)):
+    with (
+        patch.object(settings.paths, "workspace_root", repo_path),
+        patch("os.getcwd", return_value=str(repo_path)),
+    ):
         # Mock global_sandbox_node to fail initially, then pass
-        with patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox:
-            mock_sandbox.side_effect = [
-                {"status": "tdd_failed"},
-                {"status": "pass"}
-            ]
+        with patch(
+            "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
+        ) as mock_sandbox:
+            mock_sandbox.side_effect = [{"status": "tdd_failed"}, {"status": "pass"}]
 
             # Mock the integration fixer node to resolve the issue
-            with patch("src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node") as mock_fixer:
+            with patch(
+                "src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node"
+            ) as mock_fixer:
                 mock_fixer.return_value = {"status": "success"}
 
                 state = IntegrationState(branches_to_merge=["feature-a"])

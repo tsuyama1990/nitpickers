@@ -223,7 +223,9 @@ class JulesClient:
         current_state = await self.get_session_state(session_name)
         expect_transition = current_state == "COMPLETED"
         if expect_transition:
-            logger.info(f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work...")
+            logger.info(
+                f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work..."
+            )
 
         # 2. Initialize processed IDs (important for ignoring previous Turn's activities)
         processed_ids: set[str] = set()
@@ -500,7 +502,9 @@ class JulesClient:
                     )
                     logger.error(f"SendMessage failed with status {resp.status_code}: {resp.text}")
             except httpx.HTTPStatusError as e:
-                logger.error(f"Jules API HTTP error {e.response.status_code} for {url}: {e.response.text}")
+                logger.error(
+                    f"Jules API HTTP error {e.response.status_code} for {url}: {e.response.text}"
+                )
                 raise
             except Exception as e:
                 logger.error(f"Unexpected error sending message to {url}: {e!r}")

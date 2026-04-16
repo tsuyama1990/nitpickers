@@ -18,6 +18,7 @@ from src.nodes import (
     route_architect_critic,
     route_architect_session,
     route_auditor,
+    route_committee,
     route_final_critic,
     route_qa,
     route_sandbox_evaluate,
@@ -175,6 +176,9 @@ class CycleNodes(IGraphNodes):
 
     def route_architect_session(self, state: CycleState) -> str:
         return route_architect_session(state)
+
+    def route_committee(self, state: CycleState) -> str:
+        return route_committee(state)
 
     def route_auditor(self, state: CycleState) -> str:
         return route_auditor(state)

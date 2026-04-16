@@ -93,12 +93,12 @@ class GraphBuilder:
         workflow.add_node("impl_coder_node", self.nodes.impl_coder_node)
         workflow.add_node(settings.node_sandbox_evaluate, self.nodes.sandbox_evaluate_node)
         workflow.add_node("auditor", self.nodes.auditor_node)
+        workflow.add_node("committee_manager_node", self.nodes.committee_manager_node)
         workflow.add_node("self_critic_node", self.nodes.self_critic_node)
         workflow.add_node("refactor_node", self.nodes.refactor_node)
         workflow.add_node("final_critic_node", self.nodes.final_critic_node)
 
         workflow.add_edge(START, "impl_coder_node")
-
 
         # Conditional edge from impl_coder_node
         workflow.add_conditional_edges(
@@ -116,7 +116,6 @@ class GraphBuilder:
         # self_critic_node -> sandbox_evaluate
         workflow.add_edge("self_critic_node", settings.node_sandbox_evaluate)
 
-        # Sandbox Evaluate -> Auditor, final_critic_node, failed, or impl_coder_node
         workflow.add_conditional_edges(
             settings.node_sandbox_evaluate,
             self.nodes.route_sandbox_evaluate,
@@ -124,19 +123,33 @@ class GraphBuilder:
                 "auditor": "auditor",
                 "impl_coder_node": "impl_coder_node",
                 "final_critic": "final_critic_node",
+                "failed": END,
+                "end": END,
             },
         )
 
-        # Auditor -> Conditional routing (rejection loop, next auditor, or refactor)
+        # Auditor -> committee on reject, refactor on pass_all, next auditor on next_auditor
         workflow.add_conditional_edges(
             "auditor",
             self.nodes.route_auditor,
             {
-                "reject": "impl_coder_node",
+                "reject": "committee_manager_node",   # Rejection now goes through committee budget check
                 "next_auditor": "auditor",
                 "pass_all": "refactor_node",
                 "failed": END,
                 "requires_pivot": END,
+            },
+        )
+
+        # Committee -> route to retry/next_auditor/refactor/final_critic based on budget
+        workflow.add_conditional_edges(
+            "committee_manager_node",
+            self.nodes.route_committee,
+            {
+                "impl_coder_node": "impl_coder_node",
+                "next_auditor": "auditor",
+                "refactor_node": "refactor_node",
+                "final_critic": "final_critic_node",
             },
         )
 

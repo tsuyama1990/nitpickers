@@ -7,6 +7,7 @@ from rich.console import Console
 
 from src.config import settings
 from src.domain_models.critic import CriticResult
+from src.utils_json import extract_json_from_text
 
 console = Console()
 
@@ -50,13 +51,13 @@ class SelfCriticEvaluator:
         if not raw_text:
             return CriticResult(is_approved=True, vulnerabilities=[], suggestions=[])
 
-        json_match = re.search(r"\{.*\}", raw_text, re.DOTALL)
-        if json_match:
+        json_str = extract_json_from_text(raw_text)
+        if json_str:
             try:
-                data = json.loads(json_match.group(0))
+                data = json.loads(json_str)
                 return CriticResult.model_validate(data)
             except Exception as e:
-                console.print(f"[yellow]Failed to parse Critic JSON: {e}[/yellow]")
+                console.print(f"[yellow]Failed to parse Critic JSON: {e}[/yellow]\n[dim]{json_str}[/dim]")
 
         is_approved = any(
             pattern in raw_text
@@ -110,6 +111,8 @@ class SelfCriticEvaluator:
             console.print(f"[dim red]{tb}[/dim red]")
             return CriticResult(
                 is_approved=False,
-                vulnerabilities=["SYSTEM_ERROR: Self-critic evaluation encountered a network timeout or system failure. Please remain on standby while the system retries."],
+                vulnerabilities=[
+                    "SYSTEM_ERROR: Self-critic evaluation encountered a network timeout or system failure. Please remain on standby while the system retries."
+                ],
                 suggestions=[],
             )

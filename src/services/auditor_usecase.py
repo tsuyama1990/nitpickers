@@ -104,7 +104,9 @@ class AuditorUseCase:
 
                             if jules_session_id:
                                 try:
-                                    jules_status = await self.jules.get_session_state(jules_session_id)
+                                    jules_status = await self.jules.get_session_state(
+                                        jules_session_id
+                                    )
                                     # Official Jules API terminal states: COMPLETED, FAILED
                                     # (SUCCEEDED does not exist in the official API)
                                     # Non-terminal (still working): IN_PROGRESS, QUEUED, PLANNING,
@@ -154,7 +156,9 @@ class AuditorUseCase:
                             console.print(f"[dim]Detected PR base branch: {pr_base}[/dim]")
                             base_branch = pr_base
                     except Exception as e:
-                        console.print(f"[yellow]Warning: Could not get PR base branch: {e}[/yellow]")
+                        console.print(
+                            f"[yellow]Warning: Could not get PR base branch: {e}[/yellow]"
+                        )
 
                 if is_refactor_phase:
                     # Refactor Auditor reviews all application files for overarching architecture review
@@ -172,7 +176,9 @@ class AuditorUseCase:
                 reviewable_files = [
                     f
                     for f in reviewable_files
-                    if not any(f.startswith(pattern) or pattern in f for pattern in excluded_patterns)
+                    if not any(
+                        f.startswith(pattern) or pattern in f for pattern in excluded_patterns
+                    )
                 ]
 
                 build_artifact_patterns = settings.auditor.build_artifact_patterns
@@ -202,24 +208,14 @@ class AuditorUseCase:
                     console.print(
                         "[yellow]Warning: No reviewable application files found. The Coder made no changes.[/yellow]"
                     )
-                    # Automatically reject without calling the LLM
-                    audit_feedback = "-> REVIEW_FAILED\n\n### Critical Issues\n- **Issue**: No Changes Made\n  - **Location**: `Unknown` (Line Unknown)\n  - **Concrete Fix**: You did not create or modify any application files. Write the necessary code and ensure it is tracked in Git."
-                    result = AuditResult(
-                        status="REJECTED",
-                        is_approved=False,
-                        reason="No changed files",
-                        feedback=audit_feedback,
+                    console.print(
+                        "[dim]Checking if the codebase already satisfies the requirements...[/dim]"
                     )
-                    audit_update = state.audit.model_copy(
-                        update={
-                            "audit_result": result,
-                            "last_audited_commit": new_last_audited_commit,
-                        }
-                    )
-                    return {
-                        "audit": audit_update,
-                        "status": FlowStatus.REJECTED,
-                    }
+                    # Instead of automatically rejecting, we provide ALL target files to the LLM
+                    all_target_files = settings.get_target_files()
+                    reviewable_files = [str(f) for f in all_target_files]
+                    
+                    instruction += "\n\n[SYSTEM NOTE: The Coder made NO changes in this PR. Your job is to verify if the codebase ALREADY FULLY SATISFIES the Requirements. If yes, output -> REVIEW_PASSED. If no, output -> REVIEW_FAILED and specify what needs to be changed.]"
 
                 context_file_names = {str(p) for p in context_paths}
                 reviewable_files = [f for f in reviewable_files if f not in context_file_names]
@@ -228,7 +224,6 @@ class AuditorUseCase:
         except Exception as e:
             console.print(f"[bold red]Error: Could not determine files to review: {e}[/bold red]")
             raise
-
 
         model = (
             settings.reviewer.smart_model
@@ -265,13 +260,6 @@ class AuditorUseCase:
                 console.print(f"[yellow]Warning: Could not return to feature branch: {e}[/yellow]")
 
         status_enum = FlowStatus.APPROVED if status == "approved" else FlowStatus.REJECTED
-
-        if (
-            status_enum == FlowStatus.REJECTED
-            and state.committee.audit_attempt_count >= settings.max_audit_retries
-        ):
-            # Check for max audit retries and trigger pivot if exceeded
-            status_enum = FlowStatus.REQUIRES_PIVOT
 
         audit_update = state.audit.model_copy(
             update={

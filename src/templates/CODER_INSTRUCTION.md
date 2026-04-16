@@ -28,6 +28,7 @@ You must follow the architectural hierarchy in your reasoning process:
     - **Prohibition**: DO NOT implement "Mock" classes to bypass dependency errors. You must solve the environment issue.
     - **Verification**: After downgrading, run `uv lock` again to confirm resolution.
 
+
 ## Inputs
 - `dev_documents/SYSTEM_ARCHITECTURE.md`
 - `dev_documents/ALL_SPEC.md`
