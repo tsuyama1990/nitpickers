@@ -46,7 +46,7 @@ class ArchitectNodes(BaseNode):
                 "error": "Failed to handle architect critic feedback.",
             }
 
-        instruction = settings.get_template("ARCHITECT_INSTRUCTION.md").read_text()
+        instruction = settings.read_template("ARCHITECT_INSTRUCTION.md")
 
         n = state.get("requested_cycle_count") or state.get("planned_cycle_count")
 
@@ -121,7 +121,7 @@ class ArchitectNodes(BaseNode):
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
         try:
-            feedback_template = str(settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text())
+            feedback_template = settings.read_template("AUDIT_FEEDBACK_MESSAGE.md")
             feedback_msg = feedback_template.replace("{{feedback}}", feedback)
             await self.jules._send_message(self.jules._get_session_url(session_id), feedback_msg)
             console.print(
