@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -14,7 +14,15 @@ class TestJulesGitContextRobustness:
     async def test_detached_head_creates_temp_branch(self) -> None:
         """Verifies detached HEAD creates a jules-sync branch."""
         # Setup
-        client = JulesClient()
+        with (
+            patch("src.config.Settings.validate_api_keys", return_value=None),
+            patch.dict(
+                "os.environ",
+                {"OPENAI_API_KEY": "mock", "JULES_API_KEY": "mock", "E2B_API_KEY": "mock"},
+            ),
+            patch("google.auth.default", return_value=(MagicMock(), "test-project")),
+        ):
+            client = JulesClient()
         client.git = AsyncMock()
         client.git.get_remote_url = AsyncMock(return_value="https://github.com/owner/repo.git")
         client.git.get_current_branch = AsyncMock(return_value="HEAD")
