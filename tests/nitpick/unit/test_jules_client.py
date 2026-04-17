@@ -50,6 +50,9 @@ def mock_client() -> Generator[JulesClient, None, None]:
             # FIX: Add api_client mock which is now used by wait_for_completion
             client.api_client = MagicMock()
             client.api_client.api_key = "mock_key"
+            client.api_client.list_activities_async = AsyncMock(return_value=[])
+            client.api_client._get_headers = MagicMock(return_value={})
+
             client.test_mode = False
             client.git = AsyncMock()
             yield client
@@ -158,7 +161,7 @@ async def test_interactive_inquiry_handling(
 
     mock_response = MagicMock()
     mock_response.output = "My Answer"
-    mock_client.manager_agent.run = AsyncMock(return_value=mock_response)  # type: ignore[method-assign]
+    mock_client.manager_agent.run = AsyncMock(return_value=mock_response)
 
     mock_client.inquiry_handler.context_builder = MagicMock()
     mock_client.list_activities = AsyncMock(  # type: ignore[method-assign]

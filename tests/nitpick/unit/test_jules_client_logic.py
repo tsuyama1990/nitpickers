@@ -47,6 +47,9 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             # FIX: Add api_client mock which is now used by wait_for_completion
             self.client.api_client = MagicMock()
             self.client.api_client.api_key = "mock_key"
+            self.client.api_client.list_activities_async = AsyncMock(return_value=[])
+            self.client.api_client._get_headers = MagicMock(return_value={})
+
             self.client.test_mode = False
             self.client.git = AsyncMock()
 

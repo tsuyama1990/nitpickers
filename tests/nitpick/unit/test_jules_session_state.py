@@ -10,7 +10,7 @@ class TestSessionStateValidation:
     """Validate session state checking before operations."""
 
     @pytest.fixture
-    def mock_client(self):  # type: ignore[no-untyped-def]
+    def mock_client(self) -> JulesClient:
         with (
             patch.dict(
                 os.environ,
@@ -51,12 +51,15 @@ class TestSessionStateValidation:
             # FIX: Add api_client mock which is now used by wait_for_completion
             client.api_client = MagicMock()
             client.api_client.api_key = "mock_key"
+            client.api_client.list_activities_async = AsyncMock(return_value=[])
+            client.api_client._get_headers = MagicMock(return_value={})
+
             client.test_mode = False
             client.git = AsyncMock()
             return client
 
     @pytest.mark.asyncio
-    async def test_get_session_state_in_progress(self, mock_client) -> None:  # type: ignore[no-untyped-def]
+    async def test_get_session_state_in_progress(self, mock_client: JulesClient) -> None:
         """Should return IN_PROGRESS for active session."""
         # Mock API response via httpx since _request might be lower level in api_client but JulesClient mostly uses it or httpx directly.
         # Looking at HANDOFF_SUMMARY implementation, get_session_state uses a fresh httpx client.
@@ -78,7 +81,7 @@ class TestSessionStateValidation:
             # The method implementation should handle sessions/ prefix or not
 
     @pytest.mark.asyncio
-    async def test_get_session_state_completed(self, mock_client) -> None:  # type: ignore[no-untyped-def]
+    async def test_get_session_state_completed(self, mock_client: JulesClient) -> None:
         """Should return COMPLETED for finished session."""
         with patch("httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
@@ -94,7 +97,7 @@ class TestSessionStateValidation:
             assert state == "COMPLETED"
 
     @pytest.mark.asyncio
-    async def test_get_session_state_on_error(self, mock_client) -> None:  # type: ignore[no-untyped-def]
+    async def test_get_session_state_on_error(self, mock_client: JulesClient) -> None:
         """Should return UNKNOWN on exception."""
         with patch("httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
