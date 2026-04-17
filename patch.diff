@@ -1,9 +1,0 @@
---- tests/nitpick/unit/test_jules_client.py
-+++ tests/nitpick/unit/test_jules_client.py
-@@ -194,6 +194,8 @@
-     mock_httpx.get.side_effect = get_side_effect
-     mock_httpx.post.return_value.status_code = 200
-+    # Add missing raise_for_status mock
-+    mock_httpx.post.return_value.raise_for_status = MagicMock()
-
-     result = await mock_client.wait_for_completion_legacy("sessions/123")
