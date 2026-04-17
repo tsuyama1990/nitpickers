@@ -1,5 +1,5 @@
-import pytest
 from src.utils_json import extract_json_from_text
+
 
 def test_extract_json_skips_python_block():
     text = '''

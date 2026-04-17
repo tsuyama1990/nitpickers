@@ -120,7 +120,8 @@ def test_calculate_directory_hash_dir_read_error(tmp_path: Path) -> None:
 
     def mocked_read_bytes(self: Path) -> bytes:
         if self.name == "file1.txt":
-            raise Exception("Read error")
+            msg = "Read error"
+            raise ValueError(msg)
         return original_read_bytes(self)
 
     with patch.object(Path, "read_bytes", autospec=True, side_effect=mocked_read_bytes):
