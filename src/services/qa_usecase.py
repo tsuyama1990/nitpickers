@@ -97,7 +97,7 @@ class QaUseCase:
         console.print("[bold cyan]Starting QA Session (Tutorial Generation)...[/bold cyan]")
 
         docs_dir = settings.paths.documents_dir
-        qa_instruction = settings.get_template("QA_TUTORIAL_INSTRUCTION.md").read_text()
+        qa_instruction = settings.read_template("QA_TUTORIAL_INSTRUCTION.md")
         full_prompt = f"{qa_instruction}\n\nTask: Generate the tutorials based on Final UAT."
 
         files_to_send = []
@@ -136,7 +136,7 @@ class QaUseCase:
                     f"[bold yellow]Sending Audit Feedback to Existing QA Session: {qa_session_id}... (Retry {current_retries + 1}/5)[/bold yellow]"
                 )
 
-                feedback_template = settings.get_template("AUDIT_FEEDBACK_MESSAGE.md").read_text()
+                feedback_template = settings.read_template("AUDIT_FEEDBACK_MESSAGE.md")
                 feedback_msg = str(feedback_template).replace("{{feedback}}", str(feedback))
                 result = await self._send_audit_feedback_to_session(
                     session_id=qa_session_id,
@@ -163,9 +163,7 @@ class QaUseCase:
                 )
                 import re
 
-                injection_template = str(
-                    settings.get_template("AUDIT_FEEDBACK_INJECTION.md").read_text()
-                )
+                injection_template = settings.read_template("AUDIT_FEEDBACK_INJECTION.md")
                 injection = injection_template.replace("{{feedback}}", str(feedback))
                 injection = str(
                     re.sub(r"\{\{#pr_url\}\}.*?\{\{/pr_url\}\}", "", injection, flags=re.DOTALL)
@@ -218,7 +216,7 @@ class QaUseCase:
         """Node for QA Auditor (Reviewing Tutorials)."""
         console.print("[bold magenta]Starting QA Auditor...[/bold magenta]")
 
-        instruction = settings.get_template("QA_AUDITOR_INSTRUCTION.md").read_text()
+        instruction = settings.read_template("QA_AUDITOR_INSTRUCTION.md")
 
         docs_dir = settings.paths.documents_dir
         context_files = {}

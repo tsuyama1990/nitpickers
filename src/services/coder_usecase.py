@@ -471,7 +471,7 @@ class CoderUseCase:
                 if "400" in error_msg or "FAILED_PRECONDITION" in error_msg:
                     import random
 
-                    backoff = (2**new_restart_count) + random.uniform(0.5, 2.0)  # noqa: S311
+                    backoff = (2**new_restart_count) + random.SystemRandom().uniform(0.5, 2.0)
                     console.print(
                         f"[yellow]Jules API reported precondition failure. Backing off for {backoff:.1f}s...[/yellow]"
                     )

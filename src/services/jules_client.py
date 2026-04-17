@@ -623,7 +623,7 @@ class JulesClient:
         try:
             self.console.print("[cyan]Sending message to Jules to commit and create PR...[/cyan]")
 
-            message = settings.get_template(settings.jules.pr_creation_template).read_text()
+            message = settings.read_template(settings.jules.pr_creation_template)
 
             await self._send_message(session_url, message)
 

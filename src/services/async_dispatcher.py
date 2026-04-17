@@ -35,7 +35,9 @@ def retry_on_429(config: DispatcherConfig) -> Callable[..., Any]:
                     if e.response.status_code == 429 and retries < config.max_retries:
                         retries += 1
                         # Exponential backoff with jitter
-                        sleep_time = (config.retry_backoff_factor**retries) + random.uniform(1, 3)  # noqa: S311
+                        sleep_time = (
+                            config.retry_backoff_factor**retries
+                        ) + random.SystemRandom().uniform(1, 3)
                         logger.warning(
                             f"HTTP 429 encountered in {func.__name__}. Retrying in {sleep_time:.2f} seconds (Attempt {retries}/{config.max_retries})."
                         )
@@ -45,7 +47,9 @@ def retry_on_429(config: DispatcherConfig) -> Callable[..., Any]:
                         and retries < config.max_retries
                     ):
                         retries += 1
-                        sleep_time = (config.retry_backoff_factor**retries) + random.uniform(1, 3)  # noqa: S311
+                        sleep_time = (
+                            config.retry_backoff_factor**retries
+                        ) + random.SystemRandom().uniform(1, 3)
                         logger.warning(
                             f"HTTP 503 encountered in {func.__name__}. Retrying in {sleep_time:.2f} seconds (Attempt {retries}/{config.max_retries})."
                         )

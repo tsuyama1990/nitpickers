@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -689,6 +690,11 @@ class Settings(BaseSettings):
             return package_template_path
 
         return user_path
+
+    @functools.cache  # noqa: B019
+    def read_template(self, name: str) -> str:
+        """Read and cache template content."""
+        return self.get_template(name).read_text(encoding="utf-8")
 
     def get_prompt_content(self, filename: str, default: str = "") -> str:
         """Reads prompt content."""
