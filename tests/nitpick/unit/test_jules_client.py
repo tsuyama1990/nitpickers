@@ -2,6 +2,7 @@ from collections.abc import Generator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from src.services.jules_client import JulesClient, JulesTimeoutError
@@ -72,12 +73,13 @@ async def test_wait_for_completion_sucess_first_try(
     mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Return COMPLETED with PR (official Jules API state - not SUCCEEDED)
-    mock_response = MagicMock()
+    mock_response = AsyncMock(spec=httpx.Response)
     mock_response.status_code = 200
-    mock_response.json.return_value = {
+    mock_response.json = MagicMock(return_value={
         "state": "COMPLETED",
         "outputs": [{"pullRequest": {"url": "https://pr"}}],
-    }
+    })
+    mock_response.raise_for_status = MagicMock()
     mock_httpx.get.return_value = mock_response
 
     result = await mock_client.wait_for_completion("sessions/123")
@@ -105,16 +107,19 @@ async def test_wait_for_completion_loop_success(
 
         # Session Status
         # We use sleep call count to decide iteration
-        if mock_client._sleep.call_count < expected_calls:  # type: ignore[attr-defined]
-            return MagicMock(status_code=200, json=lambda: {"state": "IN_PROGRESS"})
+        resp = AsyncMock(spec=httpx.Response)
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
 
-        return MagicMock(
-            status_code=200,
-            json=lambda: {
-                "state": "COMPLETED",
-                "outputs": [{"pullRequest": {"url": "https://pr"}}],
-            },
-        )
+        if mock_client._sleep.call_count < expected_calls:  # type: ignore[attr-defined]
+            resp.json = MagicMock(return_value={"state": "IN_PROGRESS"})
+            return resp
+
+        resp.json = MagicMock(return_value={
+            "state": "COMPLETED",
+            "outputs": [{"pullRequest": {"url": "https://pr"}}],
+        })
+        return resp
 
     mock_httpx.get.side_effect = get_side_effect
 
@@ -130,17 +135,18 @@ async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx:
     mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Always IN_PROGRESS (never completes → triggers timeout)
-    mock_response = MagicMock()
+    mock_response = AsyncMock(spec=httpx.Response)
     mock_response.status_code = 200
-    mock_response.json.return_value = {"state": "IN_PROGRESS"}
+    mock_response.raise_for_status = MagicMock()
+    mock_response.json = MagicMock(return_value={"state": "IN_PROGRESS"})
 
-    async def get_mock(url: str, **kwargs: Any) -> MagicMock:
+    async def get_mock(url: str, **kwargs: Any) -> Any:
         return mock_response
 
     mock_httpx.get.side_effect = get_mock
 
     with pytest.raises(JulesTimeoutError):
-        await mock_client.wait_for_completion_legacy("sessions/123")
+        await mock_client.wait_for_completion("sessions/123")
 
 
 @pytest.mark.asyncio

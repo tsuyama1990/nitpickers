@@ -540,12 +540,15 @@ class JulesClient:
         )
         try:
             async with asyncio.timeout(timeout_to_use):
+                current_interval = interval
                 while True:
                     activities = await self.list_activities(session_id_path)
                     for activity in activities:
                         if target_type in activity:
                             return activity
-                    await self._sleep(interval)
+                    await self._sleep(current_interval)
+                    # Exponential backoff with 60s cap
+                    current_interval = min(current_interval * 2, 60)
         except TimeoutError:
             return None
 

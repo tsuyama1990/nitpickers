@@ -180,7 +180,7 @@ class JulesApiClient:
                         params["pageToken"] = page_token
 
                     resp = await client.get(
-                        url, params=params, headers=self._get_headers(), timeout=10.0
+                        url, params=params, headers=self._get_headers(), timeout=30.0
                     )
                     if resp.status_code == 404:
                         # Session may be newly created and activities not yet propagated
