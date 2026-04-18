@@ -33,6 +33,11 @@ dependencies = [
 [tool.uv]
 environments = ["sys_platform == 'linux'"]
 
+[tool.uv.workspace]
+members = [
+    "anomaly_analyzer",
+]
+
 [project.scripts]
 nitpick = "src.cli:app"
 

@@ -1,0 +1,66 @@
+[project]
+name = "anomaly_analyzer"
+version = "0.1.0"
+description = "Reflex project for Japan Stock Anomaly Analyzer"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.2.0",
+    "plotly>=6.0.0",
+    "polars>=1.22.0",
+    "pydantic-settings>=2.7.1",
+    "reflex>=0.6.9",
+    "scipy>=1.15.2",
+    "statsmodels>=0.14.4",
+    "vectorbt>=0.28.2",
+    "pandas>=2.0.0",
+    "pyarrow>=23.0.0"
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "pytest-playwright>=0.7.0",
+    "ruff>=0.9.9",
+    "respx>=0.22.0",
+    "types-requests>=2.31.0"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=anomaly_analyzer --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+select = [
+    "F", "E", "W", "C90", "I", "N", "UP", "YTT", "ANN", "ASYNC", "S", "BLE",
+    "B", "A", "C4", "DTZ", "T10", "EM", "ICN", "PIE", "T20", "PT", "RET",
+    "SIM", "TID", "ARG", "PTH", "ERA", "PL", "TRY", "RUF"
+]
+ignore = [
+    "ANN002", "ANN003", "ANN001", "ANN401", "ARG001", "ARG005",
+    "PLR2004", "E501", "TRY003", "D", "ANN201", "N806", "PLC0415", "BLE001",
+    "PT019", "RUF003", "ARG002", "RUF043", "RUF059", "PLR0913", "ANN202",
+    "F401", "EM101"
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.flake8-annotations]
+suppress-dummy-args = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S607", "S113", "S603"]
+"anomaly_analyzer/core/db.py" = ["S608"]
+"anomaly_analyzer/core/stats.py" = ["C901", "PLR0912"]
+"anomaly_analyzer/state.py" = ["RUF012", "TRY301"]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+disable_error_code = ["attr-defined", "call-arg", "dict-item", "operator", "unused-ignore", "untyped-decorator", "misc"]

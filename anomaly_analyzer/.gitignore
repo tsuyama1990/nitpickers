@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.reflex/
+web/
+data/
+.env
+.pytest_cache/
+htmlcov/
+.coverage
