@@ -8,8 +8,8 @@ from src.services.llm_reviewer import LLMReviewer
 from src.state import CycleState
 
 
-@pytest.mark.live
-@pytest.mark.asyncio
+@pytest.mark.live()
+@pytest.mark.asyncio()
 @pytest.mark.timeout(30)
 async def test_live_uat_auditor_diagnosis(monkeypatch: pytest.MonkeyPatch) -> None:
     # Arrange: Enable LangSmith Tracing for supervision

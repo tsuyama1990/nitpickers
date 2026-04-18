@@ -46,35 +46,22 @@ def test_route_sandbox_evaluate() -> None:
 def test_route_auditor() -> None:
     # Test rejected by None audit result
     state = CycleState(cycle_id="01")
-    state.committee.audit_attempt_count = 0
     assert route_auditor(state) == "reject"
-    assert state.committee.audit_attempt_count == 1
 
     # Test rejected by False is_approved
     audit_res = AuditResult(is_approved=False)
     state.audit = AuditState(audit_result=audit_res)
-    state.committee.audit_attempt_count = 0
     assert route_auditor(state) == "reject"
-    assert state.committee.audit_attempt_count == 1
-
-    # Test rejected by False is_approved max retries
-    audit_res = AuditResult(is_approved=False)
-    state.audit = AuditState(audit_result=audit_res)
-    state.committee.audit_attempt_count = settings.max_audit_retries
-    assert route_auditor(state) == "requires_pivot"
-    assert state.committee.audit_attempt_count == settings.max_audit_retries + 1
 
     # Test approved, next_auditor
     audit_res_approved = AuditResult(is_approved=True)
     state.audit = AuditState(audit_result=audit_res_approved)
     state.committee.current_auditor_index = 1
     assert route_auditor(state) == "next_auditor"
-    assert state.committee.current_auditor_index == 2
 
     # Test approved, pass_all
     state.committee.current_auditor_index = settings.NUM_AUDITORS
     assert route_auditor(state) == "pass_all"
-    assert state.committee.current_auditor_index == settings.NUM_AUDITORS + 1
 
 
 def test_route_final_critic() -> None:

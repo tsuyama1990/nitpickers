@@ -61,14 +61,14 @@ def test_coder_graph_structure() -> None:
     assert sandbox_branches is not None
     # We expect these branches from route_sandbox_evaluate
     # auditor, final_critic, failed, test_coder_node, impl_coder_node
-    condition_map = getattr(list(sandbox_branches.values())[0], "mapping", {})
+    condition_map = getattr(next(iter(sandbox_branches.values())), "mapping", {})
     assert "final_critic" in condition_map
     assert condition_map["final_critic"] == "final_critic_node"
 
     # Assert auditor conditional routing
     auditor_branches = branches.get("auditor")
     assert auditor_branches is not None
-    auditor_map = getattr(list(auditor_branches.values())[0], "mapping", {})
+    auditor_map = getattr(next(iter(auditor_branches.values())), "mapping", {})
 
     # Should loop back to coder on reject, currently it loops to test_coder_node but we'll accept 'coder_session' equivalent.
     # But specifically, SPEC says: From auditor_node -> route_auditor -> (coder_session | next_auditor | refactor_node).
@@ -78,7 +78,7 @@ def test_coder_graph_structure() -> None:
     assert auditor_map["next_auditor"] == "auditor"
 
     assert "pass_all" in auditor_map
-    assert auditor_map["pass_all"] == "refactor_node"
+    assert auditor_map["pass_all"] == "refactor_node"  # noqa: S105
 
     # We also check that "requires_pivot" or equivalent fail states are mapped
     # Let's see if the test fails. It should pass if the graph is correctly set up with the NEW specification. Wait, the spec says replace parallel committee_manager with serial auditor_node. The existing code might already do this, let's see.
@@ -89,6 +89,6 @@ def test_coder_graph_structure() -> None:
     # Assert final critic routes
     final_critic_branches = branches.get("final_critic_node")
     assert final_critic_branches is not None
-    final_critic_map = getattr(list(final_critic_branches.values())[0], "mapping", {})
+    final_critic_map = getattr(next(iter(final_critic_branches.values())), "mapping", {})
     assert final_critic_map["approve"] == END
     assert "reject" in final_critic_map

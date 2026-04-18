@@ -1,9 +1,10 @@
+# ruff: noqa: S607
 import subprocess
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from langgraph.graph.state import CompiledStateGraph
 
 from src.config import settings
 from src.graph import GraphBuilder
@@ -13,7 +14,7 @@ from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
-@pytest.fixture
+@pytest.fixture()
 def repo_path(tmp_path: Path) -> Path:
     """Fixture to set up a real local bare git repository for testing."""
     repo = tmp_path / "repo"
@@ -60,8 +61,8 @@ def repo_path(tmp_path: Path) -> Path:
     return repo
 
 
-@pytest.fixture
-def integration_graph() -> CompiledStateGraph:
+@pytest.fixture()
+def integration_graph() -> Any:
     sandbox = MagicMock(spec=SandboxRunner)
     jules = MagicMock(spec=JulesClient)
 
@@ -70,10 +71,8 @@ def integration_graph() -> CompiledStateGraph:
     return builder.build_integration_graph()
 
 
-@pytest.mark.asyncio
-async def test_integration_graph_clean_merge(
-    repo_path: Path, integration_graph: CompiledStateGraph
-) -> None:
+@pytest.mark.asyncio()
+async def test_integration_graph_clean_merge(repo_path: Path, integration_graph: Any) -> None:
     """Test Scenario 1: Clean Merge"""
     # Create a clean branch to merge
     subprocess.run(
@@ -112,9 +111,9 @@ async def test_integration_graph_clean_merge(
     assert "Clean branch" in git_log
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_graph_conflict_resolution(
-    repo_path: Path, integration_graph: CompiledStateGraph
+    repo_path: Path, integration_graph: Any
 ) -> None:
     """Test Scenario 2: Conflict Resolution via 3-Way Diff"""
     # Master is currently at Base. We merge feature-a, then feature-b to create a conflict.
@@ -124,24 +123,24 @@ async def test_integration_graph_conflict_resolution(
     with (
         patch.object(settings.paths, "workspace_root", repo_path),
         patch("os.getcwd", return_value=str(repo_path)),
+        patch("src.nodes.master_integrator.JulesClient") as MockJules,
     ):
         # We need to mock the LLM inside master_integrator_node
-        with patch("src.nodes.master_integrator.JulesClient") as MockJules:
-            mock_jules_instance = MagicMock()
-            MockJules.return_value = mock_jules_instance
-            mock_jules_instance.create_master_integrator_session.return_value = "session_id"
-            mock_jules_instance.send_message_to_session = AsyncMock(
-                return_value='{"resolved_code": "def my_func():\\n    return \'resolved\'\\n"}'
-            )
+        mock_jules_instance = MagicMock()
+        MockJules.return_value = mock_jules_instance
+        mock_jules_instance.create_master_integrator_session.return_value = "session_id"
+        mock_jules_instance.send_message_to_session = AsyncMock(
+            return_value='{"resolved_code": "def my_func():\\n    return \'resolved\'\\n"}'
+        )
 
-            state = IntegrationState(branches_to_merge=["feature-b"])
-            result = await integration_graph.ainvoke(
-                state,
-                config={"configurable": {"thread_id": "test_conflict"}},
-            )
+        state = IntegrationState(branches_to_merge=["feature-b"])
+        result = await integration_graph.ainvoke(
+            state,
+            config={"configurable": {"thread_id": "test_conflict"}},
+        )
 
-            # The master integrator node should have been called
-            assert mock_jules_instance.send_message_to_session.called
+        # The master integrator node should have been called
+        assert mock_jules_instance.send_message_to_session.called
 
     assert result is not None
     # The conflict should be resolved
@@ -149,33 +148,31 @@ async def test_integration_graph_conflict_resolution(
     assert result["unresolved_conflicts"][0].resolved is True
 
 
-@pytest.mark.asyncio
-async def test_integration_graph_semantic_failure(
-    repo_path: Path, integration_graph: CompiledStateGraph
-) -> None:
+@pytest.mark.asyncio()
+async def test_integration_graph_semantic_failure(repo_path: Path, integration_graph: Any) -> None:
     """Test Scenario 3: Post-Merge Semantic Failure Recovery"""
     # Simulate a merge that succeeds without conflicts but fails the sandbox
     with (
         patch.object(settings.paths, "workspace_root", repo_path),
         patch("os.getcwd", return_value=str(repo_path)),
+        patch(
+            "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
+        ) as mock_sandbox,
     ):
         # Mock global_sandbox_node to fail initially, then pass
+        mock_sandbox.side_effect = [{"status": "tdd_failed"}, {"status": "pass"}]
+
+        # Mock the integration fixer node to resolve the issue
         with patch(
-            "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
-        ) as mock_sandbox:
-            mock_sandbox.side_effect = [{"status": "tdd_failed"}, {"status": "pass"}]
+            "src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node"
+        ) as mock_fixer:
+            mock_fixer.return_value = {"status": "success"}
 
-            # Mock the integration fixer node to resolve the issue
-            with patch(
-                "src.nodes.integration_fixer.IntegrationFixerNodes.integration_fixer_node"
-            ) as mock_fixer:
-                mock_fixer.return_value = {"status": "success"}
+            state = IntegrationState(branches_to_merge=["feature-a"])
+            await integration_graph.ainvoke(
+                state,
+                config={"configurable": {"thread_id": "test_semantic"}},
+            )
 
-                state = IntegrationState(branches_to_merge=["feature-a"])
-                await integration_graph.ainvoke(
-                    state,
-                    config={"configurable": {"thread_id": "test_semantic"}},
-                )
-
-                assert mock_fixer.called
-                assert mock_sandbox.call_count == 2
+            assert mock_fixer.called
+            assert mock_sandbox.call_count == 2

@@ -8,21 +8,21 @@ from src.nodes.sandbox_evaluator import SandboxEvaluatorNodes
 from src.state import CycleState
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_process_runner() -> Any:
     runner = AsyncMock()
     runner.run_command.return_value = ("Success", "", 0, False)
     return runner
 
 
-@pytest.fixture
+@pytest.fixture()
 def base_state() -> CycleState:
     state = CycleState(cycle_id="01")
     state.sandbox_id = "test_sandbox_123"
     return state
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_evaluate_success_passes(base_state: CycleState, mock_process_runner: Any) -> None:
     node = SandboxEvaluatorNodes(process_runner=mock_process_runner)
     result = await node.sandbox_evaluate_node(base_state)
@@ -34,7 +34,7 @@ async def test_evaluate_success_passes(base_state: CycleState, mock_process_runn
     assert report.passed
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_evaluate_failure_fails(base_state: CycleState, mock_process_runner: Any) -> None:
     mock_process_runner.run_command.side_effect = [
         ("Success", "", 0, False),  # lint

@@ -8,9 +8,9 @@ from src.services.coder_usecase import CoderUseCase
 from src.state import CycleState
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 class TestResumeLogic:
-    @pytest.fixture
+    @pytest.fixture()
     def mock_jules(self) -> MagicMock:
         jules = MagicMock()
         jules.wait_for_completion = AsyncMock()
@@ -78,8 +78,6 @@ class TestResumeLogic:
             and call.kwargs.get("jules_session_id") == "jules-new-456"
             and call.kwargs.get("status") == "in_progress"
             for call in mock_mgr.update_cycle_state.call_args_list
-        ), (
-            f"Expected update_cycle_state call with session_id not found. Calls: {mock_mgr.update_cycle_state.call_args_list}"
-        )
+        ), f"Expected update_cycle_state call with session_id not found. Calls: {mock_mgr.update_cycle_state.call_args_list}"
 
         assert result["status"] == FlowStatus.READY_FOR_AUDIT

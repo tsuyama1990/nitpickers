@@ -44,7 +44,7 @@ class CoderUseCase:
     #  Public entry point                                                  #
     # ------------------------------------------------------------------ #
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Routes the coder session through its many possible modes."""
         cycle_id = state.cycle_id
         iteration = state.iteration_count

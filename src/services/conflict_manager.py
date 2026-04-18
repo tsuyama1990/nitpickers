@@ -154,7 +154,7 @@ class ConflictManager:
         async def _get_git_version(stage: int) -> str:
             try:
                 # stage is int, item.file_path is validated indirectly by being in repo_path
-                stdout, stderr, returncode, _ = await self.runner.run_command(
+                stdout, _stderr, _returncode, _ = await self.runner.run_command(
                     [git_cmd, "show", f":{stage}:{item.file_path}"],
                     cwd=repo_path,
                     check=True,

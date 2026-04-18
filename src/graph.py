@@ -133,7 +133,7 @@ class GraphBuilder:
             "auditor",
             self.nodes.route_auditor,
             {
-                "reject": "committee_manager_node",   # Rejection now goes through committee budget check
+                "reject": "committee_manager_node",  # Rejection now goes through committee budget check
                 "next_auditor": "auditor",
                 "pass_all": "refactor_node",
                 "failed": END,
@@ -144,7 +144,7 @@ class GraphBuilder:
         # Committee -> route to retry/next_auditor/refactor/final_critic based on budget
         workflow.add_conditional_edges(
             "committee_manager_node",
-            self.nodes.route_committee,
+            self.nodes.route_committee,  # type: ignore[attr-defined]
             {
                 "impl_coder_node": "impl_coder_node",
                 "next_auditor": "auditor",

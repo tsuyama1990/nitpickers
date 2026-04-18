@@ -1,4 +1,3 @@
-import functools
 import logging
 import os
 import re
@@ -171,7 +170,7 @@ def _detect_package_dir() -> str:
 
 
 class PathsConfig(BaseModel):
-    workspace_root: Path = Field(default_factory=lambda: Path.cwd())
+    workspace_root: Path = Field(default_factory=Path.cwd)
     documents_dir: Path = Field(default_factory=lambda: Path.cwd() / "dev_documents")
     package_dir: str = Field(default_factory=_detect_package_dir)
     contracts_dir: str = ""
@@ -691,7 +690,6 @@ class Settings(BaseSettings):
 
         return user_path
 
-    @functools.cache  # noqa: B019
     def read_template(self, name: str) -> str:
         """Read and cache template content."""
         return self.get_template(name).read_text(encoding="utf-8")

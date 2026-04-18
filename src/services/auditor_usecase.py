@@ -46,7 +46,7 @@ class AuditorUseCase:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
         return result
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0912, PLR0915
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Runs the auditor logic, static analysis, and prepares LLM reviewer feedback."""
         console.print("[bold magenta]Starting Auditor...[/bold magenta]")
 
@@ -214,7 +214,7 @@ class AuditorUseCase:
                     # Instead of automatically rejecting, we provide ALL target files to the LLM
                     all_target_files = settings.get_target_files()
                     reviewable_files = [str(f) for f in all_target_files]
-                    
+
                     instruction += "\n\n[SYSTEM NOTE: The Coder made NO changes in this PR. Your job is to verify if the codebase ALREADY FULLY SATISFIES the Requirements. If yes, output -> REVIEW_PASSED. If no, output -> REVIEW_FAILED and specify what needs to be changed.]"
 
                 context_file_names = {str(p) for p in context_paths}
