@@ -41,16 +41,6 @@ def mock_file_patcher() -> MagicMock:
 
 
 @pytest.fixture
-def mock_contract_manager() -> MagicMock:
-    return MagicMock()
-
-
-@pytest.fixture
-def mock_artifact_manager() -> MagicMock:
-    return MagicMock()
-
-
-@pytest.fixture
 def mock_jules() -> MagicMock:
     return MagicMock()
 

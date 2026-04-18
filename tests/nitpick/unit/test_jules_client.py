@@ -69,38 +69,11 @@ def mock_httpx() -> Generator[AsyncMock, None, None]:
 
 
 @pytest.mark.asyncio
-async def disabled_test_wait_for_completion_sucess_first_try(
-    mock_client: JulesClient, mock_httpx: AsyncMock
-) -> None:
-    """Test finding PR immediately."""
-    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]  # type: ignore[method-assign]
-
-    # Return COMPLETED with PR (official Jules API state - not SUCCEEDED)
-    mock_response = AsyncMock(spec=httpx.Response)
-    mock_response.status_code = 200
-    mock_response.json = MagicMock(
-        return_value={
-            "state": "COMPLETED",
-            "outputs": [{"pullRequest": {"url": "https://pr"}}],
-        }
-    )
-    mock_response.raise_for_status = MagicMock()
-    mock_httpx.get.return_value = mock_response
-
-    mock_client.list_activities = AsyncMock(return_value=[])  # type: ignore[method-assign]
-    result = await mock_client.wait_for_completion("sessions/123")
-    assert result.get("pr_url") == "https://pr" or result.get("status") == "success"
-
-    # Should not sleep if immediate success
-    mock_client._sleep.assert_not_called()
-
-
-@pytest.mark.asyncio
 async def test_wait_for_completion_loop_success(
     mock_client: JulesClient, mock_httpx: AsyncMock
 ) -> None:
     """Test polling loop finds PR after few tries."""
-    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]  # type: ignore[method-assign]
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Sequence: IN_PROGRESS -> IN_PROGRESS -> COMPLETED
     # NOTE: list_activities also calls GET, we need to handle that or distinguish by URL
@@ -141,7 +114,7 @@ async def test_wait_for_completion_loop_success(
 async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx: AsyncMock) -> None:
     """Test timeout behaves correctly."""
     mock_client.timeout = 0.001  # type: ignore[assignment]
-    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]  # type: ignore[method-assign]
+    mock_client._sleep = AsyncMock()  # type: ignore[method-assign]
 
     # Always IN_PROGRESS (never completes → triggers timeout)
     mock_response = AsyncMock(spec=httpx.Response)
