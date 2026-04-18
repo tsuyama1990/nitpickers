@@ -5,7 +5,7 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.fixture()
+@pytest.fixture
 def real_git_env(tmp_path: Path) -> Path:
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
@@ -45,7 +45,7 @@ def real_git_env(tmp_path: Path) -> Path:
     return repo_dir
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_create_feature_branch_idempotency(
     real_git_env: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -73,7 +73,7 @@ async def test_create_feature_branch_idempotency(
     assert out.strip() == branch_name
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_smart_checkout_dirty_recovery(
     real_git_env: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

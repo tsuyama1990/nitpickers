@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 from src.cli import app
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_project_dir() -> Generator[str, None, None]:
     # Create a temporary directory
     temp_dir = tempfile.mkdtemp()
@@ -44,7 +44,7 @@ def temp_project_dir() -> Generator[str, None, None]:
     shutil.rmtree(temp_dir)
 
 
-@pytest.mark.live()
+@pytest.mark.live
 def test_live_full_cycle(temp_project_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
 

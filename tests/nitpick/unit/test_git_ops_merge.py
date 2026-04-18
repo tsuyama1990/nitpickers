@@ -7,7 +7,7 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_runner() -> Generator[Any, None, None]:
     with patch("src.services.git.base.ProcessRunner") as MockRunner:
         runner_instance = MockRunner.return_value
@@ -15,7 +15,7 @@ def mock_runner() -> Generator[Any, None, None]:
         yield runner_instance
 
 
-@pytest.fixture()
+@pytest.fixture
 def git_manager(mock_runner: Any) -> GitManager:
     # Mock settings to prevent loading real config
     with patch("src.services.git.base.settings") as mock_settings:
@@ -26,7 +26,7 @@ def git_manager(mock_runner: Any) -> GitManager:
         return manager
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_merge_pr_immediate_success(git_manager: GitManager, mock_runner: Any) -> None:
     """Test that immediate merge is tried first and succeeds."""
     # Mock behavior: Immediate merge succeeds (code 0)
@@ -52,7 +52,7 @@ async def test_merge_pr_immediate_success(git_manager: GitManager, mock_runner: 
     assert "--delete-branch" in merge_cmd
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_merge_pr_fallback_to_auto(git_manager: GitManager, mock_runner: Any) -> None:
     """Test fallback to auto-merge when immediate merge fails due to status checks."""
 
@@ -80,7 +80,7 @@ async def test_merge_pr_fallback_to_auto(git_manager: GitManager, mock_runner: A
     assert "--auto" in cmd3
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_merge_pr_failure_no_fallback(git_manager: GitManager, mock_runner: Any) -> None:
     """Test that we do NOT fallback to auto-merge for non-recoverable errors (e.g. conflict)."""
 

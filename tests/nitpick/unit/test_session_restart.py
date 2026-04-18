@@ -12,14 +12,14 @@ from src.state import CycleState
 class TestSessionRestart:
     """Test session restart logic on failure."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_jules(self) -> MagicMock:
         jules = MagicMock()
         jules.run_session = AsyncMock()
         jules.wait_for_completion = AsyncMock()
         return jules
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_manifest(self) -> MagicMock:
         manifest = MagicMock()
         manifest.jules_session_id = None
@@ -27,7 +27,7 @@ class TestSessionRestart:
         manifest.max_session_restarts = 2
         return manifest
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_session_restart_on_failure(
         self, mock_jules: MagicMock, mock_manifest: MagicMock
     ) -> None:
@@ -95,7 +95,7 @@ class TestSessionRestart:
             for call in update_calls
         )
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_session_restart_max_limit(
         self, mock_jules: MagicMock, mock_manifest: MagicMock
     ) -> None:

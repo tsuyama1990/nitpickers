@@ -9,7 +9,7 @@ from src.cli import app
 runner = CliRunner()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_deps() -> Iterator[None]:
     with (
         patch("shutil.which", return_value="/usr/bin/git"),

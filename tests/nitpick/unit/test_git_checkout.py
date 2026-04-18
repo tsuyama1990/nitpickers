@@ -8,7 +8,7 @@ from src.services.git.checkout import GitCheckoutMixin
 class TestGitCheckout:
     """Tests for GitCheckoutMixin."""
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_pull_changes_uses_rebase(self) -> None:
         """Verifies that pull_changes uses --rebase."""
 

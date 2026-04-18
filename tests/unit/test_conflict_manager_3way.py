@@ -7,13 +7,13 @@ from src.domain_models.execution import ConflictRegistryItem
 from src.services.conflict_manager import ConflictManager
 
 
-@pytest.fixture()
+@pytest.fixture
 def conflict_manager() -> ConflictManager:
     """Create a ConflictManager instance."""
     return ConflictManager()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_build_conflict_package_missing_base(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
@@ -55,7 +55,7 @@ async def test_build_conflict_package_missing_base(
         assert "### Branch B の変更 (Remote)\n```python\nremote_code\n```" in prompt
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_build_conflict_package_success(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:

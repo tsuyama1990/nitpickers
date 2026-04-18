@@ -35,31 +35,31 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Any:
         yield real_defaults
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_file_patcher() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_contract_manager() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_artifact_manager() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_jules() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_reviewer() -> MagicMock:
     return MagicMock()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_git() -> MagicMock:
     return MagicMock()

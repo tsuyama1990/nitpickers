@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture()
+@pytest.fixture
 def real_e2e_env(tmp_path: Path) -> Path:
     # Setup isolated E2E workspace
     workspace = tmp_path / "e2e_workspace"
@@ -39,8 +39,8 @@ def real_e2e_env(tmp_path: Path) -> Path:
     return workspace
 
 
-@pytest.mark.live()
-@pytest.mark.asyncio()
+@pytest.mark.live
+@pytest.mark.asyncio
 async def test_nitpick_cli_init_and_gen_cycles(
     real_e2e_env: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

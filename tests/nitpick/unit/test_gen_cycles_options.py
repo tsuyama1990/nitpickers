@@ -26,7 +26,7 @@ class TestGenCyclesCountOption:
         assert state.requested_cycle_count is None
         assert state.get("requested_cycle_count") is None
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_prompt_injection_with_count(self, tmp_path: Any) -> None:
         """Test that architect_session_node injects constraint when count is specified."""
         # Setup mocks
@@ -86,7 +86,7 @@ class TestGenCyclesCountOption:
             assert "exactly 5 implementation cycles" in actual_prompt
             assert instruction_content in actual_prompt
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_prompt_no_injection_without_count(self, tmp_path: Any) -> None:
         """Test that architect_session_node does NOT inject constraint when count is not specified."""
         # Setup mocks
@@ -158,7 +158,7 @@ class TestGenCyclesCountOption:
             assert actual_prompt == instruction_content
 
     @pytest.mark.parametrize("count_value", [1, 2, 3, 5, 10])
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_prompt_injection_various_counts(self, count_value: int) -> None:
         """Test that the correct count value is injected for various inputs."""
         # Setup mocks

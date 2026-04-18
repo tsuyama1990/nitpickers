@@ -50,7 +50,7 @@ def _make_state(
 class TestCommitteeBudgetEnforcement:
     """Tests for CommitteeUseCase budget enforcement."""
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_retry_within_budget(self) -> None:
         """Auditor rejected, within review budget → RETRY_FIX (→ impl_coder_node)."""
         from src.services.committee_usecase import CommitteeUseCase
@@ -68,7 +68,7 @@ class TestCommitteeBudgetEnforcement:
         assert result["status"] == FlowStatus.RETRY_FIX
         assert result.get("final_fix") is not True
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_next_auditor_after_review_limit(self) -> None:
         """Auditor #1 exhausted reviews → move to auditor #2."""
         from src.services.committee_usecase import CommitteeUseCase
@@ -90,7 +90,7 @@ class TestCommitteeBudgetEnforcement:
             committee_state.current_auditor_index == 2
         ), f"Expected auditor index 2, got {committee_state.current_auditor_index}"
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_final_fix_when_budget_exhausted(self) -> None:
         """All 6 rounds exhausted → final_fix=True must be returned."""
         from src.services.committee_usecase import CommitteeUseCase
@@ -109,7 +109,7 @@ class TestCommitteeBudgetEnforcement:
             result.get("final_fix") is True
         ), f"Budget exhausted: final_fix must be True, got result={result}"
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_post_audit_refactor_when_all_approved(self) -> None:
         """All auditors approved → POST_AUDIT_REFACTOR."""
         from src.services.committee_usecase import CommitteeUseCase
@@ -126,7 +126,7 @@ class TestCommitteeBudgetEnforcement:
 
         assert result["status"] == FlowStatus.POST_AUDIT_REFACTOR
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_exactly_six_rounds_triggers_final_fix(self) -> None:
         """Simulate 6 consecutive rejections and verify final_fix is set at round 6."""
         from src.services.committee_usecase import CommitteeUseCase

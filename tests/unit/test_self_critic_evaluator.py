@@ -5,7 +5,7 @@ import pytest
 from src.services.self_critic_evaluator import SelfCriticEvaluator
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_jules() -> MagicMock:
     jules = MagicMock()
     jules._get_session_url.return_value = "https://mock.url/sessions/123"
@@ -13,7 +13,7 @@ def mock_jules() -> MagicMock:
     return jules
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_critic_approved(mock_jules: MagicMock) -> None:
     evaluator = SelfCriticEvaluator(mock_jules)
     mock_jules.wait_for_completion = AsyncMock(
@@ -33,7 +33,7 @@ async def test_critic_approved(mock_jules: MagicMock) -> None:
     assert result.vulnerabilities == []
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_critic_rejected_retry_loop(mock_jules: MagicMock) -> None:
     evaluator = SelfCriticEvaluator(mock_jules)
     mock_jules.wait_for_completion = AsyncMock(
@@ -56,7 +56,7 @@ async def test_critic_rejected_retry_loop(mock_jules: MagicMock) -> None:
     assert result.suggestions == ["Use JOIN"]
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_critic_with_custom_template(mock_jules: MagicMock) -> None:
     evaluator = SelfCriticEvaluator(mock_jules)
     mock_jules.wait_for_completion = AsyncMock(

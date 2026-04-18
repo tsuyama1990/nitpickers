@@ -10,7 +10,7 @@ from src.state import CycleState
 class TestAuditPolling:
     """Tests for the Audit Polling Logic in AuditorUseCase."""
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_audit_polling_pulls_changes(self) -> None:
         """
         Verifies that when the auditor detects the same commit that was already audited,
