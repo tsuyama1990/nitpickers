@@ -11,7 +11,7 @@ from src.state import CycleState
 class TestSessionReuse:
     """Validate session reuse and fallback logic."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_jules(self) -> MagicMock:
         jules = MagicMock()
         jules.run_session = AsyncMock()
@@ -21,7 +21,7 @@ class TestSessionReuse:
         jules._get_session_url = MagicMock(return_value="https://jules/session/url")
         return jules
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_reuse_completed_session_for_auditor_reject(self, mock_jules: MagicMock) -> None:
         """Should REUSE COMPLETED session for Auditor Reject (send feedback to same session)."""
         mock_jules.get_session_state.return_value = "COMPLETED"
@@ -67,7 +67,7 @@ class TestSessionReuse:
         mock_jules.run_session.assert_not_called()
         assert result["status"] == FlowStatus.READY_FOR_AUDIT
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_create_new_session_if_failed(self, mock_jules: MagicMock) -> None:
         """Should create NEW session if previous session FAILED."""
         mock_jules.get_session_state.return_value = "FAILED"
@@ -111,7 +111,7 @@ class TestSessionReuse:
         assert "Fix this issue" in prompt
         assert "PREVIOUS AUDIT FEEDBACK" in prompt
 
-    @pytest.mark.asyncio
+    @pytest.mark.asyncio()
     async def test_reuse_in_progress_session(self, mock_jules: MagicMock) -> None:
         """Should REUSE IN_PROGRESS session (original behavior)."""
         mock_jules.get_session_state.return_value = "IN_PROGRESS"

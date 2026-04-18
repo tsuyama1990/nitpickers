@@ -16,7 +16,7 @@ class CommitteeUseCase:
     Encapsulates the logic for managing the Committee of Auditors.
     """
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: PLR0911
         """Node for Managing the Committee of Auditors."""
         if state.status == FlowStatus.WAITING_FOR_JULES:
             console.print(
@@ -117,9 +117,7 @@ class CommitteeUseCase:
         # If we reach here and final_fix is ALREADY True, it means we've already done the polish.
         # We must transition to the next phase (final_critic or completed).
         if getattr(state, "final_fix", False):
-            console.print(
-                "[bold green]Final Polish complete. Moving to Final Review.[/bold green]"
-            )
+            console.print("[bold green]Final Polish complete. Moving to Final Review.[/bold green]")
             return {"status": FlowStatus.READY_FOR_AUDIT}
 
         round_count = (

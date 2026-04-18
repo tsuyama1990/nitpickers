@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 test_logger = logging.getLogger("test_permission_manager")
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_fix_permissions_traverses_all_files() -> None:
     """Test that all files and directories are traversed and chmodded."""
     # Mock data
@@ -59,7 +59,7 @@ async def test_fix_permissions_traverses_all_files() -> None:
         mock_chmod.assert_any_call("/mock/root/dir1", 0o755)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_fix_permissions_handles_chown() -> None:
     """Test that chown is called when HOST_UID and HOST_GID are set."""
     mock_root = MagicMock(spec=Path)
@@ -82,7 +82,7 @@ async def test_fix_permissions_handles_chown() -> None:
         mock_chown.assert_any_call("/mock/root", 1000, 1000)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_fix_permissions_ignores_non_existent_path() -> None:
     """Test that non-existent paths are ignored."""
     mock_root = MagicMock(spec=Path)

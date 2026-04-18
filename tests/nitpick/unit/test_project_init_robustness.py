@@ -6,7 +6,7 @@ import pytest
 from src.services.project import ProjectManager
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_initialize_project_robustness(tmp_path: Path) -> None:
     """
     Verifies that initialize_project:

@@ -7,13 +7,13 @@ from src.domain_models.execution import ConflictRegistryItem
 from src.services.conflict_manager import ConflictManager
 
 
-@pytest.fixture
+@pytest.fixture()
 def conflict_manager() -> ConflictManager:
     """Create a ConflictManager instance."""
     return ConflictManager()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_build_conflict_package_missing_base(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
@@ -36,7 +36,8 @@ async def test_build_conflict_package_missing_base(
         # Stage 3 (Remote): "remote_code"
         def mock_git_show(cmd: list[str], cwd: Path, check: bool) -> tuple[str, str, int, bool]:
             if cmd == ["git", "show", ":1:new_file.py"]:
-                raise Exception("fatal: Path 'new_file.py' does not exist in 'HEAD'")
+                msg = "fatal: Path 'new_file.py' does not exist in 'HEAD'"
+                raise ValueError(msg)
             if cmd == ["git", "show", ":2:new_file.py"]:
                 return ("local_code", "", 0, False)
             if cmd == ["git", "show", ":3:new_file.py"]:
@@ -54,7 +55,7 @@ async def test_build_conflict_package_missing_base(
         assert "### Branch B の変更 (Remote)\n```python\nremote_code\n```" in prompt
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_build_conflict_package_success(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:

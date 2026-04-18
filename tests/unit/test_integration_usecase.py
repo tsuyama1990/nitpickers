@@ -9,12 +9,12 @@ from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
-@pytest.fixture
+@pytest.fixture()
 def repo_path(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_jules() -> MagicMock:
     jules = MagicMock(spec=JulesClient)
     # It's a synchronous method now
@@ -22,7 +22,7 @@ def mock_jules() -> MagicMock:
     return jules
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
@@ -59,7 +59,7 @@ async def test_integration_usecase_success(repo_path: Path, mock_jules: MagicMoc
     assert full_path.read_text() == "clean_code"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: MagicMock) -> None:
     # Setup conflict file
     file_path = "fileA.py"
@@ -99,7 +99,7 @@ async def test_integration_usecase_retry_loop(repo_path: Path, mock_jules: Magic
     assert full_path.read_text() == "clean_code"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_usecase_max_retries_exceeded(
     repo_path: Path, mock_jules: MagicMock
 ) -> None:

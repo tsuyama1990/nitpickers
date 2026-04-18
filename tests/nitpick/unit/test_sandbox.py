@@ -17,7 +17,7 @@ def test_shlex_quoting() -> None:
     assert "'Line 1\nLine 2 (paren)'" in safe_str or '"Line 1\nLine 2 (paren)"' in safe_str
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_sync_hash_reset_on_failure() -> None:
     """Verify that _last_sync_hash is reset to None when sandbox retry logic hits."""
     runner = SandboxRunner()
@@ -56,7 +56,7 @@ async def test_sync_hash_reset_on_failure() -> None:
         assert runner._last_sync_hash is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_sandbox_creates_new() -> None:
     """Test that get_sandbox creates new sandbox when none exists."""
     runner = SandboxRunner()
@@ -68,7 +68,7 @@ async def test_get_sandbox_creates_new() -> None:
         mock_create.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_sandbox_reuses_existing() -> None:
     """Test that get_sandbox reuses existing sandbox."""
     runner = SandboxRunner()
@@ -81,7 +81,7 @@ async def test_get_sandbox_reuses_existing() -> None:
         mock_create.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_sandbox_secure_install_cmd() -> None:
     """Test that the install_cmd is safely parsed and executed."""
 
@@ -144,7 +144,7 @@ async def test_get_sandbox_secure_install_cmd() -> None:
         await runner.get_sandbox()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_sync_to_sandbox_success() -> None:
     """Test successful sync to sandbox."""
     runner = SandboxRunner()
@@ -159,7 +159,7 @@ async def test_sync_to_sandbox_success() -> None:
         assert runner._last_sync_hash == "hash123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_sync_to_sandbox_hash_unchanged() -> None:
     """Test that sync is skipped when hash unchanged."""
     runner = SandboxRunner()
@@ -176,7 +176,7 @@ async def test_sync_to_sandbox_hash_unchanged() -> None:
         mock_tarball.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_run_command_success() -> None:
     """Test successful command execution."""
     runner = SandboxRunner()
@@ -195,7 +195,7 @@ async def test_run_command_success() -> None:
         assert stdout == "output"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_run_command_retry_on_failure() -> None:
     """Test command retry logic on sandbox failure."""
     runner = SandboxRunner()
@@ -222,7 +222,7 @@ async def test_run_command_retry_on_failure() -> None:
         assert mock_create.called
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_cleanup_sandbox() -> None:
     """Test sandbox cleanup."""
     runner = SandboxRunner()

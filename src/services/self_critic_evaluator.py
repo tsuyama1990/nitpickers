@@ -1,5 +1,4 @@
 import json
-import re
 import traceback
 from typing import Any
 
@@ -57,7 +56,9 @@ class SelfCriticEvaluator:
                 data = json.loads(json_str)
                 return CriticResult.model_validate(data)
             except Exception as e:
-                console.print(f"[yellow]Failed to parse Critic JSON: {e}[/yellow]\n[dim]{json_str}[/dim]")
+                console.print(
+                    f"[yellow]Failed to parse Critic JSON: {e}[/yellow]\n[dim]{json_str}[/dim]"
+                )
 
         is_approved = any(
             pattern in raw_text

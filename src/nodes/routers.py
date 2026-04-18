@@ -24,7 +24,7 @@ def check_coder_outcome(state: CycleState) -> str:
     return settings.node_sandbox_evaluate
 
 
-def route_sandbox_evaluate(state: CycleState) -> str:
+def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911
     status = getattr(state, "status", None)
 
     if getattr(state.test, "tdd_phase", None) == "red":

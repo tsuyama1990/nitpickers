@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 from src.cli import app
 
 
-@pytest.fixture
+@pytest.fixture()
 def temp_project_dir() -> Generator[str, None, None]:
     # Create a temporary directory
     temp_dir = tempfile.mkdtemp()
@@ -31,11 +31,11 @@ def temp_project_dir() -> Generator[str, None, None]:
     # Initialize git repo locally so git commands don't fail
     git_exec = shutil.which("git") or "git"
 
-    subprocess.run([git_exec, "init"], check=True)  # noqa: S603
-    subprocess.run([git_exec, "add", "."], check=True)  # noqa: S603
-    subprocess.run([git_exec, "config", "user.email", "test@example.com"], check=True)  # noqa: S603
-    subprocess.run([git_exec, "config", "user.name", "Test User"], check=True)  # noqa: S603
-    subprocess.run([git_exec, "commit", "-m", "Initial commit"], check=True)  # noqa: S603
+    subprocess.run([git_exec, "init"], check=True)
+    subprocess.run([git_exec, "add", "."], check=True)
+    subprocess.run([git_exec, "config", "user.email", "test@example.com"], check=True)
+    subprocess.run([git_exec, "config", "user.name", "Test User"], check=True)
+    subprocess.run([git_exec, "commit", "-m", "Initial commit"], check=True)
 
     yield temp_dir
 
@@ -44,7 +44,7 @@ def temp_project_dir() -> Generator[str, None, None]:
     shutil.rmtree(temp_dir)
 
 
-@pytest.mark.live
+@pytest.mark.live()
 def test_live_full_cycle(temp_project_dir: str, monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
 

@@ -16,7 +16,7 @@ class ProcessRunner:
         cwd: Path | None = None,
         check: bool = True,
         env: dict[str, str] | None = None,
-        timeout: int | float | None = None,  # noqa: ASYNC109
+        timeout: int | float | None = None,
     ) -> tuple[str, str, int, bool]:
         """
         Executes a command asynchronously.

@@ -15,7 +15,6 @@ class LLMReviewer:
     Uses litellm to communicate with various LLM providers (OpenRouter, Gemini, etc.).
     """
 
-
     def __init__(self, sandbox_runner: object | None = None) -> None:
         # sandbox_runner is accepted for dependency injection compatibility
         # even if not strictly used by this class (files are passed as content)

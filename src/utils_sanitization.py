@@ -1,5 +1,3 @@
-
-
 def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
     """
     Sanitizes arbitrary text before inclusion in LLM prompts via a strict whitelist.

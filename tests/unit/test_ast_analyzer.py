@@ -9,24 +9,30 @@ def test_ast_analyzer_find_duplicates(tmp_path: Path) -> None:
     file_a = tmp_path / "file_a.py"
     file_b = tmp_path / "file_b.py"
 
-    code_a = textwrap.dedent('''
+    code_a = textwrap.dedent(
+        '''
         def add_two_numbers(a, b):
             """Adds two numbers."""
             result = a + b
             return result
-    ''')
+    '''
+    )
 
-    code_b = textwrap.dedent('''
+    code_b = textwrap.dedent(
+        '''
         def sum_values(x, y):
             """Returns the sum of x and y."""
             total = x + y
             return total
-    ''')
+    '''
+    )
 
-    code_c = textwrap.dedent("""
+    code_c = textwrap.dedent(
+        """
         def multiply(x, y):
             return x * y
-    """)
+    """
+    )
 
     file_a.write_text(code_a)
     file_b.write_text(code_b + code_c)
@@ -50,7 +56,8 @@ def test_ast_analyzer_mccabe_complexity(tmp_path: Path) -> None:
     file_a = tmp_path / "complex.py"
 
     # 10 ifs/elifs > complexity 10
-    code_complex = textwrap.dedent("""
+    code_complex = textwrap.dedent(
+        """
         def highly_complex_function(x):
             if x == 1:
                 return 1
@@ -75,7 +82,8 @@ def test_ast_analyzer_mccabe_complexity(tmp_path: Path) -> None:
             elif x == 11:
                 return 11
             return 0
-    """)
+    """
+    )
 
     file_a.write_text(code_complex)
 
@@ -91,13 +99,15 @@ def test_ast_analyzer_no_duplicates(tmp_path: Path) -> None:
     """Test AST analyzer with completely distinct functions."""
     file_a = tmp_path / "distinct.py"
 
-    code = textwrap.dedent("""
+    code = textwrap.dedent(
+        """
         def first():
             print("First")
 
         def second(x):
             return x * 2
-    """)
+    """
+    )
 
     file_a.write_text(code)
 
@@ -110,10 +120,12 @@ def test_ast_analyzer_parse_error(tmp_path: Path) -> None:
     file_a = tmp_path / "invalid.py"
 
     # Missing colon in function definition
-    code = textwrap.dedent("""
+    code = textwrap.dedent(
+        """
         def broken_function()
             print("No colon")
-    """)
+    """
+    )
 
     file_a.write_text(code)
 

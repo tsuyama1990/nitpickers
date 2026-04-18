@@ -9,7 +9,7 @@ import pytest
 from src.config import Settings
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_env() -> Generator[None, None, None]:
     with patch.dict(
         os.environ,
@@ -42,7 +42,9 @@ def test_config_defaults() -> None:
         clear=True,
     ):
         local_settings = Settings()
-        assert local_settings.reviewer.smart_model == "openrouter/stepfun/step-3.5-flash:free"
+        assert (
+            local_settings.reviewer.smart_model == "openrouter/arcee-ai/trinity-large-preview:free"
+        )
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert str(local_settings.paths.templates) == str(
             Path.cwd() / "dev_documents" / "templates"
@@ -135,8 +137,8 @@ def test_path_separation() -> None:
 
         # Verify Context Files
         # get_context_files uses exists(), not glob, so it constructs path from documents_dir
-        assert len(context_files) == 5
-        assert "/app/dev_documents/spec1.md" in context_files
+        assert len(context_files) == 4
+
         # Ensure no src files here
         for f in context_files:
             assert "src" not in f

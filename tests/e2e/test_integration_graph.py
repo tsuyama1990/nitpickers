@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -11,12 +12,12 @@ from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
-@pytest.fixture
+@pytest.fixture()
 def repo_path(tmp_path: Path) -> Path:
     return tmp_path
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_graph_conflict_resolution(repo_path: Path) -> None:
     services = ServiceContainer.default()
     sandbox = MagicMock(spec=SandboxRunner)

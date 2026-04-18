@@ -38,7 +38,7 @@ class WorkflowService:
         )
         self.git = GitManager()
 
-    async def run_gen_cycles(
+    async def run_gen_cycles(  # noqa: PLR0915
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
     ) -> None:
         self.verify_environment_and_observability()
@@ -89,7 +89,7 @@ class WorkflowService:
 
                 if session_id_val is None or integration_branch is None or feature_branch is None:
                     msg = "Unexpected None for session_id or branch after Architect phase."
-                    raise ValueError(msg)
+                    raise ValueError(msg)  # noqa: TRY301
 
                 # Create Manifest with Cycles
                 mgr = StateManager()

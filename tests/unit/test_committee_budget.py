@@ -6,13 +6,15 @@ These tests verify that:
 2. route_committee correctly maps statuses to graph destinations
 3. The budget fallback correctly sets final_fix=True
 """
-import pytest
+
 from unittest.mock import patch
 
-from src.enums import FlowStatus
-from src.state import CycleState, CommitteeState, AuditState
+import pytest
+
 from src.domain_models import AuditResult
+from src.enums import FlowStatus
 from src.nodes.routers import route_committee
+from src.state import AuditState, CommitteeState, CycleState
 
 
 def _make_state(
@@ -36,21 +38,20 @@ def _make_state(
         iteration_count=iteration_count,
     )
     audit = AuditState(audit_result=audit_result)
-    state = CycleState(
+    return CycleState(
         cycle_id="01",
         status=status,
         final_fix=final_fix,
         committee=committee,
         audit=audit,
     )
-    return state
 
 
 class TestCommitteeBudgetEnforcement:
     """Tests for CommitteeUseCase budget enforcement."""
 
-    @pytest.mark.asyncio
-    async def test_retry_within_budget(self):
+    @pytest.mark.asyncio()
+    async def test_retry_within_budget(self) -> None:
         """Auditor rejected, within review budget → RETRY_FIX (→ impl_coder_node)."""
         from src.services.committee_usecase import CommitteeUseCase
 
@@ -67,8 +68,8 @@ class TestCommitteeBudgetEnforcement:
         assert result["status"] == FlowStatus.RETRY_FIX
         assert result.get("final_fix") is not True
 
-    @pytest.mark.asyncio
-    async def test_next_auditor_after_review_limit(self):
+    @pytest.mark.asyncio()
+    async def test_next_auditor_after_review_limit(self) -> None:
         """Auditor #1 exhausted reviews → move to auditor #2."""
         from src.services.committee_usecase import CommitteeUseCase
 
@@ -85,12 +86,12 @@ class TestCommitteeBudgetEnforcement:
         # Should move to next auditor index
         assert result["status"] == FlowStatus.RETRY_FIX
         committee_state = result["committee"]
-        assert committee_state.current_auditor_index == 2, (
-            f"Expected auditor index 2, got {committee_state.current_auditor_index}"
-        )
+        assert (
+            committee_state.current_auditor_index == 2
+        ), f"Expected auditor index 2, got {committee_state.current_auditor_index}"
 
-    @pytest.mark.asyncio
-    async def test_final_fix_when_budget_exhausted(self):
+    @pytest.mark.asyncio()
+    async def test_final_fix_when_budget_exhausted(self) -> None:
         """All 6 rounds exhausted → final_fix=True must be returned."""
         from src.services.committee_usecase import CommitteeUseCase
 
@@ -104,12 +105,12 @@ class TestCommitteeBudgetEnforcement:
             usecase = CommitteeUseCase()
             result = await usecase.execute(state)
 
-        assert result.get("final_fix") is True, (
-            f"Budget exhausted: final_fix must be True, got result={result}"
-        )
+        assert (
+            result.get("final_fix") is True
+        ), f"Budget exhausted: final_fix must be True, got result={result}"
 
-    @pytest.mark.asyncio
-    async def test_post_audit_refactor_when_all_approved(self):
+    @pytest.mark.asyncio()
+    async def test_post_audit_refactor_when_all_approved(self) -> None:
         """All auditors approved → POST_AUDIT_REFACTOR."""
         from src.services.committee_usecase import CommitteeUseCase
 
@@ -125,8 +126,8 @@ class TestCommitteeBudgetEnforcement:
 
         assert result["status"] == FlowStatus.POST_AUDIT_REFACTOR
 
-    @pytest.mark.asyncio
-    async def test_exactly_six_rounds_triggers_final_fix(self):
+    @pytest.mark.asyncio()
+    async def test_exactly_six_rounds_triggers_final_fix(self) -> None:
         """Simulate 6 consecutive rejections and verify final_fix is set at round 6."""
         from src.services.committee_usecase import CommitteeUseCase
 
@@ -144,7 +145,7 @@ class TestCommitteeBudgetEnforcement:
             (2, 1, False),  # Round 3
             (2, 2, False),  # Round 4 - triggers next auditor
             (3, 1, False),  # Round 5
-            (3, 2, True),   # Round 6 - triggers final_fix
+            (3, 2, True),  # Round 6 - triggers final_fix
         ]
 
         with patch("src.services.committee_usecase.settings") as mock_settings:
@@ -152,35 +153,37 @@ class TestCommitteeBudgetEnforcement:
             mock_settings.REVIEWS_PER_AUDITOR = 2
 
             for auditor_idx, review_count, expect_final_fix in round_configs:
-                state = _make_state(auditor_index=auditor_idx, review_count=review_count, is_approved=False)
+                state = _make_state(
+                    auditor_index=auditor_idx, review_count=review_count, is_approved=False
+                )
                 usecase = CommitteeUseCase()
                 result = await usecase.execute(state)
 
                 if expect_final_fix:
-                    assert result.get("final_fix") is True, (
-                        f"At round {auditor_idx}/{review_count}, expected final_fix=True"
-                    )
+                    assert (
+                        result.get("final_fix") is True
+                    ), f"At round {auditor_idx}/{review_count}, expected final_fix=True"
 
 
 class TestRouteCommittee:
     """Tests for the route_committee router function."""
 
-    def test_retry_fix_routes_to_impl_coder(self):
+    def test_retry_fix_routes_to_impl_coder(self) -> None:
         state = _make_state(status=FlowStatus.RETRY_FIX)
         assert route_committee(state) == "impl_coder_node"
 
-    def test_next_auditor_routes_back_to_auditor(self):
+    def test_next_auditor_routes_back_to_auditor(self) -> None:
         state = _make_state(status=FlowStatus.NEXT_AUDITOR)
         assert route_committee(state) == "next_auditor"
 
-    def test_post_audit_refactor_routes_to_refactor_node(self):
+    def test_post_audit_refactor_routes_to_refactor_node(self) -> None:
         state = _make_state(status=FlowStatus.POST_AUDIT_REFACTOR)
         assert route_committee(state) == "refactor_node"
 
-    def test_ready_for_audit_routes_to_final_critic(self):
+    def test_ready_for_audit_routes_to_final_critic(self) -> None:
         state = _make_state(status=FlowStatus.READY_FOR_AUDIT)
         assert route_committee(state) == "final_critic"
 
-    def test_unknown_status_defaults_to_impl_coder(self):
+    def test_unknown_status_defaults_to_impl_coder(self) -> None:
         state = _make_state(status=FlowStatus.FAILED)
         assert route_committee(state) == "impl_coder_node"

@@ -1,5 +1,6 @@
-import re
 import json
+import re
+
 
 def _repair_json(json_str: str) -> str:
     """Simple JSON repair for truncated EOF strings"""
@@ -13,26 +14,23 @@ def _repair_json(json_str: str) -> str:
             in_string = not in_string
 
         if not in_string:
-            if char == "{" or char == "[":
+            if char in {"{", "["}:
                 stack.append(char)
-            elif char == "}":
-                if stack and stack[-1] == "{":
-                    stack.pop()
-            elif char == "]":
-                if stack and stack[-1] == "[":
-                    stack.pop()
+            elif (char == "}" and stack and stack[-1] == "{") or (
+                char == "]" and stack and stack[-1] == "["
+            ):
+                stack.pop()
 
         repaired += char
         escaped = char == "\\" and not escaped
 
-    # Apply repair if truncated
     if in_string:
         repaired += '"'
     while stack:
-        brace = stack.pop()
-        repaired += "}" if brace == "{" else "]"
-
+        last = stack.pop()
+        repaired += "}" if last == "{" else "]"
     return repaired
+
 
 def extract_json_from_text(content: str) -> str:
     """Extracts JSON from an LLM response, stripping markdown and <thought> tags.
@@ -44,7 +42,9 @@ def extract_json_from_text(content: str) -> str:
     content = re.sub(r"<thought>.*", "", content, flags=re.DOTALL | re.IGNORECASE)
 
     # 1. Try to find all markdown blocks and parse them.
-    blocks = re.findall(r"```(?:json|python)?\s*(.*?)\s*```", content, flags=re.DOTALL | re.IGNORECASE)
+    blocks = re.findall(
+        r"```(?:json|python)?\s*(.*?)\s*```", content, flags=re.DOTALL | re.IGNORECASE
+    )
     for block in blocks:
         repaired = _repair_json(block.strip())
         try:
