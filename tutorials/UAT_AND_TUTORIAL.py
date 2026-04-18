@@ -27,9 +27,9 @@ def intro_cell(mo: object) -> None:
 
 
 @app.cell
-def imports_cell() -> (
-    tuple[object, object, object, object, object, object, object, object, object, object, object]
-):
+def imports_cell() -> tuple[
+    object, object, object, object, object, object, object, object, object, object, object
+]:
     import asyncio
     from pathlib import Path
     from unittest.mock import AsyncMock, MagicMock, patch

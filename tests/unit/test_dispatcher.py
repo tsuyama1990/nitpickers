@@ -62,7 +62,7 @@ def test_resolve_dag_with_completed_cycle() -> None:
     assert "03" in ids
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_retry_on_429_success_after_retry() -> None:
     config = DispatcherConfig(max_retries=3, retry_backoff_factor=0.01)
 
@@ -86,7 +86,7 @@ async def test_retry_on_429_success_after_retry() -> None:
     assert calls == 3
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_retry_on_429_max_retries_exceeded() -> None:
     config = DispatcherConfig(max_retries=2, retry_backoff_factor=0.01)
 
@@ -109,7 +109,7 @@ async def test_retry_on_429_max_retries_exceeded() -> None:
     assert calls == 3  # Initial call + 2 retries
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_run_with_semaphore() -> None:
     config = DispatcherConfig(max_concurrent_tasks=2)
     dispatcher = AsyncDispatcher(config)

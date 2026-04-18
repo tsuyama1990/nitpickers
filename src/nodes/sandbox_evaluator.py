@@ -72,7 +72,7 @@ class SandboxEvaluatorNodes:
 
                 for check_name, cmd in commands.items():
                     out, err, code, timeout_occurred = await self.process_runner.run_command(
-                        cmd, check=False, timeout=timeout_limit
+                        cmd, check=False, timeout_seconds=timeout_limit
                     )
                     results[check_name] = VerificationResult(
                         command=" ".join(cmd),

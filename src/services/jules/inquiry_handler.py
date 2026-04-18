@@ -12,8 +12,7 @@ console = Console()
 
 
 class AgentProtocol(Protocol):
-    async def run(self, prompt: str) -> Any:
-        ...
+    async def run(self, prompt: str) -> Any: ...
 
 
 class JulesInquiryHandler:

@@ -7,7 +7,7 @@ from src.jules_session_nodes import JulesSessionNodes, SessionStatus  # type: ig
 from src.jules_session_state import JulesSessionState
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_monitor_session_batching() -> None:
     """Verify monitor_session loops internally for batch polling."""
     # Setup
@@ -57,7 +57,7 @@ async def test_monitor_session_batching() -> None:
         assert "status" not in new_state
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_monitor_session_returns_early_on_change() -> None:
     """Verify monitor_session returns early if state changes to COMPLETED."""
     # Setup
@@ -108,7 +108,7 @@ async def test_monitor_session_returns_early_on_change() -> None:
         assert new_state["status"] == SessionStatus.VALIDATING_COMPLETION
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_validate_completion_stale_detection() -> None:
     """Verify validate_completion handles stale events correctly."""
     # Setup
@@ -146,7 +146,7 @@ async def test_validate_completion_stale_detection() -> None:
         assert "status" not in new_state
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_validate_completion_stale_but_new_transition() -> None:
     """Verify validate_completion accepts stale event if transition is valid (IN_PROGRESS -> COMPLETED)."""
     # Setup
@@ -181,7 +181,7 @@ async def test_validate_completion_stale_but_new_transition() -> None:
         assert new_state["status"] == SessionStatus.CHECKING_PR
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_monitor_session_avoids_validation_loop() -> None:
     """Verify monitor_session does NOT go to validation if already validated."""
     # Setup

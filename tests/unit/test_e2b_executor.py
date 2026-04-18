@@ -8,7 +8,7 @@ from src.domain_models.execution import E2BExecutionResult
 from src.services.e2b_executor import E2BExecutorServiceImpl
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_sandbox_runner() -> Generator[Any, None, None]:
     with patch("src.sandbox.SandboxRunner", autospec=True) as mock_cls:
         mock_instance = mock_cls.return_value
@@ -21,7 +21,7 @@ def mock_sandbox_runner() -> Generator[Any, None, None]:
         yield mock_instance
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_run_tests_success(mock_sandbox_runner: Any) -> None:
     # Setup mock
     mock_sandbox_runner.run_command.return_value = ("Tests passed!", "", 0)
@@ -35,7 +35,7 @@ async def test_run_tests_success(mock_sandbox_runner: Any) -> None:
     assert result.stderr == ""
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_run_tests_failure(mock_sandbox_runner: Any) -> None:
     # Setup mock
     mock_sandbox_runner.run_command.return_value = ("Running tests...", "AssertionError: Failed", 1)
@@ -49,7 +49,7 @@ async def test_run_tests_failure(mock_sandbox_runner: Any) -> None:
     assert result.stderr == "AssertionError: Failed"
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_push_files(mock_sandbox_runner: Any) -> None:
     # Setup mock
     mock_sandbox_runner._sync_to_sandbox = AsyncMock()
@@ -61,7 +61,7 @@ async def test_push_files(mock_sandbox_runner: Any) -> None:
         await executor.push_files("local/path", "remote/path")
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_cleanup(mock_sandbox_runner: Any) -> None:
     executor = E2BExecutorServiceImpl(sandbox_runner=mock_sandbox_runner)
     await executor.cleanup()

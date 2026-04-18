@@ -8,14 +8,14 @@ from src.services.jules_client import JulesClient
 from src.services.refactor_usecase import RefactorUsecase
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_jules_client() -> AsyncMock:
     client = AsyncMock(spec=JulesClient)
     client.run_session.return_value = {"pr_url": "http://github.com/pr/1"}
     return client
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: AsyncMock) -> None:
     usecase = RefactorUsecase(jules_client=mock_jules_client, base_dir=tmp_path)
 
@@ -32,7 +32,7 @@ async def test_refactor_usecase_no_issues(tmp_path: Path, mock_jules_client: Asy
         mock_jules_client.run_session.assert_not_called()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_refactor_usecase_with_duplicates(
     tmp_path: Path, mock_jules_client: AsyncMock
 ) -> None:
@@ -63,7 +63,7 @@ async def test_refactor_usecase_with_duplicates(
         assert "b.py" in call_args["prompt"]
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_refactor_usecase_with_complex_functions(
     tmp_path: Path, mock_jules_client: AsyncMock
 ) -> None:

@@ -7,19 +7,19 @@ import pytest
 from src.services.project_setup.template_manager import TemplateManager
 
 
-@pytest.fixture()
+@pytest.fixture
 def template_manager() -> TemplateManager:
     return TemplateManager()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_settings(tmp_path: Path) -> Generator[MagicMock, None, None]:
     with patch("src.services.project_setup.template_manager.settings") as mock_settings:
         mock_settings.paths.documents_dir = str(tmp_path / "dev_documents")
         yield mock_settings
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_cwd(tmp_path: Path) -> Generator[Path, None, None]:
     with patch("src.services.project_setup.template_manager.Path.cwd", return_value=tmp_path):
         yield tmp_path

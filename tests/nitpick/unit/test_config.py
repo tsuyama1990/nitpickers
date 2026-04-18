@@ -9,7 +9,7 @@ import pytest
 from src.config import Settings
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_env() -> Generator[None, None, None]:
     with patch.dict(
         os.environ,

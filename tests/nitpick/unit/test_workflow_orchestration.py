@@ -6,7 +6,7 @@ from src.domain_models.manifest import CycleManifest
 from src.services.workflow import WorkflowService
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_manifest() -> MagicMock:
     manifest = MagicMock()
     manifest.cycles = [
@@ -17,14 +17,14 @@ def mock_manifest() -> MagicMock:
     return manifest
 
 
-@pytest.fixture()
+@pytest.fixture
 def workflow_service() -> WorkflowService:
     service = WorkflowService()
     service.verify_environment_and_observability = MagicMock()  # type: ignore[method-assign]
     return service
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
 async def test_run_full_pipeline_success(
@@ -71,7 +71,7 @@ async def test_run_full_pipeline_success(
     mock_qa_graph.ainvoke.assert_called_once()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
 async def test_run_full_pipeline_fail_fast_on_coder(
@@ -122,7 +122,7 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     mock_qa_graph.ainvoke.assert_not_called()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 @patch("src.services.workflow.StateManager")
 @patch("src.services.workflow.AsyncDispatcher")
 async def test_run_full_pipeline_fail_on_integration(

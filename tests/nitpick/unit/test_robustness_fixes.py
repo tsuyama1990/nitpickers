@@ -10,7 +10,7 @@ from src.services.jules_client import JulesClient
 class TestJulesGitContextRobustness:
     """Tests for robustness improvements in JulesClient."""
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_detached_head_creates_temp_branch(self) -> None:
         """Verifies detached HEAD creates a jules-sync branch."""
         # Setup
@@ -48,7 +48,7 @@ class TestJulesGitContextRobustness:
 class TestGitCheckoutRobustness:
     """Tests for robustness improvements in GitCheckoutMixin."""
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_auto_commit_raises_on_conflict(self) -> None:
         """Verifies _auto_commit_if_dirty raises RuntimeError on conflicts."""
         mixin = GitCheckoutMixin()
@@ -68,7 +68,7 @@ class TestGitCheckoutRobustness:
         assert "Cannot auto-commit due to unresolved conflicts" in str(excinfo.value)
         assert "conflicting_file.py" in str(excinfo.value)
 
-    @pytest.mark.asyncio()
+    @pytest.mark.asyncio
     async def test_auto_commit_proceeds_on_clean_dirty(self) -> None:
         """Verifies _auto_commit_if_dirty proceeds if just modified (no conflict)."""
         mixin = GitCheckoutMixin()

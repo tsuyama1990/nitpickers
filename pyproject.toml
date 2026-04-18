@@ -77,11 +77,11 @@ select = [
 ignore = [
     "ANN002", "ANN003", "ANN001", "ANN401", "ARG001", "ARG005",
     "PLR2004", "E501", "TRY003", "D", "ANN201", "N806", "PLC0415", "BLE001",
-    "PT019", "RUF003", "ARG002", "PLR0913", "ANN202", "ANN101", "ASYNC101", "S603", "ERA001", "PT004", "ANN102", "A003", "PLR0912", "UP038"
+    "PT019", "RUF003", "ARG002", "PLR0913", "ANN202", "S603", "ERA001", "A003", "PLR0912"
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ANN101"]  # Allow assert in tests
+"tests/**/*.py" = ["S101", "ASYNC221", "ASYNC109"]  # Allow assert and sync subprocess in tests
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10  # Exceeding this prompts function splitting (prevent AI long functions)

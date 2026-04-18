@@ -16,7 +16,7 @@ class ProcessRunner:
         cwd: Path | None = None,
         check: bool = True,
         env: dict[str, str] | None = None,
-        timeout: int | float | None = None,
+        timeout_seconds: int | float | None = None,
     ) -> tuple[str, str, int, bool]:
         """
         Executes a command asynchronously.
@@ -34,12 +34,14 @@ class ProcessRunner:
                 env=env,
             )
             try:
-                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), timeout=timeout_seconds
+                )
             except TimeoutError:
                 process.kill()
                 # Wait for it to actually terminate
                 await process.communicate()
-                return "", f"Command timed out after {timeout} seconds", -1, True
+                return "", f"Command timed out after {timeout_seconds} seconds", -1, True
 
             stdout_str = stdout.decode().strip() if stdout else ""
             stderr_str = stderr.decode().strip() if stderr else ""

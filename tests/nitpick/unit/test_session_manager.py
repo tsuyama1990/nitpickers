@@ -6,9 +6,9 @@ from src.domain_models import ProjectManifest
 from src.session_manager import SessionManager
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 class TestSessionManager:
-    @pytest.fixture()
+    @pytest.fixture
     def manager(self) -> SessionManager:
         return SessionManager()
 

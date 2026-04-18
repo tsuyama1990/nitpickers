@@ -7,7 +7,7 @@ from src.domain_models import PlanAuditResult
 from src.services.audit_orchestrator import AuditOrchestrator
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_jules() -> Any:
     with patch("src.services.audit_orchestrator.JulesClient") as MockJules:
         instance = MockJules.return_value
@@ -23,7 +23,7 @@ def mock_jules() -> Any:
         yield instance
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_auditor() -> Any:
     with patch("src.services.audit_orchestrator.PlanAuditor") as MockAuditor:
         instance = MockAuditor.return_value
@@ -31,7 +31,7 @@ def mock_auditor() -> Any:
         yield instance
 
 
-@pytest.fixture()
+@pytest.fixture
 def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchestrator:
     from src.sandbox import SandboxRunner
 
@@ -41,7 +41,7 @@ def orchestrator(mock_jules: MagicMock, mock_auditor: MagicMock) -> AuditOrchest
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_run_session_approved_first_try(
     orchestrator: AuditOrchestrator, mock_jules: MagicMock, mock_auditor: MagicMock
 ) -> None:
@@ -60,7 +60,7 @@ async def test_run_session_approved_first_try(
     mock_jules.send_message.assert_not_called()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_run_session_rejected_then_approved(
     orchestrator: AuditOrchestrator, mock_jules: MagicMock, mock_auditor: MagicMock
 ) -> None:
@@ -102,7 +102,7 @@ async def test_run_session_rejected_then_approved(
     mock_jules.approve_plan.assert_called_with("sess-1", "plan-2")
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_max_retries_exceeded(
     orchestrator: AuditOrchestrator, mock_jules: MagicMock, mock_auditor: MagicMock
 ) -> None:

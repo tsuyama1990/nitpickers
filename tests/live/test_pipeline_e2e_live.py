@@ -22,7 +22,7 @@ def check_live_environment() -> None:
         )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_live_pipeline_e2e_safe_execution() -> None:
     """
     Live End-to-End Test.
