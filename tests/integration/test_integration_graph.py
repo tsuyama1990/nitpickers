@@ -14,7 +14,7 @@ from src.services.jules_client import JulesClient
 from src.state import IntegrationState
 
 
-@pytest.fixture
+@pytest.fixture()
 def repo_path(tmp_path: Path) -> Path:
     """Fixture to set up a real local bare git repository for testing."""
     repo = tmp_path / "repo"
@@ -61,7 +61,7 @@ def repo_path(tmp_path: Path) -> Path:
     return repo
 
 
-@pytest.fixture
+@pytest.fixture()
 def integration_graph() -> Any:
     sandbox = MagicMock(spec=SandboxRunner)
     jules = MagicMock(spec=JulesClient)
@@ -71,7 +71,7 @@ def integration_graph() -> Any:
     return builder.build_integration_graph()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_graph_clean_merge(repo_path: Path, integration_graph: Any) -> None:
     """Test Scenario 1: Clean Merge"""
     # Create a clean branch to merge
@@ -111,7 +111,7 @@ async def test_integration_graph_clean_merge(repo_path: Path, integration_graph:
     assert "Clean branch" in git_log
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_graph_conflict_resolution(
     repo_path: Path, integration_graph: Any
 ) -> None:
@@ -148,7 +148,7 @@ async def test_integration_graph_conflict_resolution(
     assert result["unresolved_conflicts"][0].resolved is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_integration_graph_semantic_failure(repo_path: Path, integration_graph: Any) -> None:
     """Test Scenario 3: Post-Merge Semantic Failure Recovery"""
     # Simulate a merge that succeeds without conflicts but fails the sandbox

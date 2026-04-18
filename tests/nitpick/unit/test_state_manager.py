@@ -13,14 +13,14 @@ from src.state_manager import StateManager
 class TestStateManager:
     """Test suite for StateManager."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_state_file(self, tmp_path: Path) -> Path:
         """Create a temporary state file path."""
         state_dir = tmp_path / ".nitpick"
         state_dir.mkdir(parents=True, exist_ok=True)
         return state_dir / "project_state.json"
 
-    @pytest.fixture
+    @pytest.fixture()
     def manager(self, temp_state_file: Path) -> StateManager:
         """Create StateManager with temporary file."""
         mgr = StateManager()

@@ -5,9 +5,9 @@ import pytest
 from src.services.git_ops import GitManager
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 class TestGitStatePersistence:
-    @pytest.fixture
+    @pytest.fixture()
     def git_manager(self) -> GitManager:
         return GitManager()
 

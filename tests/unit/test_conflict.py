@@ -6,13 +6,13 @@ import pytest
 from src.services.conflict_manager import ConflictManager, ConflictMarkerRemainsError
 
 
-@pytest.fixture
+@pytest.fixture()
 def conflict_manager() -> ConflictManager:
     """Create a ConflictManager instance."""
     return ConflictManager()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_scan_conflicts(conflict_manager: ConflictManager, tmp_path: Path) -> None:
     """Test scan_conflicts extracts git markers correctly."""
     # Create a mock conflicted file
@@ -70,7 +70,7 @@ def test_validate_resolution_failure(conflict_manager: ConflictManager, tmp_path
             conflict_manager.validate_resolution(conflicted_file)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_scan_conflicts_path_traversal(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
@@ -89,7 +89,7 @@ async def test_scan_conflicts_path_traversal(
         assert items == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_build_conflict_package_path_traversal(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
@@ -107,7 +107,7 @@ async def test_build_conflict_package_path_traversal(
             await conflict_manager.build_conflict_package(item, unsafe_path)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_build_conflict_package_success(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:
@@ -145,7 +145,7 @@ async def test_build_conflict_package_success(
         assert "remote_content" in prompt
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_build_conflict_package_no_base(
     conflict_manager: ConflictManager, tmp_path: Path
 ) -> None:

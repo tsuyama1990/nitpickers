@@ -22,7 +22,7 @@ def create_mock_graph() -> CompiledStateGraph[Any, Any, Any]:
     return builder.compile()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_graph_execution_with_context() -> None:
     metadata = TracingMetadata(
         session_id="integration-test-session",
@@ -44,7 +44,7 @@ async def test_graph_execution_with_context() -> None:
     assert final_state["status"] == "success"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_missing_api_key_fallback() -> None:
     from src.config import Settings
 

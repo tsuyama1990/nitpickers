@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 runner = CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # Setup a realistic isolated environment
     workspace = tmp_path / "workspace"
@@ -81,7 +81,7 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return workspace
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 @respx.mock
 async def test_cli_run_pipeline_success(
     test_workspace: Path, monkeypatch: pytest.MonkeyPatch

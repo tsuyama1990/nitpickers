@@ -8,9 +8,9 @@ from src.services.coder_usecase import CoderUseCase
 from src.state import CycleState
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 class TestResumeLogic:
-    @pytest.fixture
+    @pytest.fixture()
     def mock_jules(self) -> MagicMock:
         jules = MagicMock()
         jules.wait_for_completion = AsyncMock()

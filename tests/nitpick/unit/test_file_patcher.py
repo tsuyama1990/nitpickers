@@ -6,7 +6,7 @@ from src.domain_models import FileCreate, FilePatch
 from src.services.file_ops import FilePatcher
 
 
-@pytest.fixture
+@pytest.fixture()
 def patcher() -> FilePatcher:
     return FilePatcher()
 

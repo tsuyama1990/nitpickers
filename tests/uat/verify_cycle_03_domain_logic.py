@@ -10,7 +10,7 @@ from src.domain_models.manifest import CycleManifest
 runner = CliRunner()
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_manifest() -> MagicMock:
     manifest = MagicMock()
     manifest.cycles = [
