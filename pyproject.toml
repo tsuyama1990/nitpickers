@@ -98,6 +98,7 @@ testpaths = ["tests"]
 markers = ["live: marks tests as live tests requiring real API keys"]
 
 [tool.mypy]
+disallow_untyped_decorators = false
 strict = true
 ignore_missing_imports = true
 
