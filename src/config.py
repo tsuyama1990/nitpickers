@@ -692,6 +692,9 @@ class Settings(BaseSettings):
         return user_path
 
     @functools.cache  # noqa: B019
+    def __hash__(self) -> int:
+        return id(self)
+
     def read_template(self, name: str) -> str:
         """Read and cache template content."""
         return self.get_template(name).read_text(encoding="utf-8")

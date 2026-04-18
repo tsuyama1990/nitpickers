@@ -78,12 +78,31 @@ async def test_wait_for_completion_sucess_first_try(
     # Return COMPLETED with PR (official Jules API state - not SUCCEEDED)
     mock_response = AsyncMock(spec=httpx.Response)
     mock_response.status_code = 200
-    mock_response.json = MagicMock(return_value={
-        "state": "COMPLETED",
-        "outputs": [{"pullRequest": {"url": "https://pr"}}],
-    })
-    mock_response.raise_for_status = MagicMock()
-    mock_httpx.get.return_value = mock_response
+
+    call_counts = {"state": 0}
+    def dynamic_get(url, **kwargs):
+        mock = MagicMock()
+        mock.status_code = 200
+        if "activities" in str(url):
+            mock.json.return_value = {"activities": [{"sessionCompleted": {}}]}
+        else:
+            call_counts["state"] += 1
+            if call_counts["state"] == 1:
+                 mock.json.return_value = {
+                     "state": "IN_PROGRESS",
+                     "outputs": [],
+                 }
+            else:
+                 mock.json.return_value = {
+                     "state": "COMPLETED",
+                     "outputs": [{"pullRequest": {"url": "https://pr"}}],
+                 }
+        return mock
+
+    mock_httpx.get.side_effect = dynamic_get
+
+
+
 
     result = await mock_client.wait_for_completion("sessions/123")
     assert result["pr_url"] == "https://pr"
@@ -140,7 +159,7 @@ async def test_wait_for_completion_timeout(mock_client: JulesClient, mock_httpx:
     # Always IN_PROGRESS (never completes → triggers timeout)
     mock_response = AsyncMock(spec=httpx.Response)
     mock_response.status_code = 200
-    mock_response.raise_for_status = MagicMock()
+
     mock_response.json = MagicMock(return_value={"state": "IN_PROGRESS"})
 
     async def get_mock(url: str, **kwargs: Any) -> Any:

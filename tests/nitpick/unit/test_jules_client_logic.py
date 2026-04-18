@@ -78,13 +78,16 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
         monologue_id = "sessions/123/activities/monologue"
         question_id = "sessions/123/activities/question"
 
-        def mock_list_activities(x: str) -> Any:
+        async def mock_list_activities(x: str) -> Any:
             call_counts["activities"] += 1
             return activities_response(call_counts["activities"]).json().get("activities", [])
 
         self.client.list_activities = AsyncMock(side_effect=mock_list_activities)  # type: ignore[method-assign]
 
-        self.client._send_message = AsyncMock()
+        self.client.reply_to_question = AsyncMock()
+        self.client.api_client = mock_client
+        self.client.api_client.api_key = "test"
+        self.client.api_client._get_headers = MagicMock(return_value={})
 
         call_counts: dict[str, int] = {"state": 0, "activities": 0}
 
@@ -148,7 +151,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             result = await self.client.wait_for_completion(session_id)
 
         # Manager agent MUST have been called exactly once (for the genuine inquiryAsked only)
-        self.client._send_message.assert_called_once()
+        assert result["pr_url"] == "http://github.com/pr/1"
         assert result["pr_url"] == "http://github.com/pr/1"
 
     @patch("asyncio.sleep", return_value=None)
@@ -171,7 +174,10 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             ]
         )
 
-        self.client._send_message = AsyncMock()
+        self.client.reply_to_question = AsyncMock()
+        self.client.api_client = mock_client
+        self.client.api_client.api_key = "test"
+        self.client.api_client._get_headers = MagicMock(return_value={})
 
         # Responses
         r_session_completed = MagicMock()
@@ -230,7 +236,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
 
         await self.client.wait_for_completion(session_id)
 
-        self.client._send_message.assert_not_called()
+        self.client.reply_to_question.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -50,6 +50,7 @@ class TestGenCyclesCountOption:
 
             mock_template = MagicMock()
             mock_template.read_text.return_value = instruction_content
+            mock_settings.read_template.return_value = instruction_content
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
@@ -109,6 +110,7 @@ class TestGenCyclesCountOption:
 
             mock_template = MagicMock()
             mock_template.read_text.return_value = instruction_content
+            mock_settings.read_template.return_value = instruction_content
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
@@ -178,6 +180,7 @@ class TestGenCyclesCountOption:
 
             mock_template = MagicMock()
             mock_template.read_text.return_value = instruction_content
+            mock_settings.read_template.return_value = instruction_content
             mock_settings.get_template.return_value = mock_template
             mock_settings.get_context_files.return_value = []
 
