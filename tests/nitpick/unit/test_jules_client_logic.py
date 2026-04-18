@@ -26,7 +26,7 @@ class TestJulesClientLogic(unittest.IsolatedAsyncioTestCase):
             self.client.manager_agent = MagicMock()
             self.client.credentials = MagicMock()
             self.client._get_headers = MagicMock(return_value={})  # type: ignore[method-assign]
-            self.client.credentials.token = "mock_token"  # noqa: S105
+            self.client.credentials.token = "mock_token"
             self.client._sleep = AsyncMock()  # type: ignore[method-assign]
 
             # FIX: Add context_builder

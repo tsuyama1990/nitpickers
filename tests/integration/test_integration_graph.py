@@ -124,9 +124,8 @@ async def test_integration_graph_conflict_resolution(
     with (
         patch.object(settings.paths, "workspace_root", repo_path),
         patch("os.getcwd", return_value=str(repo_path)),
+        patch("src.nodes.master_integrator.JulesClient") as MockJules,
     ):
-        # We need to mock the LLM inside master_integrator_node
-        with patch("src.nodes.master_integrator.JulesClient") as MockJules:
             mock_jules_instance = MagicMock()
             MockJules.return_value = mock_jules_instance
             mock_jules_instance.create_master_integrator_session.return_value = "session_id"
@@ -158,11 +157,8 @@ async def test_integration_graph_semantic_failure(
     with (
         patch.object(settings.paths, "workspace_root", repo_path),
         patch("os.getcwd", return_value=str(repo_path)),
+        patch("src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node") as mock_sandbox,
     ):
-        # Mock global_sandbox_node to fail initially, then pass
-        with patch(
-            "src.nodes.sandbox_evaluator.SandboxEvaluatorNodes.sandbox_evaluate_node"
-        ) as mock_sandbox:
             mock_sandbox.side_effect = [{"status": "tdd_failed"}, {"status": "pass"}]
 
             # Mock the integration fixer node to resolve the issue

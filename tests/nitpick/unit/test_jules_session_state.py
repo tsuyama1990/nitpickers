@@ -32,7 +32,7 @@ class TestSessionStateValidation:
             client.manager_agent.run = AsyncMock(return_value=MagicMock(output="Manager Reply"))
             client.credentials = MagicMock()
             client._get_headers = MagicMock(return_value={})  # type: ignore
-            client.credentials.token = "mock_token"  # noqa: S105
+            client.credentials.token = "mock_token"
             client._sleep = AsyncMock()  # type: ignore
 
             # FIX: Add context_builder

@@ -36,7 +36,8 @@ async def test_build_conflict_package_missing_base(
         # Stage 3 (Remote): "remote_code"
         def mock_git_show(cmd: list[str], cwd: Path, check: bool) -> tuple[str, str, int, bool]:
             if cmd == ["git", "show", ":1:new_file.py"]:
-                raise Exception("fatal: Path 'new_file.py' does not exist in 'HEAD'")
+                msg = "fatal: Path 'new_file.py' does not exist in 'HEAD'"
+                raise RuntimeError(msg)
             if cmd == ["git", "show", ":2:new_file.py"]:
                 return ("local_code", "", 0, False)
             if cmd == ["git", "show", ":3:new_file.py"]:

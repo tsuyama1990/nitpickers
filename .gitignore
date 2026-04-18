@@ -30,3 +30,5 @@ test_execution_log.txt
 .nitpick/project_state_local.json
 uv.lock
 .nitpick/.env
+anomaly_analyzer/.web/
+anomaly_analyzer/.states/

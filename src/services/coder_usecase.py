@@ -192,7 +192,7 @@ class CoderUseCase:
 
         return {"status": FlowStatus.FAILED, "error": "Jules failed to produce PR"}
 
-    def _build_instruction(  # noqa: C901
+    def _build_instruction(
         self,
         cycle_id: str,
         current_phase: WorkPhase | str | None,

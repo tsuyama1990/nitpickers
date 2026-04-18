@@ -16,13 +16,13 @@ def real_e2e_env(tmp_path: Path) -> Path:
 
     git_bin = shutil.which("git")
     assert git_bin is not None
-    subprocess.run([git_bin, "init"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.name", "E2E User"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.email", "e2e@example.com"], cwd=workspace, check=True)  # noqa: S603
+    subprocess.run([git_bin, "init"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "config", "user.name", "E2E User"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "config", "user.email", "e2e@example.com"], cwd=workspace, check=True)
     (workspace / "README.md").write_text("E2E setup")
-    subprocess.run([git_bin, "add", "README.md"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "branch", "-M", "main"], cwd=workspace, check=True)  # noqa: S603
+    subprocess.run([git_bin, "add", "README.md"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "branch", "-M", "main"], cwd=workspace, check=True)
 
     # Copy standard templates so init works natively
     # In a real environment, `nitpick init` uses /opt/nitpick/templates but we'll mock the templates_path
@@ -68,7 +68,7 @@ async def test_nitpick_cli_init_and_gen_cycles(
     env = os.environ.copy()
     env["OPENROUTER_API_KEY"] = "sk-or-v1-invalid-e2e-test-key"
     env["JULES_API_KEY"] = "invalid-jules-key"
-    env["GITHUB_PERSONAL_ACCESS_TOKEN"] = "invalid-github-token"  # noqa: S105
+    env["GITHUB_PERSONAL_ACCESS_TOKEN"] = "invalid-github-token"
     env["E2B_API_KEY"] = "invalid-e2b-key"
 
     # Run `nitpick init` natively.
@@ -82,7 +82,7 @@ async def test_nitpick_cli_init_and_gen_cycles(
     uv_bin = shutil.which("uv")
     assert uv_bin is not None
 
-    result_init = subprocess.run(  # noqa: S603, ASYNC221
+    result_init = subprocess.run(
         [uv_bin, "run", "nitpick", "init"],
         capture_output=True,
         text=True,
@@ -105,7 +105,7 @@ async def test_nitpick_cli_init_and_gen_cycles(
     (dev_docs / "USER_TEST_SCENARIO.md").write_text("Calculate 1+1=2")
 
     # Run `nitpick gen-cycles` natively
-    result_gen = subprocess.run(  # noqa: S603, ASYNC221
+    result_gen = subprocess.run(
         [uv_bin, "run", "nitpick", "gen-cycles", "--cycles", "2", "--session", "test_session"],
         capture_output=True,
         text=True,

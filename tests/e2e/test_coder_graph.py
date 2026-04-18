@@ -79,7 +79,7 @@ def test_coder_graph_happy_path() -> None:
     assert getattr(result_state.committee, "is_refactoring", False) is True
 
 
-def test_coder_graph_rejection_loop() -> None:  # noqa: C901
+def test_coder_graph_rejection_loop() -> None:
     services = MagicMock()
     sandbox = MagicMock()
     jules = MagicMock()

@@ -1,5 +1,6 @@
-import re
 import json
+import re
+
 
 def _repair_json(json_str: str) -> str:
     """Simple JSON repair for truncated EOF strings"""
@@ -13,14 +14,13 @@ def _repair_json(json_str: str) -> str:
             in_string = not in_string
 
         if not in_string:
-            if char == "{" or char == "[":
+            if char in {"{", "["}:
                 stack.append(char)
             elif char == "}":
                 if stack and stack[-1] == "{":
                     stack.pop()
-            elif char == "]":
-                if stack and stack[-1] == "[":
-                    stack.pop()
+            elif char == "]" and stack and stack[-1] == "[":
+                stack.pop()
 
         repaired += char
         escaped = char == "\\" and not escaped

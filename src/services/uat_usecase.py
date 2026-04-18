@@ -100,7 +100,7 @@ class UatUseCase:
                         logger.warning(f"Failed to parse artifact {base_name}: {e}")
         return artifacts
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901
+    async def execute(self, state: CycleState) -> dict[str, Any]:
         """
         Executes the UAT Evaluation node.
 

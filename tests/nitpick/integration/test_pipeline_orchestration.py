@@ -21,13 +21,13 @@ def test_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     git_bin = shutil.which("git")
     assert git_bin is not None
-    subprocess.run([git_bin, "init"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.name", "Test User"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.email", "test@example.com"], cwd=workspace, check=True)  # noqa: S603
+    subprocess.run([git_bin, "init"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "config", "user.name", "Test User"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "config", "user.email", "test@example.com"], cwd=workspace, check=True)
     (workspace / "README.md").write_text("initial")
-    subprocess.run([git_bin, "add", "README.md"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=workspace, check=True)  # noqa: S603
-    subprocess.run([git_bin, "branch", "-M", "main"], cwd=workspace, check=True)  # noqa: S603
+    subprocess.run([git_bin, "add", "README.md"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=workspace, check=True)
+    subprocess.run([git_bin, "branch", "-M", "main"], cwd=workspace, check=True)
 
     # Set required API keys to bypass validation
     monkeypatch.setenv("OPENROUTER_API_KEY", "dummy-openrouter-key")
@@ -174,11 +174,11 @@ async def test_cli_run_pipeline_success(
 
     git_bin = shutil.which("git")
     assert git_bin is not None
-    subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)  # noqa: S603, ASYNC221
-    subprocess.run(  # noqa: S603, ASYNC221
+    subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)
+    subprocess.run(
         [git_bin, "remote", "add", "origin", str(remote_dir)], cwd=test_workspace, check=True
     )
-    subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=test_workspace, check=True)  # noqa: S603, ASYNC221
+    subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=test_workspace, check=True)
 
     # To avoid 'asyncio.run() cannot be called from a running event loop' in pytest-asyncio,
     # we execute the `WorkflowService` pipeline naturally, wrapped in a wait_for to prevent CI timeout.

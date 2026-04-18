@@ -6,13 +6,14 @@ These tests verify that:
 2. route_committee correctly maps statuses to graph destinations
 3. The budget fallback correctly sets final_fix=True
 """
-import pytest
 from unittest.mock import patch
 
-from src.enums import FlowStatus
-from src.state import CycleState, CommitteeState, AuditState
+import pytest
+
 from src.domain_models import AuditResult
+from src.enums import FlowStatus
 from src.nodes.routers import route_committee
+from src.state import AuditState, CommitteeState, CycleState
 
 
 def _make_state(
@@ -36,14 +37,13 @@ def _make_state(
         iteration_count=iteration_count,
     )
     audit = AuditState(audit_result=audit_result)
-    state = CycleState(
+    return CycleState(
         cycle_id="01",
         status=status,
         final_fix=final_fix,
         committee=committee,
         audit=audit,
     )
-    return state
 
 
 class TestCommitteeBudgetEnforcement:

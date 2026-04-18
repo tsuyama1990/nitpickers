@@ -21,26 +21,26 @@ def real_git_env(tmp_path: Path) -> Path:
     assert git_bin is not None
 
     # Initialize a bare remote
-    subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "init", "--bare"], cwd=remote_dir, check=True)
 
     # Initialize local repo
-    subprocess.run([git_bin, "init"], cwd=repo_dir, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.name", "Test User"], cwd=repo_dir, check=True)  # noqa: S603
-    subprocess.run([git_bin, "config", "user.email", "test@example.com"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "init"], cwd=repo_dir, check=True)
+    subprocess.run([git_bin, "config", "user.name", "Test User"], cwd=repo_dir, check=True)
+    subprocess.run([git_bin, "config", "user.email", "test@example.com"], cwd=repo_dir, check=True)
 
     # Connect remote
-    subprocess.run([git_bin, "remote", "add", "origin", str(remote_dir)], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "remote", "add", "origin", str(remote_dir)], cwd=repo_dir, check=True)
 
     # Create an initial commit so we have a HEAD
     readme = repo_dir / "README.md"
     readme.write_text("initial")
-    subprocess.run([git_bin, "add", "README.md"], cwd=repo_dir, check=True)  # noqa: S603
-    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "add", "README.md"], cwd=repo_dir, check=True)
+    subprocess.run([git_bin, "commit", "-m", "Initial commit"], cwd=repo_dir, check=True)
 
-    subprocess.run([git_bin, "branch", "-M", "main"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "branch", "-M", "main"], cwd=repo_dir, check=True)
 
     # Push to origin to establish tracking branch
-    subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=repo_dir, check=True)  # noqa: S603
+    subprocess.run([git_bin, "push", "-u", "origin", "main"], cwd=repo_dir, check=True)
 
     return repo_dir
 

@@ -19,7 +19,7 @@ def mock_runner() -> Generator[Any, None, None]:
 def git_manager(mock_runner: Any) -> GitManager:
     # Mock settings to prevent loading real config
     with patch("src.services.git.base.settings") as mock_settings:
-        mock_settings.github_token = "dummy_token"  # noqa: S105
+        mock_settings.github_token = "dummy_token"
         manager = GitManager()
         # Replace the real runner with our mock
         manager.runner = mock_runner

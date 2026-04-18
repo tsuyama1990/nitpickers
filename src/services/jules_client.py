@@ -337,7 +337,7 @@ class JulesClient:
                 logger.warning(f"Failed to get session state for {session_id}: {e}")
                 return "UNKNOWN"
 
-    async def _initialize_processed_ids(  # noqa: C901
+    async def _initialize_processed_ids(
         self,
         session_url: str,
         processed_ids: set[str],
