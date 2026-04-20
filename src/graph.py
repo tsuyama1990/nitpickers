@@ -122,6 +122,8 @@ class GraphBuilder:
             {
                 "auditor": "auditor",
                 "impl_coder_node": "impl_coder_node",
+                "refactor_node": "refactor_node",
+                "self_critic_node": "self_critic_node",
                 "final_critic": "final_critic_node",
                 "failed": END,
                 "end": END,

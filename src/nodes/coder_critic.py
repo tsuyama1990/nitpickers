@@ -13,6 +13,34 @@ class CoderCriticNodes:
         self.jules = jules_client
 
     async def coder_critic_node(self, state: CycleState) -> dict[str, Any]:
-        """Node deprecated as CoderUseCase handles self-critic internally.
-        Passing through to avoid breaking the graph structure."""
-        return {"status": FlowStatus.COMPLETED}
+        """Node for Coder Self-Critic phase."""
+        from src.services.coder_usecase import CoderUseCase
+
+        usecase = CoderUseCase(self.jules)
+        cycle_id = state.cycle_id
+        session_id = state.session.jules_session_name
+
+        if not session_id:
+            return {"status": FlowStatus.FAILED, "error": "No session ID for critic phase"}
+
+        is_final = state.status == FlowStatus.READY_FOR_FINAL_CRITIC
+        result = await usecase.run_critic_phase(cycle_id, session_id, is_final=is_final)
+
+        if not result:
+            return {"status": FlowStatus.FAILED, "error": "Critic phase failed to produce result"}
+
+        # Preserve PR and branch info
+        pr_url = result.get("pr_url") or state.session.pr_url
+        branch_name = result.get("branch_name") or state.session.branch_name
+
+        session_update = state.session.model_copy(
+            update={"pr_url": pr_url, "branch_name": branch_name}
+        )
+
+        new_status = FlowStatus.COMPLETED if is_final else FlowStatus.READY_FOR_AUDIT
+
+        return {
+            "status": new_status,
+            "session": session_update,
+            "branch_name": branch_name,
+        }

@@ -127,29 +127,12 @@ class CoderUseCase:
 
         # --- D. Post-Session Processing (Success Handling & Self-Critic) ---
         if result and (result.get("status") == "success" or result.get("pr_url")):
-            # Self-Critic phase: initial PR only OR post-audit refactor
-            # CRITICAL: This triggers for the very first PR in a cycle AND the final polish PR.
-            is_initial_pr = iteration <= 1 and state.status not in {
-                FlowStatus.RETRY_FIX,
-                FlowStatus.REJECTED,
-            }
             is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
-
-            if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
-                critic_result = await self._run_critic_phase(cycle_id, jules_session_name)
-                if critic_result:
-                    # Self-critic usually pushes commits but doesn't create a NEW PR;
-                    # preserve the original PR URL if the critic result doesn't include one.
-                    if not critic_result.get("pr_url") and result.get("pr_url"):
-                        critic_result["pr_url"] = result.get("pr_url")
-                    if not critic_result.get("branch_name") and result.get("branch_name"):
-                        critic_result["branch_name"] = result.get("branch_name")
-                    result = critic_result
 
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
 
-            # If we just finished a post-audit refactor, we are COMPLETED for this cycle
+            # Extract PR and branch info
             pr_val = result.get("pr_url")
             branch_val = result.get("branch_name")
 
@@ -171,9 +154,21 @@ class CoderUseCase:
                     cycle_id, session_restart_count=0, pr_url=pr_val, branch_name=branch_val
                 )
 
+            is_initial_pr = state.iteration_count <= 1 and state.status not in {
+                FlowStatus.RETRY_FIX,
+                FlowStatus.REJECTED,
+            }
+
             if is_post_audit_refactor:
                 return {
-                    "status": FlowStatus.COMPLETED,
+                    "status": FlowStatus.READY_FOR_FINAL_CRITIC,
+                    "session": session_update,
+                    "branch_name": branch_val,
+                }
+
+            if is_initial_pr:
+                return {
+                    "status": FlowStatus.READY_FOR_SELF_CRITIC,
                     "session": session_update,
                     "branch_name": branch_val,
                 }
@@ -364,21 +359,28 @@ class CoderUseCase:
 
         return jules_session_name, result
 
-    async def _run_critic_phase(
-        self, cycle_id: str, jules_session_name: str
+    async def run_critic_phase(
+        self, cycle_id: str, jules_session_name: str, is_final: bool = False
     ) -> dict[str, Any] | None:
         """Send CODER_CRITIC_INSTRUCTION to Jules and wait for the revised PR.
 
         Returns the updated result dict, or None if the phase should be skipped.
         """
-        console.print(
-            "[bold cyan]Initial Coder PR created. "
-            "Invoking Coder Critic for self-reflection before Auditor review...[/bold cyan]"
-        )
-        try:
-            critic_instruction = settings.get_prompt_content(
-                settings.template_files.coder_critic_instruction
+        if is_final:
+            console.print(
+                "[bold cyan]Final Refactoring PR created. "
+                "Invoking Final Coder Critic for self-reflection before completion...[/bold cyan]"
             )
+            template_file = settings.template_files.final_coder_critic_instruction
+        else:
+            console.print(
+                "[bold cyan]Initial Coder PR created. "
+                "Invoking Coder Critic for self-reflection before Auditor review...[/bold cyan]"
+            )
+            template_file = settings.template_files.coder_critic_instruction
+
+        try:
+            critic_instruction = settings.get_prompt_content(template_file)
             if not critic_instruction:
                 console.print("[red]Failed to load Coder Critic instruction template.[/red]")
                 console.print(

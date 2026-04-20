@@ -18,13 +18,17 @@ def check_coder_outcome(state: CycleState) -> str:
     if status == FlowStatus.CODER_RETRY:
         return "impl_coder_node"
 
-    if status == FlowStatus.READY_FOR_AUDIT:
+    if status in {
+        FlowStatus.READY_FOR_AUDIT,
+        FlowStatus.READY_FOR_SELF_CRITIC,
+        FlowStatus.READY_FOR_FINAL_CRITIC,
+    }:
         return settings.node_sandbox_evaluate
 
     return settings.node_sandbox_evaluate
 
 
-def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911
+def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911, C901
     status = getattr(state, "status", None)
 
     if getattr(state.test, "tdd_phase", None) == "red":
@@ -38,14 +42,20 @@ def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911
     if status == FlowStatus.FAILED:
         return "failed"
 
+    if status == FlowStatus.COMPLETED:
+        return "end"
+
     if status == FlowStatus.TDD_FAILED:
         return "impl_coder_node"
 
-    if status == FlowStatus.POST_AUDIT_REFACTOR:
-        return "impl_coder_node"
+    if status == FlowStatus.READY_FOR_SELF_CRITIC:
+        return "self_critic_node"
+
+    if status == FlowStatus.READY_FOR_FINAL_CRITIC:
+        return "final_critic"
 
     if status == FlowStatus.READY_FOR_AUDIT:
-        if getattr(state, "final_fix", False) or getattr(state.committee, "is_refactoring", False):
+        if getattr(state.committee, "is_refactoring", False):
             return "final_critic"
         return "auditor"
 

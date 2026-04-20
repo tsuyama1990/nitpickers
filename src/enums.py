@@ -26,6 +26,8 @@ class FlowStatus(StrEnum):
     READY_FOR_AUDIT = "ready_for_audit"
     CODER_RETRY = "coder_retry"
     RETRY_FIX = "retry_fix"
+    READY_FOR_SELF_CRITIC = "ready_for_self_critic"
+    READY_FOR_FINAL_CRITIC = "ready_for_final_critic"
     WAIT_FOR_JULES_COMPLETION = "wait_for_jules_completion"
 
     # Auditor / Committee

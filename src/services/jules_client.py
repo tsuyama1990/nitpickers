@@ -396,7 +396,6 @@ class JulesClient:
         except Exception as e:
             logger.warning(f"Failed to fetch initial activities: {e}")
 
-
     async def _handle_manual_input(self, session_url: str) -> None:
         if not select:
             return

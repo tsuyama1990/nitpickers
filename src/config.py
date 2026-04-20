@@ -379,6 +379,7 @@ class TemplatesConfig(BaseModel):
     final_refactor_instruction: str = "FINAL_REFACTOR_INSTRUCTION.md"
     coder_instruction: str = "CODER_INSTRUCTION.md"
     coder_critic_instruction: str = "CODER_CRITIC_INSTRUCTION.md"
+    final_coder_critic_instruction: str = "FINAL_CODER_CRITIC_INSTRUCTION.md"
     audit_feedback_message: str = "AUDIT_FEEDBACK_MESSAGE.md"
     audit_feedback_injection: str = "AUDIT_FEEDBACK_INJECTION.md"
     architect_instruction: str = "ARCHITECT_INSTRUCTION.md"
