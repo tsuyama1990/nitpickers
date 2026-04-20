@@ -87,7 +87,7 @@ class TestSessionRestart:
                 mock_settings2.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
                 result2 = await usecase.execute(state)
 
-        assert result2["status"] == FlowStatus.READY_FOR_AUDIT
+        assert result2["status"] == FlowStatus.READY_FOR_SELF_CRITIC
         assert result2["session"].pr_url == "https://github.com/pr/1"
         assert mock_jules.run_session.call_count == 2
         assert any(

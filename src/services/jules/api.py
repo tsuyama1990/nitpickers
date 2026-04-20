@@ -101,6 +101,44 @@ class JulesApiClient:
             emsg = f"Network request failed: {e}"
             raise JulesApiError(emsg) from e
 
+    async def _request_async(
+        self,
+        method: str,
+        endpoint: str,
+        data: dict[str, Any] | None = None,
+        params: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
+        """Async version of _request using httpx.AsyncClient to avoid blocking the event loop."""
+        url = f"{self.BASE_URL}/{endpoint}"
+
+        try:
+            async with httpx.AsyncClient(timeout=settings.jules.request_timeout) as client:
+                response = await client.request(
+                    method,
+                    url,
+                    headers=self._get_headers(),
+                    json=data,
+                    params=params,
+                )
+
+                response.raise_for_status()
+
+                resp_body = response.text
+                return dict(json.loads(resp_body)) if resp_body else {}
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                msg = f"404 Not Found: {url}"
+                raise JulesApiError(msg) from e
+            err_msg = e.response.text
+            logger.error(f"Jules API Error {e.response.status_code}: {err_msg}")
+            emsg = f"API request failed: {e.response.status_code} {err_msg}"
+            raise JulesApiError(emsg) from e
+        except Exception as e:
+            logger.error(f"Network Error: {e}")
+            emsg = f"Network request failed: {e}"
+            raise JulesApiError(emsg) from e
+
     def list_sources(self) -> list[dict[str, Any]]:
         data = self._request("GET", "sources")
         return list(data.get("sources", []))
@@ -112,7 +150,7 @@ class JulesApiClient:
                 return str(src["name"])
         return None
 
-    def create_session(
+    async def create_session(
         self,
         source: str,
         prompt: str,
@@ -121,6 +159,7 @@ class JulesApiClient:
         title: str | None = None,
         automation_mode: str = "AUTO_CREATE_PR",
     ) -> dict[str, Any]:
+        """Creates a new Jules session. Async to avoid blocking the event loop."""
         payload = {
             "prompt": prompt,
             "sourceContext": {
@@ -132,7 +171,7 @@ class JulesApiClient:
         }
         if title:
             payload["title"] = title
-        return self._request("POST", "sessions", payload)
+        return await self._request_async("POST", "sessions", payload)
 
     def approve_plan(self, session_id: str, plan_id: str) -> dict[str, Any]:
         """Approves the current plan in the session, triggering implementation."""

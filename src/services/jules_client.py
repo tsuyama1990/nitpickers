@@ -56,6 +56,13 @@ class JulesApiError(Exception):
 # Moved to services/jules/api.py
 
 
+# Global semaphore to serialize Jules session creation across all parallel cycles.
+# The Jules API returns FAILED_PRECONDITION (400) when concurrent session creation
+# requests are made from the same source. We allow only 1 in-flight creation at a
+# time; once created, sessions are monitored concurrently as normal.
+_session_creation_lock: asyncio.Semaphore = asyncio.Semaphore(1)
+
+
 # --- Service Client Implementation ---
 class JulesClient:
     """
@@ -159,7 +166,12 @@ class JulesClient:
         return {"session_name": session_name, "status": "running"}
 
     async def _create_jules_session(self, payload: dict[str, Any]) -> str:
-        """Wrapper to call create_session via api_client."""
+        """Wrapper to call create_session via api_client.
+
+        Acquires _session_creation_lock before calling the Jules API to prevent
+        concurrent session creation across parallel cycles, which causes a
+        FAILED_PRECONDITION (400) error from the API.
+        """
         prompt = str(payload.get("prompt", ""))
         source_context = payload.get("sourceContext", {})
         source = str(source_context.get("source", ""))
@@ -171,14 +183,18 @@ class JulesClient:
         title = payload.get("title")
         automation_mode = str(payload.get("automationMode", "AUTO_CREATE_PR"))
 
-        resp = self.api_client.create_session(
-            source,
-            prompt,
-            require_approval,
-            branch=branch,
-            title=str(title) if title else None,
-            automation_mode=automation_mode,
-        )
+        async with _session_creation_lock:
+            logger.info(
+                f"Creating Jules session for branch '{branch}' (serialized via _session_creation_lock)"
+            )
+            resp = await self.api_client.create_session(
+                source,
+                prompt,
+                require_approval,
+                branch=branch,
+                title=str(title) if title else None,
+                automation_mode=automation_mode,
+            )
         return str(resp.get("name", ""))
 
     async def continue_session(self, session_name: str, prompt: str) -> dict[str, Any]:
