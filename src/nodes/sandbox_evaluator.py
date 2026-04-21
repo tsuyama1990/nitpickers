@@ -116,11 +116,16 @@ class SandboxEvaluatorNodes:
             console.print("[bold green]All structural checks passed.[/bold green]")
             test_update = state.test.model_copy(update={"structural_report": report})
             original_status = getattr(state, "status", None)
-            new_status = (
-                FlowStatus.POST_AUDIT_REFACTOR
-                if original_status == FlowStatus.POST_AUDIT_REFACTOR
-                else FlowStatus.READY_FOR_AUDIT
-            )
+            
+            # Preserve statuses that dictate specific next steps
+            if original_status in {
+                FlowStatus.POST_AUDIT_REFACTOR,
+                FlowStatus.READY_FOR_SELF_CRITIC,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
+            }:
+                new_status = original_status
+            else:
+                new_status = FlowStatus.READY_FOR_AUDIT
             return {
                 "status": new_status,
                 "test": test_update,
