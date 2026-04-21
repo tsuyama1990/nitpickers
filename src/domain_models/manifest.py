@@ -27,7 +27,7 @@ class CycleManifest(BaseModel):
     session_restart_count: int = Field(
         default=0, description="Number of session restarts attempted"
     )
-    max_session_restarts: int = Field(default=2, description="Maximum allowed session restarts")
+    max_session_restarts: int = Field(default=4, description="Maximum allowed session restarts")
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 

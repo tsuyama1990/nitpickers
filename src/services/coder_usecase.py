@@ -464,18 +464,27 @@ class CoderUseCase:
         """Handle session failures and manage restart counting."""
         if cycle_manifest:
             restart_count = cycle_manifest.session_restart_count
-            max_restarts = cycle_manifest.max_session_restarts
+            # Force at least 4 retries even if the persisted manifest says lower (e.g. 2)
+            max_restarts = max(cycle_manifest.max_session_restarts, 4)
 
             if restart_count < max_restarts:
                 new_restart_count = restart_count + 1
 
-                # Add jittered exponential backoff if the error looks like a temporary rate/concurrency limit
-                if "400" in error_msg or "FAILED_PRECONDITION" in error_msg:
+                # Add jittered exponential backoff for transient failures:
+                # - FAILED_PRECONDITION (400): Jules API concurrency limit
+                # - Network errors: DNS failure, server disconnect, etc.
+                _is_precondition = "400" in error_msg or "FAILED_PRECONDITION" in error_msg
+                _is_network_error = any(
+                    kw in error_msg
+                    for kw in ("Errno", "disconnected", "name resolution", "Network request failed", "timed out")
+                )
+                if _is_precondition or _is_network_error:
                     import random
 
                     backoff = (2**new_restart_count) + random.SystemRandom().uniform(0.5, 2.0)
+                    label = "precondition failure" if _is_precondition else "transient network error"
                     console.print(
-                        f"[yellow]Jules API reported precondition failure. Backing off for {backoff:.1f}s...[/yellow]"
+                        f"[yellow]Jules API reported {label}. Backing off for {backoff:.1f}s...[/yellow]"
                     )
                     await asyncio.sleep(backoff)
 

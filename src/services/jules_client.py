@@ -195,6 +195,10 @@ class JulesClient:
                 title=str(title) if title else None,
                 automation_mode=automation_mode,
             )
+            # Rate-limit buffer: Jules API rejects with FAILED_PRECONDITION when too many
+            # sessions are created in a short window. A 10-second pause ensures the API
+            # has plenty of time to stabilize each creation before the next one starts.
+            await asyncio.sleep(10)
         return str(resp.get("name", ""))
 
     async def continue_session(self, session_name: str, prompt: str) -> dict[str, Any]:
