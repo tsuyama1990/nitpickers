@@ -132,3 +132,32 @@ class AsyncDispatcher:
         async with self.semaphore:
             logger.info(f"DEBUG: run_with_semaphore awaiting {coro}")
             return await coro
+
+    async def execute_batches(
+        self,
+        batches: list[list[CycleManifest]],
+        coroutine_factory: Callable[[CycleManifest], Coroutine[Any, Any, Any]],
+    ) -> None:
+        """
+        Executes a resolved list of batches sequentially.
+        Within each batch, items are executed concurrently using asyncio.gather,
+        staggered by 0.5s to avoid rate limiting and race conditions.
+        Fails fast if any cycle crashes by not hiding exceptions in gather.
+        """
+        from rich.console import Console
+
+        console = Console()
+        for i, batch in enumerate(batches, 1):
+            console.print(
+                f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
+            )
+            tasks = []
+            for idx, c in enumerate(batch):
+                if idx > 0:
+                    # Stagger starts slightly to avoid hammering APIs and Git concurrently
+                    await asyncio.sleep(0.5)
+                tasks.append(self.run_with_semaphore(coroutine_factory(c)))
+
+            # Fail-fast execution via asyncio.gather with return_exceptions=False
+            await asyncio.gather(*tasks, return_exceptions=False)
+            console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
