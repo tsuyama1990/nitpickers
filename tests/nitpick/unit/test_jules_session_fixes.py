@@ -169,7 +169,7 @@ async def test_validate_completion_stale_but_new_transition() -> None:
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        # Fix mock structure: sessionCompleted is a key
+        # Mock structure: 'sessionCompleted' is a key in the activity object
         mock_resp.json.return_value = {"activities": [{"name": "act-123", "sessionCompleted": {}}]}
 
         mock_instance.get = AsyncMock(return_value=mock_resp)
