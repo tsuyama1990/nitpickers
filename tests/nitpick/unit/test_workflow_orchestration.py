@@ -1,4 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 import pytest
 
@@ -39,21 +41,22 @@ async def test_run_full_pipeline_success(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    from collections.abc import Coroutine
-    from typing import Any
 
-    async def execute_batches_mock(batches, runner):
-        for batch in batches:
-            for c in batch:
-                coro = runner(c)
-                result = await coro
-                if hasattr(result, "__await__"):
-                    await result
 
     mock_dispatcher.execute_batches = execute_batches_mock
 
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+        results = []
+        for batch in batches:
+            for item in batch:
+                res = await task_func(item)
+                results.append(res if res is not None else True)
+        return results
+
+    mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
+    
     # Await the AsyncMock so it matches the expected coroutine structure
-    workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
+    workflow_service._run_single_cycle = AsyncMock(return_value=True)  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
     mock_integration_graph.ainvoke = AsyncMock(return_value={"conflict_status": "success"})
@@ -88,25 +91,26 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    from collections.abc import Coroutine
-    from typing import Any
 
-    async def execute_batches_mock(batches, runner):
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+        results = []
         for batch in batches:
-            for c in batch:
-                coro = runner(c)
-                result = await coro
-                if hasattr(result, "__await__"):
-                    await result
+            for item in batch:
+                try:
+                    res = await task_func(item)
+                    results.append(res if res is not None else True)
+                except Exception as e:
+                    results.append(e)
+        return results
 
-    mock_dispatcher.execute_batches = execute_batches_mock
 
-    from typing import Any
+    mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
 
-    async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> None:
+    async def single_cycle_mock(cycle_id: str, **kwargs: Any) -> bool:
         if cycle_id == "02":
             msg = "Intentional coder failure"
             raise ValueError(msg)
+        return True
 
     workflow_service._run_single_cycle = AsyncMock(side_effect=single_cycle_mock)  # type: ignore[method-assign]
 
@@ -117,8 +121,10 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
-    with pytest.raises(ValueError, match="Intentional coder failure"):
+    with pytest.raises(RuntimeError) as exc_info:
         await workflow_service.run_full_pipeline(project_session_id="test_session")
+
+    assert "One or more cycles failed" in str(exc_info.value)
     assert workflow_service._run_single_cycle.call_count == 2
     mock_integration_graph.ainvoke.assert_not_called()
     mock_qa_graph.ainvoke.assert_not_called()
@@ -139,20 +145,19 @@ async def test_run_full_pipeline_fail_on_integration(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    from collections.abc import Coroutine
-    from typing import Any
 
-    async def execute_batches_mock(batches, runner):
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+        results = []
         for batch in batches:
-            for c in batch:
-                coro = runner(c)
-                result = await coro
-                if hasattr(result, "__await__"):
-                    await result
+            for item in batch:
+                res = await task_func(item)
+                results.append(res if res is not None else True)
+        return results
 
-    mock_dispatcher.execute_batches = execute_batches_mock
 
-    workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
+    mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
+
+    workflow_service._run_single_cycle = AsyncMock(return_value=True)  # type: ignore[method-assign]
 
     mock_integration_graph = MagicMock()
     mock_integration_graph.ainvoke = AsyncMock(return_value={"conflict_status": "failed"})
@@ -164,10 +169,10 @@ async def test_run_full_pipeline_fail_on_integration(
     )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
-    with pytest.raises(SystemExit) as exit_info:
+    with pytest.raises(RuntimeError) as exc_info:
         await workflow_service.run_full_pipeline(project_session_id="test_session")
 
-    assert exit_info.value.code == 1
+    assert "Integration Phase Failed" in str(exc_info.value)
     assert workflow_service._run_single_cycle.call_count == 2
     mock_integration_graph.ainvoke.assert_called_once()
     mock_qa_graph.ainvoke.assert_not_called()

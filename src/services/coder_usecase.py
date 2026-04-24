@@ -59,7 +59,7 @@ class CoderUseCase:
 
         # --- A. Attempt to identify/wait for an EXISTING session ---
         if (
-            state.status == FlowStatus.WAIT_FOR_JULES_COMPLETION
+            state.status in {FlowStatus.WAIT_FOR_JULES_COMPLETION, FlowStatus.READY_FOR_AUDIT, FlowStatus.READY_FOR_FINAL_CRITIC}
             or (state.resume_mode and state.status != FlowStatus.RETRY_FIX)
         ) and (cycle_manifest and cycle_manifest.jules_session_id):
             jules_session_name = cycle_manifest.jules_session_id
@@ -78,12 +78,16 @@ class CoderUseCase:
                 result = None
 
         # --- B. Handle session REUSE (Retry Fix, Post-Audit Refactor, or TDD Failure) ---
-        if not result and state.status in {
+        REUSE_WHITELIST = {
             FlowStatus.RETRY_FIX,
             FlowStatus.REJECTED,
             FlowStatus.POST_AUDIT_REFACTOR,
             FlowStatus.TDD_FAILED,
-        }:
+            FlowStatus.READY_FOR_AUDIT,
+            FlowStatus.READY_FOR_FINAL_CRITIC,
+            FlowStatus.READY_FOR_SELF_CRITIC,
+        }
+        if not result and state.status in REUSE_WHITELIST:
             reuse_result = await self._try_reuse_session(cycle_manifest, state)
             if reuse_result:
                 result = reuse_result
@@ -127,7 +131,7 @@ class CoderUseCase:
 
         # --- D. Post-Session Processing (Success Handling & Self-Critic) ---
         if result and (result.get("status") == "success" or result.get("pr_url")):
-            is_post_audit_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
+            is_post_audit_refactor = state.status in {FlowStatus.POST_AUDIT_REFACTOR, FlowStatus.READY_FOR_FINAL_CRITIC}
 
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
@@ -154,10 +158,16 @@ class CoderUseCase:
                     cycle_id, session_restart_count=0, pr_url=pr_val, branch_name=branch_val
                 )
 
-            is_initial_pr = state.iteration_count <= 1 and state.status not in {
+            # Feedback detection determines if we should skip the initial self-critic.
+            # We skip it if we have actual auditor feedback OR if we are already in a later stage.
+            SKIP_CRITIC_STATUSES = {
                 FlowStatus.RETRY_FIX,
                 FlowStatus.REJECTED,
+                FlowStatus.TDD_FAILED,
+                FlowStatus.READY_FOR_AUDIT,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
             }
+            is_initial_pr = state.status not in SKIP_CRITIC_STATUSES
 
             if is_post_audit_refactor:
                 return {
@@ -257,21 +267,15 @@ class CoderUseCase:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
         cycle_id = state.cycle_id
         last_audit = state.audit_result
-        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed) OR UAT Fix Plan OR TDD Failure
         is_retry_audit = (
             state.status in {FlowStatus.RETRY_FIX, FlowStatus.REJECTED}
             and last_audit
             and last_audit.feedback
         )
         is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
-        is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
         is_tdd_failure = state.status == FlowStatus.TDD_FAILED and state.error
 
-        if not (
-            (is_retry_audit or is_retry_uat or is_post_refactor or is_tdd_failure)
-            and cycle_manifest
-            and cycle_manifest.jules_session_id
-        ):
+        if not (cycle_manifest and cycle_manifest.jules_session_id):
             return None
 
         session_state = await self.jules.get_session_state(cycle_manifest.jules_session_id)
@@ -502,8 +506,9 @@ class CoderUseCase:
                 }
 
             console.print(
-                f"[red]Max session restarts ({max_restarts}) reached. Failing cycle.[/red]"
+                f"[red]Max session restarts ({max_restarts}) reached. Cycle {cycle_id} failed.[/red]"
             )
+            console.print(f"[red]Final error: {error_msg}[/red]")
 
         return {"status": FlowStatus.FAILED, "error": error_msg}
 

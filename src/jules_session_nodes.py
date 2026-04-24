@@ -143,20 +143,46 @@ class JulesSessionNodes:
 
                     # Check for failure
                     if state.jules_state == "FAILED":
-                        # Per Jules API spec, the failure reason is in the 'sessionFailed'
-                        # Activity's 'reason' field, NOT in the Session resource itself.
-                        # The Session resource has no 'error' field.
                         error_msg = "Unknown error"
+                        # Strategy 1: Check session outputs (fastest)
                         for output_item in data.get("outputs", []):
                             reason = output_item.get("sessionFailed", {}).get("reason")
                             if reason:
                                 error_msg = reason
                                 break
 
+                        # Strategy 2: Fetch activities (more reliable if outputs are stale/missing)
+                        if error_msg == "Unknown error":
+                            logger.info(f"Reason missing from outputs for session {state.session_name}. Fetching activities...")
+                            try:
+                                activities = await self.client.list_activities(state.session_url)
+                                for act in activities:
+                                    if "sessionFailed" in act:
+                                        error_msg = act["sessionFailed"].get("reason", "Unknown error")
+                                        break
+                            except Exception as e:
+                                logger.warning(f"Failed to fetch activities for failure reason: {e}")
+
+                        # Strategy 3: Last-ditch recovery nudge (User suggested)
+                        if not state.recovery_nudge_sent:
+                            logger.warning(f"Session {state.session_name} failed. Attempting last-ditch recovery nudge...")
+                            recovery_msg = (
+                                "The session failed unexpectedly. Please check your progress and continue. "
+                                "If you were about to create a PR, please do so now."
+                            )
+                            try:
+                                await self.client._send_message(state.session_url, recovery_msg)
+                                state.recovery_nudge_sent = True
+                                state.last_jules_state_change_time = now()
+                                # Stay in MONITORING to see if it recovers
+                                logger.info("Recovery nudge sent. Waiting for response...")
+                                continue 
+                            except Exception as e:
+                                logger.warning(f"Failed to send recovery nudge: {e}")
+
                         logger.error(f"Jules Session FAILED. Reason: {error_msg}")
 
                         # Resilience: Check if a PR was created despite the failure
-                        # Jules API: PR is in session outputs only (not in Activity types)
                         pr_found = any(
                             "pullRequest" in output for output in data.get("outputs", [])
                         )

@@ -172,10 +172,17 @@ class WorkflowService:
         finally:
             await self.builder.cleanup()
 
+    def verify_environment_and_observability(self) -> None:
+        """Alias for EnvironmentValidator to prevent breaking API."""
+        from src.services.environment_validator import EnvironmentValidator
+
+        EnvironmentValidator().verify()
+
     async def run_full_pipeline(
         self,
         project_session_id: str | None = None,
         parallel: bool = True,
+        resume: bool = False,
     ) -> None:
         """
         Orchestrates the entire 5-Phase pipeline.
@@ -186,7 +193,7 @@ class WorkflowService:
         EnvironmentValidator().verify()
         console.rule("[bold cyan]Starting Full Pipeline Orchestration[/bold cyan]")
 
-        await self._run_parallel_coder_phase(project_session_id, parallel)
+        await self._run_parallel_coder_phase(project_session_id, parallel, resume=resume)
         await self.run_integration_phase(project_session_id)
         await self.run_qa_phase(project_session_id)
 
@@ -197,7 +204,7 @@ class WorkflowService:
         return mgr.load_manifest()
 
     async def _run_parallel_coder_phase(
-        self, project_session_id: str | None, parallel: bool
+        self, project_session_id: str | None, parallel: bool, resume: bool = False
     ) -> None:
         manifest = self._get_manifest()
 
@@ -227,13 +234,21 @@ class WorkflowService:
         def runner(manifest_c: Any) -> Any:
             return self._run_single_cycle(
                 manifest_c.id,
-                resume=False,
+                resume=resume,
                 auto=True,
                 start_iter=0,
                 project_session_id=project_session_id,
             )
 
-        await dispatcher.execute_batches(batches, runner)
+        try:
+            results = await dispatcher.execute_batches(batches, runner)
+            if any(isinstance(r, Exception) or r is False for r in results):
+                msg = "One or more cycles failed in the parallel phase."
+                console.print(f"[bold red]{msg}[/bold red]")
+                raise RuntimeError(msg)
+        except Exception as e:
+            console.print(f"[bold red]Parallel phase evaluation halted: {e}[/bold red]")
+            raise
 
     async def run_integration_phase(self, project_session_id: str | None = None) -> None:
         EnvironmentValidator().verify()
@@ -262,14 +277,13 @@ class WorkflowService:
         try:
             final_integration_state = await integration_graph.ainvoke(integration_state, config)
             if final_integration_state.get("conflict_status") == "failed":
-                console.print(
-                    "[bold red]Integration Phase Failed: Unresolved conflicts.[/bold red]"
-                )
-                sys.exit(1)
+                msg = "Integration Phase Failed: Unresolved conflicts."
+                console.print(f"[bold red]{msg}[/bold red]")
+                raise RuntimeError(msg)
             console.print("[bold green]Integration Phase Completed Successfully.[/bold green]")
         except Exception as e:
             console.print(f"[bold red]Integration Graph execution failed: {e}[/bold red]")
-            sys.exit(1)
+            raise
 
     async def run_qa_phase(self, project_session_id: str | None = None) -> None:
         EnvironmentValidator().verify()
@@ -297,14 +311,13 @@ class WorkflowService:
         try:
             final_qa_state = await qa_graph.ainvoke(initial_qa_state, qa_config)
             if final_qa_state.get("status") == "failed" or final_qa_state.get("error"):
-                console.print(
-                    f"[bold red]QA Phase Failed: {final_qa_state.get('error')}[/bold red]"
-                )
-                sys.exit(1)
+                msg = f"QA Phase Failed: {final_qa_state.get('error')}"
+                console.print(f"[bold red]{msg}[/bold red]")
+                raise RuntimeError(msg)
             console.print("[bold green]QA Phase Completed Successfully.[/bold green]")
         except Exception as e:
             console.print(f"[bold red]QA Graph execution failed: {e}[/bold red]")
-            sys.exit(1)
+            raise
 
     async def _run_all_cycles(
         self,
@@ -399,7 +412,7 @@ class WorkflowService:
 
         if final_state.get("error"):
             console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
-            sys.exit(1)
+            return False
 
         if final_state.get("status") == FlowStatus.REQUIRES_PIVOT:
             console.print(
@@ -410,9 +423,10 @@ class WorkflowService:
             await self._execute_cycle_graph(
                 cycle_id, start_iter, resume, pid, fb, ib, planned_count
             )
-            return
+            return True
 
         console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
+        return True
 
     def _update_cycle_status(self, cycle_id: str) -> None:
         """Update cycle status to completed."""
@@ -453,21 +467,24 @@ class WorkflowService:
                 pid = pid or manifest.project_session_id
                 ib = manifest.integration_branch
             else:
-                console.print("[red]No active session found. Run gen-cycles first.[/red]")
-                sys.exit(1)
+                msg = "No active session found. Run gen-cycles first."
+                console.print(f"[red]{msg}[/red]")
+                raise RuntimeError(msg)
 
             fb = manifest.feature_branch if manifest else None
 
             planned_count = len(manifest.cycles) if manifest else 0
-            await self._execute_cycle_graph(
+            success = await self._execute_cycle_graph(
                 cycle_id, start_iter, resume, pid, fb, ib, planned_count
             )
-            self._update_cycle_status(cycle_id)
+            if success:
+                self._update_cycle_status(cycle_id)
+            return success
 
         except Exception:
             console.print(f"[bold red]Cycle {cycle_id} execution failed.[/bold red]")
             logger.exception("Cycle execution failed")
-            sys.exit(1)
+            return False
         finally:
             await self.builder.cleanup()
 

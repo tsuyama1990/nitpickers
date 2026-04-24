@@ -52,9 +52,9 @@ services:
       # -----------------------------------------------------------------------
 
       # Tier B: Tuning Tier (Version-controlled configuration)
-      - NITPICK_AUDITOR_MODEL=openrouter/arcee-ai/trinity-large-preview:free
-      - NITPICK_REVIEWER__SMART_MODEL=openrouter/arcee-ai/trinity-large-preview:free
-      - NITPICK_NUM_AUDITORS=3
+      - NITPICK_AUDITOR_MODEL=openrouter/z-ai/glm-4.5-air:free
+      - NITPICK_REVIEWER__SMART_MODEL=openrouter/z-ai/glm-4.5-air:free
+      - NITPICK_NUM_AUDITORS=1
       - NITPICK_REVIEWS_PER_AUDITOR=2
       - NITPICK_MAX_ITERATIONS=3
       # Final Resort for Git Identity (if still facing issues)

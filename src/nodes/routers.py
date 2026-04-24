@@ -55,7 +55,7 @@ def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911, C901
         return "final_critic"
 
     if status == FlowStatus.READY_FOR_AUDIT:
-        if getattr(state.committee, "is_refactoring", False):
+        if getattr(state.committee, "is_refactoring", False) or getattr(state, "final_fix", False):
             return "final_critic"
         return "auditor"
 

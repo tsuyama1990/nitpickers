@@ -137,16 +137,17 @@ class AsyncDispatcher:
         self,
         batches: list[list[CycleManifest]],
         coroutine_factory: Callable[[CycleManifest], Coroutine[Any, Any, Any]],
-    ) -> None:
+    ) -> list[Any]:
         """
         Executes a resolved list of batches sequentially.
         Within each batch, items are executed concurrently using asyncio.gather,
         staggered by 0.5s to avoid rate limiting and race conditions.
-        Fails fast if any cycle crashes by not hiding exceptions in gather.
+        Returns a list of all batch results.
         """
         from rich.console import Console
 
         console = Console()
+        all_results = []
         for i, batch in enumerate(batches, 1):
             console.print(
                 f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
@@ -158,6 +159,16 @@ class AsyncDispatcher:
                     await asyncio.sleep(0.5)
                 tasks.append(self.run_with_semaphore(coroutine_factory(c)))
 
-            # Fail-fast execution via asyncio.gather with return_exceptions=False
-            await asyncio.gather(*tasks, return_exceptions=False)
+            # Execute the current batch concurrently.
+            # We return exceptions to handle failures gracefully in the caller or logging.
+            batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+            all_results.extend(batch_results)
+
+            # Log errors for failed tasks in this batch
+            for item, result in zip(batch, batch_results):
+                if isinstance(result, Exception):
+                    logger.error(f"Task for cycle {item.id} failed with error: {result}")
+
             console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
+
+        return all_results

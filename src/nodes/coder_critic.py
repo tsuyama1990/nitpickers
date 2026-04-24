@@ -23,7 +23,11 @@ class CoderCriticNodes:
         if not session_id:
             return {"status": FlowStatus.FAILED, "error": "No session ID for critic phase"}
 
-        is_final = state.status == FlowStatus.READY_FOR_FINAL_CRITIC
+        is_final = (
+            state.status == FlowStatus.READY_FOR_FINAL_CRITIC
+            or getattr(state.committee, "is_refactoring", False)
+            or getattr(state, "final_fix", False)
+        )
         result = await usecase.run_critic_phase(cycle_id, session_id, is_final=is_final)
 
         if not result:
@@ -37,6 +41,7 @@ class CoderCriticNodes:
             update={"pr_url": pr_url, "branch_name": branch_name}
         )
 
+        # If it's a final polish or post-audit refactor, we are COMPLETED.
         new_status = FlowStatus.COMPLETED if is_final else FlowStatus.READY_FOR_AUDIT
 
         return {
