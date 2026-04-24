@@ -19,9 +19,9 @@ def mock_manifest() -> MagicMock:
 
 @pytest.fixture
 def workflow_service() -> WorkflowService:
-    service = WorkflowService()
-    service.verify_environment_and_observability = MagicMock()  # type: ignore[method-assign]
-    return service
+    with patch("src.services.workflow.EnvironmentValidator.verify"):
+        service = WorkflowService()
+        yield service
 
 
 @pytest.mark.asyncio
@@ -42,13 +42,15 @@ async def test_run_full_pipeline_success(
     from collections.abc import Coroutine
     from typing import Any
 
-    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        result = await coro
-        if hasattr(result, "__await__"):
-            return await result
-        return result
+    async def execute_batches_mock(batches, runner):
+        for batch in batches:
+            for c in batch:
+                coro = runner(c)
+                result = await coro
+                if hasattr(result, "__await__"):
+                    await result
 
-    mock_dispatcher.run_with_semaphore = run_semaphore_mock
+    mock_dispatcher.execute_batches = execute_batches_mock
 
     # Await the AsyncMock so it matches the expected coroutine structure
     workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
@@ -89,13 +91,15 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     from collections.abc import Coroutine
     from typing import Any
 
-    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        result = await coro
-        if hasattr(result, "__await__"):
-            return await result
-        return result
+    async def execute_batches_mock(batches, runner):
+        for batch in batches:
+            for c in batch:
+                coro = runner(c)
+                result = await coro
+                if hasattr(result, "__await__"):
+                    await result
 
-    mock_dispatcher.run_with_semaphore = run_semaphore_mock
+    mock_dispatcher.execute_batches = execute_batches_mock
 
     from typing import Any
 
@@ -113,10 +117,8 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     )
     workflow_service.builder.build_qa_graph = MagicMock(return_value=mock_qa_graph)  # type: ignore[method-assign]
 
-    with pytest.raises(SystemExit) as exit_info:
+    with pytest.raises(ValueError, match="Intentional coder failure"):
         await workflow_service.run_full_pipeline(project_session_id="test_session")
-
-    assert exit_info.value.code == 1
     assert workflow_service._run_single_cycle.call_count == 2
     mock_integration_graph.ainvoke.assert_not_called()
     mock_qa_graph.ainvoke.assert_not_called()
@@ -140,13 +142,15 @@ async def test_run_full_pipeline_fail_on_integration(
     from collections.abc import Coroutine
     from typing import Any
 
-    async def run_semaphore_mock(coro: Coroutine[Any, Any, Any]) -> Any:
-        result = await coro
-        if hasattr(result, "__await__"):
-            return await result
-        return result
+    async def execute_batches_mock(batches, runner):
+        for batch in batches:
+            for c in batch:
+                coro = runner(c)
+                result = await coro
+                if hasattr(result, "__await__"):
+                    await result
 
-    mock_dispatcher.run_with_semaphore = run_semaphore_mock
+    mock_dispatcher.execute_batches = execute_batches_mock
 
     workflow_service._run_single_cycle = AsyncMock()  # type: ignore[method-assign]
 

@@ -16,7 +16,6 @@ from rich.panel import Panel
 
 from src.config import settings
 from src.domain_models import CycleManifest
-from src.domain_models.observability_config import ObservabilityConfig
 from src.domain_models.tracing import TracingMetadata
 from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
@@ -27,6 +26,7 @@ from src.sandbox import SandboxRunner
 from src.service_container import ServiceContainer
 from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
+from src.services.environment_validator import EnvironmentValidator
 from src.services.conflict_manager import ConflictManager
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
@@ -51,7 +51,7 @@ class WorkflowService:
     async def run_gen_cycles(  # noqa: PLR0915
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
     ) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         with KeepAwake(reason="Generating Architecture and Cycles"):
             console.rule("[bold blue]Architect Phase: Generating Cycles[/bold blue]")
 
@@ -161,7 +161,7 @@ class WorkflowService:
         project_session_id: str | None,
         parallel: bool = False,
     ) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         try:
             # Default to "all" behavior (resume pending) if no ID provided
             if cycle_id is None or cycle_id.lower() == "all":
@@ -171,111 +171,6 @@ class WorkflowService:
             await self._run_single_cycle(cycle_id, resume, auto, start_iter, project_session_id)
         finally:
             await self.builder.cleanup()
-
-    def verify_environment_and_observability(self) -> None:
-        """
-        Validates observability parameters and checks explicitly/implicitly required
-        dependencies based on environment variables and the local configuration.
-        Implements the Phase 0 Gatekeeper pattern.
-        """
-        console.rule("[bold red]Phase 0: Environment & Observability Verification[/bold red]")
-        self._verify_observability()
-        self._verify_required_keys()
-        self._scan_implicit_dependencies()
-        self._verify_dynamic_requirements()
-        console.print("[green]Environment & Observability verified successfully.[/green]")
-
-    def _verify_observability(self) -> None:
-        try:
-            # Pydantic schema enforcing invariants
-
-            ObservabilityConfig(
-                langchain_tracing_v2=os.getenv("LANGCHAIN_TRACING_V2", ""),
-                langchain_api_key=os.getenv("LANGCHAIN_API_KEY", ""),
-                langchain_project=os.getenv("LANGCHAIN_PROJECT", ""),
-            )
-        except Exception as e:
-            console.print("[bold red]Observability check failed![/bold red]")
-            console.print(f"[red]{e!s}[/red]")
-            console.print(
-                "[yellow]Please configure LANGCHAIN_TRACING_V2=true, LANGCHAIN_API_KEY, "
-                "and LANGCHAIN_PROJECT in your .env file.[/yellow]"
-            )
-            sys.exit(1)
-
-    def _verify_required_keys(self) -> None:
-        required_keys = ["OPENROUTER_API_KEY", "JULES_API_KEY", "E2B_API_KEY"]
-        for key in required_keys:
-            if not os.getenv(key):
-                console.print(f"[bold red]Missing required API key: {key}[/bold red]")
-                console.print(
-                    "[yellow]Please configure all required API keys in your .env file.[/yellow]"
-                )
-                sys.exit(1)
-
-    def _scan_implicit_dependencies(self) -> None:
-        # Implicit dependency scan via SPEC documents
-        try:
-            docs_dir = settings.paths.documents_dir
-            if not docs_dir.exists():
-                docs_dir = Path.cwd() / "dev_documents"
-
-            spec_path = docs_dir / "system_prompts" / "SPEC.md"
-            if spec_path.exists():
-                content = spec_path.read_text(encoding="utf-8")
-                # Very basic scan for implicitly required secrets like DATABASE_URL, OPENAI_API_KEY
-                for secret in settings.known_implicit_secrets:
-                    if re.search(
-                        r"\b" + re.escape(secret) + r"\b", content, re.IGNORECASE
-                    ) and not os.getenv(secret):
-                        console.print(
-                            "[bold red]Implicit Dependency Missing: A required secret is missing.[/bold red]"
-                        )
-                        console.print(
-                            "[yellow]The specification file references a known secret, "
-                            "but it was not found in the environment. Please configure required secrets.[/yellow]"
-                        )
-
-                        sys.exit(1)
-        except SystemExit:
-            raise
-        except Exception as e:
-            logger.warning(f"Error scanning SPEC.md for implicit dependencies: {e}")
-
-    def _verify_dynamic_requirements(self) -> None:
-        # Directive A: Pre-Flight Check based on required_envs.json
-        try:
-            docs_dir = settings.paths.documents_dir
-            if not docs_dir.exists():
-                docs_dir = Path.cwd() / "dev_documents"
-
-            required_envs_path = docs_dir / "required_envs.json"
-            if required_envs_path.exists():
-                try:
-                    required_envs = json.loads(required_envs_path.read_text(encoding="utf-8"))
-                    if isinstance(required_envs, list):
-                        missing_keys = [key for key in required_envs if not os.getenv(key)]
-                        if missing_keys:
-                            console.print(
-                                "\n[bold red][ERROR] Missing dynamically required API keys![/bold red]"
-                            )
-                            console.print(
-                                "[red]The system architecture explicitly requires the following keys to proceed:[/red]"
-                            )
-                            for key in missing_keys:
-                                console.print(f"  - [bold yellow]{key}[/bold yellow]")
-                            console.print(
-                                "\n[yellow]Please add these keys to your local .env file or environment variables "
-                                "and re-run the command.[/yellow]"
-                            )
-
-                            sys.exit(1)
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse required_envs.json: {e}")
-        except SystemExit:
-            raise
-        except Exception as e:
-            logger.warning(f"Error checking required_envs.json: {e}")
 
     async def run_full_pipeline(
         self,
@@ -288,7 +183,7 @@ class WorkflowService:
         Phase 3: Integration Graph execution.
         Phase 4: QA/UAT Graph execution.
         """
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         console.rule("[bold cyan]Starting Full Pipeline Orchestration[/bold cyan]")
 
         await self._run_parallel_coder_phase(project_session_id, parallel)
@@ -329,34 +224,19 @@ class WorkflowService:
             f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
         )
 
-        # Fail-fast execution via asyncio.gather with return_exceptions=True
-        # We manually raise if any task failed.
-        for i, batch in enumerate(batches, 1):
-            console.print(
-                f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
+        def runner(manifest_c: Any) -> Any:
+            return self._run_single_cycle(
+                manifest_c.id,
+                resume=False,
+                auto=True,
+                start_iter=0,
+                project_session_id=project_session_id,
             )
-            tasks = []
-            for c in batch:
-                coro = self._run_single_cycle(
-                    c.id,
-                    resume=False,
-                    auto=True,
-                    start_iter=1,
-                    project_session_id=project_session_id,
-                )
-                tasks.append(asyncio.create_task(dispatcher.run_with_semaphore(coro)))
 
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for cycle, result in zip(batch, results, strict=False):
-                if isinstance(result, Exception):
-                    console.print(f"[bold red]Cycle {cycle.id} failed: {result}[/bold red]")
-                    console.print("[bold red]Pipeline halted due to Phase 2 failure.[/bold red]")
-                    sys.exit(1)
-
-            console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
+        await dispatcher.execute_batches(batches, runner)
 
     async def run_integration_phase(self, project_session_id: str | None = None) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         # --- Phase 3: Integration Graph ---
         console.rule("[bold blue]Phase 3: Integration Graph[/bold blue]")
         manifest = self._get_manifest()
@@ -392,7 +272,7 @@ class WorkflowService:
             sys.exit(1)
 
     async def run_qa_phase(self, project_session_id: str | None = None) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         # --- Phase 4: QA/UAT Graph ---
         console.rule("[bold blue]Phase 4: QA/UAT Graph[/bold blue]")
         qa_graph = self.builder.build_qa_graph()
@@ -461,24 +341,10 @@ class WorkflowService:
                 f"[bold cyan]Parallel execution plan: {[[c.id for c in b] for b in batches]}[/bold cyan]"
             )
 
-            for i, batch in enumerate(batches, 1):
-                console.print(
-                    f"[bold yellow]Starting Batch {i}/{len(batches)}: {[c.id for c in batch]}[/bold yellow]"
-                )
-                tasks = []
-                for idx, c in enumerate(batch):
-                    if idx > 0:
-                        # Stagger starts slightly to avoid hammering Jules API and Git concurrently
-                        await asyncio.sleep(0.5)
-                    tasks.append(
-                        dispatcher.run_with_semaphore(
-                            self._run_single_cycle(
-                                c.id, resume, auto, start_iter, project_session_id
-                            )
-                        )
-                    )
-                await asyncio.gather(*tasks)
-                console.print(f"[bold green]Completed Batch {i}/{len(batches)}[/bold green]")
+            def runner(manifest_c: Any) -> Any:
+                return self._run_single_cycle(manifest_c.id, resume, auto, start_iter, project_session_id)
+
+            await dispatcher.execute_batches(batches, runner)
 
         # After all cycles, run QA/Tutorial Generation
         await self.generate_tutorials(project_session_id)
@@ -606,7 +472,7 @@ class WorkflowService:
             await self.builder.cleanup()
 
     async def start_session(self, prompt: str, audit_mode: bool, max_retries: int) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         console.rule("[bold magenta]Starting Jules Session[/bold magenta]")
 
         docs_dir = settings.paths.documents_dir
@@ -660,7 +526,7 @@ class WorkflowService:
         """
         QA Phase: Generate and verify tutorials based on FINAL_UAT.md.
         """
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         console.rule("[bold cyan]QA Phase: Tutorial Generation[/bold cyan]")
 
         docs_dir = settings.paths.documents_dir
@@ -800,7 +666,7 @@ class WorkflowService:
             )
 
     async def finalize_session(self, project_session_id: str | None) -> None:
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
         console.rule("[bold cyan]Finalizing Development Session[/bold cyan]")
         ensure_api_key()
 
@@ -873,7 +739,8 @@ class WorkflowService:
         Archives current session artifacts to dev_documents/system_prompts_phaseNN
         and resets the state for the next phase safely.
         """
-        self.verify_environment_and_observability()
+        EnvironmentValidator().verify()
+        from src.config import settings
 
         docs_dir = settings.paths.documents_dir
         if not docs_dir.exists():
