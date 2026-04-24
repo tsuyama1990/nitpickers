@@ -1,8 +1,15 @@
 import asyncio
+import contextlib
+import json
+import os
+import re
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
+import anyio
 from langchain_core.runnables import RunnableConfig
 from rich.console import Console
 from rich.panel import Panel
@@ -14,12 +21,16 @@ from src.domain_models.tracing import TracingMetadata
 from src.enums import FlowStatus, WorkPhase
 from src.graph import GraphBuilder
 from src.messages import SuccessMessages, ensure_api_key
+from src.nodes.global_refactor import GlobalRefactorNodes
+from src.process_runner import ProcessRunner
+from src.sandbox import SandboxRunner
 from src.service_container import ServiceContainer
 from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
+from src.services.conflict_manager import ConflictManager
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
-from src.state import CycleState
+from src.state import CycleState, IntegrationState
 from src.state_manager import StateManager
 from src.utils import KeepAwake, logger
 
@@ -29,7 +40,6 @@ console = Console()
 class WorkflowService:
     def __init__(self, services: ServiceContainer | None = None) -> None:
         self.services = services or ServiceContainer.default()
-        from src.sandbox import SandboxRunner
 
         self.builder = GraphBuilder(
             self.services,
@@ -178,7 +188,6 @@ class WorkflowService:
     def _verify_observability(self) -> None:
         try:
             # Pydantic schema enforcing invariants
-            import os
 
             ObservabilityConfig(
                 langchain_tracing_v2=os.getenv("LANGCHAIN_TRACING_V2", ""),
@@ -192,14 +201,9 @@ class WorkflowService:
                 "[yellow]Please configure LANGCHAIN_TRACING_V2=true, LANGCHAIN_API_KEY, "
                 "and LANGCHAIN_PROJECT in your .env file.[/yellow]"
             )
-            import sys
-
             sys.exit(1)
 
     def _verify_required_keys(self) -> None:
-        import os
-        import sys
-
         required_keys = ["OPENROUTER_API_KEY", "JULES_API_KEY", "E2B_API_KEY"]
         for key in required_keys:
             if not os.getenv(key):
@@ -211,11 +215,7 @@ class WorkflowService:
 
     def _scan_implicit_dependencies(self) -> None:
         # Implicit dependency scan via SPEC documents
-        import os
-
         try:
-            import re
-
             docs_dir = settings.paths.documents_dir
             if not docs_dir.exists():
                 docs_dir = Path.cwd() / "dev_documents"
@@ -235,7 +235,6 @@ class WorkflowService:
                             "[yellow]The specification file references a known secret, "
                             "but it was not found in the environment. Please configure required secrets.[/yellow]"
                         )
-                        import sys
 
                         sys.exit(1)
         except SystemExit:
@@ -245,11 +244,7 @@ class WorkflowService:
 
     def _verify_dynamic_requirements(self) -> None:
         # Directive A: Pre-Flight Check based on required_envs.json
-        import os
-
         try:
-            import json
-
             docs_dir = settings.paths.documents_dir
             if not docs_dir.exists():
                 docs_dir = Path.cwd() / "dev_documents"
@@ -273,7 +268,6 @@ class WorkflowService:
                                 "\n[yellow]Please add these keys to your local .env file or environment variables "
                                 "and re-run the command.[/yellow]"
                             )
-                            import sys
 
                             sys.exit(1)
                 except json.JSONDecodeError as e:
@@ -321,8 +315,6 @@ class WorkflowService:
                 raise ValueError(msg)
             cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
         else:
-            from src.domain_models.manifest import CycleManifest
-
             cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
 
         if not cycles_to_run:
@@ -374,8 +366,6 @@ class WorkflowService:
         branches_to_merge = []
         if manifest and manifest.feature_branch:
             branches_to_merge.append(manifest.feature_branch)
-
-        from src.state import IntegrationState
 
         integration_state = IntegrationState(branches_to_merge=branches_to_merge)
         integration_graph = self.builder.build_integration_graph()
@@ -450,8 +440,6 @@ class WorkflowService:
             # We construct instances of CycleManifest for all remaining ones to feed the dispatcher
             cycles_to_run = [c for c in manifest.cycles if c.status != "completed"]
         else:
-            from src.domain_models.manifest import CycleManifest
-
             cycles_to_run = [CycleManifest(id=cid) for cid in settings.default_cycles]
 
         cycle_ids = [c.id for c in cycles_to_run]
@@ -739,8 +727,6 @@ class WorkflowService:
             logger.exception("Tutorial Generation Failed")
 
     def _get_quality_gate_cmds(self) -> list[list[str]]:
-        from src.config import settings
-
         cmds = []
         if settings.sandbox.lint_check_cmd:
             cmds.append(settings.sandbox.lint_check_cmd)
@@ -761,18 +747,11 @@ class WorkflowService:
         if not gr_res.refactorings_applied:
             return
 
-        from src.process_runner import ProcessRunner
-        from src.service_container import ServiceContainer
-
         container = ServiceContainer.default()
         runner = (
             container.resolve(ProcessRunner) if hasattr(container, "resolve") else ProcessRunner()
         )
         cmds = self._get_quality_gate_cmds()
-
-        import shutil
-        import tempfile
-        from pathlib import Path
 
         # Execute quality gates in isolated temporary directories
         try:
@@ -853,8 +832,6 @@ class WorkflowService:
                         ["commit", "-m", f"Merge {feature_branch} into {integration_branch}"]
                     )
                 else:
-                    from src.services.conflict_manager import ConflictManager
-
                     manager = ConflictManager()
                     registry_items = await manager.scan_conflicts(Path.cwd())
 
@@ -866,9 +843,6 @@ class WorkflowService:
                     logger.warning("Merge conflicts recorded. Invoking Master Integrator...")
 
             # Global Refactoring Loop (CYCLE08)
-            from src.nodes.global_refactor import GlobalRefactorNodes
-            from src.state import CycleState
-
             refactor_node = GlobalRefactorNodes()
             refactor_state = CycleState(cycle_id="global_refactor")
             refactor_state.project_session_id = sid
@@ -900,7 +874,6 @@ class WorkflowService:
         and resets the state for the next phase safely.
         """
         self.verify_environment_and_observability()
-        from src.config import settings
 
         docs_dir = settings.paths.documents_dir
         if not docs_dir.exists():
@@ -924,8 +897,6 @@ class WorkflowService:
         console.print(f"[green]Ready for Phase {next_phase_num + 1}![/green]")
 
     def _get_next_phase_num(self, docs_dir: Path) -> int:
-        import contextlib
-
         existing_phases = [
             d
             for d in docs_dir.iterdir()
@@ -938,10 +909,6 @@ class WorkflowService:
         return max(nums) + 1 if nums else 1
 
     async def _safe_move_item(self, src: Path, dest: Path) -> None:
-        import shutil
-
-        import anyio
-
         anyio_src = anyio.Path(src)
         anyio_dest = anyio.Path(dest)
         if not await anyio_src.exists():
@@ -958,8 +925,6 @@ class WorkflowService:
                 shutil.move(str(src), str(dest))
 
     async def _archive_files(self, docs_dir: Path, phase_dir: Path) -> None:
-        import anyio
-
         sys_prompts_dir = docs_dir / "system_prompts"
         if sys_prompts_dir.exists():
             await self._safe_move_item(sys_prompts_dir, phase_dir)
@@ -985,8 +950,6 @@ class WorkflowService:
                 await self._safe_move_item(cycle_dir, phase_dir / "templates" / cycle_dir.name)
 
     def _reset_project_state(self, phase_dir: Path) -> None:
-        import shutil
-
         state_mgr = StateManager()
         if state_mgr.STATE_FILE.exists():
             shutil.copy2(str(state_mgr.STATE_FILE), str(phase_dir / "project_state.json"))
@@ -999,8 +962,6 @@ class WorkflowService:
         (docs_dir / "system_prompts").mkdir(exist_ok=True)
 
     async def _commit_archived_phase(self, next_phase_num: int) -> None:
-        from src.config import settings
-
         msg = settings.ARCHIVE_COMMIT_MESSAGE.format(phase_num=next_phase_num)
         try:
             await self.git.add_all()
