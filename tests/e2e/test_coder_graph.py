@@ -12,11 +12,11 @@ def test_coder_graph_happy_path() -> None:  # noqa: C901
     from src.services.jules_client import JulesClient
 
     services = MagicMock()
-    services.__class__ = ServiceContainer  # type: ignore[method-assign]
+    services.__class__ = ServiceContainer  # type: ignore[assignment]
     sandbox = MagicMock()
-    sandbox.__class__ = SandboxRunner  # type: ignore[method-assign]
+    sandbox.__class__ = SandboxRunner  # type: ignore[assignment]
     jules = MagicMock()
-    jules.__class__ = JulesClient  # type: ignore[method-assign]
+    jules.__class__ = JulesClient  # type: ignore[assignment]
 
     builder = GraphBuilder(services, sandbox, jules)
 
@@ -121,11 +121,11 @@ def test_coder_graph_rejection_loop() -> None:  # noqa: C901
     from src.services.jules_client import JulesClient
 
     services = MagicMock()
-    services.__class__ = ServiceContainer  # type: ignore[method-assign]
+    services.__class__ = ServiceContainer  # type: ignore[assignment]
     sandbox = MagicMock()
-    sandbox.__class__ = SandboxRunner  # type: ignore[method-assign]
+    sandbox.__class__ = SandboxRunner  # type: ignore[assignment]
     jules = MagicMock()
-    jules.__class__ = JulesClient  # type: ignore[method-assign]
+    jules.__class__ = JulesClient  # type: ignore[assignment]
 
     builder = GraphBuilder(services, sandbox, jules)
 

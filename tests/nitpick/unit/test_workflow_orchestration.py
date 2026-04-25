@@ -41,7 +41,9 @@ async def test_run_full_pipeline_success(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
+    async def mock_execute_batches(
+        batches: list[list[Any]], task_func: Callable[[Any], Any]
+    ) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:
@@ -87,7 +89,9 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
+    async def mock_execute_batches(
+        batches: list[list[Any]], task_func: Callable[[Any], Any]
+    ) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:
@@ -139,7 +143,9 @@ async def test_run_full_pipeline_fail_on_integration(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
+    async def mock_execute_batches(
+        batches: list[list[Any]], task_func: Callable[[Any], Any]
+    ) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:

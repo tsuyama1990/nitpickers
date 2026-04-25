@@ -22,11 +22,16 @@ async def test_workflow_initial_pr_triggers_self_critic() -> None:
 
     # Mock launch_session indirectly by mocking _run_jules_session if needed,
     # but here we just want to check the return status of execute.
-    with patch.object(
-        usecase,
-        "_run_jules_session",
-        AsyncMock(return_value=("sessions/123", {"status": "success", "pr_url": "http://pr/1"})),
-    ), patch("src.services.coder_usecase.workspace_lock", new_callable=AsyncMock):
+    with (
+        patch.object(
+            usecase,
+            "_run_jules_session",
+            AsyncMock(
+                return_value=("sessions/123", {"status": "success", "pr_url": "http://pr/1"})
+            ),
+        ),
+        patch("src.services.coder_usecase.workspace_lock", new_callable=AsyncMock),
+    ):
         result = await usecase.execute(state)
         assert result["status"] == FlowStatus.READY_FOR_SELF_CRITIC
 
@@ -81,9 +86,11 @@ async def test_session_reuse_ready_for_final_critic() -> None:
     mock_mgr = MagicMock()
     mock_mgr.get_cycle.return_value = cycle_manifest
 
-    with patch("src.services.coder_usecase.StateManager", return_value=mock_mgr):
-        with patch("src.services.coder_usecase.workspace_lock", new_callable=AsyncMock):
-            result = await usecase.execute(state)
+    with (
+        patch("src.services.coder_usecase.StateManager", return_value=mock_mgr),
+        patch("src.services.coder_usecase.workspace_lock", new_callable=AsyncMock),
+    ):
+        result = await usecase.execute(state)
 
-            assert mock_jules.continue_session.called
-            assert result["status"] == FlowStatus.READY_FOR_FINAL_CRITIC
+        assert mock_jules.continue_session.called
+        assert result["status"] == FlowStatus.READY_FOR_FINAL_CRITIC

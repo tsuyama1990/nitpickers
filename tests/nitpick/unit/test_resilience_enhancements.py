@@ -66,17 +66,17 @@ async def test_git_checkout_resilience() -> None:
     manager = GitCheckoutMixin()
     manager.runner = mock_runner
     # manager._run_git = AsyncMock()  # This triggers method-assign error
-    with patch.object(manager, "_run_git", new_callable=AsyncMock) as mock_run_git:  # type: ignore[method-assign]
-        manager._run_git = mock_run_git
-
-    with patch("src.config.settings") as mock_settings:
+    with (
+        patch.object(manager, "_run_git", new_callable=AsyncMock) as mock_run_git,
+        patch("src.config.settings") as mock_settings,
+    ):
         mock_settings.tools.conflict_codes = ["UU", "AA"]
 
         # Run
         await manager._auto_commit_if_dirty("test commit")
 
         # Verify abort attempts were called
-        abort_calls = [call.args[0] for call in manager._run_git.call_args_list]
+        abort_calls = [call.args[0] for call in mock_run_git.call_args_list]
         assert ["rebase", "--abort"] in abort_calls
         assert ["merge", "--abort"] in abort_calls
 
