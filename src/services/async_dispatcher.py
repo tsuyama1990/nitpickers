@@ -165,7 +165,7 @@ class AsyncDispatcher:
             all_results.extend(batch_results)
 
             # Log errors for failed tasks in this batch
-            for item, result in zip(batch, batch_results):
+            for item, result in zip(batch, batch_results, strict=True):
                 if isinstance(result, Exception):
                     logger.error(f"Task for cycle {item.id} failed with error: {result}")
 

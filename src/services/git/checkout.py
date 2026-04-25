@@ -50,22 +50,32 @@ class GitCheckoutMixin(BaseGitManager):
             has_conflicts = any(line[:2] in conflict_codes for line in lines)
 
             if has_conflicts:
-                logger.warning("Unresolved conflicts detected! Attempting to restore clean state...")
+                logger.warning(
+                    "Unresolved conflicts detected! Attempting to restore clean state..."
+                )
                 # Attempt to abort common operations that leave unmerged files
-                for abort_cmd in [["rebase", "--abort"], ["merge", "--abort"], ["cherry-pick", "--abort"], ["am", "--abort"]]:
+                for abort_cmd in [
+                    ["rebase", "--abort"],
+                    ["merge", "--abort"],
+                    ["cherry-pick", "--abort"],
+                    ["am", "--abort"],
+                ]:
                     try:
                         await self._run_git(abort_cmd)
                         logger.info(f"✓ Executed git {abort_cmd[0]} --abort")
                     except Exception:
-                        pass # Ignore failures for commands not currently running
+                        logger.debug(f"Command {abort_cmd[0]} --abort failed (likely not running)")
+                        # Ignore failures for commands not currently running
 
                 # Re-check status after abort attempts
-                stdout, _, _, _ = await self.runner.run_command(["git", "status", "--porcelain"], check=False)
-                if any(l[:2] in conflict_codes for l in stdout.splitlines()):
+                stdout, _, _, _ = await self.runner.run_command(
+                    ["git", "status", "--porcelain"], check=False
+                )
+                if any(line[:2] in conflict_codes for line in stdout.splitlines()):
                     error_msg = "Could not automatically resolve git conflicts. Manual intervention may be required."
                     logger.error(error_msg)
                     raise RuntimeError(error_msg)
-                
+
                 # If conflicts are gone but changes remain, we can proceed with auto-commit
                 if not stdout.strip():
                     return

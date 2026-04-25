@@ -1,6 +1,6 @@
+from collections.abc import Callable, Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
-from collections.abc import Coroutine
-from typing import Any, Callable
 
 import pytest
 
@@ -20,7 +20,7 @@ def mock_manifest() -> MagicMock:
 
 
 @pytest.fixture
-def workflow_service() -> WorkflowService:
+def workflow_service() -> Generator[WorkflowService, None, None]:
     with patch("src.services.workflow.EnvironmentValidator.verify"):
         service = WorkflowService()
         yield service
@@ -41,11 +41,7 @@ async def test_run_full_pipeline_success(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-
-
-    mock_dispatcher.execute_batches = execute_batches_mock
-
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:
@@ -54,7 +50,7 @@ async def test_run_full_pipeline_success(
         return results
 
     mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
-    
+
     # Await the AsyncMock so it matches the expected coroutine structure
     workflow_service._run_single_cycle = AsyncMock(return_value=True)  # type: ignore[method-assign]
 
@@ -91,8 +87,7 @@ async def test_run_full_pipeline_fail_fast_on_coder(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:
@@ -102,7 +97,6 @@ async def test_run_full_pipeline_fail_fast_on_coder(
                 except Exception as e:
                     results.append(e)
         return results
-
 
     mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
 
@@ -145,15 +139,13 @@ async def test_run_full_pipeline_fail_on_integration(
     mock_dispatcher = mock_dispatcher_class.return_value
     mock_dispatcher.resolve_dag.return_value = [mock_manifest.cycles]
 
-
-    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable) -> list[Any]:
+    async def mock_execute_batches(batches: list[list[Any]], task_func: Callable[[Any], Any]) -> list[Any]:
         results = []
         for batch in batches:
             for item in batch:
                 res = await task_func(item)
                 results.append(res if res is not None else True)
         return results
-
 
     mock_dispatcher.execute_batches = AsyncMock(side_effect=mock_execute_batches)
 

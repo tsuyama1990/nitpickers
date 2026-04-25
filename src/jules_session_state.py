@@ -80,4 +80,6 @@ class JulesSessionState(BaseModel):
     stale_nudge_count: int = 0  # how many nudges we have already sent
 
     # Recovery
-    recovery_nudge_sent: bool = Field(default=False)  # whether we've sent a final nudge after FAILED
+    recovery_nudge_sent: bool = Field(
+        default=False
+    )  # whether we've sent a final nudge after FAILED

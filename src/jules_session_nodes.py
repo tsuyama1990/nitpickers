@@ -153,19 +153,27 @@ class JulesSessionNodes:
 
                         # Strategy 2: Fetch activities (more reliable if outputs are stale/missing)
                         if error_msg == "Unknown error":
-                            logger.info(f"Reason missing from outputs for session {state.session_name}. Fetching activities...")
+                            logger.info(
+                                f"Reason missing from outputs for session {state.session_name}. Fetching activities..."
+                            )
                             try:
                                 activities = await self.client.list_activities(state.session_url)
                                 for act in activities:
                                     if "sessionFailed" in act:
-                                        error_msg = act["sessionFailed"].get("reason", "Unknown error")
+                                        error_msg = act["sessionFailed"].get(
+                                            "reason", "Unknown error"
+                                        )
                                         break
                             except Exception as e:
-                                logger.warning(f"Failed to fetch activities for failure reason: {e}")
+                                logger.warning(
+                                    f"Failed to fetch activities for failure reason: {e}"
+                                )
 
                         # Strategy 3: Last-ditch recovery nudge (User suggested)
                         if not state.recovery_nudge_sent:
-                            logger.warning(f"Session {state.session_name} failed. Attempting last-ditch recovery nudge...")
+                            logger.warning(
+                                f"Session {state.session_name} failed. Attempting last-ditch recovery nudge..."
+                            )
                             recovery_msg = (
                                 "The session failed unexpectedly. Please check your progress and continue. "
                                 "If you were about to create a PR, please do so now."
@@ -176,7 +184,7 @@ class JulesSessionNodes:
                                 state.last_jules_state_change_time = now()
                                 # Stay in MONITORING to see if it recovers
                                 logger.info("Recovery nudge sent. Waiting for response...")
-                                continue 
+                                continue
                             except Exception as e:
                                 logger.warning(f"Failed to send recovery nudge: {e}")
 

@@ -1,8 +1,4 @@
-import asyncio
 import contextlib
-import json
-import os
-import re
 import shutil
 import sys
 import tempfile
@@ -26,8 +22,8 @@ from src.sandbox import SandboxRunner
 from src.service_container import ServiceContainer
 from src.services.async_dispatcher import AsyncDispatcher
 from src.services.audit_orchestrator import AuditOrchestrator
-from src.services.environment_validator import EnvironmentValidator
 from src.services.conflict_manager import ConflictManager
+from src.services.environment_validator import EnvironmentValidator
 from src.services.git_ops import GitManager
 from src.services.jules_client import JulesClient
 from src.state import CycleState, IntegrationState
@@ -240,15 +236,11 @@ class WorkflowService:
                 project_session_id=project_session_id,
             )
 
-        try:
-            results = await dispatcher.execute_batches(batches, runner)
-            if any(isinstance(r, Exception) or r is False for r in results):
-                msg = "One or more cycles failed in the parallel phase."
-                console.print(f"[bold red]{msg}[/bold red]")
-                raise RuntimeError(msg)
-        except Exception as e:
-            console.print(f"[bold red]Parallel phase evaluation halted: {e}[/bold red]")
-            raise
+        results = await dispatcher.execute_batches(batches, runner)
+        if any(isinstance(r, Exception) or r is False for r in results):
+            msg = "One or more cycles failed in the parallel phase."
+            console.print(f"[bold red]{msg}[/bold red]")
+            raise RuntimeError(msg)
 
     async def run_integration_phase(self, project_session_id: str | None = None) -> None:
         EnvironmentValidator().verify()
@@ -274,16 +266,12 @@ class WorkflowService:
             **tracing_config,  # type: ignore[typeddict-item]
         )
 
-        try:
-            final_integration_state = await integration_graph.ainvoke(integration_state, config)
-            if final_integration_state.get("conflict_status") == "failed":
-                msg = "Integration Phase Failed: Unresolved conflicts."
-                console.print(f"[bold red]{msg}[/bold red]")
-                raise RuntimeError(msg)
-            console.print("[bold green]Integration Phase Completed Successfully.[/bold green]")
-        except Exception as e:
-            console.print(f"[bold red]Integration Graph execution failed: {e}[/bold red]")
-            raise
+        final_integration_state = await integration_graph.ainvoke(integration_state, config)
+        if final_integration_state.get("conflict_status") == "failed":
+            msg = "Integration Phase Failed: Unresolved conflicts."
+            console.print(f"[bold red]{msg}[/bold red]")
+            raise RuntimeError(msg)
+        console.print("[bold green]Integration Phase Completed Successfully.[/bold green]")
 
     async def run_qa_phase(self, project_session_id: str | None = None) -> None:
         EnvironmentValidator().verify()
@@ -308,16 +296,12 @@ class WorkflowService:
             **qa_tracing_config,  # type: ignore[typeddict-item]
         )
 
-        try:
-            final_qa_state = await qa_graph.ainvoke(initial_qa_state, qa_config)
-            if final_qa_state.get("status") == "failed" or final_qa_state.get("error"):
-                msg = f"QA Phase Failed: {final_qa_state.get('error')}"
-                console.print(f"[bold red]{msg}[/bold red]")
-                raise RuntimeError(msg)
-            console.print("[bold green]QA Phase Completed Successfully.[/bold green]")
-        except Exception as e:
-            console.print(f"[bold red]QA Graph execution failed: {e}[/bold red]")
-            raise
+        final_qa_state = await qa_graph.ainvoke(initial_qa_state, qa_config)
+        if final_qa_state.get("status") == "failed" or final_qa_state.get("error"):
+            msg = f"QA Phase Failed: {final_qa_state.get('error')}"
+            console.print(f"[bold red]{msg}[/bold red]")
+            raise RuntimeError(msg)
+        console.print("[bold green]QA Phase Completed Successfully.[/bold green]")
 
     async def _run_all_cycles(
         self,
@@ -355,7 +339,9 @@ class WorkflowService:
             )
 
             def runner(manifest_c: Any) -> Any:
-                return self._run_single_cycle(manifest_c.id, resume, auto, start_iter, project_session_id)
+                return self._run_single_cycle(
+                    manifest_c.id, resume, auto, start_iter, project_session_id
+                )
 
             await dispatcher.execute_batches(batches, runner)
 
@@ -386,7 +372,7 @@ class WorkflowService:
         fb: str | None,
         ib: str | None,
         planned_count: int,
-    ) -> None:
+    ) -> bool:
         """Execute the cycle graph."""
         graph = self.builder.build_coder_graph()
         state = CycleState(cycle_id=cycle_id)
@@ -441,49 +427,47 @@ class WorkflowService:
         auto: bool,
         start_iter: int,
         project_session_id: str | None,
-    ) -> None:
+    ) -> bool | None:
         if self._check_cycle_completion(cycle_id):
-            return
+            return None
 
         with KeepAwake(reason=f"Running Implementation Cycle {cycle_id}"):
             console.rule(f"[bold green]Coder Phase: Cycle {cycle_id}[/bold green]")
 
         ensure_api_key()
 
+        if auto:
+            settings.auto_approve = True
+
+        root_to_use = str(settings.paths.workspace_root)
+        console.print(
+            f"[bold blue]DEBUG: Cycle {cycle_id} initializing StateManager with root: {root_to_use}[/bold blue]"
+        )
+        mgr = StateManager(project_root=root_to_use)
+        manifest = mgr.load_manifest()
+
+        if not manifest:
+            msg = "No active session found. Run gen-cycles first."
+            console.print(f"[red]{msg}[/red]")
+            raise RuntimeError(msg)
+
+        pid = project_session_id or manifest.project_session_id
+        ib = manifest.integration_branch
+        fb = manifest.feature_branch
+        planned_count = len(manifest.cycles)
+
         try:
-            if auto:
-                settings.auto_approve = True
-
-            root_to_use = str(settings.paths.workspace_root)
-            console.print(
-                f"[bold blue]DEBUG: Cycle {cycle_id} initializing StateManager with root: {root_to_use}[/bold blue]"
-            )
-            mgr = StateManager(project_root=root_to_use)
-            manifest = mgr.load_manifest()
-
-            pid = project_session_id
-            ib = None
-            if manifest:
-                pid = pid or manifest.project_session_id
-                ib = manifest.integration_branch
-            else:
-                msg = "No active session found. Run gen-cycles first."
-                console.print(f"[red]{msg}[/red]")
-                raise RuntimeError(msg)
-
-            fb = manifest.feature_branch if manifest else None
-
-            planned_count = len(manifest.cycles) if manifest else 0
             success = await self._execute_cycle_graph(
                 cycle_id, start_iter, resume, pid, fb, ib, planned_count
             )
-            if success:
-                self._update_cycle_status(cycle_id)
-            return success
-
         except Exception:
             console.print(f"[bold red]Cycle {cycle_id} execution failed.[/bold red]")
             logger.exception("Cycle execution failed")
+            return False
+        else:
+            if success:
+                self._update_cycle_status(cycle_id)
+                return True
             return False
         finally:
             await self.builder.cleanup()

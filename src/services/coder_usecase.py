@@ -44,7 +44,7 @@ class CoderUseCase:
     #  Public entry point                                                  #
     # ------------------------------------------------------------------ #
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915, PLR0911
         """Routes the coder session through its many possible modes."""
         cycle_id = state.cycle_id
         iteration = state.iteration_count
@@ -59,7 +59,14 @@ class CoderUseCase:
 
         # --- A. Attempt to identify/wait for an EXISTING session ---
         if (
-            state.status in {FlowStatus.WAIT_FOR_JULES_COMPLETION, FlowStatus.READY_FOR_AUDIT, FlowStatus.READY_FOR_FINAL_CRITIC}
+            state.status
+            in {
+                FlowStatus.WAIT_FOR_JULES_COMPLETION,
+                FlowStatus.READY_FOR_AUDIT,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
+                FlowStatus.READY_FOR_SELF_CRITIC,
+                FlowStatus.START_REFACTOR,
+            }
             or (state.resume_mode and state.status != FlowStatus.RETRY_FIX)
         ) and (cycle_manifest and cycle_manifest.jules_session_id):
             jules_session_name = cycle_manifest.jules_session_id
@@ -86,12 +93,41 @@ class CoderUseCase:
             FlowStatus.READY_FOR_AUDIT,
             FlowStatus.READY_FOR_FINAL_CRITIC,
             FlowStatus.READY_FOR_SELF_CRITIC,
+            FlowStatus.START_REFACTOR,
         }
         if not result and state.status in REUSE_WHITELIST:
             reuse_result = await self._try_reuse_session(cycle_manifest, state)
             if reuse_result:
-                result = reuse_result
                 jules_session_name = cycle_manifest.jules_session_id if cycle_manifest else None
+                pr_val = reuse_result.get("pr_url")
+                branch_val = reuse_result.get("branch_name")
+                session_update = state.session
+                # Return immediately — bypass Section D (self-critic routing).
+                # Section B reuse means Jules already has the right context; no critic needed.
+                if state.status in {
+                    FlowStatus.POST_AUDIT_REFACTOR,
+                    FlowStatus.READY_FOR_FINAL_CRITIC,
+                }:
+                    # Final polish done — route to final critic review
+                    return {
+                        "status": FlowStatus.READY_FOR_FINAL_CRITIC,
+                        "session": session_update,
+                        "branch_name": branch_val,
+                    }
+                if state.status == FlowStatus.READY_FOR_SELF_CRITIC:
+                    # Maintain status to ensure graph goes to self_critic_node
+                    return {
+                        "status": FlowStatus.READY_FOR_SELF_CRITIC,
+                        "session": session_update,
+                        "branch_name": branch_val,
+                    }
+                # All other reuse cases (RETRY_FIX, REJECTED, etc.)
+                # should proceed to the auditor
+                return {
+                    "status": FlowStatus.READY_FOR_AUDIT,
+                    "session": session_update,
+                    "branch_name": branch_val,
+                }
 
         # --- C. Launch NEW session ---
         if not result:
@@ -131,7 +167,10 @@ class CoderUseCase:
 
         # --- D. Post-Session Processing (Success Handling & Self-Critic) ---
         if result and (result.get("status") == "success" or result.get("pr_url")):
-            is_post_audit_refactor = state.status in {FlowStatus.POST_AUDIT_REFACTOR, FlowStatus.READY_FOR_FINAL_CRITIC}
+            is_post_audit_refactor = state.status in {
+                FlowStatus.POST_AUDIT_REFACTOR,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
+            }
 
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
@@ -289,8 +328,8 @@ class CoderUseCase:
         console.print(
             f"[dim]Reusing session ({session_state}) for final polish: {cycle_manifest.jules_session_id}[/dim]"
         )
-        # For Post-Audit Refactor, we send the new instruction as a message
-        if state.status == FlowStatus.POST_AUDIT_REFACTOR:
+        # For Refactoring stages, we send the new instruction as a message
+        if state.status in {FlowStatus.POST_AUDIT_REFACTOR, FlowStatus.START_REFACTOR}:
             instruction = self._build_instruction(cycle_id, None, state, cycle_manifest)
             if cycle_manifest.jules_session_id is not None:
                 return await self._send_audit_feedback_to_session(
@@ -480,13 +519,21 @@ class CoderUseCase:
                 _is_precondition = "400" in error_msg or "FAILED_PRECONDITION" in error_msg
                 _is_network_error = any(
                     kw in error_msg
-                    for kw in ("Errno", "disconnected", "name resolution", "Network request failed", "timed out")
+                    for kw in (
+                        "Errno",
+                        "disconnected",
+                        "name resolution",
+                        "Network request failed",
+                        "timed out",
+                    )
                 )
                 if _is_precondition or _is_network_error:
                     import random
 
                     backoff = (2**new_restart_count) + random.SystemRandom().uniform(0.5, 2.0)
-                    label = "precondition failure" if _is_precondition else "transient network error"
+                    label = (
+                        "precondition failure" if _is_precondition else "transient network error"
+                    )
                     console.print(
                         f"[yellow]Jules API reported {label}. Backing off for {backoff:.1f}s...[/yellow]"
                     )
