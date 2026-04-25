@@ -12,6 +12,7 @@ from src.services.git_ops import workspace_lock
 from src.services.jules_client import JulesClient
 from src.state import CycleState
 from src.state_manager import StateManager
+from src.utils import logger
 
 console = Console()
 
@@ -44,7 +45,7 @@ class CoderUseCase:
     #  Public entry point                                                  #
     # ------------------------------------------------------------------ #
 
-    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915, PLR0911
+    async def execute(self, state: CycleState) -> dict[str, Any]:  # noqa: C901, PLR0915
         """Routes the coder session through its many possible modes."""
         cycle_id = state.cycle_id
         iteration = state.iteration_count
@@ -59,14 +60,7 @@ class CoderUseCase:
 
         # --- A. Attempt to identify/wait for an EXISTING session ---
         if (
-            state.status
-            in {
-                FlowStatus.WAIT_FOR_JULES_COMPLETION,
-                FlowStatus.READY_FOR_AUDIT,
-                FlowStatus.READY_FOR_FINAL_CRITIC,
-                FlowStatus.READY_FOR_SELF_CRITIC,
-                FlowStatus.START_REFACTOR,
-            }
+            state.status == FlowStatus.WAIT_FOR_JULES_COMPLETION
             or (state.resume_mode and state.status != FlowStatus.RETRY_FIX)
         ) and (cycle_manifest and cycle_manifest.jules_session_id):
             jules_session_name = cycle_manifest.jules_session_id
@@ -84,50 +78,20 @@ class CoderUseCase:
                 console.print(f"[yellow]Wait/Resume failed: {e}. Starting new session.[/yellow]")
                 result = None
 
-        # --- B. Handle session REUSE (Retry Fix, Post-Audit Refactor, or TDD Failure) ---
-        REUSE_WHITELIST = {
+        # --- B. Handle session REUSE (Retry Fix or Post-Audit Refactor) ---
+        if not result and state.status in {
             FlowStatus.RETRY_FIX,
             FlowStatus.REJECTED,
             FlowStatus.POST_AUDIT_REFACTOR,
             FlowStatus.TDD_FAILED,
-            FlowStatus.READY_FOR_AUDIT,
-            FlowStatus.READY_FOR_FINAL_CRITIC,
-            FlowStatus.READY_FOR_SELF_CRITIC,
-            FlowStatus.START_REFACTOR,
-        }
-        if not result and state.status in REUSE_WHITELIST:
+        }:
             reuse_result = await self._try_reuse_session(cycle_manifest, state)
             if reuse_result:
                 jules_session_name = cycle_manifest.jules_session_id if cycle_manifest else None
-                pr_val = reuse_result.get("pr_url")
-                branch_val = reuse_result.get("branch_name")
-                session_update = state.session
-                # Return immediately — bypass Section D (self-critic routing).
-                # Section B reuse means Jules already has the right context; no critic needed.
-                if state.status in {
-                    FlowStatus.POST_AUDIT_REFACTOR,
-                    FlowStatus.READY_FOR_FINAL_CRITIC,
-                }:
-                    # Final polish done — route to final critic review
-                    return {
-                        "status": FlowStatus.READY_FOR_FINAL_CRITIC,
-                        "session": session_update,
-                        "branch_name": branch_val,
-                    }
-                if state.status == FlowStatus.READY_FOR_SELF_CRITIC:
-                    # Maintain status to ensure graph goes to self_critic_node
-                    return {
-                        "status": FlowStatus.READY_FOR_SELF_CRITIC,
-                        "session": session_update,
-                        "branch_name": branch_val,
-                    }
-                # All other reuse cases (RETRY_FIX, REJECTED, etc.)
-                # should proceed to the auditor
-                return {
-                    "status": FlowStatus.READY_FOR_AUDIT,
-                    "session": session_update,
-                    "branch_name": branch_val,
-                }
+                # If reuse succeeded, we fall through to Section D (Success Handling)
+                # which handles potential self-critic if it's the initial PR (unlikely here)
+                # or routes to READY_FOR_AUDIT / READY_FOR_FINAL_CRITIC / COMPLETED
+                result = reuse_result
 
         # --- C. Launch NEW session ---
         if not result:
@@ -175,7 +139,25 @@ class CoderUseCase:
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
 
-            # Extract PR and branch info
+            # Critic trigger logic aligned with ac-cdd
+            SKIP_CRITIC_STATUSES = {
+                FlowStatus.RETRY_FIX,
+                FlowStatus.REJECTED,
+                FlowStatus.TDD_FAILED,
+                FlowStatus.READY_FOR_AUDIT,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
+            }
+            is_initial_pr = state.status not in SKIP_CRITIC_STATUSES
+
+            if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
+                # Run critic inline like ac-cdd
+                critic_result = await self.run_critic_phase(
+                    cycle_id, jules_session_name, is_final=is_post_audit_refactor
+                )
+                if critic_result:
+                    result = critic_result
+
+            # Extract final PR and branch info
             pr_val = result.get("pr_url")
             branch_val = result.get("branch_name")
 
@@ -197,27 +179,9 @@ class CoderUseCase:
                     cycle_id, session_restart_count=0, pr_url=pr_val, branch_name=branch_val
                 )
 
-            # Feedback detection determines if we should skip the initial self-critic.
-            # We skip it if we have actual auditor feedback OR if we are already in a later stage.
-            SKIP_CRITIC_STATUSES = {
-                FlowStatus.RETRY_FIX,
-                FlowStatus.REJECTED,
-                FlowStatus.TDD_FAILED,
-                FlowStatus.READY_FOR_AUDIT,
-                FlowStatus.READY_FOR_FINAL_CRITIC,
-            }
-            is_initial_pr = state.status not in SKIP_CRITIC_STATUSES
-
             if is_post_audit_refactor:
                 return {
-                    "status": FlowStatus.READY_FOR_FINAL_CRITIC,
-                    "session": session_update,
-                    "branch_name": branch_val,
-                }
-
-            if is_initial_pr:
-                return {
-                    "status": FlowStatus.READY_FOR_SELF_CRITIC,
+                    "status": FlowStatus.COMPLETED,
                     "session": session_update,
                     "branch_name": branch_val,
                 }
@@ -304,19 +268,17 @@ class CoderUseCase:
         self, cycle_manifest: CycleManifest | None, state: CycleState
     ) -> dict[str, Any] | None:
         """Attempt to send audit feedback to an existing session instead of starting fresh."""
-        cycle_id = state.cycle_id
         last_audit = state.audit_result
-        is_retry_audit = (
-            state.status in {FlowStatus.RETRY_FIX, FlowStatus.REJECTED}
-            and last_audit
-            and last_audit.feedback
-        )
-        is_retry_uat = state.status == FlowStatus.RETRY_FIX and state.current_fix_plan
-        is_tdd_failure = state.status == FlowStatus.TDD_FAILED and state.error
+        # Reuse for Retry Fix (Audit failed) OR Post-Audit Refactor (Audit passed)
+        is_retry = state.status == FlowStatus.RETRY_FIX and last_audit and last_audit.feedback
+        is_post_refactor = state.status == FlowStatus.POST_AUDIT_REFACTOR
 
-        if not (cycle_manifest and cycle_manifest.jules_session_id):
+        if not (
+            (is_retry or is_post_refactor) and cycle_manifest and cycle_manifest.jules_session_id
+        ):
             return None
 
+        # Check session state
         session_state = await self.jules.get_session_state(cycle_manifest.jules_session_id)
         if session_state not in _REUSABLE_STATES:
             console.print(
@@ -325,48 +287,41 @@ class CoderUseCase:
             )
             return None
 
+        if session_state == "IN_PROGRESS":
+            console.print(
+                "[yellow]Jules is currently working. Waiting for completion before sending new feedback...[/yellow]"
+            )
+            await self.jules.wait_for_completion(cycle_manifest.jules_session_id)
+            session_state = "COMPLETED"
+
+        action_label = "final polish" if is_post_refactor else "feedback retry"
         console.print(
-            f"[dim]Reusing session ({session_state}) for final polish: {cycle_manifest.jules_session_id}[/dim]"
+            f"[dim]Reusing session ({session_state}) for {action_label}: {cycle_manifest.jules_session_id}[/dim]"
         )
-        # For Refactoring stages, we send the new instruction as a message
-        if state.status in {FlowStatus.POST_AUDIT_REFACTOR, FlowStatus.START_REFACTOR}:
-            instruction = self._build_instruction(cycle_id, None, state, cycle_manifest)
-            if cycle_manifest.jules_session_id is not None:
-                return await self._send_audit_feedback_to_session(
-                    cycle_manifest.jules_session_id, instruction
-                )
-            return {
-                "status": FlowStatus.FAILED,
-                "error": "No jules_session_id available for POST_AUDIT_REFACTOR.",
-            }
+
+        # For Post-Audit Refactor, we send the new instruction as a message
+        if state.status == FlowStatus.POST_AUDIT_REFACTOR:
+            return await self._send_audit_feedback_to_session(
+                cycle_manifest.jules_session_id,
+                self._build_instruction(state.cycle_id, None, state, cycle_manifest),
+            )
+
+        feedback_payload = ""
+        if last_audit and last_audit.feedback:
+            feedback_payload = (
+                "\n".join(last_audit.feedback)
+                if isinstance(last_audit.feedback, list)
+                else str(last_audit.feedback)
+            )
+
+        if not feedback_payload and not is_post_refactor:
+            return None
 
         if cycle_manifest.jules_session_id is not None:
-            feedback_payload = ""
-            if is_retry_audit and last_audit and last_audit.feedback:
-                feedback_payload = (
-                    "\n".join(last_audit.feedback)
-                    if isinstance(last_audit.feedback, list)
-                    else str(last_audit.feedback)
-                )
-            elif is_retry_uat and state.current_fix_plan:
-                feedback_payload = (
-                    f"## Automated UAT Diagnostic Fix Plan\n"
-                    f"A recent execution failure was diagnosed by the Outer Loop Auditor.\n"
-                    f"**Defect Description:** {state.current_fix_plan.defect_description}\n\n"
-                )
-                for patch in state.current_fix_plan.patches:
-                    feedback_payload += (
-                        f"**Target File:** `{patch.target_file}`\n"
-                        f"**Required Changes:**\n```\n{patch.git_diff_patch}\n```\n\n"
-                    )
-                feedback_payload += "Please implement these exact changes immediately."
-            elif is_tdd_failure and state.error:
-                feedback_payload = state.error
-
             return await self._send_audit_feedback_to_session(
                 cycle_manifest.jules_session_id, feedback_payload
             )
-        return {"status": FlowStatus.FAILED, "error": "No jules_session_id available."}
+        return None
 
     async def _run_jules_session(
         self,
@@ -450,51 +405,33 @@ class CoderUseCase:
 
         Returns result dict if successful, None if should create new session.
         """
-        # Validate feedback size
-        if len(feedback) > 100000:  # Avoid excessive LLM input parsing
-            msg = "Feedback exceeds maximum size of 100000 characters"
-            raise ValueError(msg)
-
-        # Sanitize feedback while allowing non-ASCII UTF-8 characters
-        from src.utils_sanitization import sanitize_for_llm
-
-        feedback = sanitize_for_llm(feedback)
-
         console.print(
             f"[bold yellow]Sending Audit Feedback to existing Jules session: {session_id}[/bold yellow]"
         )
-        max_attempts = 2
-        for attempt in range(1, max_attempts + 1):
-            try:
-                from src.utils_sanitization import sanitize_for_llm
+        try:
+            feedback_template = settings.get_prompt_content(
+                settings.template_files.audit_feedback_message
+            )
+            if not feedback_template:
+                feedback_template = "{{feedback}}"
 
-                feedback_template = settings.get_prompt_content(
-                    settings.template_files.audit_feedback_message
-                )
-                if not feedback_template:
-                    feedback_template = "{{feedback}}"
+            feedback_msg = feedback_template.replace("{{feedback}}", feedback)
 
-                safe_feedback = sanitize_for_llm(feedback)
-                feedback_msg = feedback_template.replace("{{feedback}}", safe_feedback)
+            # Continue session sends the message and waits for completion via LangGraph
+            result = await self.jules.continue_session(session_id, feedback_msg)
+            if result and (result.get("status") == "success" or result.get("pr_url")):
+                return dict(result)
 
-                # Continue session sends the message and waits for completion
-                result = await self.jules.continue_session(session_id, feedback_msg)
-                if result and (result.get("status") == "success" or result.get("pr_url")):
-                    return dict(result)
-
-                console.print(
-                    "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
-                )
-            except Exception as e:
-                if attempt < max_attempts:
-                    console.print(
-                        f"[yellow]Failed to send feedback (attempt {attempt}/{max_attempts}): {e!r}. Retrying...[/yellow]"
-                    )
-                    await asyncio.sleep(2)  # Short sleep before retry
-                    continue
-                console.print(
-                    f"[yellow]Failed to send feedback after {max_attempts} attempts: {e!r}. Creating new session...[/yellow]"
-                )
+            console.print(
+                "[yellow]Jules session finished without new PR. Creating new session...[/yellow]"
+            )
+        except Exception as e:
+            logger.exception(f"Failed to send audit feedback to existing session {session_id}")
+            console.print(
+                f"[yellow]Failed to send feedback to existing session: {e}. Creating new session...[/yellow]"
+            )
+        else:
+            return None
         return None
 
     # ------------------------------------------------------------------ #
