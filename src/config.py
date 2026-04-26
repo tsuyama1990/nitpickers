@@ -420,7 +420,7 @@ class SandboxConfig(BaseModel):
     """Configuration for E2B Sandbox execution"""
 
     template: str | None = None
-    timeout: int = 7200
+    timeout: int = 3600
     cwd: str = "/home/user/project"
     test_cmd: str = "uv run pytest -v --tb=short"
     max_retries: int = 3
@@ -471,15 +471,11 @@ class ASTAnalyzerConfig(BaseModel):
 
 class AgentsConfig(BaseSettings):
     auditor_model: str = Field(
-        default_factory=lambda: os.getenv(
-            "NITPICK_AUDITOR_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
-        ),
+        default="openrouter/google/gemini-2.0-flash-001",
         alias="NITPICK_AUDITOR_MODEL",
     )
     qa_analyst_model: str = Field(
-        default_factory=lambda: os.getenv(
-            "NITPICK_QA_ANALYST_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
-        ),
+        default="openrouter/google/gemini-2.0-flash-001",
         alias="NITPICK_QA_ANALYST_MODEL",
     )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
@@ -487,22 +483,16 @@ class AgentsConfig(BaseSettings):
 
 class ReviewerConfig(BaseSettings):
     smart_model: str = Field(
-        default_factory=lambda: os.getenv(
-            "NITPICK_REVIEWER__SMART_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
-        ),
+        default="openrouter/google/gemini-2.0-flash-001",
         alias="NITPICK_REVIEWER__SMART_MODEL",
         description="Model for editing code (Fixer)",
     )
     fast_model: str = Field(
-        default_factory=lambda: os.getenv(
-            "NITPICK_REVIEWER__FAST_MODEL", "openrouter/arcee-ai/trinity-large-preview:free"
-        ),
+        default="openrouter/google/gemini-2.0-flash-001",
         alias="NITPICK_REVIEWER__FAST_MODEL",
         description="Model for reading/auditing code",
     )
-    master_integrator_temperature: float = Field(
-        default_factory=lambda: float(os.getenv("REVIEWER_MASTER_INTEGRATOR_TEMPERATURE", "0.0"))
-    )
+    master_integrator_temperature: float = Field(default=0.0)
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 
@@ -654,8 +644,12 @@ class Settings(BaseSettings):
             raise ValueError(msg)
 
         # Validate LangSmith Tracing Configuration
-        tracing_enabled = self.tracing.tracing_enabled
-        api_key = self.tracing.api_key
+        # We check both the config object (Pydantic-loaded) and raw os.environ
+        # to ensure standard LANGCHAIN_* variables are respected without NITPICK_ prefix.
+        tracing_enabled = self.tracing.tracing_enabled or (
+            os.environ.get("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+        )
+        api_key = self.tracing.api_key or os.environ.get("LANGCHAIN_API_KEY")
 
         if tracing_enabled and not api_key:
             logging.warning(
@@ -664,6 +658,20 @@ class Settings(BaseSettings):
             )
             os.environ["LANGCHAIN_TRACING_V2"] = "false"
             self.tracing.tracing_enabled = False
+        elif tracing_enabled:
+            # Synchronize back to config and environ to ensure all downstream tools (litellm, langchain) see it
+            self.tracing.tracing_enabled = True
+            self.tracing.api_key = api_key
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            if api_key:
+                os.environ["LANGCHAIN_API_KEY"] = api_key
+                os.environ["LANGSMITH_API_KEY"] = api_key
+
+            # Ensure LiteLLM-specific LANGSMITH_PROJECT is synced with LANGCHAIN_PROJECT
+            project_name = self.tracing.project_name or os.environ.get("LANGCHAIN_PROJECT")
+            if project_name:
+                os.environ["LANGSMITH_PROJECT"] = project_name
+                os.environ["LANGCHAIN_PROJECT"] = project_name
 
         return self
 

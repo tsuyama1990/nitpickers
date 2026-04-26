@@ -31,7 +31,7 @@ class JulesSessionNodes:
                 updates[field] = new_val
         return updates
 
-    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915, PLR0911
         """Monitor Jules session and detect state changes with batched polling."""
         from src.config import settings
 
@@ -40,9 +40,8 @@ class JulesSessionNodes:
         # Batch polling loop to reduce graph steps
         # Poll for (monitor_batch_size * monitor_poll_interval_seconds) seconds per LangGraph invocation
         batch_size = settings.jules.monitor_batch_size
+        batch_size = settings.jules.monitor_batch_size
         poll_interval = settings.jules.monitor_poll_interval_seconds
-        stale_timeout = settings.jules.stale_session_timeout_seconds
-        max_nudges = settings.jules.max_stale_nudges
 
         now = asyncio.get_running_loop().time
 
@@ -85,60 +84,26 @@ class JulesSessionNodes:
                     else:
                         logger.debug(f"Jules session state (unchanged): {new_jules_state}")
 
-                    # ── Stale (silent) Jules detection ──────────────────────────────
-                    # Jules sometimes gets stuck in IN_PROGRESS with no state change.
-                    # If the state hasn't changed for stale_timeout seconds, send a
-                    # nudge message prompting it to wrap up and create a PR.
-                    # We only nudge for working states (not AWAITING_* which already
-                    # have their own response path).
+                    # ── Hard Activity Watchdog (Silent Agent Prevention) ──────────
+                    # If Jules is in a working/waiting state for too long without
+                    # any state change, escalate to TIMEOUT immediately (Fail-Fast).
+                    # Architectural advice: "Nudge is not recommended, Fail-Fast is better".
                     stale_working_states = {"IN_PROGRESS", "PLANNING", "QUEUED"}
-                    stale_feedback_states = {"AWAITING_USER_FEEDBACK"}
-                    all_stale_states = stale_working_states | stale_feedback_states
+                    all_stale_states = stale_working_states | {"AWAITING_USER_FEEDBACK"}
                     if state.jules_state in all_stale_states:
                         stale_seconds = now() - state.last_jules_state_change_time
-                        if stale_seconds >= stale_timeout:
-                            if state.stale_nudge_count >= max_nudges:
-                                # Gave up waiting – escalate to timeout
-                                msg = (
-                                    f"Jules has been silent ({state.jules_state}) for "
-                                    f"{stale_seconds:.0f}s with no state change after "
-                                    f"{max_nudges} nudge(s). Escalating to TIMEOUT."
-                                )
-                                logger.error(msg)
-                                state.status = SessionStatus.TIMEOUT
-                                state.error = msg
-                                return self._compute_diff(_state_in, state)
-
-                            # Send nudge message to Jules
-                            state.stale_nudge_count += 1
-                            state.last_jules_state_change_time = now()  # reset so we don't spam
-                            if state.jules_state in stale_working_states:
-                                nudge_msg = (
-                                    f"Jules, you have been in {state.jules_state} state for "
-                                    f"over {stale_timeout // 60} minutes without any progress. "
-                                    "Please wrap up your current work and create a pull request "
-                                    "with whatever changes you have made so far. "
-                                    "If you are done, please run the final submission."
-                                )
-                            else:
-                                # AWAITING_USER_FEEDBACK: re-prompt Jules to proceed
-                                nudge_msg = (
-                                    f"Jules, you have been waiting for user input for "
-                                    f"over {stale_seconds // 60:.0f} minutes. "
-                                    "If you were waiting for a response, please proceed with "
-                                    "your best judgment and create a pull request with the "
-                                    "current state of your work. Do not wait any longer."
-                                )
-                            logger.warning(
-                                f"Sending stale-session nudge #{state.stale_nudge_count} to Jules "
-                                f"(silent in {state.jules_state} for {stale_seconds:.0f}s)"
+                        hard_stale_timeout = 300  # 5 minutes
+                        if stale_seconds >= hard_stale_timeout:
+                            msg = (
+                                f"Silent Agent detected: Jules has been in {state.jules_state} "
+                                f"for {stale_seconds:.0f}s with no progress. "
+                                "Escalating to TIMEOUT for fail-fast recovery."
                             )
-                            console.print(
-                                f"[yellow]Jules stale in {state.jules_state} for "
-                                f"{stale_seconds / 60:.1f} min. "
-                                f"Sending nudge #{state.stale_nudge_count}...[/yellow]"
-                            )
-                            await self.client._send_message(state.session_url, nudge_msg)
+                            logger.error(msg)
+                            state.status = SessionStatus.TIMEOUT
+                            state.error = msg
+                            return self._compute_diff(_state_in, state)
+                    # ── end activity watchdog ───────────────────────────────────────
                     # ── end stale detection ─────────────────────────────────────────
 
                     # Check for failure
@@ -214,7 +179,7 @@ class JulesSessionNodes:
                         return self._compute_diff(_state_in, state)
 
                     # Reset validation flag if we are back in working states
-                    # (All states except COMPLETED and FAILED reset the flag)
+                    # terminal states: COMPLETED, FAILED
                     if state.jules_state not in ["COMPLETED", "FAILED"]:
                         state.completion_validated = False
                         state.expect_new_work = False  # Work has started!
@@ -224,8 +189,20 @@ class JulesSessionNodes:
                         # If we just sent a message and Jules is still in COMPLETED,
                         # we must wait for it to actually start working.
                         if state.expect_new_work:
+                            stale_seconds = now() - state.last_jules_state_change_time
+                            # SAFEGUARD: If we've been waiting for a transition out of COMPLETED for too long,
+                            # it means Jules likely ignored our last message or finished instantly.
+                            if stale_seconds >= 300:  # 5 minutes
+                                logger.warning(
+                                    f"Session stuck in COMPLETED for {stale_seconds:.0f}s despite expect_new_work. "
+                                    "Resetting flag and proceeding to validation."
+                                )
+                                state.expect_new_work = False
+                                state.status = SessionStatus.VALIDATING_COMPLETION
+                                return self._compute_diff(_state_in, state)
+
                             logger.info(
-                                "Session still in stale COMPLETED state. Waiting for work to start..."
+                                f"Session still in stale COMPLETED state ({stale_seconds:.0f}s). Waiting for work to start..."
                             )
                         else:
                             state.status = SessionStatus.VALIDATING_COMPLETION

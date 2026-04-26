@@ -28,7 +28,7 @@ class CoderCriticNodes:
             or getattr(state.committee, "is_refactoring", False)
             or getattr(state, "final_fix", False)
         )
-        result = await usecase.run_critic_phase(cycle_id, session_id, is_final=is_final)
+        result = await usecase.run_critic_phase(state, cycle_id, session_id, is_final=is_final)
 
         if not result:
             return {"status": FlowStatus.FAILED, "error": "Critic phase failed to produce result"}
@@ -44,8 +44,14 @@ class CoderCriticNodes:
         # If it's a final polish or post-audit refactor, we are COMPLETED.
         new_status = FlowStatus.COMPLETED if is_final else FlowStatus.READY_FOR_AUDIT
 
+        # --- Explicit PR Checkpoint Notification ---
+        if pr_url:
+            phase_type = "Final Critic" if is_final else "Self-Critic"
+            console.print(f"[bold green]PR Point [{phase_type}]:[/bold green] {pr_url}")
+
         return {
             "status": new_status,
             "session": session_update,
             "branch_name": branch_name,
+            "pr_url": pr_url,
         }

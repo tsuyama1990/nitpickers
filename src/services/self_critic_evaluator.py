@@ -96,7 +96,7 @@ class SelfCriticEvaluator:
             await self.jules._send_message(session_url, critic_instruction)
             console.print("[dim]Waiting for Architect Critic evaluation to complete...[/dim]")
 
-            result = await self.jules.wait_for_completion(session_id)
+            result = await self.jules.wait_for_completion(session_id, expect_new_work=True)
 
             if result.get("status") != "success":
                 return CriticResult(

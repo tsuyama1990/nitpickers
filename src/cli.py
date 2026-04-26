@@ -133,3 +133,42 @@ def finalize_session(
     """Finalize the current working session."""
     service = WorkflowService()
     asyncio.run(service.finalize_session(project_session_id=session))
+
+
+@app.command()
+def check_api(
+    model: str = typer.Option(None, "--model", "-m", help="Model to use for connectivity check"),
+    message: str = typer.Option("Hello, are you there?", "--message", "-p", help="Message to send"),
+) -> None:
+    """Verify OpenRouter API connectivity."""
+    import litellm
+
+    console.print("[bold cyan]Checking OpenRouter Connectivity...[/bold cyan]")
+
+    if not settings.OPENROUTER_API_KEY or not settings.OPENROUTER_API_KEY.get_secret_value():
+        console.print("[bold red]Error:[/bold red] OPENROUTER_API_KEY is not set.")
+        raise typer.Exit(code=1)
+
+    target_model = model or settings.agents.auditor_model
+    console.print(f"Model: [green]{target_model}[/green]")
+
+    try:
+        response = asyncio.run(
+            litellm.acompletion(
+                model=target_model,
+                messages=[{"role": "user", "content": message}],
+                max_tokens=100,
+            )
+        )
+        content = response.choices[0].message.content
+        console.print("[bold green]Success![/bold green] API is reachable.")
+        if content:
+            console.print("\n[bold]Response:[/bold]")
+            console.print(f"[dim]{content.strip()}[/dim]")
+    except Exception as e:
+        console.print(f"[bold red]Failed to connect to OpenRouter:[/bold red] {e}")
+        if not model and "404" in str(e):
+            console.print(
+                "[yellow]Tip:[/yellow] The default model might be unavailable. Try specifying a model with [cyan]--model[/cyan]."
+            )
+        raise typer.Exit(code=1) from e

@@ -76,7 +76,7 @@ class QaUseCase:
                     "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
                 )
 
-            result = await self.jules.wait_for_completion(session_id)
+            result = await self.jules.wait_for_completion(session_id, expect_new_work=True)
 
             if result.get("status") == "success" or result.get("pr_url"):
                 return {"status": FlowStatus.READY_FOR_AUDIT, "pr_url": result.get("pr_url")}

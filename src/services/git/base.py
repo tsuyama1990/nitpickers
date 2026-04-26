@@ -8,10 +8,11 @@ from src.utils import logger
 class BaseGitManager:
     """Base class for Git operations."""
 
-    def __init__(self) -> None:
+    def __init__(self, cwd: Path | None = None) -> None:
         self.runner = ProcessRunner()
         self.git_cmd = "git"
         self.gh_cmd = settings.tools.gh_cmd
+        self.cwd = cwd
 
     async def _ensure_no_lock(self) -> None:
         """Removes stale index.lock file if it exists."""
@@ -34,7 +35,7 @@ class BaseGitManager:
         for attempt in range(5):
             await self._ensure_no_lock()
             cmd = [self.git_cmd, *args]
-            stdout, stderr, code, _ = await self.runner.run_command(cmd, check=False)
+            stdout, stderr, code, _ = await self.runner.run_command(cmd, cwd=self.cwd, check=False)
 
             error_msg = str(stderr).strip() or str(stdout).strip()
 
@@ -65,7 +66,7 @@ class BaseGitManager:
     async def get_current_commit(self) -> str:
         """Returns the current commit hash (HEAD)."""
         stdout, _stderr, _code, _ = await self.runner.run_command(
-            [self.git_cmd, "rev-parse", "HEAD"], check=True
+            [self.git_cmd, "rev-parse", "HEAD"], cwd=self.cwd, check=True
         )
         return str(stdout).strip()
 

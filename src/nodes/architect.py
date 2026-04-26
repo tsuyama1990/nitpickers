@@ -155,7 +155,7 @@ class ArchitectNodes(BaseNode):
                     "Assuming message received but state lagging, or task finished very quickly.[/yellow]"
                 )
 
-            result = await self.jules.wait_for_completion(session_id)
+            result = await self.jules.wait_for_completion(session_id, expect_new_work=True)
 
         except Exception as e:
             console.print(

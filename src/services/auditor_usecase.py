@@ -33,14 +33,19 @@ class AuditorUseCase:
         self.sandbox = sandbox_runner
 
     async def _read_files(self, file_paths: list[str]) -> dict[str, str]:
-        """Helper to read files from the local filesystem."""
+        """Helper to read files from the local filesystem (isolated if worktree set)."""
         import anyio
 
         result = {}
         for path_str in file_paths:
             p = anyio.Path(path_str)
+            # If we are in an isolated worktree, ensure we read from that directory
+            if self.git.cwd and not p.is_absolute():
+                p = anyio.Path(self.git.cwd) / path_str
+
             if await p.exists() and await p.is_file():
                 try:
+                    # We still use the original relative path as the key for LLM consistency
                     result[path_str] = await p.read_text(encoding="utf-8")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not read {path_str}: {e}[/yellow]")
@@ -91,9 +96,8 @@ class AuditorUseCase:
 
                         if current_commit and current_commit == last_audited:
                             console.print(
-                                f"[bold yellow]Robustness Check: Commit {current_commit[:7]} already audited.[/bold yellow]"
+                                f"[bold yellow]Consistency Check: Hash {current_commit[:7]} matches last audit.[/bold yellow]"
                             )
-                            console.print("[dim]Checking if Jules is still running...[/dim]")
 
                             jules_session_id = state.jules_session_name
                             if not jules_session_id:
@@ -104,22 +108,12 @@ class AuditorUseCase:
 
                             if jules_session_id:
                                 try:
-                                    jules_status = await self.jules.get_session_state(
-                                        jules_session_id
-                                    )
-                                    # Official Jules API terminal states: COMPLETED, FAILED
-                                    # (SUCCEEDED does not exist in the official API)
-                                    # Non-terminal (still working): IN_PROGRESS, QUEUED, PLANNING,
-                                    #   AWAITING_PLAN_APPROVAL, AWAITING_USER_FEEDBACK, PAUSED
-                                    TERMINAL_STATES = {
-                                        "COMPLETED",
-                                        "FAILED",
-                                        "STATE_UNSPECIFIED",
-                                        "UNKNOWN",
-                                    }
+                                    jules_status = await self.jules.get_session_state(jules_session_id)
+                                    TERMINAL_STATES = {"COMPLETED", "FAILED"}
+
                                     if jules_status not in TERMINAL_STATES:
                                         console.print(
-                                            f"[bold yellow]Jules session still active ({jules_status}). Delegating wait logic to graph router.[/bold yellow]"
+                                            f"[bold yellow]Jules session active ({jules_status}). Waiting for hash advancement...[/bold yellow]"
                                         )
                                         audit_update = state.audit.model_copy(
                                             update={
@@ -131,14 +125,12 @@ class AuditorUseCase:
                                             "status": FlowStatus.WAITING_FOR_JULES,
                                             "audit": audit_update,
                                         }
-                                except Exception as e:
-                                    console.print(
-                                        f"[dim]Failed to check Jules session status: {e}[/dim]"
-                                    )
 
-                            console.print(
-                                "[bold yellow]Jules session complete. Proceeding with audit on same commit.[/bold yellow]"
-                            )
+                                    console.print(
+                                        f"[bold yellow]Jules terminal ({jules_status}) without changes. Proceeding to audit.[/bold yellow]"
+                                    )
+                                except Exception as e:
+                                    console.print(f"[dim]Failed to check Jules session status: {e}[/dim]")
 
                         new_last_audited_commit = current_commit
                     except Exception as e:
