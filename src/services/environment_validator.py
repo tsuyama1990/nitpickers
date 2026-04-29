@@ -25,6 +25,7 @@ class EnvironmentValidator:
         self._verify_required_keys()
         self._scan_implicit_dependencies()
         self._verify_dynamic_requirements()
+        self._ensure_gitignore()
         console.print("[green]Environment & Observability verified successfully.[/green]")
 
     def _verify_observability(self) -> None:
@@ -115,3 +116,48 @@ class EnvironmentValidator:
             raise
         except Exception as e:
             logger.warning(f"Error checking required_envs.json: {e}")
+
+    def _ensure_gitignore(self) -> None:
+        """Ensures that logs and worktrees are ignored by git and untracked from the index."""
+        gitignore = Path.cwd() / ".gitignore"
+        required_ignores = ["logs/", ".nitpick/worktrees/"]
+        try:
+            if gitignore.exists():
+                content = gitignore.read_text(encoding="utf-8")
+                missing = [line for line in required_ignores if line not in content]
+                if missing:
+                    with gitignore.open("a", encoding="utf-8") as f:
+                        if content and not content.endswith("\n"):
+                            f.write("\n")
+                        for line in missing:
+                            f.write(f"{line}\n")
+                    logger.info(f"Updated .gitignore with: {', '.join(missing)}")
+            else:
+                gitignore.write_text("\n".join(required_ignores) + "\n", encoding="utf-8")
+                logger.info("Created .gitignore with default Nitpick excludes.")
+        except Exception as e:
+            logger.warning(f"Failed to verify/update .gitignore: {e}")
+
+        # CRITICAL: Untrack any previously-committed files under ephemeral directories.
+        # .gitignore alone does NOT protect already-tracked files — they stay in the index
+        # and their modifications cause `git checkout` to fail when switching branches.
+        import subprocess
+        untrack_dirs = ["logs", ".nitpick"]
+        for d in untrack_dirs:
+            dir_path = Path.cwd() / d
+            if not dir_path.exists():
+                continue
+            try:
+                result = subprocess.run(
+                    ["git", "ls-files", d],
+                    capture_output=True, text=True, cwd=str(Path.cwd())
+                )
+                tracked = result.stdout.strip()
+                if tracked:
+                    subprocess.run(
+                        ["git", "rm", "--cached", "-r", "--ignore-unmatch", d],
+                        capture_output=True, cwd=str(Path.cwd())
+                    )
+                    logger.info(f"Untracked '{d}/' from Git index to prevent checkout conflicts.")
+            except Exception as e:
+                logger.warning(f"Failed to untrack '{d}/' from Git index: {e}")

@@ -18,9 +18,11 @@ def check_coder_outcome(state: CycleState) -> str:
     if status == FlowStatus.CODER_RETRY:
         return "impl_coder_node"
 
+    if status == FlowStatus.READY_FOR_SELF_CRITIC:
+        return "self_critic"
+
     if status in {
         FlowStatus.READY_FOR_AUDIT,
-        FlowStatus.READY_FOR_SELF_CRITIC,
         FlowStatus.READY_FOR_FINAL_CRITIC,
     }:
         return settings.node_sandbox_evaluate
@@ -51,13 +53,13 @@ def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911, C901
     if status == FlowStatus.READY_FOR_SELF_CRITIC:
         return "self_critic_node"
 
-    if status == FlowStatus.READY_FOR_FINAL_CRITIC:
-        return "final_critic"
-
     if status == FlowStatus.READY_FOR_AUDIT:
         if getattr(state.committee, "is_refactoring", False) or getattr(state, "final_fix", False):
             return "final_critic"
         return "auditor"
+
+    if status == FlowStatus.READY_FOR_FINAL_CRITIC:
+        return "final_critic"
 
     if status == FlowStatus.WAITING_FOR_JULES:
         return "impl_coder_node"

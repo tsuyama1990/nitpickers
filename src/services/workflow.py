@@ -438,7 +438,37 @@ class WorkflowService:
 
     def _get_llm_optimized_state(self, state: CycleState | dict[str, Any]) -> dict[str, Any]:
         """Truncates the state to prevent RCA context overflow."""
-        state_data = state.model_dump(mode="json") if hasattr(state, "model_dump") else dict(state)
+        import json
+
+        def pydantic_encoder(obj: Any) -> Any:
+            if hasattr(obj, "model_dump"):
+                return obj.model_dump(mode="json")
+            if hasattr(obj, "dict"):
+                return obj.dict()
+            if hasattr(obj, "value"):  # Enum
+                return obj.value
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+        try:
+            if hasattr(state, "model_dump"):
+                # CycleState: serialize directly via Pydantic
+                state_data = state.model_dump(mode="json")
+            else:
+                # LangGraph dict with possible Pydantic sub-models
+                # Use json round-trip with fallback encoder
+                state_data = json.loads(json.dumps(state, default=pydantic_encoder))
+        except Exception as e:
+            logger.warning(f"Failed to fully serialize state: {e}")
+            # Last-resort: stringify each value individually
+            state_data = {}
+            if isinstance(state, dict):
+                for k, v in state.items():
+                    try:
+                        state_data[k] = json.loads(json.dumps(v, default=pydantic_encoder))
+                    except Exception:
+                        state_data[k] = str(v)
+            else:
+                state_data = {"error": "Serialization failed", "raw": str(state)}
 
         # Truncate messages to last 10 turns
         if (

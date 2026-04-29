@@ -34,56 +34,6 @@ class GitCheckoutMixin(BaseGitManager):
             logger.error(f"Failed to checkout '{target}'. Please check git status.")
             raise
 
-    async def _auto_commit_if_dirty(self, message: str = "Auto-save before checkout") -> None:
-        """Automatically commits changes if the working directory is dirty."""
-        # Check for uncommitted changes
-        stdout, _stderr, _code, _ = await self.runner.run_command(
-            ["git", "status", "--porcelain"], check=False
-        )
-        if stdout.strip():
-            # CRITICAL: Check for unmerged files (conflicts) before committing
-            # Codes: DD, AU, UD, UA, DU, AA, UU
-            lines = stdout.splitlines()
-            from src.config import settings
-
-            conflict_codes = settings.tools.conflict_codes
-            has_conflicts = any(line[:2] in conflict_codes for line in lines)
-
-            if has_conflicts:
-                logger.warning(
-                    "Unresolved conflicts detected! Attempting to restore clean state..."
-                )
-                # Attempt to abort common operations that leave unmerged files
-                for abort_cmd in [
-                    ["rebase", "--abort"],
-                    ["merge", "--abort"],
-                    ["cherry-pick", "--abort"],
-                    ["am", "--abort"],
-                ]:
-                    try:
-                        await self._run_git(abort_cmd)
-                        logger.info(f"✓ Executed git {abort_cmd[0]} --abort")
-                    except Exception:
-                        logger.debug(f"Command {abort_cmd[0]} --abort failed (likely not running)")
-                        # Ignore failures for commands not currently running
-
-                # Re-check status after abort attempts
-                stdout, _, _, _ = await self.runner.run_command(
-                    ["git", "status", "--porcelain"], check=False
-                )
-                if any(line[:2] in conflict_codes for line in stdout.splitlines()):
-                    error_msg = "Could not automatically resolve git conflicts. Manual intervention may be required."
-                    logger.error(error_msg)
-                    raise RuntimeError(error_msg)
-
-                # If conflicts are gone but changes remain, we can proceed with auto-commit
-                if not stdout.strip():
-                    return
-
-            logger.info("Uncommitted changes detected. Auto-committing...")
-            await self._run_git(["add", "."])
-            await self._run_git(["commit", "-m", message])
-            logger.info("✓ Auto-committed changes.")
 
     async def checkout_pr(self, pr_url: str) -> None:
         """Checks out the Pull Request branch using GitHub CLI."""
@@ -137,7 +87,7 @@ class GitCheckoutMixin(BaseGitManager):
 
     async def commit_changes(self, message: str) -> bool:
         """Stages and commits all changes."""
-        await self._run_git(["add", "."])
+        await self.add_all()
         status = await self._run_git(["status", "--porcelain"])
         if not status:
             return False
@@ -169,12 +119,12 @@ class GitCheckoutMixin(BaseGitManager):
                 logger.warning(f"Could not abort rebase: {abort_err}")
             raise
 
-    async def push_branch(self, branch: str) -> None:
+    async def push_branch(self, branch: str, force: bool = False) -> None:
         """Pushes the specified branch to origin, skipping if already pushed in this batch."""
         from src.services.git_ops import _pushed_commit_hashes
 
         current_hash = await self.get_current_commit()
-        if _pushed_commit_hashes.get(branch) == current_hash:
+        if _pushed_commit_hashes.get(branch) == current_hash and not force:
             logger.debug(
                 f"Skipping redundant push for branch {branch} (hash {current_hash} already pushed)"
             )
@@ -184,8 +134,11 @@ class GitCheckoutMixin(BaseGitManager):
             with contextlib.suppress(Exception):
                 await self.runner.run_command([self.gh_cmd, "auth", "setup-git"], check=False)
 
-        logger.info(f"Pushing branch {branch} to origin...")
-        await self._run_git(["push", "-u", "origin", branch])
+        logger.info(f"Pushing branch {branch} to origin (force={force})...")
+        cmd = ["push", "-u", "origin", branch]
+        if force:
+            cmd.append("--force")
+        await self._run_git(cmd)
         _pushed_commit_hashes[branch] = current_hash
 
     async def get_diff(self, target_branch: str | None = None) -> str:

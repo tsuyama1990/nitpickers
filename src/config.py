@@ -478,6 +478,10 @@ class AgentsConfig(BaseSettings):
         default="openrouter/google/gemini-2.0-flash-001",
         alias="NITPICK_QA_ANALYST_MODEL",
     )
+    rca_model: str = Field(
+        default="openrouter/google/gemini-2.0-flash-lite-001:free",
+        alias="NITPICK_RCA_MODEL",
+    )
     model_config = SettingsConfigDict(env_prefix="", populate_by_name=True, extra="ignore")
 
 

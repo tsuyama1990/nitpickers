@@ -218,7 +218,7 @@ class GitMergingMixin(BaseGitManager):
         except RuntimeError as e:
             logger.warning(f"Pull failed before push (proceeding anyway): {e}")
 
-        await self._run_git(["push"])
+        await self.push_branch(integration_branch)
 
         stdout, _stderr, code, _ = await self.runner.run_command(
             [

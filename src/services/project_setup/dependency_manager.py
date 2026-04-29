@@ -40,7 +40,7 @@ class DependencyManager:
             logger.warning(f"Failed to configure git safe.directory: {e}")
 
         try:
-            await self.git._run_git(["add", "."])
+            await self.git.add_all()
 
             if await self.git.commit_changes(
                 "Initialize project with Nitpick structure and dev dependencies"
