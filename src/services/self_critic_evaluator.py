@@ -77,7 +77,7 @@ class SelfCriticEvaluator:
 
     async def evaluate(
         self, session_id: str, template_name: str = "ARCHITECT_CRITIC_INSTRUCTION.md", **kwargs: Any
-    ) -> CriticResult:
+    ) -> tuple[CriticResult, str | None, str | None]:
         """
         Interacts with the Jules session to run the Red Team Critic evaluation
         and returns the parsed CriticResult.
@@ -99,21 +99,42 @@ class SelfCriticEvaluator:
             result = await self.jules.wait_for_completion(session_id, expect_new_work=True)
 
             if result.get("status") != "success":
-                return CriticResult(
-                    is_approved=False,
-                    vulnerabilities=["Self-Critic evaluation failed to complete successfully."],
-                    suggestions=[],
+                return (
+                    CriticResult(
+                        is_approved=False,
+                        vulnerabilities=["Self-Critic evaluation failed to complete successfully."],
+                        suggestions=[],
+                    ),
+                    None,
+                    None,
                 )
 
-            return self._parse_critic_result(result.get("raw"))
+            raw_result = result.get("raw")
+            critic_res = self._parse_critic_result(raw_result)
+
+            # Extract PR info from raw result if available
+            pr_url = None
+            branch_name = None
+            if raw_result and "outputs" in raw_result:
+                for output in raw_result["outputs"]:
+                    if "pullRequest" in output:
+                        pr_url = output["pullRequest"].get("url")
+                        branch_name = output["pullRequest"].get("branchName")
+                        break
         except Exception as e:
             tb = traceback.format_exc()
             console.print(f"[bold red]Critic Evaluation failed: {e}[/bold red]")
             console.print(f"[dim red]{tb}[/dim red]")
-            return CriticResult(
-                is_approved=False,
-                vulnerabilities=[
-                    "SYSTEM_ERROR: Self-critic evaluation encountered a network timeout or system failure. Please remain on standby while the system retries."
-                ],
-                suggestions=[],
+            return (
+                CriticResult(
+                    is_approved=False,
+                    vulnerabilities=[
+                        "SYSTEM_ERROR: Self-critic evaluation encountered a network timeout or system failure. Please remain on standby while the system retries."
+                    ],
+                    suggestions=[],
+                ),
+                None,
+                None,
             )
+        else:
+            return critic_res, pr_url, branch_name

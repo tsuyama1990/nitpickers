@@ -148,6 +148,15 @@ class GitCheckoutMixin(BaseGitManager):
         """Pulls changes from the remote repository using rebase."""
         logger.info("Pulling latest changes (rebase)...")
         try:
+            # Check for current branch name
+            stdout, _, _, _ = await self.runner.run_command(["git", "branch", "--show-current"])
+            branch = str(stdout).strip()
+
+            # Ensure tracking is set (fixes "no tracking information" warning)
+            if branch:
+                with contextlib.suppress(Exception):
+                    await self._run_git(["branch", f"--set-upstream-to=origin/{branch}", branch])
+
             await self._run_git(["pull", "--rebase"])
             logger.info("Changes pulled successfully.")
         except Exception as e:

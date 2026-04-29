@@ -66,14 +66,17 @@ def sync_context_from_config(config: Any) -> None:
     if tid:
         current_trace_id.set(str(tid))
 
+
 class ResilientRichHandler(RichHandler):
     """RichHandler that gracefully handles missing 'cycle_id' and 'trace_id'."""
+
     def emit(self, record: logging.LogRecord) -> None:
         if not hasattr(record, "cycle_id"):
             record.cycle_id = current_cycle_id.get()
         if not hasattr(record, "trace_id"):
             record.trace_id = current_trace_id.get()
         super().emit(record)
+
 
 # Logger configuration
 logging.basicConfig(
@@ -86,9 +89,11 @@ logging.basicConfig(
 logger = logging.getLogger("AC-CDD")
 logger.addFilter(CycleFilter())
 
+
 def setup_cycle_logging(cycle_id: str) -> None:
     """Attaches a file handler for specific cycle logging."""
     from pathlib import Path
+
     log_file = Path(f"logs/cycles/cycle_{cycle_id}.log")
     log_file.parent.mkdir(parents=True, exist_ok=True)
 

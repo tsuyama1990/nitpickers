@@ -67,9 +67,9 @@ class CoderUseCase:
         result: dict[str, Any] | None = None
 
         # --- A. Attempt to identify/wait for an EXISTING session ---
-        if (
-            state.status == FlowStatus.WAIT_FOR_JULES_COMPLETION or state.resume_mode
-        ) and (cycle_manifest and cycle_manifest.jules_session_id):
+        if (state.status == FlowStatus.WAIT_FOR_JULES_COMPLETION or state.resume_mode) and (
+            cycle_manifest and cycle_manifest.jules_session_id
+        ):
             jules_session_name = cycle_manifest.jules_session_id
             console.print(
                 f"[bold blue]Waiting/Resuming Jules Session: {jules_session_name}[/bold blue]"
@@ -77,7 +77,9 @@ class CoderUseCase:
             try:
                 # Section A: Resume/Wait. We don't expect new work yet;
                 # we just want to know if Jules is already done or still working.
-                result = await self.jules.wait_for_completion(jules_session_name, expect_new_work=False)
+                result = await self.jules.wait_for_completion(
+                    jules_session_name, expect_new_work=False
+                )
 
                 if not (result.get("status") == "success" or result.get("pr_url")):
                     console.print(
@@ -153,27 +155,21 @@ class CoderUseCase:
             if cycle_manifest:
                 mgr.update_cycle_state(cycle_id, session_restart_count=0)
 
-            # Critic trigger logic: Mandatory before Auditor reviews, but skipped if a dedicated node exists.
-            SKIP_CRITIC_STATUSES = {
-                FlowStatus.TDD_FAILED,
-                FlowStatus.READY_FOR_AUDIT,
-                FlowStatus.READY_FOR_FINAL_CRITIC,  # Dedicated node handles this
-                FlowStatus.READY_FOR_SELF_CRITIC,   # Dedicated node handles this
-                FlowStatus.COMPLETED,
-            }
-            is_initial_pr = state.status not in SKIP_CRITIC_STATUSES
+            # --- Phase Decoupling ---
+            # We no longer run the critic inline. Instead, we return a status that
+            # triggers the dedicated Self-Critic node in the graph.
+            # This ensures discrete PR checkpoints for "Initial Coder" and "Self-Critic".
 
-            if (is_initial_pr or is_post_audit_refactor) and jules_session_name:
-                # Run critic inline like ac-cdd
-                critic_result = await self.run_critic_phase(
-                    state, cycle_id, jules_session_name, is_final=is_post_audit_refactor
-                )
-                if critic_result:
-                    result = critic_result
+            target_status = FlowStatus.READY_FOR_SELF_CRITIC
+            if is_post_audit_refactor or getattr(state, "final_fix", False):
+                # If we were already in a refactoring/final-fix loop, we move to audit or completion
+                target_status = FlowStatus.READY_FOR_AUDIT
 
             # Extract final PR and branch info
             pr_val = result.get("pr_url") or (cycle_manifest.pr_url if cycle_manifest else None)
-            branch_val = result.get("branch_name") or (cycle_manifest.branch_name if cycle_manifest else None)
+            branch_val = result.get("branch_name") or (
+                cycle_manifest.branch_name if cycle_manifest else None
+            )
 
             session_updates = {}
             if pr_val:
@@ -196,14 +192,14 @@ class CoderUseCase:
             # --- Explicit PR Checkpoint Notification ---
             if pr_val:
                 if state.status == FlowStatus.POST_AUDIT_REFACTOR:
-                    checkpoint_label = "Post-Audit Refactor"
+                    checkpoint_label = "refactoring"
                 elif state.status == FlowStatus.RETRY_FIX:
-                    checkpoint_label = "Auditor Feedback response"
+                    checkpoint_label = "audit feedback response"
                 elif current_phase == WorkPhase.REFACTORING:
-                    checkpoint_label = "Global Refactor"
+                    checkpoint_label = "global refactoring"
                 else:
-                    checkpoint_label = "Coder"
-                
+                    checkpoint_label = "coder instruction"
+
                 console.print(f"[bold green]PR Point [{checkpoint_label}]:[/bold green] {pr_val}")
 
             if is_post_audit_refactor or getattr(state, "final_fix", False):
@@ -215,7 +211,7 @@ class CoderUseCase:
                 }
 
             return {
-                "status": FlowStatus.READY_FOR_AUDIT,
+                "status": target_status,
                 "session": session_update,
                 "branch_name": branch_val,
                 "pr_url": pr_val,
@@ -462,7 +458,9 @@ class CoderUseCase:
                 await self._update_last_processed_commit(state, result.get("branch_name"))
             return result
 
-    async def _update_last_processed_commit(self, state: CycleState, branch_name: str | None) -> None:
+    async def _update_last_processed_commit(
+        self, state: CycleState, branch_name: str | None
+    ) -> None:
         """Capture the current commit hash of the branch and update state."""
         if not branch_name:
             return

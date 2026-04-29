@@ -28,7 +28,12 @@ class ArchitectCriticNodes:
                 "error": "No session ID found for Critic Evaluation",
             }
 
-        critic_result = await self.evaluator.evaluate(session_id)
+        critic_result, pr_url, _branch_name = await self.evaluator.evaluate(session_id)
+
+        # --- Explicit PR Checkpoint Notification ---
+        pr_url = pr_url or state.session.pr_url
+        if pr_url:
+            console.print(f"[bold green]PR Point [Architect Self-Critic]:[/bold green] {pr_url}")
 
         critic_retry_count = state.critic_retry_count
 

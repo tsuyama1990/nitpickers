@@ -108,7 +108,9 @@ class AuditorUseCase:
 
                             if jules_session_id:
                                 try:
-                                    jules_status = await self.jules.get_session_state(jules_session_id)
+                                    jules_status = await self.jules.get_session_state(
+                                        jules_session_id
+                                    )
                                     TERMINAL_STATES = {"COMPLETED", "FAILED"}
 
                                     if jules_status not in TERMINAL_STATES:
@@ -130,7 +132,9 @@ class AuditorUseCase:
                                         f"[bold yellow]Jules terminal ({jules_status}) without changes. Proceeding to audit.[/bold yellow]"
                                     )
                                 except Exception as e:
-                                    console.print(f"[dim]Failed to check Jules session status: {e}[/dim]")
+                                    console.print(
+                                        f"[dim]Failed to check Jules session status: {e}[/dim]"
+                                    )
 
                         new_last_audited_commit = current_commit
                     except Exception as e:

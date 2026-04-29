@@ -1,6 +1,7 @@
 import re
 import unicodedata
 
+
 def redact_secrets(content: str) -> str:
     """Redacts common API keys and sensitive patterns from the text."""
     # Pattern for various API keys (sk-..., e2b-..., etc.)
@@ -10,11 +11,12 @@ def redact_secrets(content: str) -> str:
         (r"(AIza[0-9A-Za-z-_]{35})", "[REDACTED_GOOGLE_KEY]"),
         (r"(pass(?:word)?[:=]\s*)(\S+)", r"\1[REDACTED_PASSWORD]"),
     ]
-    
+
     redacted = content
     for pattern, replacement in patterns:
         redacted = re.sub(pattern, replacement, redacted)
     return redacted
+
 
 def sanitize_for_llm(content: str, max_length: int = 100000) -> str:
     """

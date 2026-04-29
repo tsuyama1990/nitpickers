@@ -5,10 +5,10 @@ from typing import Any
 
 from rich.console import Console
 
-from src.config import settings
 from src.utils import logger
 
 console = Console()
+
 
 class RCAService:
     """
@@ -16,22 +16,26 @@ class RCAService:
     """
 
     def __init__(self, model: str | None = None) -> None:
-        self.model = model or os.getenv("NITPICK_RCA_MODEL", "openrouter/google/gemini-2.0-flash-lite-001:free")
+        self.model = model or os.getenv(
+            "NITPICK_RCA_MODEL", "openrouter/google/gemini-2.0-flash-lite-001:free"
+        )
 
     async def analyze_failure(self, cycle_id: str, snapshot_path: Path) -> str:
         """Performs a synthesized analysis of a cycle failure."""
-        if not snapshot_path.exists():
+        import asyncio
+
+        if not await asyncio.to_thread(snapshot_path.exists):
             return f"Error: Snapshot not found at {snapshot_path}"
 
         try:
-            snapshot_data = json.loads(snapshot_path.read_text())
+            snapshot_data = json.loads(await asyncio.to_thread(snapshot_path.read_text))
             log_tail = self._get_log_tail(cycle_id)
 
             analysis = await self._call_rca_llm(cycle_id, snapshot_data, log_tail)
 
             # Save the analysis alongside the snapshot
             report_path = snapshot_path.with_suffix(".rca.md")
-            report_path.write_text(analysis)
+            await asyncio.to_thread(report_path.write_text, analysis)
         except Exception as e:
             logger.exception("RCA analysis failed")
             return f"RCA failed: {e}"
@@ -64,8 +68,8 @@ class RCAService:
         prompt = f"""
 # SYSTEM POST-MORTEM REQUEST
 Cycle ID: {cycle_id}
-Trace ID: {snapshot.get('trace_id', 'N/A')}
-Error: {snapshot.get('error', 'Unknown')}
+Trace ID: {snapshot.get("trace_id", "N/A")}
+Error: {snapshot.get("error", "Unknown")}
 
 ## FAILURE SNAPSHOT (GIT DIFF & STATE)
 ```json
@@ -91,10 +95,13 @@ Format: Markdown.
             response = await litellm.acompletion(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are a Root Cause Analysis (RCA) expert for an AI agentic system."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system",
+                        "content": "You are a Root Cause Analysis (RCA) expert for an AI agentic system.",
+                    },
+                    {"role": "user", "content": prompt},
                 ],
-                temperature=0.0
+                temperature=0.0,
             )
             return str(response.choices[0].message.content)
         except Exception as e:

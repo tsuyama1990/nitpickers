@@ -46,7 +46,7 @@ class CoderCriticNodes:
 
         # --- Explicit PR Checkpoint Notification ---
         if pr_url:
-            phase_type = "Final Critic" if is_final else "Self-Critic"
+            phase_type = "final self critic review" if is_final else "selfcritic review"
             console.print(f"[bold green]PR Point [{phase_type}]:[/bold green] {pr_url}")
 
         return {

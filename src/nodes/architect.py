@@ -23,6 +23,26 @@ class ArchitectNodes(BaseNode):
     async def __call__(self, state: CycleState) -> dict[str, Any]:
         return await self.architect_session_node(state)
 
+    async def _handle_architect_feedback(
+        self, state: CycleState, session_id: str
+    ) -> dict[str, Any]:
+        """Handles the feedback loop from architect_critic_node."""
+        feedback = ""
+        if state.get("audit_feedback"):
+            feedback = "\n".join(state.audit_feedback)
+        result = await self.send_audit_feedback_to_session(str(session_id), feedback)
+        if result and result.get("pr_url"):
+            pr_url = result["pr_url"]
+            session_update = state.session.model_copy(update={"pr_url": pr_url})
+            return {
+                "status": FlowStatus.ARCHITECT_SESSION_COMPLETED,
+                "session": session_update,
+            }
+        return {
+            "status": FlowStatus.ARCHITECT_FAILED,
+            "error": "Failed to handle architect critic feedback.",
+        }
+
     async def architect_session_node(self, state: CycleState) -> dict[str, Any]:
         """Node for Architect Agent (Jules)."""
         console.print("[bold blue]Starting Architect Session...[/bold blue]")
@@ -30,21 +50,7 @@ class ArchitectNodes(BaseNode):
         # Handle feedback loop from architect_critic_node
         session_id = state.get("project_session_id")
         if state.get("status") == "architect_critic_rejected" and session_id:
-            feedback = ""
-            if state.get("audit_feedback"):
-                feedback = "\n".join(state.audit_feedback)
-            result = await self.send_audit_feedback_to_session(str(session_id), feedback)
-            if result and result.get("pr_url"):
-                pr_url = result["pr_url"]
-                session_update = state.session.model_copy(update={"pr_url": pr_url})
-                return {
-                    "status": FlowStatus.ARCHITECT_SESSION_COMPLETED,
-                    "session": session_update,
-                }
-            return {
-                "status": FlowStatus.ARCHITECT_FAILED,
-                "error": "Failed to handle architect critic feedback.",
-            }
+            return await self._handle_architect_feedback(state, str(session_id))
 
         instruction = settings.read_template("ARCHITECT_INSTRUCTION.md")
 
@@ -70,9 +76,10 @@ class ArchitectNodes(BaseNode):
             return {"status": FlowStatus.ARCHITECT_FAILED, "error": f"Git checkout failed: {e}"}
 
         context_files = ["dev_documents/ALL_SPEC.md", "README.md", "README_DEVELOPER.md"]
-        from anyio import Path
+        from pathlib import Path
 
-        if await Path("dev_documents/USER_TEST_SCENARIO.md").exists():
+        scenario_path = Path("dev_documents/USER_TEST_SCENARIO.md")
+        if await asyncio.to_thread(scenario_path.exists):
             context_files.append("dev_documents/USER_TEST_SCENARIO.md")
 
         result = await self.jules.run_session(
@@ -102,6 +109,10 @@ class ArchitectNodes(BaseNode):
                     "pr_url": pr_url,
                 }
             )
+            # --- Explicit PR Checkpoint Notification ---
+            if pr_url:
+                console.print(f"[bold green]PR Point [Architect]:[/bold green] {pr_url}")
+
             return {
                 "status": FlowStatus.ARCHITECT_SESSION_COMPLETED,
                 "session": session_update,

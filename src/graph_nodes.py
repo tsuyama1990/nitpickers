@@ -53,13 +53,8 @@ class CycleNodes(IGraphNodes):
 
         container = ServiceContainer.default()
 
-        self.git = (
-            git_manager
-            or (
-                container.resolve("git_manager")
-                if hasattr(container, "resolve")
-                else GitManager()
-            )
+        self.git = git_manager or (
+            container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
         )
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)
         self.audit_orchestrator = AuditOrchestrator(jules_client, sandbox_runner)

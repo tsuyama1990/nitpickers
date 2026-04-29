@@ -28,7 +28,9 @@ class GitWorktreeManager(BaseGitManager):
             # git worktree add -b <temp-branch> <path> <base-branch>
             # This avoids "already used by worktree" errors if branch_name is checked out in /app
             temp_branch = f"isolated-cycle-{cycle_id}-{branch_name}"
-            await self._run_git(["worktree", "add", "-b", temp_branch, str(worktree_path), branch_name], check=True)
+            await self._run_git(
+                ["worktree", "add", "-b", temp_branch, str(worktree_path), branch_name], check=True
+            )
             logger.info(f"✓ Isolated worktree created at {worktree_path} on branch {temp_branch}")
             return worktree_path.absolute()
         except Exception as e:
@@ -54,9 +56,11 @@ class GitWorktreeManager(BaseGitManager):
             # We don't have the original branch_name here, so we might need to query git worktree list
             await self._run_git(["worktree", "remove", str(worktree_path), "--force"], check=False)
             await self._run_git(["worktree", "prune"], check=False)
-            
+
             # Find and delete any branch matching isolated-cycle-{cycle_id}-*
-            stdout = await self._run_git(["branch", "--list", f"isolated-cycle-{cycle_id}-*"], check=False)
+            stdout = await self._run_git(
+                ["branch", "--list", f"isolated-cycle-{cycle_id}-*"], check=False
+            )
             if stdout:
                 branches = [b.strip().replace("* ", "") for b in stdout.split("\n") if b.strip()]
                 for b in branches:

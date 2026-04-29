@@ -438,9 +438,7 @@ class WorkflowService:
 
     def _get_llm_optimized_state(self, state: CycleState | dict[str, Any]) -> dict[str, Any]:
         """Truncates the state to prevent RCA context overflow."""
-        state_data = (
-            state.model_dump(mode="json") if hasattr(state, "model_dump") else dict(state)
-        )
+        state_data = state.model_dump(mode="json") if hasattr(state, "model_dump") else dict(state)
 
         # Truncate messages to last 10 turns
         if (
@@ -471,7 +469,6 @@ class WorkflowService:
         snapshot_file.parent.mkdir(parents=True, exist_ok=True)
 
         # 1. Truncated State Snapshot
-        state_data = self._get_llm_optimized_state(state)
 
         # 2. Truncated Filesystem Snapshot (Git Diff)
         git = git_manager or GitManager()
@@ -489,42 +486,59 @@ class WorkflowService:
             diff = raw_status
 
         import asyncio
-        from datetime import datetime
+        from datetime import UTC, datetime
+
         from src.utils import current_trace_id
 
         try:
             # Prepare failure snapshot directory
             cycles_dir = Path("logs/cycles")
-            cycles_dir.mkdir(parents=True, exist_ok=True)
+            await asyncio.to_thread(cycles_dir.mkdir, parents=True, exist_ok=True)
 
             snapshot_file = cycles_dir / f"failure_{cycle_id}.json"
-            
+
             # Prepare minimal state for LLM to avoid context limits
             optimized_state = self._get_llm_optimized_state(state)
-            
+
+            # 2. Truncated Filesystem Snapshot (Git Diff)
+            git = git_manager or GitManager()
+            try:
+                raw_status = await git.get_status()
+            except Exception as e:
+                raw_status = f"Failed to capture diff: {e}"
+
+            # Limit diff to 1000 lines
+            lines = raw_status.splitlines()
+            if len(lines) > 1000:
+                diff = "\n".join(lines[:1000]) + "\n... [TRUNCATED - 1000 line limit]"
+            else:
+                diff = raw_status
+
             # Assemble full diagnostic payload
             diagnostic_data = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "cycle_id": cycle_id,
                 "trace_id": current_trace_id.get(),
                 "error": error_msg,
                 "git_diff": diff,
                 "state": optimized_state,
             }
-            
-            # Save snapshot synchronously
-            import json
-            snapshot_file.write_text(json.dumps(diagnostic_data, indent=2))
-            
+
+            # Save snapshot
+            await asyncio.to_thread(snapshot_file.write_text, json.dumps(diagnostic_data, indent=2))
+
             # Trigger RCAService (also fire-and-forget)
             from src.services.rca_service import RCAService
+
             rca = RCAService()
             # We don't await this here, just initiate it
             task = asyncio.create_task(rca.analyze_failure(cycle_id, snapshot_file))
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
-            
-            console.print("[bold magenta]AI Post-Mortem Analysis triggered in background.[/bold magenta]")
+
+            console.print(
+                "[bold magenta]AI Post-Mortem Analysis triggered in background.[/bold magenta]"
+            )
 
         except Exception as e:
             logger.warning(f"Failed to save diagnostic snapshot or perform RCA: {e}")
@@ -698,13 +712,7 @@ class WorkflowService:
         docs_dir = settings.paths.documents_dir
         qa_instruction_path = docs_dir / "system_prompts" / "QA_TUTORIAL_INSTRUCTION.md"
 
-        if not qa_instruction_path.exists():
-            console.print(
-                "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
-            )
-            return
-
-        if not qa_instruction_path.exists():
+        if not await asyncio.to_thread(qa_instruction_path.exists):
             console.print(
                 "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
             )
@@ -796,7 +804,9 @@ class WorkflowService:
                 def ignore_func(dir_path: str, contents: list[str]) -> list[str]:
                     return [c for c in contents if c in (".git", ".venv", "venv", "__pycache__")]
 
-                shutil.copytree(Path.cwd(), temp_path / "workspace", ignore=ignore_func)
+                await asyncio.to_thread(
+                    shutil.copytree, Path.cwd(), temp_path / "workspace", ignore=ignore_func
+                )
                 workspace_dir = temp_path / "workspace"
 
                 console.print(
@@ -909,7 +919,7 @@ class WorkflowService:
         from src.config import settings
 
         docs_dir = settings.paths.documents_dir
-        if not docs_dir.exists():
+        if not await asyncio.to_thread(docs_dir.exists):
             return
 
         next_phase_num = self._get_next_phase_num(docs_dir)
@@ -942,27 +952,25 @@ class WorkflowService:
         return max(nums) + 1 if nums else 1
 
     async def _safe_move_item(self, src: Path, dest: Path) -> None:
-        anyio_src = anyio.Path(src)
-        anyio_dest = anyio.Path(dest)
-        if not await anyio_src.exists():
+        if not await asyncio.to_thread(src.exists):
             return
-        await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
+        await asyncio.to_thread(dest.parent.mkdir, parents=True, exist_ok=True)
         try:
             await self.git._run_git(
                 ["mv", str(src), str(dest)]
             )  # Keeping _run_git for mv as there's no public method yet
         except Exception:
             try:
-                await anyio_src.replace(dest)
+                await asyncio.to_thread(src.replace, dest)
             except OSError:
-                shutil.move(str(src), str(dest))
+                await asyncio.to_thread(shutil.move, str(src), str(dest))
 
     async def _archive_files(self, docs_dir: Path, phase_dir: Path) -> None:
         sys_prompts_dir = docs_dir / "system_prompts"
-        if sys_prompts_dir.exists():
+        if await asyncio.to_thread(sys_prompts_dir.exists):
             await self._safe_move_item(sys_prompts_dir, phase_dir)
         else:
-            await anyio.Path(phase_dir).mkdir(parents=True, exist_ok=True)
+            await asyncio.to_thread(phase_dir.mkdir, parents=True, exist_ok=True)
 
         await self._safe_move_item(docs_dir / "ALL_SPEC.md", phase_dir / "ALL_SPEC.md")
         await self._safe_move_item(

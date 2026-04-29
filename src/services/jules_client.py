@@ -325,8 +325,17 @@ class JulesClient:
         """Get the latest commit hash for a branch via Git."""
         try:
             git = GitManager()
-            # rev-parse HEAD if it matches branch_name or just rev-parse the branch
-            return await git._run_git(["rev-parse", branch_name], check=True)
+            # 1. Try local rev-parse
+            try:
+                return await git._run_git(["rev-parse", branch_name], check=True)
+            except Exception:
+                # 2. Try origin/branch_name (often necessary for Jules branches)
+                try:
+                    return await git._run_git(["rev-parse", f"origin/{branch_name}"], check=True)
+                except Exception:
+                    # 3. Last ditch: fetch and try again
+                    await git.fetch_changes()
+                    return await git._run_git(["rev-parse", f"origin/{branch_name}"], check=True)
         except Exception as e:
             logger.warning(f"Failed to get commit hash for {branch_name}: {e}")
             return "unknown"

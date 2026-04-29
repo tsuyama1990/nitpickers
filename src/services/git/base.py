@@ -79,6 +79,10 @@ class BaseGitManager:
     async def commit(self, message: str) -> None:
         await self._run_git(["commit", "-m", message])
 
+    async def fetch_changes(self) -> None:
+        """Fetch latest changes from origin."""
+        await self._run_git(["fetch", "origin"], check=False)
+
     async def reset_hard(self) -> None:
         await self._run_git(["reset", "--hard", "HEAD"])
         await self._run_git(["clean", "-fd"])

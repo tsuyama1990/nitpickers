@@ -71,7 +71,7 @@ class JulesApiClient:
         data: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        url = f"{self.BASE_URL}/{endpoint}"
+        url = endpoint if endpoint.startswith("http") else f"{self.BASE_URL}/{endpoint}"
 
         try:
             with httpx.Client(timeout=settings.jules.request_timeout) as client:
@@ -109,7 +109,7 @@ class JulesApiClient:
         params: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Async version of _request using httpx.AsyncClient to avoid blocking the event loop."""
-        url = f"{self.BASE_URL}/{endpoint}"
+        url = endpoint if endpoint.startswith("http") else f"{self.BASE_URL}/{endpoint}"
 
         try:
             async with httpx.AsyncClient(timeout=settings.jules.request_timeout) as client:
@@ -175,6 +175,10 @@ class JulesApiClient:
 
     def approve_plan(self, session_id: str, plan_id: str) -> dict[str, Any]:
         """Approves the current plan in the session, triggering implementation."""
+        # Ensure session_id is just the name if it's a full URL
+        if session_id.startswith("http") and "/sessions/" in session_id:
+            session_id = "sessions/" + session_id.rsplit("/sessions/", maxsplit=1)[-1]
+
         endpoint = f"{session_id}:approvePlan"
         payload: dict[str, Any] = {}
         return self._request("POST", endpoint, payload)
@@ -182,6 +186,13 @@ class JulesApiClient:
     def list_activities(self, session_id_path: str) -> list[dict[str, Any]]:
         all_activities = []
         page_token = ""
+
+        # If session_id_path is a full URL, extract the path part or use it directly
+        if session_id_path.startswith("http") and "/sessions/" in session_id_path:
+            session_id_path = "sessions/" + session_id_path.rsplit("/sessions/", maxsplit=1)[-1]
+        elif session_id_path.startswith("http"):
+            logger.warning(f"Unexpected session URL format: {session_id_path}")
+
         try:
             while True:
                 endpoint = f"{session_id_path}/{settings.jules.activities_path}"
@@ -210,6 +221,13 @@ class JulesApiClient:
 
         all_activities: list[dict[str, Any]] = []
         page_token = ""
+
+        # If session_id_path is a full URL, extract the path part
+        if session_id_path.startswith("http") and "/sessions/" in session_id_path:
+            session_id_path = "sessions/" + session_id_path.rsplit("/sessions/", maxsplit=1)[-1]
+        elif session_id_path.startswith("http"):
+            logger.warning(f"Unexpected session URL format: {session_id_path}")
+
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 while True:
