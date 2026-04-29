@@ -31,7 +31,7 @@ class JulesSessionNodes:
                 updates[field] = new_val
         return updates
 
-    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915
+    async def monitor_session(self, _state_in: JulesSessionState) -> dict[str, Any]:  # noqa: C901, PLR0915, PLR0911
         """Monitor Jules session and detect state changes with batched polling."""
         from src.config import settings
 
@@ -40,9 +40,8 @@ class JulesSessionNodes:
         # Batch polling loop to reduce graph steps
         # Poll for (monitor_batch_size * monitor_poll_interval_seconds) seconds per LangGraph invocation
         batch_size = settings.jules.monitor_batch_size
+        batch_size = settings.jules.monitor_batch_size
         poll_interval = settings.jules.monitor_poll_interval_seconds
-        stale_timeout = settings.jules.stale_session_timeout_seconds
-        max_nudges = settings.jules.max_stale_nudges
 
         now = asyncio.get_running_loop().time
 
@@ -85,64 +84,95 @@ class JulesSessionNodes:
                     else:
                         logger.debug(f"Jules session state (unchanged): {new_jules_state}")
 
-                    # ── Stale (silent) Jules detection ──────────────────────────────
-                    # Jules sometimes gets stuck in IN_PROGRESS with no state change.
-                    # If the state hasn't changed for stale_timeout seconds, send a
-                    # nudge message prompting it to wrap up and create a PR.
-                    # We only nudge for working states (not AWAITING_* which already
-                    # have their own response path).
-                    stale_working_states = {"IN_PROGRESS", "PLANNING", "QUEUED"}
-                    stale_feedback_states = {"AWAITING_USER_FEEDBACK"}
-                    all_stale_states = stale_working_states | stale_feedback_states
+                    # ── Hard Activity Watchdog (Silent Agent Prevention) ──────────
+                    # States that represent Jules is "silent" but still ownership of the turn.
+                    # Explicitly include PAUSED and AWAITING_PLAN_APPROVAL to avoid 2-hour stalls.
+                    stale_working_states = {
+                        "IN_PROGRESS",
+                        "PLANNING",
+                        "QUEUED",
+                        "PAUSED",
+                        "AWAITING_PLAN_APPROVAL",
+                    }
+                    all_stale_states = stale_working_states | {"AWAITING_USER_FEEDBACK"}
+
                     if state.jules_state in all_stale_states:
                         stale_seconds = now() - state.last_jules_state_change_time
-                        if stale_seconds >= stale_timeout:
-                            if state.stale_nudge_count >= max_nudges:
-                                # Gave up waiting – escalate to timeout
+                        nudge_interval = settings.jules.stale_session_timeout_seconds
+                        max_nudges = settings.jules.max_stale_nudges
+
+                        if stale_seconds >= nudge_interval:
+                            if state.stale_nudge_count < max_nudges:
+                                # Send a nudge instead of failing
+                                state.stale_nudge_count += 1
+                                logger.warning(
+                                    f"Silent Agent detected ({stale_seconds:.0f}s). "
+                                    f"Sending nudge #{state.stale_nudge_count}/{max_nudges}..."
+                                )
+                                nudge_msg = (
+                                    "[System Status Check] You have been in progress for 30 minutes. "
+                                    "Please provide a very brief status update if you are still working, "
+                                    "or continue to completion if you are almost finished."
+                                )
+                                try:
+                                    await self.client._send_message(state.session_url, nudge_msg)
+                                    # Reset state change time to allow another interval for the next nudge
+                                    state.last_jules_state_change_time = now()
+                                except Exception as e:
+                                    logger.error(f"Failed to send nudge message: {e}")
+                                    # 404 on sendMessage usually means Jules already completed the session
+                                    # or the session was auto-deleted after it finished. Re-check state
+                                    # before giving up so we don't lose a successfully completed session.
+                                    try:
+                                        refreshed_state = await self.client.get_session_state(
+                                            state.session_url
+                                        )
+                                        logger.info(
+                                            f"Nudge failed — re-checking Jules state: {refreshed_state}"
+                                        )
+                                        if refreshed_state in ("COMPLETED", "FAILED"):
+                                            # Jules finished — update state and let the normal
+                                            # completion / failure path handle the result.
+                                            state.jules_state = refreshed_state
+                                            state.last_jules_state_change_time = now()
+                                            logger.info(
+                                                f"Session already {refreshed_state}. Continuing to validation."
+                                            )
+                                            break  # exit batch loop → normal routing will take over
+                                        # Otherwise truly stuck — escalate as before
+                                    except Exception as refresh_err:
+                                        logger.warning(
+                                            f"Could not re-check session state: {refresh_err}"
+                                        )
+                                    state.status = SessionStatus.TIMEOUT
+                                    state.error = f"Silent Agent timeout and nudge failed: {e}"
+                                    return self._compute_diff(_state_in, state)
+                            else:
                                 msg = (
-                                    f"Jules has been silent ({state.jules_state}) for "
-                                    f"{stale_seconds:.0f}s with no state change after "
-                                    f"{max_nudges} nudge(s). Escalating to TIMEOUT."
+                                    f"Silent Agent Persistent: Jules has been in {state.jules_state} "
+                                    f"for over {max_nudges * nudge_interval / 60:.0f} minutes with no state changes. "
+                                    "Exhausted all nudges. Escalating to TIMEOUT."
                                 )
                                 logger.error(msg)
                                 state.status = SessionStatus.TIMEOUT
                                 state.error = msg
                                 return self._compute_diff(_state_in, state)
-
-                            # Send nudge message to Jules
-                            state.stale_nudge_count += 1
-                            state.last_jules_state_change_time = now()  # reset so we don't spam
-                            if state.jules_state in stale_working_states:
-                                nudge_msg = (
-                                    f"Jules, you have been in {state.jules_state} state for "
-                                    f"over {stale_timeout // 60} minutes without any progress. "
-                                    "Please wrap up your current work and create a pull request "
-                                    "with whatever changes you have made so far. "
-                                    "If you are done, please run the final submission."
-                                )
-                            else:
-                                # AWAITING_USER_FEEDBACK: re-prompt Jules to proceed
-                                nudge_msg = (
-                                    f"Jules, you have been waiting for user input for "
-                                    f"over {stale_seconds // 60:.0f} minutes. "
-                                    "If you were waiting for a response, please proceed with "
-                                    "your best judgment and create a pull request with the "
-                                    "current state of your work. Do not wait any longer."
-                                )
-                            logger.warning(
-                                f"Sending stale-session nudge #{state.stale_nudge_count} to Jules "
-                                f"(silent in {state.jules_state} for {stale_seconds:.0f}s)"
-                            )
-                            console.print(
-                                f"[yellow]Jules stale in {state.jules_state} for "
-                                f"{stale_seconds / 60:.1f} min. "
-                                f"Sending nudge #{state.stale_nudge_count}...[/yellow]"
-                            )
-                            await self.client._send_message(state.session_url, nudge_msg)
+                    # ── end activity watchdog ───────────────────────────────────────
                     # ── end stale detection ─────────────────────────────────────────
 
                     # Check for failure
                     if state.jules_state == "FAILED":
+                        # Resilience: Check if a PR was created first (common in COMPLETED -> FAILED transients)
+                        pr_found = any(
+                            "pullRequest" in output for output in data.get("outputs", [])
+                        )
+                        if pr_found:
+                            logger.info(
+                                f"Session {state.session_name} in FAILED state, but PR detected. Proceeding to validation."
+                            )
+                            state.status = SessionStatus.CHECKING_PR
+                            return self._compute_diff(_state_in, state)
+
                         error_msg = "Unknown error"
                         # Strategy 1: Check session outputs (fastest)
                         for output_item in data.get("outputs", []):
@@ -151,10 +181,10 @@ class JulesSessionNodes:
                                 error_msg = reason
                                 break
 
-                        # Strategy 2: Fetch activities (more reliable if outputs are stale/missing)
                         if error_msg == "Unknown error":
+                            # Strategy 2: Fetch activities
                             logger.info(
-                                f"Reason missing from outputs for session {state.session_name}. Fetching activities..."
+                                f"Reason missing from outputs for {state.session_name}. Fetching activities..."
                             )
                             try:
                                 activities = await self.client.list_activities(state.session_url)
@@ -165,14 +195,12 @@ class JulesSessionNodes:
                                         )
                                         break
                             except Exception as e:
-                                logger.warning(
-                                    f"Failed to fetch activities for failure reason: {e}"
-                                )
+                                logger.warning(f"Failed to fetch activities: {e}")
 
-                        # Strategy 3: Last-ditch recovery nudge (User suggested)
+                        # Strategy 3: Last-ditch recovery nudge
                         if not state.recovery_nudge_sent:
                             logger.warning(
-                                f"Session {state.session_name} failed. Attempting last-ditch recovery nudge..."
+                                f"Session {state.session_name} failed. Sending recovery nudge..."
                             )
                             recovery_msg = (
                                 "The session failed unexpectedly. Please check your progress and continue. "
@@ -182,27 +210,14 @@ class JulesSessionNodes:
                                 await self.client._send_message(state.session_url, recovery_msg)
                                 state.recovery_nudge_sent = True
                                 state.last_jules_state_change_time = now()
-                                # Stay in MONITORING to see if it recovers
                                 logger.info("Recovery nudge sent. Waiting for response...")
                                 continue
                             except Exception as e:
                                 logger.warning(f"Failed to send recovery nudge: {e}")
 
                         logger.error(f"Jules Session FAILED. Reason: {error_msg}")
-
-                        # Resilience: Check if a PR was created despite the failure
-                        pr_found = any(
-                            "pullRequest" in output for output in data.get("outputs", [])
-                        )
-
-                        if pr_found:
-                            logger.warning(
-                                "Session marked FAILED but PR found in session outputs. Proceeding to validation."
-                            )
-                            state.status = SessionStatus.CHECKING_PR
-                        else:
-                            state.status = SessionStatus.FAILED
-                            state.error = f"Jules Session Failed: {error_msg}"
+                        state.status = SessionStatus.FAILED
+                        state.error = f"Jules Session Failed: {error_msg}"
                         return self._compute_diff(_state_in, state)
 
                     # Process inquiries (questions and plan approvals)
@@ -214,7 +229,7 @@ class JulesSessionNodes:
                         return self._compute_diff(_state_in, state)
 
                     # Reset validation flag if we are back in working states
-                    # (All states except COMPLETED and FAILED reset the flag)
+                    # terminal states: COMPLETED, FAILED
                     if state.jules_state not in ["COMPLETED", "FAILED"]:
                         state.completion_validated = False
                         state.expect_new_work = False  # Work has started!
@@ -224,8 +239,20 @@ class JulesSessionNodes:
                         # If we just sent a message and Jules is still in COMPLETED,
                         # we must wait for it to actually start working.
                         if state.expect_new_work:
+                            stale_seconds = now() - state.last_jules_state_change_time
+                            # SAFEGUARD: If we've been waiting for a transition out of COMPLETED for too long,
+                            # it means Jules likely ignored our last message or finished instantly.
+                            if stale_seconds >= 300:  # 5 minutes
+                                logger.warning(
+                                    f"Session stuck in COMPLETED for {stale_seconds:.0f}s despite expect_new_work. "
+                                    "Resetting flag and proceeding to validation."
+                                )
+                                state.expect_new_work = False
+                                state.status = SessionStatus.VALIDATING_COMPLETION
+                                return self._compute_diff(_state_in, state)
+
                             logger.info(
-                                "Session still in stale COMPLETED state. Waiting for work to start..."
+                                f"Session still in stale COMPLETED state ({stale_seconds:.0f}s). Waiting for work to start..."
                             )
                         else:
                             state.status = SessionStatus.VALIDATING_COMPLETION
@@ -420,9 +447,9 @@ class JulesSessionNodes:
         except Exception as e:
             logger.warning(f"Failed to validate completion: {e}")
 
-        # If no sessionCompleted found and no ongoing work, proceed cautiously to PR check
+        # If no sessionCompleted found and no ongoing work, verify if output exists
         logger.info(
-            "No sessionCompleted activity found, but no ongoing work detected. Proceeding to PR check."
+            "Jules reported turn as COMPLETED. Verifying output fidelity (Checking for PR)..."
         )
         state.completion_validated = True
         state.status = SessionStatus.CHECKING_PR
@@ -560,10 +587,11 @@ class JulesSessionNodes:
         except Exception as e:
             logger.debug(f"Final PR check failed: {e}")
 
+        console.print("\n[bold yellow]--- Verifying Genuine Completion ---[/bold yellow]")
         console.print(
-            "[yellow]AUTO_CREATE_PR did not produce a PR. Sending fallback request to Jules...[/yellow]"
+            "[yellow]Jules completed the turn but NO PR was found. Sending fallback request...[/yellow]"
         )
-        console.print("[cyan]Sending message to Jules to commit and create PR...[/cyan]")
+        console.print("[cyan]Requesting Jules to commit and create PR...[/cyan]")
 
         from src.config import settings
 

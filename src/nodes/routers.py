@@ -11,7 +11,7 @@ def check_coder_outcome(state: CycleState) -> str:
     if status in {FlowStatus.FAILED, FlowStatus.ARCHITECT_FAILED}:
         return str(FlowStatus.FAILED.value)
 
-    if status in {FlowStatus.COMPLETED}:
+    if status == FlowStatus.COMPLETED:
         return str(FlowStatus.COMPLETED.value)
 
     # Always route to implementation node, bypassing the TDD test loop
@@ -58,6 +58,9 @@ def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911, C901
         if getattr(state.committee, "is_refactoring", False) or getattr(state, "final_fix", False):
             return "final_critic"
         return "auditor"
+
+    if status == FlowStatus.WAITING_FOR_JULES:
+        return "impl_coder_node"
 
     return "impl_coder_node"
 

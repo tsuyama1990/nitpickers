@@ -101,7 +101,7 @@ class AuditOrchestrator:
                 )
                 if plan_id:
                     await self.jules.approve_plan(session_name, str(plan_id))
-                result = await self.jules.wait_for_completion(session_name)
+                result = await self.jules.wait_for_completion(session_name, expect_new_work=True)
                 return dict(result)
 
             retry_count += 1

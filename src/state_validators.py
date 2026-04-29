@@ -6,9 +6,9 @@ from src.enums import FlowStatus
 
 
 def validate_cycle_id(v: str) -> str:
-    """Validates that the cycle ID is exactly two digits."""
-    if not re.match(r"^\d{2}$", v):
-        msg = f"cycle_id '{v}' is invalid (must be exactly two digits, e.g., '01')"
+    """Validates that the cycle ID is alphanumeric (supporting '01' and 'qa-tutorials')."""
+    if not re.match(r"^[a-zA-Z0-9_-]+$", v):
+        msg = f"cycle_id '{v}' is invalid (must be alphanumeric, e.g., '01' or 'qa-tutorials')"
         raise ValueError(msg)
     return v
 

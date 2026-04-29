@@ -1,24 +1,108 @@
+import contextvars
 import logging
 import os
 import shutil
 import subprocess
 from types import TracebackType
+from typing import Any
 
 from dotenv import load_dotenv
+from langchain_core.callbacks import BaseCallbackHandler
 from rich.console import Console
 from rich.logging import RichHandler
 
 console = Console()
 
+current_cycle_id: contextvars.ContextVar[str] = contextvars.ContextVar("cycle_id", default="CORE")
+current_trace_id: contextvars.ContextVar[str] = contextvars.ContextVar("trace_id", default="N/A")
+
+
+class CycleFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.cycle_id = current_cycle_id.get()
+        record.trace_id = current_trace_id.get()
+        return True
+
+
+class TraceIdCallbackHandler(BaseCallbackHandler):
+    """Callback handler to sync LangGraph run_id with local contextvars."""
+
+    def on_chain_start(
+        self, serialized: dict[str, Any], inputs: dict[str, Any], **kwargs: Any
+    ) -> Any:
+        run_id = kwargs.get("run_id")
+        if run_id:
+            current_trace_id.set(str(run_id))
+
+    def on_node_start(
+        self, serialized: dict[str, Any], inputs: dict[str, Any], **kwargs: Any
+    ) -> Any:
+        """Called at the start of each LangGraph node."""
+        # Restore context from config to handle potential thread-pool context loss
+        config = kwargs.get("config")
+        if config:
+            sync_context_from_config(config)
+
+
+def sync_context_from_config(config: Any) -> None:
+    """Restores cycle_id and trace_id from LangGraph RunnableConfig."""
+    if not config:
+        return
+
+    # Extract from configurable
+    if hasattr(config, "get"):
+        configurable = config.get("configurable", {})
+    elif hasattr(config, "configurable"):
+        configurable = getattr(config, "configurable", {})
+    else:
+        configurable = {}
+
+    cid = configurable.get("cycle_id")
+    if cid:
+        current_cycle_id.set(str(cid))
+
+    # Extract trace_id (run_id) if available
+    tid = getattr(config, "run_id", None)
+    if tid:
+        current_trace_id.set(str(tid))
+
+
+class ResilientRichHandler(RichHandler):
+    """RichHandler that gracefully handles missing 'cycle_id' and 'trace_id'."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not hasattr(record, "cycle_id"):
+            record.cycle_id = current_cycle_id.get()
+        if not hasattr(record, "trace_id"):
+            record.trace_id = current_trace_id.get()
+        super().emit(record)
+
+
 # Logger configuration
 logging.basicConfig(
     level="INFO",
-    format="%(message)s",
+    format="[%(cycle_id)s] [%(trace_id)s] %(message)s",
     datefmt="[%X]",
-    handlers=[RichHandler(console=console, rich_tracebacks=True)],
+    handlers=[ResilientRichHandler(console=console, rich_tracebacks=True)],
 )
 
 logger = logging.getLogger("AC-CDD")
+logger.addFilter(CycleFilter())
+
+
+def setup_cycle_logging(cycle_id: str) -> None:
+    """Attaches a file handler for specific cycle logging."""
+    from pathlib import Path
+
+    log_file = Path(f"logs/cycles/cycle_{cycle_id}.log")
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(
+        logging.Formatter("[%(asctime)s] [%(levelname)s] [%(trace_id)s] %(message)s")
+    )
+    logger.addHandler(file_handler)
+    logger.info(f"Initialized isolated logging for Cycle {cycle_id} -> {log_file}")
 
 
 def run_command(

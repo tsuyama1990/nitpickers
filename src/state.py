@@ -60,6 +60,7 @@ class SessionPersistenceState(BaseModel):
     integration_branch: str | None = None
     is_session_finalized: bool = False
     branch_name: str | None = None
+    last_processed_commit: str | None = None
 
 
 class AuditState(BaseModel):
@@ -238,6 +239,14 @@ class CycleState(BaseModel):
     @integration_branch.setter
     def integration_branch(self, value: str | None) -> None:
         self.session.integration_branch = value
+
+    @property
+    def last_processed_commit(self) -> str | None:
+        return self.session.last_processed_commit
+
+    @last_processed_commit.setter
+    def last_processed_commit(self, value: str | None) -> None:
+        self.session.last_processed_commit = value
 
     @property
     def audit_feedback(self) -> list[str]:

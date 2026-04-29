@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import shutil
 import sys
@@ -43,6 +44,7 @@ class WorkflowService:
             self.services.jules if self.services.jules else JulesClient(),
         )
         self.git = GitManager()
+        self._background_tasks: set[asyncio.Task[Any]] = set()
 
     async def run_gen_cycles(  # noqa: PLR0915
         self, cycles: int, project_session_id: str | None, auto_run: bool = False
@@ -372,9 +374,20 @@ class WorkflowService:
         fb: str | None,
         ib: str | None,
         planned_count: int,
+        git_manager: GitManager | None = None,
     ) -> bool:
-        """Execute the cycle graph."""
-        graph = self.builder.build_coder_graph()
+        """Execute the cycle graph with optional worktree-isolation."""
+        from src.graph_nodes import CycleNodes
+
+        # If we have a custom git_manager (worktree-pinned), we create a specialized graph
+        if git_manager:
+            nodes = CycleNodes(self.builder.sandbox, self.builder.jules, git_manager=git_manager)
+            builder = GraphBuilder(
+                self.services, self.builder.sandbox, self.builder.jules, nodes=nodes
+            )
+            graph = builder.build_coder_graph()
+        else:
+            graph = self.builder.build_coder_graph()
         state = CycleState(cycle_id=cycle_id)
         state.iteration_count = start_iter
         state.resume_mode = resume
@@ -383,6 +396,8 @@ class WorkflowService:
         state.integration_branch = ib
         state.planned_cycle_count = planned_count
 
+        from src.utils import TraceIdCallbackHandler
+
         thread_id = f"cycle-{cycle_id}-{state.project_session_id}"
         metadata = TracingMetadata(
             session_id=thread_id, execution_type="cycle_phase", git_branch=fb
@@ -390,14 +405,21 @@ class WorkflowService:
         tracing_config = settings.tracing_service.get_run_config(metadata)
 
         config = RunnableConfig(
-            configurable={"thread_id": thread_id},
+            configurable={
+                "thread_id": thread_id,
+                "cycle_id": cycle_id,
+            },
             recursion_limit=settings.GRAPH_RECURSION_LIMIT,
+            callbacks=[TraceIdCallbackHandler()],
             **tracing_config,  # type: ignore[typeddict-item]
         )
         final_state = await graph.ainvoke(state, config)
 
         if final_state.get("error"):
             console.print(f"[red]Cycle {cycle_id} Failed:[/red] {final_state['error']}")
+            await self._save_failure_snapshot(
+                cycle_id, final_state, str(final_state["error"]), git_manager
+            )
             return False
 
         if final_state.get("status") == FlowStatus.REQUIRES_PIVOT:
@@ -414,11 +436,141 @@ class WorkflowService:
         console.print(SuccessMessages.cycle_complete(cycle_id, f"{int(cycle_id) + 1:02}"))
         return True
 
+    def _get_llm_optimized_state(self, state: CycleState | dict[str, Any]) -> dict[str, Any]:
+        """Truncates the state to prevent RCA context overflow."""
+        state_data = state.model_dump(mode="json") if hasattr(state, "model_dump") else dict(state)
+
+        # Truncate messages to last 10 turns
+        if (
+            "session" in state_data
+            and state_data["session"]
+            and "messages" in state_data["session"]
+        ):
+            msgs = state_data["session"]["messages"]
+            if len(msgs) > 10:
+                state_data["session"]["messages"] = msgs[-10:]
+                state_data["session"]["_truncated"] = True
+
+        return state_data
+
+    async def _save_failure_snapshot(
+        self,
+        cycle_id: str,
+        state: CycleState | dict[str, Any],
+        error_msg: str,
+        git_manager: GitManager | None = None,
+    ) -> None:
+        """Saves a diagnostic snapshot of the system state upon failure."""
+        import json
+        import time
+
+        timestamp = int(time.time())
+        snapshot_file = Path(f"logs/cycles/failure_{cycle_id}_{timestamp}.json")
+        snapshot_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # 1. Truncated State Snapshot
+
+        # 2. Truncated Filesystem Snapshot (Git Diff)
+        git = git_manager or GitManager()
+        raw_status = "N/A"
+        try:
+            raw_status = await git.get_status()
+        except Exception as e:
+            raw_status = f"Failed to capture diff: {e}"
+
+        # Limit diff to 1000 lines
+        lines = raw_status.splitlines()
+        if len(lines) > 1000:
+            diff = "\n".join(lines[:1000]) + "\n... [TRUNCATED - 1000 line limit]"
+        else:
+            diff = raw_status
+
+        import asyncio
+        from datetime import UTC, datetime
+
+        from src.utils import current_trace_id
+
+        try:
+            # Prepare failure snapshot directory
+            cycles_dir = Path("logs/cycles")
+            await asyncio.to_thread(cycles_dir.mkdir, parents=True, exist_ok=True)
+
+            snapshot_file = cycles_dir / f"failure_{cycle_id}.json"
+
+            # Prepare minimal state for LLM to avoid context limits
+            optimized_state = self._get_llm_optimized_state(state)
+
+            # 2. Truncated Filesystem Snapshot (Git Diff)
+            git = git_manager or GitManager()
+            try:
+                raw_status = await git.get_status()
+            except Exception as e:
+                raw_status = f"Failed to capture diff: {e}"
+
+            # Limit diff to 1000 lines
+            lines = raw_status.splitlines()
+            if len(lines) > 1000:
+                diff = "\n".join(lines[:1000]) + "\n... [TRUNCATED - 1000 line limit]"
+            else:
+                diff = raw_status
+
+            # Assemble full diagnostic payload
+            diagnostic_data = {
+                "timestamp": datetime.now(UTC).isoformat(),
+                "cycle_id": cycle_id,
+                "trace_id": current_trace_id.get(),
+                "error": error_msg,
+                "git_diff": diff,
+                "state": optimized_state,
+            }
+
+            # Save snapshot
+            await asyncio.to_thread(snapshot_file.write_text, json.dumps(diagnostic_data, indent=2))
+
+            # Trigger RCAService (also fire-and-forget)
+            from src.services.rca_service import RCAService
+
+            rca = RCAService()
+            # We don't await this here, just initiate it
+            task = asyncio.create_task(rca.analyze_failure(cycle_id, snapshot_file))
+            self._background_tasks.add(task)
+            task.add_done_callback(self._background_tasks.discard)
+
+            console.print(
+                "[bold magenta]AI Post-Mortem Analysis triggered in background.[/bold magenta]"
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to save diagnostic snapshot or perform RCA: {e}")
+
     def _update_cycle_status(self, cycle_id: str) -> None:
         """Update cycle status to completed."""
         mgr = StateManager()
         if mgr.load_manifest():
             mgr.update_cycle_state(cycle_id, status="completed")
+
+    async def _setup_cycle_workspace(
+        self, cycle_id: str, fb: str | None, wt_mgr_cls: Any, git_mgr_cls: Any, lock: Any
+    ) -> tuple[Any, Any, Path | None]:
+        """Setup an isolated worktree for the cycle."""
+        wt_mgr = wt_mgr_cls()
+        cycle_git_manager = None
+        worktree_path = None
+
+        async with lock:
+            if fb:
+                # Sync branch in main repo first
+                main_git = git_mgr_cls()
+                try:
+                    await main_git.checkout_branch(fb)
+                    await main_git.pull_changes()
+                except Exception as e:
+                    logger.warning(f"Branch preparation warning: {e}")
+
+                worktree_path = await wt_mgr.create_worktree(cycle_id, fb)
+                cycle_git_manager = git_mgr_cls(cwd=worktree_path)
+
+        return wt_mgr, cycle_git_manager, worktree_path
 
     async def _run_single_cycle(
         self,
@@ -428,6 +580,11 @@ class WorkflowService:
         start_iter: int,
         project_session_id: str | None,
     ) -> bool | None:
+        from src.utils import current_cycle_id, setup_cycle_logging
+
+        current_cycle_id.set(cycle_id)
+        setup_cycle_logging(cycle_id)
+
         if self._check_cycle_completion(cycle_id):
             return None
 
@@ -456,13 +613,29 @@ class WorkflowService:
         fb = manifest.feature_branch
         planned_count = len(manifest.cycles)
 
+        # -- Isolation Protocol (Git Worktrees) --
+        from src.services.git.worktree import GitWorktreeManager
+        from src.services.git_ops import GitManager, workspace_lock
+
+        wt_mgr, cycle_git_manager, worktree_path = await self._setup_cycle_workspace(
+            cycle_id, fb, wt_mgr_cls=GitWorktreeManager, git_mgr_cls=GitManager, lock=workspace_lock
+        )
+
         try:
             success = await self._execute_cycle_graph(
-                cycle_id, start_iter, resume, pid, fb, ib, planned_count
+                cycle_id,
+                start_iter,
+                resume,
+                pid,
+                fb,
+                ib,
+                planned_count,
+                git_manager=cycle_git_manager,
             )
-        except Exception:
+        except Exception as e:
             console.print(f"[bold red]Cycle {cycle_id} execution failed.[/bold red]")
             logger.exception("Cycle execution failed")
+            await self._save_failure_snapshot(cycle_id, {}, str(e), git_manager=cycle_git_manager)
             return False
         else:
             if success:
@@ -470,6 +643,12 @@ class WorkflowService:
                 return True
             return False
         finally:
+            if wt_mgr and worktree_path:
+                try:
+                    async with workspace_lock:
+                        await wt_mgr.remove_worktree(cycle_id)
+                except Exception as e:
+                    logger.warning(f"Worktree cleanup failed for cycle {cycle_id}: {e}")
             await self.builder.cleanup()
 
     async def start_session(self, prompt: str, audit_mode: bool, max_retries: int) -> None:
@@ -533,13 +712,7 @@ class WorkflowService:
         docs_dir = settings.paths.documents_dir
         qa_instruction_path = docs_dir / "system_prompts" / "QA_TUTORIAL_INSTRUCTION.md"
 
-        if not qa_instruction_path.exists():
-            console.print(
-                "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
-            )
-            return
-
-        if not qa_instruction_path.exists():
+        if not await asyncio.to_thread(qa_instruction_path.exists):
             console.print(
                 "[yellow]Skipping Tutorial Generation: QA_TUTORIAL_INSTRUCTION.md not found.[/yellow]"
             )
@@ -631,7 +804,9 @@ class WorkflowService:
                 def ignore_func(dir_path: str, contents: list[str]) -> list[str]:
                     return [c for c in contents if c in (".git", ".venv", "venv", "__pycache__")]
 
-                shutil.copytree(Path.cwd(), temp_path / "workspace", ignore=ignore_func)
+                await asyncio.to_thread(
+                    shutil.copytree, Path.cwd(), temp_path / "workspace", ignore=ignore_func
+                )
                 workspace_dir = temp_path / "workspace"
 
                 console.print(
@@ -744,7 +919,7 @@ class WorkflowService:
         from src.config import settings
 
         docs_dir = settings.paths.documents_dir
-        if not docs_dir.exists():
+        if not await asyncio.to_thread(docs_dir.exists):
             return
 
         next_phase_num = self._get_next_phase_num(docs_dir)
@@ -777,27 +952,25 @@ class WorkflowService:
         return max(nums) + 1 if nums else 1
 
     async def _safe_move_item(self, src: Path, dest: Path) -> None:
-        anyio_src = anyio.Path(src)
-        anyio_dest = anyio.Path(dest)
-        if not await anyio_src.exists():
+        if not await asyncio.to_thread(src.exists):
             return
-        await anyio_dest.parent.mkdir(parents=True, exist_ok=True)
+        await asyncio.to_thread(dest.parent.mkdir, parents=True, exist_ok=True)
         try:
             await self.git._run_git(
                 ["mv", str(src), str(dest)]
             )  # Keeping _run_git for mv as there's no public method yet
         except Exception:
             try:
-                await anyio_src.replace(dest)
+                await asyncio.to_thread(src.replace, dest)
             except OSError:
-                shutil.move(str(src), str(dest))
+                await asyncio.to_thread(shutil.move, str(src), str(dest))
 
     async def _archive_files(self, docs_dir: Path, phase_dir: Path) -> None:
         sys_prompts_dir = docs_dir / "system_prompts"
-        if sys_prompts_dir.exists():
+        if await asyncio.to_thread(sys_prompts_dir.exists):
             await self._safe_move_item(sys_prompts_dir, phase_dir)
         else:
-            await anyio.Path(phase_dir).mkdir(parents=True, exist_ok=True)
+            await asyncio.to_thread(phase_dir.mkdir, parents=True, exist_ok=True)
 
         await self._safe_move_item(docs_dir / "ALL_SPEC.md", phase_dir / "ALL_SPEC.md")
         await self._safe_move_item(

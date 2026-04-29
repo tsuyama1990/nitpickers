@@ -15,11 +15,15 @@ from .state import CycleState
 
 class GraphBuilder:
     def __init__(
-        self, services: ServiceContainer, sandbox: SandboxRunner, jules: JulesClient
+        self,
+        services: ServiceContainer,
+        sandbox: SandboxRunner,
+        jules: JulesClient,
+        nodes: IGraphNodes | None = None,
     ) -> None:
         self.sandbox = sandbox
         self.jules = jules
-        self.nodes: IGraphNodes = CycleNodes(self.sandbox, self.jules)
+        self.nodes: IGraphNodes = nodes or CycleNodes(self.sandbox, self.jules)
 
     async def cleanup(self) -> None:
         """Cleanup resources, specifically the sandbox."""

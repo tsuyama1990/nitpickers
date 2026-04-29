@@ -30,11 +30,7 @@ from .jules.context_builder import JulesContextBuilder
 from .jules.git_context import JulesGitContext
 from .jules.inquiry_handler import JulesInquiryHandler
 
-if os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true":
-    if "langsmith" not in litellm.success_callback:
-        litellm.success_callback.append("langsmith")
-    if "langsmith" not in litellm.failure_callback:
-        litellm.failure_callback.append("langsmith")
+# Tracing initialization is now handled by TracingService
 
 console = Console()
 
@@ -213,17 +209,25 @@ class JulesClient:
         logger.info(f"Waiting for Jules to process feedback for {session_name}...")
 
         # We must wait for completion via LangGraph which handles inquiries and stale states.
-        result = await self.wait_for_completion(session_name)
+        # Since we just sent a message, we explicitly expect new work (transition from current state).
+        result = await self.wait_for_completion(session_name, expect_new_work=True)
         result["session_name"] = session_name
         return result
 
     async def wait_for_completion(
-        self, session_name: str, require_plan_approval: bool = False
+        self,
+        session_name: str,
+        require_plan_approval: bool = False,
+        expect_new_work: bool = False,
     ) -> dict[str, Any]:
         """Wait for Jules session completion using LangGraph state management.
 
-        This method is now used for both new sessions and session continuations.
-        It has been hardened against the 'Stale COMPLETED' race condition.
+        Args:
+            session_name: The session to wait for.
+            require_plan_approval: Whether to wait for and approve plans.
+            expect_new_work: If True, the system will wait for Jules to move AWAY from
+                             its current state (e.g. COMPLETED) before starting to
+                             look for completion again. Useful after sending a message.
         """
         from langchain_core.runnables import RunnableConfig
 
@@ -239,10 +243,9 @@ class JulesClient:
 
         session_url = self._get_session_url(session_name)
 
-        # 1. Check current state. If COMPLETED, we MUST wait for an IN_PROGRESS transition.
+        # 1. Check current state.
         current_state = await self.get_session_state(session_name)
-        expect_transition = current_state == "COMPLETED"
-        if expect_transition:
+        if expect_new_work and current_state == "COMPLETED":
             logger.info(
                 f"Session {session_name} is currently COMPLETED. Waiting for Jules to resume work..."
             )
@@ -269,7 +272,7 @@ class JulesClient:
             processed_activity_ids=processed_ids,
             processed_completion_ids=processed_completion_ids,
             jules_state=current_state,
-            expect_new_work=expect_transition,
+            expect_new_work=expect_new_work,
         )
 
         # Run graph
@@ -317,6 +320,25 @@ class JulesClient:
 
         msg = f"Session ended in unexpected state: {status}"
         raise JulesSessionError(msg)
+
+    async def get_latest_branch_commit(self, branch_name: str) -> str:
+        """Get the latest commit hash for a branch via Git."""
+        try:
+            git = GitManager()
+            # 1. Try local rev-parse
+            try:
+                return await git._run_git(["rev-parse", branch_name], check=True)
+            except Exception:
+                # 2. Try origin/branch_name (often necessary for Jules branches)
+                try:
+                    return await git._run_git(["rev-parse", f"origin/{branch_name}"], check=True)
+                except Exception:
+                    # 3. Last ditch: fetch and try again
+                    await git.fetch_changes()
+                    return await git._run_git(["rev-parse", f"origin/{branch_name}"], check=True)
+        except Exception as e:
+            logger.warning(f"Failed to get commit hash for {branch_name}: {e}")
+            return "unknown"
 
     def _get_session_url(self, session_name: str) -> str:
         if session_name.startswith("sessions/"):

@@ -40,7 +40,12 @@ class CycleNodes(IGraphNodes):
     Encapsulates the logic for each node in the AC-CDD workflow graph.
     """
 
-    def __init__(self, sandbox_runner: SandboxRunner, jules_client: JulesClient) -> None:
+    def __init__(
+        self,
+        sandbox_runner: SandboxRunner,
+        jules_client: JulesClient,
+        git_manager: GitManager | None = None,
+    ) -> None:
         self.sandbox = sandbox_runner
         self.jules = jules_client
 
@@ -48,7 +53,7 @@ class CycleNodes(IGraphNodes):
 
         container = ServiceContainer.default()
 
-        self.git = (
+        self.git = git_manager or (
             container.resolve("git_manager") if hasattr(container, "resolve") else GitManager()
         )
         self.llm_reviewer = LLMReviewer(sandbox_runner=sandbox_runner)

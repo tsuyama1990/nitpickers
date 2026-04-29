@@ -10,13 +10,15 @@ from src.jules_session_state import JulesSessionState, SessionStatus
 
 def route_monitor(
     state: JulesSessionState,
-) -> Literal["answer_inquiry", "validate_completion", "end", "monitor"]:
+) -> Literal["answer_inquiry", "validate_completion", "check_pr", "end", "monitor"]:
     """Route from monitor node based on detected state."""
     if state.status == SessionStatus.INQUIRY_DETECTED:
         return "answer_inquiry"
     if state.status == SessionStatus.VALIDATING_COMPLETION:
         return "validate_completion"
-    if state.status in [SessionStatus.FAILED, SessionStatus.TIMEOUT]:
+    if state.status == SessionStatus.CHECKING_PR:
+        return "check_pr"
+    if state.status in [SessionStatus.FAILED, SessionStatus.TIMEOUT, SessionStatus.SUCCESS]:
         return "end"
     return "monitor"
 
@@ -83,6 +85,7 @@ def build_jules_session_graph(jules_client: "JulesClient") -> StateGraph[JulesSe
         {
             "answer_inquiry": "answer_inquiry",
             "validate_completion": "validate_completion",
+            "check_pr": "check_pr",
             "end": END,
             "monitor": "monitor",
         },

@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 from .git.base import BaseGitManager
 from .git.branching import GitBranchingMixin
@@ -24,5 +25,5 @@ class GitManager(
     # Re-expose constant for compatibility if anything imports it directly
     STATE_BRANCH = "ac-cdd/state"
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, cwd: Path | None = None) -> None:
+        super().__init__(cwd=cwd)

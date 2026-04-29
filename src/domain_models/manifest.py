@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-CycleStatus = Literal["planned", "in_progress", "review_fix", "completed", "failed"]
+CycleStatus = Literal["planned", "in_progress", "in-progress", "review_fix", "completed", "failed"]
 
 
 class CycleManifest(BaseModel):

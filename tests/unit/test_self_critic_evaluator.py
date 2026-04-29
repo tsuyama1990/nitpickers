@@ -27,7 +27,7 @@ async def test_critic_approved(mock_jules: MagicMock) -> None:
         }
     )
 
-    result = await evaluator.evaluate("session-123")
+    result, _, _ = await evaluator.evaluate("session-123")
 
     assert result.is_approved is True
     assert result.vulnerabilities == []
@@ -49,7 +49,7 @@ async def test_critic_rejected_retry_loop(mock_jules: MagicMock) -> None:
         }
     )
 
-    result = await evaluator.evaluate("session-123")
+    result, _, _ = await evaluator.evaluate("session-123")
 
     assert result.is_approved is False
     assert result.vulnerabilities == ["N+1 query"]
@@ -71,7 +71,7 @@ async def test_critic_with_custom_template(mock_jules: MagicMock) -> None:
     )
 
     # Use a different existing template for testing
-    result = await evaluator.evaluate(
+    result, _, _ = await evaluator.evaluate(
         "session-123", template_name="POST_AUDIT_REFACTOR_INSTRUCTION.md", cycle_id="01"
     )
 
