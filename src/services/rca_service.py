@@ -16,9 +16,9 @@ class RCAService:
     """
 
     def __init__(self, model: str | None = None) -> None:
-        self.model = model or os.getenv(
-            "NITPICK_RCA_MODEL", "openrouter/google/gemini-2.0-flash-lite-001:free"
-        )
+        from src.config import settings
+
+        self.model = model or settings.agents.rca_model
 
     async def analyze_failure(self, cycle_id: str, snapshot_path: Path) -> str:
         """Performs a synthesized analysis of a cycle failure."""

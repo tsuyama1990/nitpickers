@@ -74,6 +74,8 @@ class BaseGitManager:
         return await self._run_git(["status", "--porcelain"], check=False)
 
     async def add_all(self) -> None:
+        # We rely on .gitignore to exclude logs/ and worktrees/.
+        # Explicitly excluding them via pathspecs can cause Git to error if they are ignored.
         await self._run_git(["add", "."])
 
     async def commit(self, message: str) -> None:
@@ -86,3 +88,72 @@ class BaseGitManager:
     async def reset_hard(self) -> None:
         await self._run_git(["reset", "--hard", "HEAD"])
         await self._run_git(["clean", "-fd"])
+
+    async def _auto_commit_if_dirty(self, message: str = "Auto-save") -> None:
+        """Automatically commits changes if the working directory is dirty."""
+        # Check for uncommitted changes
+        stdout, _stderr, _code, _ = await self.runner.run_command(
+            [self.git_cmd, "status", "--porcelain"], check=False
+        )
+        if stdout.strip():
+            # CRITICAL: Check for unmerged files (conflicts) before committing
+            # Codes: DD, AU, UD, UA, DU, AA, UU
+            lines = stdout.splitlines()
+            from src.config import settings
+
+            conflict_codes = settings.tools.conflict_codes
+            has_conflicts = any(line[:2] in conflict_codes for line in lines)
+
+            if has_conflicts:
+                logger.warning(
+                    "Unresolved conflicts detected! Attempting to restore clean state..."
+                )
+                # Attempt to abort common operations that leave unmerged files
+                for abort_cmd in [
+                    ["rebase", "--abort"],
+                    ["merge", "--abort"],
+                    ["cherry-pick", "--abort"],
+                    ["am", "--abort"],
+                ]:
+                    try:
+                        await self._run_git(abort_cmd)
+                        logger.info(f"✓ Executed git {abort_cmd[0]} --abort")
+                    except Exception:
+                        logger.debug(f"Command {abort_cmd[0]} --abort failed (likely not running)")
+                        # Ignore failures for commands not currently running
+
+                # Re-check status after abort attempts
+                stdout, _, _, _ = await self.runner.run_command(
+                    [self.git_cmd, "status", "--porcelain"], check=False
+                )
+                if any(line[:2] in conflict_codes for line in stdout.splitlines()):
+                    error_msg = (
+                        "Could not automatically resolve git conflicts. "
+                        "Manual intervention may be required."
+                    )
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
+
+                # If conflicts are gone but changes remain, we can proceed with auto-commit
+                if not stdout.strip():
+                    return
+
+            logger.info("Uncommitted changes detected. Auto-committing...")
+            await self.add_all()
+            # Explicitly unstage paths that belong to ephemeral/ignored directories.
+            # Even if .gitignore lists them, previously-tracked files in logs/ or .nitpick/
+            # are still staged by `git add .` and cause branch-checkout conflicts.
+            for unstage_path in ["logs", ".nitpick"]:
+                try:
+                    await self._run_git(["restore", "--staged", unstage_path], check=False)
+                except Exception:
+                    pass  # Path may not exist; that's fine.
+            # Re-check if there's anything left to commit
+            remaining, _, _, _ = await self.runner.run_command(
+                [self.git_cmd, "status", "--porcelain"], check=False
+            )
+            if not remaining.strip():
+                logger.info("Nothing to commit after unstaging ephemeral files.")
+                return
+            await self._run_git(["commit", "-m", message])
+            logger.info("✓ Auto-committed changes.")

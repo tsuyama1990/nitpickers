@@ -16,31 +16,6 @@ class GitBranchingMixin(BaseGitManager):
         """Returns the URL of the 'origin' remote."""
         return await self._run_git(["config", "--get", "remote.origin.url"])
 
-    async def _auto_commit_if_dirty(self, message: str = "Auto-save before branch switch") -> None:
-        """Automatically commits changes if the working directory is dirty."""
-        # Check for uncommitted changes
-        stdout, _stderr, _code, _ = await self.runner.run_command(
-            [self.git_cmd, "status", "--porcelain"], check=False
-        )
-        if stdout.strip():
-            # CRITICAL: Check for unresolved conflicts before committing
-            # Git porcelain v1 conflict codes: DD, AU, UD, UA, DU, AA, UU
-            lines = stdout.splitlines()
-            from src.config import settings
-
-            conflict_codes = settings.tools.conflict_codes
-            for line in lines:
-                if line[:2] in conflict_codes:
-                    error_msg = (
-                        f"Cannot auto-commit due to unresolved conflicts: {line[3:]}. "
-                        "Please resolve conflicts before proceeding."
-                    )
-                    raise RuntimeError(error_msg)
-
-            logger.info("Uncommitted changes detected. Auto-committing...")
-            await self._run_git(["add", "."])
-            await self._run_git(["commit", "-m", message])
-            logger.info("✓ Auto-committed changes.")
 
     async def create_integration_branch(
         self, session_id: str, prefix: str = "dev", branch_name: str | None = None

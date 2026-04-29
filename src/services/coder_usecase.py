@@ -107,6 +107,16 @@ class CoderUseCase:
                     jules_session_name = cycle_manifest.jules_session_id
                     result = reuse_result
 
+        # --- B2. Special Case: Resuming a session that is already COMPLETED ---
+        if not result and cycle_manifest and cycle_manifest.jules_session_id:
+            if state.status in {FlowStatus.START, None}:
+                # If we are in START and have a session ID, it means we are resuming.
+                # If the session is already COMPLETED, we should just get the result.
+                session_state = await self.jules.get_session_state(cycle_manifest.jules_session_id)
+                if session_state == "COMPLETED":
+                    console.print(f"[bold blue]Session {cycle_manifest.jules_session_id} is COMPLETED. Retrieving result...[/bold blue]")
+                    result = await self.jules.wait_for_completion(cycle_manifest.jules_session_id, expect_new_work=False)
+
         # --- C. Launch NEW session ---
         if not result:
             console.print(
@@ -370,8 +380,13 @@ class CoderUseCase:
         if not feedback_payload and is_final_fix:
             feedback_payload = "Final Auditor budget reached. Please fix the code one last time and prepare for merging."
 
-        if not feedback_payload and not (is_post_refactor or is_cold_start):
-            return None
+        if not feedback_payload:
+            if is_cold_start:
+                # If we're resuming a cold start, we don't send feedback.
+                # The caller should handle retrieving the existing session result.
+                return None
+            if not is_post_refactor:
+                return None
 
         if cycle_manifest.jules_session_id is not None:
             return await self._send_audit_feedback_to_session(
