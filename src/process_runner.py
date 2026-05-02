@@ -60,7 +60,9 @@ class ProcessRunner:
                     )
                 logger.debug(f"Command failed (expected) [{returncode}]: {redacted_cmd_str}")
         except Exception as e:
-            logger.error(f"Execution failed for '{redacted_cmd_str}': {e}")
+            if check and isinstance(e, subprocess.CalledProcessError):
+                raise
+            logger.error(f"Execution failed for '{cmd_str}': {e}")
             return "", str(e), -1, False
         else:
             return stdout_str, stderr_str, returncode, False
