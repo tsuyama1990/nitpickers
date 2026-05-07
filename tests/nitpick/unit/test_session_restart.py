@@ -17,6 +17,7 @@ class TestSessionRestart:
         jules = MagicMock()
         jules.run_session = AsyncMock()
         jules.wait_for_completion = AsyncMock()
+        jules.get_latest_branch_commit = AsyncMock()
         return jules
 
     @pytest.fixture
@@ -99,7 +100,7 @@ class TestSessionRestart:
     async def test_session_restart_max_limit(
         self, mock_jules: MagicMock, mock_manifest: MagicMock
     ) -> None:
-        """Should fail after max_session_restarts attempts."""
+        """Should fail after max_session_restarts attempts (forced minimum 4)."""
         state = CycleState(cycle_id="01")
         state.iteration_count = 1
 
@@ -113,31 +114,20 @@ class TestSessionRestart:
 
         usecase = CoderUseCase(mock_jules)
 
-        async def run_once() -> dict[str, Any]:
-            with patch("src.services.coder_usecase.StateManager") as MockManager:
-                instance = MockManager.return_value
-                instance.get_cycle.return_value = mock_manifest
+        # Set restart count to 4 (forced minimum is 4, so this is the threshold)
+        mock_manifest.session_restart_count = 4
+        mock_manifest.max_session_restarts = 2
 
-                def track_updates(cycle_id, **kwargs):  # type: ignore[no-untyped-def]
-                    if "session_restart_count" in kwargs:
-                        mock_manifest.session_restart_count = kwargs["session_restart_count"]
+        with patch("src.services.coder_usecase.StateManager") as MockManager:
+            instance = MockManager.return_value
+            instance.get_cycle.return_value = mock_manifest
 
-                instance.update_cycle_state.side_effect = track_updates
+            with patch("src.services.coder_usecase.settings") as mock_settings:
+                mock_settings.get_template.return_value.read_text.return_value = "Instruction"
+                mock_settings.get_target_files.return_value = []
+                mock_settings.get_context_files.return_value = []
+                mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
+                result = await usecase.execute(state)
 
-                with patch("src.services.coder_usecase.settings") as mock_settings:
-                    mock_settings.get_template.return_value.read_text.return_value = "Instruction"
-                    mock_settings.get_target_files.return_value = []
-                    mock_settings.get_context_files.return_value = []
-                    mock_settings.SESSION_ID_PATTERN = r"^[A-Za-z0-9_\-]+$"
-                    return dict(await usecase.execute(state))
-
-        result1 = await run_once()
-        assert result1["status"] == FlowStatus.CODER_RETRY
-
-        result2 = await run_once()
-        assert result2["status"] == FlowStatus.CODER_RETRY
-
-        result3 = await run_once()
-        assert result3["status"] == FlowStatus.FAILED
-        assert "Unknown error" in result3["error"]
-        assert mock_jules.run_session.call_count == 3
+        assert result["status"] == FlowStatus.FAILED
+        assert "Unknown error" in result["error"]

@@ -128,9 +128,12 @@ class BaseGitManager:
                 stdout, _, _, _ = await self.runner.run_command(
                     [self.git_cmd, "status", "--porcelain"], check=False
                 )
-                if any(line[:2] in conflict_codes for line in stdout.splitlines()):
+                conflicting_files = [
+                    line[3:] for line in stdout.splitlines() if line[:2] in conflict_codes
+                ]
+                if conflicting_files:
                     error_msg = (
-                        "Could not automatically resolve git conflicts. "
+                        f"Could not automatically resolve git conflicts in: {', '.join(conflicting_files)}. "
                         "Manual intervention may be required."
                     )
                     logger.error(error_msg)

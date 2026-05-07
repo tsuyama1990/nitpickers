@@ -37,9 +37,9 @@ class TestResumeLogic:
             mock_settings.get_context_files.return_value = []
             result = await usecase.execute(state)
 
-        mock_jules.wait_for_completion.assert_awaited_once_with("jules-existing-123")
+        mock_jules.wait_for_completion.assert_awaited_once_with("jules-existing-123", expect_new_work=False)
         mock_jules.run_session.assert_not_awaited()
-        assert result["status"] == FlowStatus.READY_FOR_AUDIT
+        assert result["status"] == FlowStatus.READY_FOR_SELF_CRITIC
         assert result["session"].pr_url == "http://pr"
 
     @patch("src.services.coder_usecase.StateManager")
@@ -82,4 +82,4 @@ class TestResumeLogic:
             f"Expected update_cycle_state call with session_id not found. Calls: {mock_mgr.update_cycle_state.call_args_list}"
         )
 
-        assert result["status"] == FlowStatus.READY_FOR_AUDIT
+        assert result["status"] == FlowStatus.READY_FOR_SELF_CRITIC

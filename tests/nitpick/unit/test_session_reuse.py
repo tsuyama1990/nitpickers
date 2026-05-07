@@ -17,6 +17,8 @@ class TestSessionReuse:
         jules.run_session = AsyncMock()
         jules.continue_session = AsyncMock()
         jules.get_session_state = AsyncMock()
+        jules.wait_for_completion = AsyncMock()
+        jules.get_latest_branch_commit = AsyncMock()
         jules._send_message = AsyncMock()
         jules._get_session_url = MagicMock(return_value="https://jules/session/url")
         return jules

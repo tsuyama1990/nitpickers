@@ -143,7 +143,8 @@ async def test_validate_completion_stale_detection() -> None:
         new_state = await nodes.validate_completion(state)
 
         # Verify
-        assert "status" not in new_state
+        assert new_state["status"] == SessionStatus.CHECKING_PR
+        assert new_state["completion_validated"] is True
 
 
 @pytest.mark.asyncio

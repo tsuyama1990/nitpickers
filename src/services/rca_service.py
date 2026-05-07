@@ -60,15 +60,18 @@ class RCAService:
 
         from src.utils_sanitization import sanitize_for_llm
 
-        # Sanitize sensitive data before sending to diagnostic LLM
         sanitized_state = sanitize_for_llm(json.dumps(snapshot, indent=2))
         sanitized_log = sanitize_for_llm(log_tail)
+
+        # Also sanitize the individual fields used in the prompt header
+        sanitized_error = sanitize_for_llm(str(snapshot.get("error", "Unknown")))
+        sanitized_trace = sanitize_for_llm(str(snapshot.get("trace_id", "N/A")))
 
         prompt = f"""
 # SYSTEM POST-MORTEM REQUEST
 Cycle ID: {cycle_id}
-Trace ID: {snapshot.get("trace_id", "N/A")}
-Error: {snapshot.get("error", "Unknown")}
+Trace ID: {sanitized_trace}
+Error: {sanitized_error}
 
 ## FAILURE SNAPSHOT (GIT DIFF & STATE)
 ```json

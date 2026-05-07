@@ -43,7 +43,7 @@ def test_config_defaults() -> None:
     ):
         local_settings = Settings()
         assert (
-            local_settings.reviewer.smart_model == "openrouter/arcee-ai/trinity-large-preview:free"
+            local_settings.reviewer.smart_model == "openrouter/google/gemini-2.0-flash-001"
         )
         assert str(local_settings.paths.src) == str(Path.cwd() / "src")
         assert str(local_settings.paths.templates) == str(

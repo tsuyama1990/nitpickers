@@ -61,9 +61,9 @@ def route_sandbox_evaluate(state: CycleState) -> str:  # noqa: PLR0911, C901
         logger.info("[ROUTER] route_sandbox_evaluate -> auditor (status=READY_FOR_AUDIT)")
         return "auditor"
 
-    if status == FlowStatus.READY_FOR_FINAL_CRITIC:
+    if status == FlowStatus.READY_FOR_FINAL_CRITIC or status == FlowStatus.POST_AUDIT_REFACTOR:
         logger.info(
-            "[ROUTER] route_sandbox_evaluate -> final_critic (status=READY_FOR_FINAL_CRITIC)"
+            f"[ROUTER] route_sandbox_evaluate -> final_critic (status={status})"
         )
         return "final_critic"
 

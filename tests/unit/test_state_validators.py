@@ -27,8 +27,12 @@ def test_validate_cycle_id_invalid() -> None:
     ]
 
     for invalid_input in invalid_inputs:
+        # The new validation supports alphanumeric and hyphens, so many of these are now valid.
+        if re.match(r"^[a-zA-Z0-9_-]+$", invalid_input):
+            continue
+
         expected_msg = (
-            f"cycle_id '{invalid_input}' is invalid (must be exactly two digits, e.g., '01')"
+            f"cycle_id '{invalid_input}' is invalid (must be alphanumeric, e.g., '01' or 'qa-tutorials')"
         )
         with pytest.raises(ValueError, match=re.escape(expected_msg)):
             validate_cycle_id(invalid_input)

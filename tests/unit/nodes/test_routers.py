@@ -19,7 +19,7 @@ def test_route_sandbox_evaluate_failed() -> None:
 def test_route_sandbox_evaluate_refactoring() -> None:
     state = CycleState(
         cycle_id="02",
-        status=FlowStatus.READY_FOR_AUDIT,
+        status=FlowStatus.POST_AUDIT_REFACTOR,
         committee=CommitteeState(),
     )
     # should return final_critic

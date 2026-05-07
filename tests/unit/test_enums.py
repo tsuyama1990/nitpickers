@@ -32,7 +32,7 @@ def test_enums_are_strings() -> None:
 def test_work_phase_iteration() -> None:
     """Test that WorkPhase can be iterated and has expected count."""
     phases = list(WorkPhase)
-    assert len(phases) == 6
+    assert len(phases) == 9
     assert "init" in phases
 
 
@@ -46,6 +46,6 @@ def test_flow_status_iteration() -> None:
     # Auditor: 6
     # UAT & Refactor: 7
     # QA: 2
-    # Total: 4 + 3 + 6 + 6 + 7 + 2 = 28
-    assert len(statuses) == 28
+    # Total: 5 + 3 + 6 + 6 + 7 + 2 = 29
+    assert len(statuses) == 29
     assert "approved" in statuses

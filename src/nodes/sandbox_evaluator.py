@@ -118,8 +118,14 @@ class SandboxEvaluatorNodes:
             console.print("[bold green]All structural checks passed.[/bold green]")
             test_update = state.test.model_copy(update={"structural_report": report})
 
+            # Preserve more specific statuses (like READY_FOR_AUDIT) if they were already set.
+            # Only use COMPLETED as a generic "passed mechanical verification" signal.
+            target_status = getattr(state, "status", FlowStatus.COMPLETED)
+            if target_status in {FlowStatus.START, None, FlowStatus.IN_PROGRESS}:
+                target_status = FlowStatus.COMPLETED
+
             return {
-                "status": FlowStatus.COMPLETED,
+                "status": target_status,
                 "test": test_update,
                 "error": None,
             }

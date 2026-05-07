@@ -87,7 +87,7 @@ async def test_initialize_project_robustness(tmp_path: Path) -> None:
         assert git_init_called, "git init should be called when .git is missing"
 
         # Check git add via GitManager
-        mock_git_instance._run_git.assert_any_call(["add", "."])
+        mock_git_instance.add_all.assert_called_once()
 
         # Check git commit via GitManager
         mock_git_instance.commit_changes.assert_called_with(
