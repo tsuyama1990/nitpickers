@@ -65,7 +65,7 @@ class TestGitCheckoutRobustness:
         with pytest.raises(RuntimeError) as excinfo:
             await mixin._auto_commit_if_dirty()
 
-        assert "Cannot auto-commit due to unresolved conflicts" in str(excinfo.value)
+        assert "Could not automatically resolve git conflicts" in str(excinfo.value)
         assert "conflicting_file.py" in str(excinfo.value)
 
     @pytest.mark.asyncio

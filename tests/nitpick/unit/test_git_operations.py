@@ -1,6 +1,7 @@
 """Tests for GitManager class."""
 
-from unittest.mock import AsyncMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -181,18 +182,32 @@ async def test_create_final_pr_new(git_manager: GitManager) -> None:
         # Mock push (checkout, pull, push) -> check=True
         # Mock gh pr create to return new PR URL -> check=True
 
-        mock_run.side_effect = [
-            ("", "", 0, False),  # gh pr list (empty)
-            ("", "", 0, False),  # git checkout
-            ("", "", 0, False),  # git pull (added in refactor)
-            ("", "", 0, False),  # git push
-            ("https://github.com/user/repo/pull/456", "", 0, False),  # gh pr create
-        ]
+        async def mock_run_cmd(*args: Any, **kwargs: Any) -> tuple[str, str, int, bool]:
+            cmd = args[0]
+            if "pr" in cmd and "list" in cmd:
+                return ("", "", 0, False)
+            if "checkout" in cmd:
+                return ("", "", 0, False)
+            if "pull" in cmd:
+                return ("", "", 0, False)
+            if "rev-parse" in cmd:
+                return ("current-hash", "", 0, False)
+            if "push" in cmd:
+                return ("", "", 0, False)
+            if "pr" in cmd and "create" in cmd:
+                return ("https://github.com/user/repo/pull/456", "", 0, False)
+            if "status" in cmd:
+                return ("", "", 0, False)
+            if "fetch" in cmd:
+                return ("", "", 0, False)
+            return ("", "", 0, False)
+
+        mock_run.side_effect = mock_run_cmd
 
         pr_url = await git_manager.create_final_pr(integration_branch, title, body)
 
         assert "pull/456" in pr_url
-        assert mock_run.call_count == 5
+        assert mock_run.call_count == 7
 
 
 @pytest.mark.asyncio
@@ -241,7 +256,6 @@ async def test_validate_remote_branch_not_found(git_manager: GitManager) -> None
     branch = "nonexistent-branch"
 
     with patch.object(git_manager.runner, "run_command", new_callable=AsyncMock) as mock_run:
-        # Mock git ls-remote to return empty
         mock_run.return_value = ("", "", 0, False)
 
         is_valid, error = await git_manager.validate_remote_branch(branch)

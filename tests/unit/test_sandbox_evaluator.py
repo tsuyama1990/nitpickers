@@ -24,6 +24,7 @@ def base_state() -> CycleState:
 
 @pytest.mark.asyncio
 async def test_evaluate_success_passes(base_state: CycleState, mock_process_runner: Any) -> None:
+    base_state.status = FlowStatus.READY_FOR_AUDIT
     node = SandboxEvaluatorNodes(process_runner=mock_process_runner)
     result = await node.sandbox_evaluate_node(base_state)
 

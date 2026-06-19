@@ -100,6 +100,8 @@ class CoderUseCase:
                 FlowStatus.REJECTED,
                 FlowStatus.TDD_FAILED,
                 FlowStatus.START,
+                FlowStatus.READY_FOR_AUDIT,
+                FlowStatus.READY_FOR_FINAL_CRITIC,
                 None,
             }
             if state.status in SHOULD_REUSE_STATUSES:
@@ -354,6 +356,7 @@ class CoderUseCase:
             FlowStatus.TDD_FAILED,
             FlowStatus.START,
             FlowStatus.READY_FOR_AUDIT,  # Safeguard for loopbacks
+            FlowStatus.READY_FOR_FINAL_CRITIC,
             None,
         }
 
@@ -514,7 +517,7 @@ class CoderUseCase:
 
             console.print("[dim]Waiting for Coder Critic to finish review and push fixes...[/dim]")
 
-            result = dict(await self.jules.wait_for_completion(jules_session_name))
+            result = dict(await self.jules.wait_for_completion(jules_session_name, expect_new_work=True))
             if result and (result.get("status") == "success" or result.get("pr_url")):
                 branch_val = result.get("branch_name")
                 if branch_val and state.last_processed_commit:

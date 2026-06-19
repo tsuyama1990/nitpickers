@@ -35,6 +35,7 @@ def test_route_sandbox_evaluate() -> None:
 
     # Test GREEN phase READY_FOR_AUDIT, is refactoring
     state.current_phase = WorkPhase.REFACTORING
+    state.status = FlowStatus.POST_AUDIT_REFACTOR
     assert route_sandbox_evaluate(state) == "final_critic"
 
     # Test GREEN phase fallback

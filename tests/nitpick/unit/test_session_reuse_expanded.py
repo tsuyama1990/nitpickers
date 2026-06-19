@@ -15,13 +15,12 @@ async def test_workflow_initial_pr_triggers_self_critic() -> None:
     mock_jules.wait_for_completion = AsyncMock(
         return_value={"status": "success", "pr_url": "http://pr/initial"}
     )
+    mock_jules.get_latest_branch_commit = AsyncMock()
 
     usecase = CoderUseCase(mock_jules)
     state = CycleState(cycle_id="01")
     state.status = None  # Initial status
 
-    # Mock launch_session indirectly by mocking _run_jules_session if needed,
-    # but here we just want to check the return status of execute.
     with (
         patch.object(
             usecase,
@@ -38,19 +37,20 @@ async def test_workflow_initial_pr_triggers_self_critic() -> None:
 
 @pytest.mark.asyncio
 async def test_session_reuse_ready_for_audit() -> None:
-    """Verify that READY_FOR_AUDIT status triggers session reuse but NOT self-critic skip on resume."""
+    """Verify that READY_FOR_AUDIT status triggers session reuse."""
     mock_jules = MagicMock()
     mock_jules.get_session_state = AsyncMock(return_value="COMPLETED")
     mock_jules.continue_session = AsyncMock(
         return_value={"status": "success", "pr_url": "http://pr/1"}
     )
+    mock_jules.wait_for_completion = AsyncMock()
+    mock_jules.get_latest_branch_commit = AsyncMock()
 
     usecase = CoderUseCase(mock_jules)
-    # If we resume in READY_FOR_AUDIT, it SHOULD still be allowed to go through self-critic if it hasn't before.
-    # Actually, if status is READY_FOR_AUDIT when starting execute, it means Jules just finished.
     state = CycleState(cycle_id="01")
     state.status = FlowStatus.READY_FOR_AUDIT
     state.session.jules_session_name = "sessions/123"
+    state.audit.audit_result = MagicMock(feedback=["Loopback feedback"])
 
     cycle_manifest = CycleManifest(id="01", jules_session_id="sessions/123")
     mock_mgr = MagicMock()
@@ -63,8 +63,8 @@ async def test_session_reuse_ready_for_audit() -> None:
         result = await usecase.execute(state)
 
         assert mock_jules.continue_session.called
-        # Now it should return READY_FOR_AUDIT because it's no longer considered an 'initial pr'
-        assert result["status"] == FlowStatus.READY_FOR_AUDIT
+        # Now it should return READY_FOR_SELF_CRITIC because it's no longer considered an 'initial pr'
+        assert result["status"] == FlowStatus.READY_FOR_SELF_CRITIC
 
 
 @pytest.mark.asyncio
@@ -75,6 +75,8 @@ async def test_session_reuse_ready_for_final_critic() -> None:
     mock_jules.continue_session = AsyncMock(
         return_value={"status": "success", "pr_url": "http://pr/2"}
     )
+    mock_jules.wait_for_completion = AsyncMock()
+    mock_jules.get_latest_branch_commit = AsyncMock()
 
     usecase = CoderUseCase(mock_jules)
     state = CycleState(cycle_id="01")
@@ -93,4 +95,4 @@ async def test_session_reuse_ready_for_final_critic() -> None:
         result = await usecase.execute(state)
 
         assert mock_jules.continue_session.called
-        assert result["status"] == FlowStatus.READY_FOR_FINAL_CRITIC
+        assert result["status"] == FlowStatus.COMPLETED

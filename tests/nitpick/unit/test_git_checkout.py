@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock
+from typing import Any
 
 import pytest
 
@@ -15,9 +16,11 @@ class TestGitCheckout:
         # Create a concrete class mixing in GitCheckoutMixin
         class MockGit(GitCheckoutMixin):
             def __init__(self) -> None:
-                self.runner = MagicMock()
+                self.runner = AsyncMock()
+                self.runner.run_command.return_value = ("main", "", 0, False)
                 self.git_cmd = "git"
                 self._run_git = AsyncMock()  # type: ignore[method-assign]
+                self._run_git.return_value = ""
 
         git = MockGit()
 

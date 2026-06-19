@@ -16,6 +16,7 @@ class WorkPhase(StrEnum):
 class FlowStatus(StrEnum):
     # Common
     START = "start"
+    IN_PROGRESS = "in_progress"
     FAILED = "failed"
     COMPLETED = "completed"
     END = "end"
